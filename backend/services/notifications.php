@@ -266,12 +266,213 @@ function buildReservationSummary(array $reservation): array
     ];
 }
 
+function expandReservationForNotifications(PDO $pdo, array $reservation): array
+{
+    // If technicians/items/packages are missing, try to reload a full reservation
+    $needsExpansion = !isset($reservation['technicians']) || !isset($reservation['items']) || !isset($reservation['packages']);
+    if (!$needsExpansion) { return $reservation; }
+    $rid = isset($reservation['id']) ? (int)$reservation['id'] : 0;
+    if ($rid <= 0) { return $reservation; }
+    try {
+        $full = fetchReservationForNotification($pdo, $rid);
+        if (is_array($full)) { return $full; }
+    } catch (Throwable $_) { /* ignore */ }
+    return $reservation;
+}
+
+function buildReservationDetailsBlock(array $reservation): string
+{
+    $lines = [];
+    $notes = trim((string)($reservation['notes'] ?? ''));
+    if ($notes !== '') {
+        $lines[] = 'الملاحظات: ' . $notes;
+    }
+
+    // Packages (if any)
+    $packages = [];
+    foreach ((array)($reservation['packages'] ?? []) as $pkg) {
+        $name = trim((string)($pkg['name'] ?? $pkg['package_name'] ?? ''));
+        $qty = isset($pkg['quantity']) ? (int)$pkg['quantity'] : 0;
+        $line = '- ' . ($name !== '' ? $name : 'حزمة') . ($qty > 0 ? ' ×' . $qty : '');
+        $pkgItems = [];
+        try {
+            $raw = $pkg['items_json'] ?? null;
+            if (is_array($raw)) { $pkgItems = $raw; }
+            elseif (is_string($raw) && trim($raw) !== '') {
+                $decoded = json_decode($raw, true);
+                if (is_array($decoded)) { $pkgItems = $decoded; }
+            }
+        } catch (Throwable $_) {}
+        if ($pkgItems) {
+            $itemLines = [];
+            foreach ($pkgItems as $pi) {
+                $title = trim((string)($pi['name'] ?? $pi['title'] ?? ''));
+                $piQty = isset($pi['quantity']) ? (int)$pi['quantity'] : 0;
+                if ($title === '') { continue; }
+                $itemLines[] = '  • ' . $title . ($piQty > 0 ? ' ×' . $piQty : '');
+            }
+            if ($itemLines) {
+                $line .= "\n" . implode("\n", $itemLines);
+            }
+        }
+        $packages[] = $line;
+    }
+    if ($packages) {
+        $lines[] = 'الباقات/الحزم:';
+        $lines = array_merge($lines, $packages);
+    }
+
+    $techs = [];
+    foreach ((array)($reservation['technicians'] ?? []) as $t) {
+        $name = trim((string)($t['name'] ?? $t['technician_name'] ?? ''));
+        $role = trim((string)($t['position_name'] ?? $t['role'] ?? ''));
+        if ($name === '') { continue; }
+        $label = $role !== '' ? ($name . ' — ' . $role) : $name;
+        $techs[] = '- ' . $label;
+    }
+    if ($techs) {
+        $lines[] = 'الفنيون:';
+        $lines = array_merge($lines, $techs);
+    }
+
+    $items = [];
+    foreach ((array)($reservation['items'] ?? []) as $item) {
+        $title = trim((string)($item['description'] ?? $item['name'] ?? ''));
+        $qty = isset($item['quantity']) ? (int)$item['quantity'] : 0;
+        $note = trim((string)($item['notes'] ?? ''));
+        if ($title === '') { continue; }
+        $line = '- ' . $title . ($qty > 0 ? ' ×' . $qty : '');
+        if ($note !== '') {
+            $line .= ' (' . $note . ')';
+        }
+        $items[] = $line;
+    }
+    if ($items) {
+        $lines[] = 'المعدات:';
+        $lines = array_merge($lines, $items);
+    }
+
+    if (empty($lines)) {
+        return '';
+    }
+    return "\n" . implode("\n", $lines);
+}
+
+function pdfEscape(string $text): string
+{
+    return str_replace(['\\', '(', ')'], ['\\\\', '\\(', '\\)'], $text);
+}
+
+function renderSimplePdf(array $lines): string
+{
+    $contentLines = [];
+    $contentLines[] = 'BT';
+    $contentLines[] = '/F1 12 Tf';
+    $contentLines[] = '14 TL';
+    $contentLines[] = '72 750 Td';
+    foreach ($lines as $line) {
+        $contentLines[] = '(' . pdfEscape($line) . ') Tj';
+        $contentLines[] = 'T*';
+    }
+    $contentLines[] = 'ET';
+    $content = implode("\n", $contentLines);
+
+    $objects = [];
+    $objects[] = "<< /Type /Catalog /Pages 2 0 R >>\n";
+    $objects[] = "<< /Type /Pages /Kids [3 0 R] /Count 1 >>\n";
+    $objects[] = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>\n";
+    $objects[] = "<< /Length " . strlen($content) . " >>\nstream\n" . $content . "\nendstream\n";
+    $objects[] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\n";
+
+    $pdf = "%PDF-1.4\n";
+    $offsets = [];
+    $objId = 1;
+    foreach ($objects as $obj) {
+        $offsets[$objId] = strlen($pdf);
+        $pdf .= $objId . " 0 obj\n" . $obj . "endobj\n";
+        $objId++;
+    }
+    $xrefPos = strlen($pdf);
+    $pdf .= "xref\n0 " . ($objId) . "\n";
+    $pdf .= "0000000000 65535 f \n";
+    for ($i = 1; $i < $objId; $i++) {
+        $pdf .= sprintf("%010d 00000 n \n", $offsets[$i]);
+    }
+    $pdf .= "trailer<< /Size " . ($objId) . " /Root 1 0 R >>\n";
+    $pdf .= "startxref\n" . $xrefPos . "\n%%EOF";
+    return $pdf;
+}
+
+function buildReservationPdfAttachment(array $reservation, string $eventType): ?array
+{
+    $isCreation = $eventType === 'reservation_created' || strpos($eventType, 'reservation_reminder_') === 0;
+    if (!$isCreation) {
+        return null;
+    }
+
+    $summary = buildReservationSummary($reservation);
+    $lines = [];
+    $lines[] = 'ملخص الحجز';
+    if ($summary['code'] !== '') { $lines[] = 'الكود: ' . $summary['code']; }
+    $lines[] = 'العنوان: ' . $summary['title'];
+    if ($summary['when'] !== '') { $lines[] = 'الوقت: ' . $summary['when']; }
+    if ($summary['location'] !== '') { $lines[] = 'الموقع: ' . $summary['location']; }
+    if ($summary['customer'] !== '') { $lines[] = 'العميل: ' . $summary['customer']; }
+    if (!empty($reservation['notes'])) { $lines[] = 'الملاحظات: ' . trim((string)$reservation['notes']); }
+    $lines[] = '';
+
+    $techs = [];
+    foreach ((array)($reservation['technicians'] ?? []) as $t) {
+        $name = trim((string)($t['name'] ?? $t['technician_name'] ?? ''));
+        $role = trim((string)($t['position_name'] ?? $t['role'] ?? ''));
+        if ($name === '') { continue; }
+        $techs[] = ($role !== '' ? $role . ' - ' : '') . $name;
+    }
+    $lines[] = 'الفنيون:';
+    if ($techs) {
+        foreach ($techs as $t) { $lines[] = '• ' . $t; }
+    } else {
+        $lines[] = '• لا يوجد فنيون محددون';
+    }
+    $lines[] = '';
+
+    $items = [];
+    foreach ((array)($reservation['items'] ?? []) as $item) {
+        $title = trim((string)($item['description'] ?? $item['name'] ?? ''));
+        $qty = isset($item['quantity']) ? (int)$item['quantity'] : 0;
+        $note = trim((string)($item['notes'] ?? ''));
+        if ($title === '') { continue; }
+        $line = $title . ($qty > 0 ? ' ×' . $qty : '');
+        if ($note !== '') { $line .= ' (' . $note . ')'; }
+        $items[] = $line;
+    }
+    $lines[] = 'المعدات:';
+    if ($items) {
+        foreach ($items as $i) { $lines[] = '• ' . $i; }
+    } else {
+        $lines[] = '• لا توجد معدات مرتبطة';
+    }
+
+    $pdf = renderSimplePdf($lines);
+    $code = $summary['code'] !== '' ? $summary['code'] : (string)($reservation['id'] ?? 'reservation');
+    $filename = 'reservation-' . $code . '-crew-equipment.pdf';
+
+    return [
+        'filename' => $filename,
+        'content' => $pdf,
+        'mime' => 'application/pdf',
+    ];
+}
+
 function sendReservationNotificationsToTechnicians(PDO $pdo, array $reservation, string $eventType): void
 {
+    $reservation = expandReservationForNotifications($pdo, $reservation);
     $settings = getNotificationSettings();
     $channels = $settings['channels'];
     $summary = buildReservationSummary($reservation);
     $entityId = (int) $reservation['id'];
+    $detailsBlock = buildReservationDetailsBlock($reservation);
+    $attachment = buildReservationPdfAttachment($reservation, $eventType);
 
     $subject = 'تم تعيينك على حجز جديد: ' . $summary['title'];
     $html = '<p>مرحباً،</p>' .
@@ -292,6 +493,7 @@ function sendReservationNotificationsToTechnicians(PDO $pdo, array $reservation,
         ($summary['customer'] !== '' ? "العميل: {$summary['customer']}\n" : '') .
         ($summary['project_code'] !== '' ? "المشروع: {$summary['project_code']}\n" : '') .
         'شكراً.';
+    $text .= $detailsBlock;
 
     $techs = (array)($reservation['technicians'] ?? []);
     foreach ($techs as $t) {
@@ -303,7 +505,7 @@ function sendReservationNotificationsToTechnicians(PDO $pdo, array $reservation,
         if ($channels['email'] && !empty($contacts['email'])) {
             $recipient = (string) $contacts['email'];
             if (!hasNotificationBeenSent($pdo, $eventType, 'reservation', $entityId, $recipient, 'email')) {
-                $ok = sendEmail($recipient, (string) $contacts['name'], $subject, $html, $text);
+                $ok = sendEmail($recipient, (string) $contacts['name'], $subject, $html, $text, $attachment ? [$attachment] : []);
                 recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'technician', $recipient, 'email', $ok ? 'sent' : 'failed');
             }
         }
@@ -322,10 +524,13 @@ function sendReservationNotificationsToTechnicians(PDO $pdo, array $reservation,
 
 function sendReservationNotificationsToManagers(PDO $pdo, array $reservation, string $eventType): void
 {
+    $reservation = expandReservationForNotifications($pdo, $reservation);
     $settings = getNotificationSettings();
     $channels = $settings['channels'];
     $entityId = (int) $reservation['id'];
     $summary = buildReservationSummary($reservation);
+    $detailsBlock = buildReservationDetailsBlock($reservation);
+    $attachment = buildReservationPdfAttachment($reservation, $eventType);
 
     $subject = 'تم إنشاء حجز جديد: ' . $summary['title'];
     $html = '<p>تم إنشاء حجز جديد.</p>' .
@@ -341,6 +546,7 @@ function sendReservationNotificationsToManagers(PDO $pdo, array $reservation, st
         "العنوان: {$summary['title']}\nالوقت: {$summary['when']}\n" .
         ($summary['location'] !== '' ? "الموقع: {$summary['location']}\n" : '') .
         ($summary['customer'] !== '' ? "العميل: {$summary['customer']}\n" : '');
+    $text .= $detailsBlock;
 
     $emailRecipients = $settings['admin_only']
         ? $settings['admin_emails']
@@ -349,7 +555,7 @@ function sendReservationNotificationsToManagers(PDO $pdo, array $reservation, st
         if ($channels['email']) {
             $recipient = (string) $email;
             if (!hasNotificationBeenSent($pdo, $eventType, 'reservation', $entityId, $recipient, 'email')) {
-                $ok = sendEmail($recipient, 'Manager', $subject, $html, $text);
+                $ok = sendEmail($recipient, 'Manager', $subject, $html, $text, $attachment ? [$attachment] : []);
                 recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'manager', $recipient, 'email', $ok ? 'sent' : 'failed');
             }
         }
@@ -502,11 +708,13 @@ function notifyProjectCreated(PDO $pdo, array $project): void
 function notifyReservationTechnicianAssigned(PDO $pdo, array $reservation, array $technicianIds): void
 {
     if (!$technicianIds) { return; }
+    $reservation = expandReservationForNotifications($pdo, $reservation);
     $eventType = 'reservation_technician_assigned';
     $settings = getNotificationSettings();
     $channels = $settings['channels'];
     $summary = buildReservationSummary($reservation);
     $entityId = (int)$reservation['id'];
+    $detailsBlock = buildReservationDetailsBlock($reservation);
     $subject = 'تم تعيينك على حجز: ' . $summary['title'];
     $html = '<p>تم تعيينك على الحجز التالي:</p>' .
         '<ul>' .
@@ -519,6 +727,7 @@ function notifyReservationTechnicianAssigned(PDO $pdo, array $reservation, array
         ($summary['code'] !== '' ? "كود: {$summary['code']}\n" : '') .
         "العنوان: {$summary['title']}\nالوقت: {$summary['when']}\n" .
         ($summary['location'] !== '' ? "الموقع: {$summary['location']}\n" : '');
+    $text .= $detailsBlock;
 
     foreach ($technicianIds as $techId) {
         $contacts = fetchTechnicianContacts($pdo, (int)$techId);
@@ -559,6 +768,7 @@ function notifyReservationTechnicianAssigned(PDO $pdo, array $reservation, array
             ($summary['location'] !== '' ? "الموقع: {$summary['location']}\n" : '') .
             ($summary['customer'] !== '' ? "العميل: {$summary['customer']}\n" : '') .
             ($summary['project_code'] !== '' ? "المشروع: {$summary['project_code']}\n" : '');
+        $adminText .= $detailsBlock;
 
         if ($channels['email']) {
             foreach ($settings['admin_emails'] as $email) {
@@ -650,11 +860,13 @@ function notifyProjectTechnicianAssigned(PDO $pdo, array $project, array $techni
 
 function notifyReservationStatusChanged(PDO $pdo, array $reservation, string $oldStatus, string $newStatus): void
 {
+    $reservation = expandReservationForNotifications($pdo, $reservation);
     $eventType = 'reservation_status_changed';
     $settings = getNotificationSettings();
     $channels = $settings['channels'];
     $summary = buildReservationSummary($reservation);
     $entityId = (int)$reservation['id'];
+    $detailsBlock = buildReservationDetailsBlock($reservation);
     $subject = 'تحديث حالة الحجز: ' . $summary['title'];
     $html = '<p>تم تغيير حالة الحجز.</p><ul>' .
         ($summary['code'] !== '' ? '<li>الكود: ' . htmlspecialchars($summary['code']) . '</li>' : '') .
@@ -665,6 +877,7 @@ function notifyReservationStatusChanged(PDO $pdo, array $reservation, string $ol
     $text = "تغيير حالة الحجز\n" .
         ($summary['code'] !== '' ? "الكود: {$summary['code']}\n" : '') .
         "من {$oldStatus} إلى {$newStatus}\nالعنوان: {$summary['title']}\nالوقت: {$summary['when']}";
+    $text .= $detailsBlock;
 
     // notify technicians currently on reservation
     foreach ((array)($reservation['technicians'] ?? []) as $t) {
@@ -704,6 +917,7 @@ function notifyReservationStatusChanged(PDO $pdo, array $reservation, string $ol
             ($summary['location'] !== '' ? "الموقع: {$summary['location']}\n" : '') .
             ($summary['customer'] !== '' ? "العميل: {$summary['customer']}\n" : '') .
             ($summary['project_code'] !== '' ? "المشروع: {$summary['project_code']}\n" : '');
+        $adminText .= $detailsBlock;
 
         if ($channels['email']) {
             foreach ($settings['admin_emails'] as $email) {
