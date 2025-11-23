@@ -341,7 +341,7 @@ function buildReservationDetailsBlock(array $reservation): string
         $lines = array_merge($lines, $techs);
     }
 
-    $itemsAndPackages = [];
+    $items = [];
     foreach ((array)($reservation['items'] ?? []) as $item) {
         $title = trim((string)($item['description'] ?? $item['name'] ?? ''));
         $qty = isset($item['quantity']) ? (int)$item['quantity'] : 0;
@@ -351,40 +351,24 @@ function buildReservationDetailsBlock(array $reservation): string
         if ($note !== '') {
             $line .= ' (' . $note . ')';
         }
-        $itemsAndPackages[] = $line;
+        $items[] = $line;
     }
 
+    $packages = [];
     foreach ((array)($reservation['packages'] ?? []) as $pkg) {
         $name = trim((string)($pkg['name'] ?? $pkg['package_name'] ?? ''));
         if ($name === '') { $name = 'حزمة'; }
         $qty = isset($pkg['quantity']) ? (int)$pkg['quantity'] : 0;
-        $line = '- حزمة: ' . $name . ($qty > 0 ? ' ×' . $qty : '');
-        $pkgItems = [];
-        try {
-            $raw = $pkg['items_json'] ?? null;
-            if (is_array($raw)) { $pkgItems = $raw; }
-            elseif (is_string($raw) && trim($raw) !== '') {
-                $decoded = json_decode($raw, true);
-                if (is_array($decoded)) { $pkgItems = $decoded; }
-            }
-        } catch (Throwable $_) {}
-        if ($pkgItems) {
-            $itemLines = [];
-            foreach ($pkgItems as $pi) {
-                $title = trim((string)($pi['name'] ?? $pi['title'] ?? ''));
-                $piQty = isset($pi['quantity']) ? (int)$pi['quantity'] : 0;
-                if ($title === '') { continue; }
-                $itemLines[] = '  • ' . $title . ($piQty > 0 ? ' ×' . $piQty : '');
-            }
-            if ($itemLines) {
-                $line .= "\n" . implode("\n", $itemLines);
-            }
-        }
-        $itemsAndPackages[] = $line;
+        $line = '- ' . $name . ($qty > 0 ? ' ×' . $qty : '');
+        $packages[] = $line;
     }
-    if ($itemsAndPackages) {
-        $lines[] = 'المعدات/الحزم:';
-        $lines = array_merge($lines, $itemsAndPackages);
+    if ($packages) {
+        $lines[] = 'الحزم:';
+        $lines = array_merge($lines, $packages);
+    }
+    if ($items) {
+        $lines[] = 'المعدات:';
+        $lines = array_merge($lines, $items);
     }
 
     if (empty($lines)) {
