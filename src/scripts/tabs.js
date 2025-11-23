@@ -10,14 +10,8 @@ const DASHBOARD_SUB_TAB_STORAGE_KEY = "__ART_RATIO_LAST_DASHBOARD_SUB_TAB__";
 const DEFAULT_RESERVATION_SUB_TAB = "create-tab";
 const TAB_ID_PATTERN = /^[a-z0-9\-]+$/i;
 
-// Development-only logger: silences logs in production builds
-const __IS_DEV__ = typeof import.meta !== 'undefined' && import.meta.env && Boolean(import.meta.env.DEV);
-function devLog(...args) {
-  if (__IS_DEV__) {
-    // eslint-disable-next-line no-console
-    console.log(...args);
-  }
-}
+// Development logger disabled to keep console clean
+function devLog() {}
 
 function scrollTabButtonIntoView(button) {
   if (!button || typeof button.scrollIntoView !== 'function') return;
@@ -139,13 +133,8 @@ function ensureMaintenanceModule() {
 
 // ✅ الدالة الرئيسية لتفعيل التبويبات
 export function setupTabs() {
-  devLog("🚀 [tabs.js] setupTabs()");
-
   const tabButtons = Array.from(document.querySelectorAll('[data-tab]'));
   const tabContents = document.querySelectorAll('.tab-content-wrapper > .tab');
-
-  devLog("📌 tabButtons:", tabButtons);
-  devLog("📌 tabContents:", tabContents);
 
   const activateTab = (target, { skipStore = false, skipRender = false } = {}) => {
     if (!target) return;
@@ -234,7 +223,6 @@ export function setupTabs() {
       renderTechnicians();
     }
     if (target === "reservations-tab") {
-      devLog("📅 Rendering reservations");
       if (!skipRender) {
         ensureReservationsModule()
           .then(async (module) => {
@@ -488,13 +476,8 @@ export function setupTabs() {
 
 // ✅ إدارة التبويبات الفرعية للحجوزات
 function setupSubTabs() {
-  devLog("🚀 [tabs.js] setupSubTabs()");
-
   const subTabButtons = document.querySelectorAll('#reservations-tab .sub-tab-button');
   const subTabContents = document.querySelectorAll('#reservations-tab .sub-tab');
-
-  devLog("📌 subTabButtons:", subTabButtons);
-  devLog("📌 subTabContents:", subTabContents);
 
   if (!subTabButtons.length) {
     console.warn('⚠️ [tabs.js] No reservation sub-tab buttons found');
@@ -605,21 +588,18 @@ function setupSubTabs() {
     }
 
     if (targetToActivate === "my-reservations-tab") {
-      devLog("📋 Rendering reservations list");
       setTimeout(() => {
         ensureReservationsModule()
           .then((module) => { try { module.renderReservations?.(); } catch (e) { console.error('❌ [tabs.js] Failed to render reservations list', e); } })
           .catch((error) => console.error('❌ [tabs.js] Unable to load reservations UI module', error));
       }, 50); // ⏱ تأخير بسيط حتى يظهر العنصر فعليًا
     } else if (targetToActivate === "calendar-tab") {
-      devLog("📅 Rendering calendar view");
       setTimeout(() => {
         ensureCalendarModule()
           .then((module) => { try { module.renderCalendar?.(); } catch (e) { console.error('❌ [tabs.js] Failed to render calendar', e); } })
           .catch((error) => console.error('❌ [tabs.js] Unable to load calendar module', error));
       }, 100);
     } else if (targetToActivate === "reports-tab") {
-      devLog("📊 Rendering reports view");
       ensureReportsModule()
         .then((module) => {
           const { renderReports } = module;
@@ -665,7 +645,6 @@ function setupSubTabs() {
     if (!btn.dataset.subTabListenerAttached) {
       btn.addEventListener("click", () => {
         const subTarget = btn.getAttribute("data-sub-tab");
-        devLog("🖱️ Sub-tab clicked:", subTarget);
         activateSubTab(subTarget);
       });
       btn.dataset.subTabListenerAttached = 'true';
@@ -680,7 +659,6 @@ function setupSubTabs() {
     const fallbackSubTab = resolveFallbackSubTarget();
     const initialSubTarget = defaultSubTab?.getAttribute('data-sub-tab') || fallbackSubTab;
     if (initialSubTarget) {
-      devLog('⭐ Initial sub-tab:', initialSubTarget);
       activateSubTab(initialSubTarget, { skipStore: true });
     }
   }
