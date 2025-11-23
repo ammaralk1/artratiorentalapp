@@ -197,7 +197,11 @@ export function renderProjects() {
 
   renderProjectsTableChunked(currentPageProjects);
   renderTimeline(currentPageProjects);
-  renderFocusCardsInternal(currentPageProjects);
+  renderFocusCardsInternal(currentPageProjects, {
+    totalPagesOverride: totalPages,
+    currentPageOverride: pagination.page,
+    prePaged: true
+  });
   renderProjectsPagination(totalPages, pagination.page);
 }
 
