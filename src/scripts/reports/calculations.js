@@ -1009,6 +1009,12 @@ export function filterReservations(reservations, filters, customers, equipment, 
   const technicianMap = new Map((technicians || []).map((tech) => [String(tech.id), tech]));
 
   return (reservations || []).filter((reservation) => {
+    const projectRaw = reservation?.projectId ?? reservation?.project_id ?? null;
+    const linkedToProject = projectRaw != null
+      && String(projectRaw).trim() !== ''
+      && String(projectRaw).trim().toLowerCase() !== 'null';
+    if (linkedToProject) return false; // استبعاد الحجوزات المرتبطة بمشاريع من تبويب تقارير الحجوزات
+
     const start = reservation?.start ? new Date(reservation.start) : null;
     if (!start || Number.isNaN(start.getTime())) return false;
     let end = reservation?.end ? new Date(reservation.end) : start;

@@ -1808,6 +1808,14 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
     flex-basis: min(320px, 90vw);
   }
 
+  /* Mobile: make the monthly volume chart breathe a bit more */
+  .reports-chart-card--volume {
+    flex: 0 0 min(420px, 96vw);
+  }
+  .reports-chart-card--volume #reports-volume-chart {
+    min-height: 460px;
+  }
+
   /* Mobile: make report filters breathe and stack */
   .reports-wrapper--reservations .reports-filters-grid {
     grid-template-columns: 1fr;
