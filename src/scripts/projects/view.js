@@ -30,7 +30,7 @@ function ensureFocusPagination() {
   if (!state.focusPagination) {
     state.focusPagination = { page: 1, pageSize: FOCUS_CARDS_PER_PAGE, totalPages: 1 };
   }
-  if (!state.focusPagination.pageSize) {
+  if (!state.focusPagination.pageSize || state.focusPagination.pageSize <= 0) {
     state.focusPagination.pageSize = FOCUS_CARDS_PER_PAGE;
   }
   return state.focusPagination;
@@ -425,7 +425,7 @@ export function renderFocusCards() {
   if (!dom.focusCards) return;
 
   const sourceProjects = state.visibleProjects.length ? state.visibleProjects : getFilteredProjects();
-  const allCards = buildFocusCards(sourceProjects, { allowFallback: !hasProjectFilters(), limit: Infinity });
+  const allCards = buildFocusCards(sourceProjects, { allowFallback: !hasProjectFilters(), limit: null });
   const pagination = ensureFocusPagination();
   const pageSize = Number.isFinite(pagination.pageSize) ? pagination.pageSize : FOCUS_CARDS_PER_PAGE;
   const totalPages = Math.max(1, Math.ceil(allCards.length / pageSize));
@@ -491,7 +491,7 @@ function buildFocusCards(projectsPool = [], options = {}) {
 
   const addCard = (project, category) => {
     if (!project || seen.has(project.id)) return;
-    if (Number.isFinite(limit) && cards.length >= limit) return;
+    if (limit !== null && Number.isFinite(limit) && cards.length >= limit) return;
     seen.add(project.id);
     cards.push(renderFocusCard(project, category));
   };
