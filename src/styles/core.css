@@ -804,7 +804,7 @@ html.dark-mode .projects-hero-text {
   position: relative;
   border-radius: var(--radius-md);
   padding: 16px 0;
-  background: linear-gradient(90deg, rgba(76, 110, 245, 0.08) 0%, rgba(76, 110, 245, 0.02) 100%);
+  background: linear-gradient(90deg, rgba(26, 35, 64, 0.9) 0%, rgba(20, 30, 58, 0.94) 100%);
   min-height: 70px;
 }
 
@@ -815,7 +815,7 @@ html.dark-mode .projects-hero-text {
   inset-inline-end: 6px;
   top: 50%;
   height: 2px;
-  background: rgba(76, 110, 245, 0.18);
+  background: rgba(255, 255, 255, 0.12);
   transform: translateY(-50%);
 }
 
@@ -832,7 +832,8 @@ html.dark-mode .projects-hero-text {
   color: #fff;
   font-size: 0.85rem;
   text-decoration: none;
-  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.15);
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.18);
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
   transition: var(--transition);
   cursor: pointer;
   overflow: hidden;
@@ -861,8 +862,15 @@ html.dark-mode .projects-hero-text {
 }
 
 .project-timeline__item--conflict {
-  box-shadow: 0 12px 26px rgba(224, 49, 49, 0.32);
-  outline: 2px solid rgba(224, 49, 49, 0.85);
+  background: linear-gradient(90deg, rgba(224, 49, 49, 0.95) 0%, rgba(240, 94, 94, 0.95) 100%);
+  box-shadow: 0 12px 26px rgba(224, 49, 49, 0.35);
+  outline: 2px solid rgba(224, 49, 49, 0.95);
+}
+
+.project-timeline__item--cancelled {
+  background: linear-gradient(90deg, #0a0a0a 0%, #0d0d0d 100%);
+  border-color: #0a0a0a;
+  color: #f8fafc;
 }
 
 .project-timeline__item-conflict {
