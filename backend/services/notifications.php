@@ -329,7 +329,6 @@ function resolvePackageNameForNotification(array $pkg, ?PDO $pdo = null): string
         $pkg['desc'] ?? null,
         $pkg['description'] ?? null,
         $metaName !== '' ? $metaName : null,
-        $pkg['package_code'] ?? null,
     ];
 
     foreach ($candidates as $candidate) {
@@ -398,6 +397,11 @@ function resolvePackageNameForNotification(array $pkg, ?PDO $pdo = null): string
                 }
             }
         }
+    }
+
+    $codeFallback = trim((string)($pkg['package_code'] ?? ''));
+    if ($codeFallback !== '') {
+        return $codeFallback;
     }
 
     if (isset($pkg['package_id']) && (int)$pkg['package_id'] > 0) {
