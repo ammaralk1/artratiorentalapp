@@ -25,6 +25,7 @@ import { updateEditReservationSummary } from './editForm.js';
 import { loadData } from '../storage.js';
 import { ensureReservationsLoaded } from '../reservationsActions.js';
 import { ensureProjectsLoaded } from '../projectsService.js';
+import { t } from '../language.js';
 
 let reservationEventsInitialized = false;
 
@@ -141,14 +142,70 @@ function setupTechniciansUpdatedListener() {
   body.dataset.reservationsTechListener = 'true';
 }
 
-export async function initializeReservationUI() {
-  await ensureReservationsLoaded();
+function hasCachedReservations() {
   try {
-    await ensureProjectsLoaded({ force: true });
-  } catch (error) {
-    console.warn('⚠️ [reservations/events] Failed to pre-load projects for reservation form', error);
+    const { reservations = [] } = loadData();
+    return Array.isArray(reservations) && reservations.length > 0;
+  } catch (_) {
+    return false;
   }
-  renderReservations();
+}
+
+function showReservationsInlineLoader() {
+  const container = document.getElementById('reservations-list');
+  if (!container) return;
+  if (container.querySelector('[data-reservations-loader]')) return;
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'reservations-inline-loader';
+  wrapper.setAttribute('data-reservations-loader', 'true');
+  wrapper.setAttribute('aria-live', 'polite');
+
+  const text = t('reservations.list.loading', 'جارٍ تحميل الحجوزات...');
+  wrapper.innerHTML = `
+    <div class="loading loading-spinner loading-lg text-primary" aria-hidden="true"></div>
+    <p class="reservations-inline-loader__text">${text}</p>
+  `;
+
+  container.replaceChildren(wrapper);
+}
+
+function hideReservationsInlineLoader() {
+  const container = document.getElementById('reservations-list');
+  if (!container) return;
+  const loader = container.querySelector('[data-reservations-loader]');
+  if (loader) {
+    loader.remove();
+  }
+}
+
+export async function initializeReservationUI() {
+  const cachedReservations = hasCachedReservations();
+  if (cachedReservations) {
+    try { renderReservations(); } catch (_) {}
+  } else {
+    showReservationsInlineLoader();
+  }
+
+  const [reservationsResult, projectsResult] = await Promise.allSettled([
+    ensureReservationsLoaded(),
+    ensureProjectsLoaded({ force: true }),
+  ]);
+
+  if (reservationsResult.status === 'rejected') {
+    console.warn('⚠️ [reservations/events] Failed to load reservations from API', reservationsResult.reason);
+  }
+  if (projectsResult.status === 'rejected') {
+    console.warn('⚠️ [reservations/events] Failed to pre-load projects for reservation form', projectsResult.reason);
+  }
+
+  hideReservationsInlineLoader();
+
+  try {
+    renderReservations();
+  } catch (error) {
+    console.error('❌ [reservations/events] Failed to render reservations after load', error);
+  }
   registerReservationGlobals();
   initCreateReservationForm({ onAfterSubmit: handleReservationsMutation });
   if (!reservationEventsInitialized) {

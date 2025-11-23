@@ -101,6 +101,32 @@
   padding-inline: 1.1rem 2.4rem;
 }
 
+.reservations-inline-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 18px;
+  min-height: 140px;
+  border-radius: 16px;
+  border: 1px dashed rgba(148, 163, 184, 0.35);
+  background: linear-gradient(135deg, rgba(248, 250, 255, 0.92), rgba(236, 242, 255, 0.88));
+  color: #1f2d52;
+}
+
+.reservations-inline-loader__text {
+  margin: 0;
+  font-weight: 600;
+  color: inherit;
+}
+
+:where(html.dark, body.dark) .reservations-inline-loader {
+  background: linear-gradient(135deg, rgba(20, 29, 54, 0.9), rgba(18, 28, 48, 0.86));
+  border-color: rgba(93, 133, 255, 0.26);
+  color: rgba(226, 232, 240, 0.95);
+}
+
 /* Tighter widths for desktop to keep filters on one row */
 @media (min-width: 768px) {
   /* Date fields: make even narrower so all filters fit in one row */
