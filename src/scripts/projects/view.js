@@ -524,7 +524,7 @@ function renderProjectsPagination(totalPages, currentPage) {
     <button type="button" class="btn btn-sm btn-outline-primary" data-page="${clampedCurrent - 1}" ${clampedCurrent === 1 ? 'disabled' : ''} aria-label="${escapeHtml(t('projects.pagination.prev', 'السابق'))}">‹</button>
     ${visiblePages.map((page) => {
       const active = page === clampedCurrent;
-      const cls = active ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-outline-primary';
+      const cls = active ? 'btn btn-sm btn-primary active' : 'btn btn-sm btn-outline-primary';
       return `<button type="button" class="${cls}" data-page="${page}">${page}</button>`;
     }).join('')}
     <button type="button" class="btn btn-sm btn-outline-primary" data-page="${clampedCurrent + 1}" ${clampedCurrent === clampedTotal ? 'disabled' : ''} aria-label="${escapeHtml(t('projects.pagination.next', 'التالي'))}">›</button>
