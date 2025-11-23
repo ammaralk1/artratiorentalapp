@@ -258,6 +258,7 @@ function buildReservationSummary(array $reservation): array
     $displayId = $code !== '' ? $code : ($title !== '' ? $title : 'حجز');
 
     $titleLine = $title !== '' ? $title : ($code !== '' ? $code : 'حجز');
+    $days = computeReservationDays($start, $end);
     return [
         'title' => $titleLine,
         'code' => $code,
@@ -266,7 +267,25 @@ function buildReservationSummary(array $reservation): array
         'location' => $location,
         'customer' => $customer,
         'project_code' => $projectCode,
+        'days' => $days,
     ];
+}
+
+function computeReservationDays(?string $start, ?string $end): ?int
+{
+    if (!$start || !$end) { return null; }
+    try {
+        $s = new DateTimeImmutable($start);
+        $e = new DateTimeImmutable($end);
+        if ($e < $s) { return null; }
+        $diff = $e->diff($s);
+        $days = (int) $diff->days;
+        $hasTimeRemainder = ($diff->h > 0 || $diff->i > 0 || $diff->s > 0);
+        if ($hasTimeRemainder || $days === 0) { $days += 1; }
+        return $days > 0 ? $days : 1;
+    } catch (Throwable $_) {
+        return null;
+    }
 }
 
 function formatDetailsBlockHtml(string $detailsBlock): string
@@ -442,7 +461,8 @@ function sendReservationNotificationsToTechnicians(PDO $pdo, array $reservation,
         ($summary['customer'] !== '' ? "العميل: {$summary['customer']}\n" : '') .
         ($summary['project_code'] !== '' ? "المشروع: {$summary['project_code']}\n" : '') .
         'شكراً.';
-    $textUnified = appendFooterText($textBase . $detailsBlock);
+    $daysLine = $summary['days'] ? "عدد الأيام: {$summary['days']}\n" : '';
+    $textUnified = appendFooterText($textBase . $daysLine . $detailsBlock);
     $textEmail = $textUnified;
     $textTelegram = $textUnified;
     $html = '<p>' . nl2br(htmlspecialchars($textUnified, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')) . '</p>';
@@ -486,9 +506,10 @@ function sendReservationNotificationsToManagers(PDO $pdo, array $reservation, st
     $detailsHtml = '';
 
     $subject = 'تم إنشاء حجز جديد: ' . $summary['display_id'];
+    $daysLine = $summary['days'] ? "عدد الأيام: {$summary['days']}\n" : '';
     $text = "حجز جديد\nرقم الحجز: {$summary['display_id']}\nالوقت: {$summary['when']}\n" .
         ($summary['customer'] !== '' ? "العميل: {$summary['customer']}\n" : '');
-    $textUnified = appendFooterText($text . $detailsBlock);
+    $textUnified = appendFooterText($text . $daysLine . $detailsBlock);
     $textEmail = $textUnified;
     $textTelegram = $textUnified;
     $html = '<p>' . nl2br(htmlspecialchars($textUnified, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')) . '</p>';
@@ -663,8 +684,9 @@ function notifyReservationTechnicianAssigned(PDO $pdo, array $reservation, array
     $detailsHtml = '';
     $attachment = null;
     $subject = 'تم تعيينك على حجز: ' . $summary['display_id'];
+    $daysLine = $summary['days'] ? "عدد الأيام: {$summary['days']}\n" : '';
     $text = "تم تعيينك على حجز\nرقم الحجز: {$summary['display_id']}\nالوقت: {$summary['when']}\n";
-    $textUnified = appendFooterText($text . $detailsBlock);
+    $textUnified = appendFooterText($text . $daysLine . $detailsBlock);
     $textEmail = $textUnified;
     $textTelegram = $textUnified;
     $html = '<p>' . nl2br(htmlspecialchars($textUnified, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')) . '</p>';
@@ -803,10 +825,11 @@ function notifyReservationStatusChanged(PDO $pdo, array $reservation, string $ol
     $detailsHtml = '';
     $attachment = null;
     $subject = 'تحديث حالة الحجز: ' . $summary['display_id'];
+    $daysLine = $summary['days'] ? "عدد الأيام: {$summary['days']}\n" : '';
     $text = "تغيير حالة الحجز\n" .
         "رقم الحجز: {$summary['display_id']}\n" .
         "من {$oldStatus} إلى {$newStatus}\nالوقت: {$summary['when']}";
-    $textUnified = appendFooterText($text . $detailsBlock);
+    $textUnified = appendFooterText($text . $daysLine . $detailsBlock);
     $textEmail = $textUnified;
     $textTelegram = $textUnified;
     $html = '<p>' . nl2br(htmlspecialchars($textUnified, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')) . '</p>';
