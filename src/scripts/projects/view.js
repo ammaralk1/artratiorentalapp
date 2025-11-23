@@ -196,7 +196,7 @@ export function renderProjects() {
   const currentPageProjects = sortedProjects.slice(start, end);
 
   renderProjectsTableChunked(currentPageProjects);
-  renderTimeline(sortedProjects);
+  renderTimeline(currentPageProjects);
   renderFocusCardsInternal(currentPageProjects);
   renderProjectsPagination(totalPages, pagination.page);
 }
