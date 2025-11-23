@@ -306,6 +306,107 @@ function appendFooterHtml(string $html): string
     return $html . '<p>لمزيد من المعلومات فضلا ادخل على بطاقة الحجز فريق Art Ratio</p>';
 }
 
+function resolvePackageNameForNotification(array $pkg, ?PDO $pdo = null): string
+{
+    $metaName = '';
+    try {
+        $metaRaw = $pkg['package_metadata'] ?? null;
+        if (is_string($metaRaw) && trim($metaRaw) !== '') {
+            $decoded = json_decode($metaRaw, true);
+            if (is_array($decoded)) {
+                $metaName = trim((string)($decoded['name'] ?? $decoded['title'] ?? ''));
+            }
+        } elseif (is_array($metaRaw)) {
+            $metaName = trim((string)($metaRaw['name'] ?? $metaRaw['title'] ?? ''));
+        }
+    } catch (Throwable $_) {}
+
+    $candidates = [
+        $pkg['package_name'] ?? null,
+        $pkg['name'] ?? null,
+        $pkg['packageName'] ?? null,
+        $pkg['title'] ?? null,
+        $pkg['desc'] ?? null,
+        $pkg['description'] ?? null,
+        $metaName !== '' ? $metaName : null,
+        $pkg['package_code'] ?? null,
+    ];
+
+    foreach ($candidates as $candidate) {
+        $value = trim((string)($candidate ?? ''));
+        if ($value !== '') {
+            return $value;
+        }
+    }
+
+    if ($pdo) {
+        static $packagesTableExists = null;
+        static $packageNameCacheById = [];
+        static $packageNameCacheByCode = [];
+
+        if ($packagesTableExists === null) {
+            try {
+                $stmt = $pdo->query("SHOW TABLES LIKE 'equipment_packages'");
+                $packagesTableExists = $stmt && $stmt->fetch() ? true : false;
+            } catch (Throwable $_) {
+                $packagesTableExists = false;
+            }
+        }
+
+        if ($packagesTableExists) {
+            $idCandidates = [
+                isset($pkg['package_id']) ? (int)$pkg['package_id'] : null,
+                isset($pkg['packageId']) ? (int)$pkg['packageId'] : null,
+                isset($pkg['id']) ? (int)$pkg['id'] : null,
+            ];
+            foreach ($idCandidates as $idCandidate) {
+                if ($idCandidate === null || $idCandidate <= 0) { continue; }
+                if (array_key_exists($idCandidate, $packageNameCacheById)) {
+                    $cached = $packageNameCacheById[$idCandidate];
+                    if ($cached !== '') { return $cached; }
+                    continue;
+                }
+                try {
+                    $stmt = $pdo->prepare('SELECT name FROM equipment_packages WHERE id = :id LIMIT 1');
+                    $stmt->execute(['id' => $idCandidate]);
+                    $found = $stmt->fetchColumn();
+                    $name = $found !== false ? trim((string)$found) : '';
+                    $packageNameCacheById[$idCandidate] = $name;
+                    if ($name !== '') { return $name; }
+                } catch (Throwable $_) {
+                    $packageNameCacheById[$idCandidate] = '';
+                }
+            }
+
+            $codeCandidate = trim((string)($pkg['package_code'] ?? ''));
+            if ($codeCandidate !== '') {
+                $codeKey = strtolower($codeCandidate);
+                if (array_key_exists($codeKey, $packageNameCacheByCode)) {
+                    $cached = $packageNameCacheByCode[$codeKey];
+                    if ($cached !== '') { return $cached; }
+                } else {
+                    try {
+                        $stmt = $pdo->prepare('SELECT name FROM equipment_packages WHERE package_code = :code LIMIT 1');
+                        $stmt->execute(['code' => $codeCandidate]);
+                        $found = $stmt->fetchColumn();
+                        $name = $found !== false ? trim((string)$found) : '';
+                        $packageNameCacheByCode[$codeKey] = $name;
+                        if ($name !== '') { return $name; }
+                    } catch (Throwable $_) {
+                        $packageNameCacheByCode[$codeKey] = '';
+                    }
+                }
+            }
+        }
+    }
+
+    if (isset($pkg['package_id']) && (int)$pkg['package_id'] > 0) {
+        return 'حزمة #' . (int)$pkg['package_id'];
+    }
+
+    return 'حزمة';
+}
+
 function expandReservationForNotifications(PDO $pdo, array $reservation): array
 {
     // If technicians/items/packages are missing, try to reload a full reservation
@@ -320,7 +421,7 @@ function expandReservationForNotifications(PDO $pdo, array $reservation): array
     return $reservation;
 }
 
-function buildReservationDetailsBlock(array $reservation): string
+function buildReservationDetailsBlock(array $reservation, ?PDO $pdo = null): string
 {
     $lines = [];
     $notes = trim((string)($reservation['notes'] ?? ''));
@@ -356,30 +457,7 @@ function buildReservationDetailsBlock(array $reservation): string
 
     $packages = [];
     foreach ((array)($reservation['packages'] ?? []) as $pkg) {
-        $metaName = '';
-        try {
-            $metaRaw = $pkg['package_metadata'] ?? null;
-            if (is_string($metaRaw) && trim($metaRaw) !== '') {
-                $decoded = json_decode($metaRaw, true);
-                if (is_array($decoded)) {
-                    $metaName = trim((string)($decoded['name'] ?? $decoded['title'] ?? ''));
-                }
-            } elseif (is_array($metaRaw)) {
-                $metaName = trim((string)($metaRaw['name'] ?? $metaRaw['title'] ?? ''));
-            }
-        } catch (Throwable $_) {}
-
-        $name = trim((string)(
-            $pkg['package_name']
-            ?? $pkg['name']
-            ?? $metaName
-            ?? $pkg['package_code']
-            ?? ''
-        ));
-        if ($name === '' && isset($pkg['package_id'])) {
-            $name = 'حزمة #' . (int)$pkg['package_id'];
-        }
-        if ($name === '') { $name = 'حزمة'; }
+        $name = resolvePackageNameForNotification($pkg, $pdo);
         $qty = isset($pkg['quantity']) ? (int)$pkg['quantity'] : 0;
         $line = '- ' . $name . ($qty > 0 ? ' ×' . $qty : '');
         $packages[] = $line;
@@ -457,7 +535,7 @@ function sendReservationNotificationsToTechnicians(PDO $pdo, array $reservation,
     $channels = $settings['channels'];
     $summary = buildReservationSummary($reservation);
     $entityId = (int) $reservation['id'];
-    $detailsBlock = buildReservationDetailsBlock($reservation);
+    $detailsBlock = buildReservationDetailsBlock($reservation, $pdo);
     $attachment = null;
     $detailsHtml = '';
 
@@ -507,7 +585,7 @@ function sendReservationNotificationsToManagers(PDO $pdo, array $reservation, st
     $channels = $settings['channels'];
     $entityId = (int) $reservation['id'];
     $summary = buildReservationSummary($reservation);
-    $detailsBlock = buildReservationDetailsBlock($reservation);
+    $detailsBlock = buildReservationDetailsBlock($reservation, $pdo);
     $attachment = null;
     $detailsHtml = '';
 
@@ -686,7 +764,7 @@ function notifyReservationTechnicianAssigned(PDO $pdo, array $reservation, array
     $channels = $settings['channels'];
     $summary = buildReservationSummary($reservation);
     $entityId = (int)$reservation['id'];
-    $detailsBlock = buildReservationDetailsBlock($reservation);
+    $detailsBlock = buildReservationDetailsBlock($reservation, $pdo);
     $detailsHtml = '';
     $attachment = null;
     $subject = 'تم تعيينك على حجز: ' . $summary['display_id'];
@@ -827,7 +905,7 @@ function notifyReservationStatusChanged(PDO $pdo, array $reservation, string $ol
     $channels = $settings['channels'];
     $summary = buildReservationSummary($reservation);
     $entityId = (int)$reservation['id'];
-    $detailsBlock = buildReservationDetailsBlock($reservation);
+    $detailsBlock = buildReservationDetailsBlock($reservation, $pdo);
     $detailsHtml = '';
     $attachment = null;
     $subject = 'تحديث حالة الحجز: ' . $summary['display_id'];

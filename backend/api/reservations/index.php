@@ -1197,6 +1197,42 @@ function upsertReservationPackages(PDO $pdo, int $reservationId, array $packages
             continue;
         }
 
+        $packageId = null;
+        foreach (['package_id', 'packageId', 'id'] as $idField) {
+            if (!isset($package[$idField])) {
+                continue;
+            }
+            $candidate = $package[$idField];
+            if (is_numeric($candidate)) {
+                $packageId = (int) $candidate;
+                if ($packageId <= 0) {
+                    $packageId = null;
+                }
+                if ($packageId !== null) {
+                    break;
+                }
+            }
+        }
+
+        $packageCode = null;
+        foreach (['package_code', 'code', 'packageId', 'package_id', 'id'] as $codeField) {
+            if (!empty($package[$codeField])) {
+                $packageCode = (string) $package[$codeField];
+                break;
+            }
+        }
+
+        $rawName = '';
+        foreach (['package_name', 'packageName', 'name', 'title', 'desc', 'description'] as $nameField) {
+            if (!empty($package[$nameField])) {
+                $rawName = trim((string) $package[$nameField]);
+                if ($rawName !== '') {
+                    break;
+                }
+            }
+        }
+        $packageName = $rawName !== '' ? mb_substr($rawName, 0, 255) : null;
+
         $quantity = isset($package['quantity'])
             ? (int) $package['quantity']
             : (isset($package['qty']) ? (int) $package['qty'] : 1);
@@ -1236,23 +1272,43 @@ function upsertReservationPackages(PDO $pdo, int $reservationId, array $packages
             $itemsJson = json_encode($package['items'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         }
 
-        $packageCode = null;
-        if (!empty($package['package_code'])) {
-            $packageCode = (string) $package['package_code'];
-        } elseif (!empty($package['code'])) {
-            $packageCode = (string) $package['code'];
-        } elseif (!empty($package['packageId'])) {
-            $packageCode = (string) $package['packageId'];
+        $packageMetadata = null;
+        if (array_key_exists('package_metadata', $package)) {
+            $metaValue = $package['package_metadata'];
+            if (is_string($metaValue)) {
+                $metaValue = trim($metaValue);
+                $packageMetadata = $metaValue !== '' ? $metaValue : null;
+            } elseif (is_array($metaValue)) {
+                $packageMetadata = json_encode($metaValue, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            }
+        } else {
+            $meta = [];
+            if ($packageName !== null && $packageName !== '') {
+                $meta['name'] = $packageName;
+            }
+            if ($packageCode !== null && $packageCode !== '') {
+                $meta['code'] = $packageCode;
+            }
+            if ($packageId !== null) {
+                $meta['id'] = $packageId;
+            }
+            if ($meta) {
+                $packageMetadata = json_encode($meta, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            }
         }
 
         if (!isset($normalizedPackages[$key])) {
             $normalizedPackages[$key] = [
                 'reservation_id' => $reservationId,
+                'package_id'     => $packageId,
                 'package_code'   => $packageCode,
+                'package_name'   => $packageName,
+                'name'           => $packageName,
                 'quantity'       => $quantity,
                 'unit_price'     => $unitPrice,
                 'unit_cost'      => $unitCost,
                 'items_json'     => $itemsJson,
+                'package_metadata' => $packageMetadata,
             ];
             continue;
         }
@@ -1264,11 +1320,21 @@ function upsertReservationPackages(PDO $pdo, int $reservationId, array $packages
         if ($unitPrice >= 0) {
             $existing['unit_price'] = $unitPrice;
         }
+        if ($packageId !== null) {
+            $existing['package_id'] = $packageId;
+        }
         if ($packageCode !== null) {
             $existing['package_code'] = $packageCode;
         }
+        if ($packageName !== null && $packageName !== '') {
+            $existing['package_name'] = $packageName;
+            $existing['name'] = $packageName;
+        }
         if ($itemsJson !== null) {
             $existing['items_json'] = $itemsJson;
+        }
+        if ($packageMetadata !== null) {
+            $existing['package_metadata'] = $packageMetadata;
         }
         $normalizedPackages[$key] = $existing;
     }
@@ -1278,8 +1344,8 @@ function upsertReservationPackages(PDO $pdo, int $reservationId, array $packages
     }
 
     $statement = $pdo->prepare(
-        'INSERT INTO reservation_packages (reservation_id, package_code, quantity, unit_price, unit_cost, items_json)
-         VALUES (:reservation_id, :package_code, :quantity, :unit_price, :unit_cost, :items_json)'
+        'INSERT INTO reservation_packages (reservation_id, package_id, package_code, package_name, name, quantity, unit_price, unit_cost, items_json, package_metadata)
+         VALUES (:reservation_id, :package_id, :package_code, :package_name, :name, :quantity, :unit_price, :unit_cost, :items_json, :package_metadata)'
     );
 
     foreach ($normalizedPackages as $params) {
@@ -1290,8 +1356,8 @@ function upsertReservationPackages(PDO $pdo, int $reservationId, array $packages
             if (str_contains($message, 'unit_cost') || str_contains($message, 'items_json') || str_contains($message, 'unknown column')) {
                 ensureReservationPackagesTable($pdo);
                 $statement = $pdo->prepare(
-                    'INSERT INTO reservation_packages (reservation_id, package_code, quantity, unit_price, unit_cost, items_json)
-                     VALUES (:reservation_id, :package_code, :quantity, :unit_price, :unit_cost, :items_json)'
+                    'INSERT INTO reservation_packages (reservation_id, package_id, package_code, package_name, name, quantity, unit_price, unit_cost, items_json, package_metadata)
+                     VALUES (:reservation_id, :package_id, :package_code, :package_name, :name, :quantity, :unit_price, :unit_cost, :items_json, :package_metadata)'
                 );
                 $statement->execute($params);
                 continue;
