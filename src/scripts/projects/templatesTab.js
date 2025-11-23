@@ -518,8 +518,8 @@ function ensureLogoControls(type = 'expenses') {
   // Font size controls
   const fontDown = document.getElementById('tpl-font-down');
   const fontUp = document.getElementById('tpl-font-up');
-  fontDown?.addEventListener('click', (e) => { try { adjustSelectionFont(e && e.shiftKey ? -12 : -6); } catch (_) {} });
-  fontUp?.addEventListener('click', (e) => { try { adjustSelectionFont(e && e.shiftKey ? +12 : +6); } catch (_) {} });
+  fontDown?.addEventListener('click', (e) => { try { adjustSelectionFont(-1, { times: e && e.shiftKey ? 2 : 1 }); } catch (_) {} });
+  fontUp?.addEventListener('click', (e) => { try { adjustSelectionFont(+1, { times: e && e.shiftKey ? 2 : 1 }); } catch (_) {} });
   const fontBold = document.getElementById('tpl-font-bold');
   fontBold?.addEventListener('click', () => { try { toggleSelectionBold(); } catch (_) {} });
 
@@ -1016,11 +1016,13 @@ function markTemplatesEditingActivity() {
   }, 1200);
 }
 
-// Adjust font size for current selection or current editable cell
-function adjustSelectionFont(deltaPx = 0) {
+// Adjust font size for current selection or current editable cell (doubling/halving per press, capped at 5x/min)
+function adjustSelectionFont(direction = 0, { times = 1 } = {}) {
   try {
     const root = document.getElementById('templates-a4-root');
-    if (!root || !Number.isFinite(deltaPx) || deltaPx === 0) return;
+    const dir = direction > 0 ? 1 : direction < 0 ? -1 : 0;
+    times = Math.max(1, Math.min(5, Number(times) || 1));
+    if (!root || dir === 0) return;
     const sel = window.getSelection();
 
     // Find nearest editable container for anchor/caret
@@ -1039,40 +1041,49 @@ function adjustSelectionFont(deltaPx = 0) {
     const target = nearestEditable();
     if (!target) return;
 
-    // Current base size from target
-    const base = Number.parseFloat(getComputedStyle(target).fontSize || '11') || 11;
-    const clamp = (v) => Math.max(7, Math.min(72, v));
-    const next = clamp(base + deltaPx);
+    // Current base size from target (persist baseline per editable so we can cap at 5x / 1/5x)
+    const computed = Number.parseFloat(getComputedStyle(target).fontSize || '11') || 11;
+    const base = (() => {
+      const stored = Number.parseFloat(target.dataset.fontBase || '0');
+      return Number.isFinite(stored) && stored > 0 ? stored : computed;
+    })();
+    try { target.dataset.fontBase = String(base); } catch (_) {}
+    const capMax = base * 5;
+    const capMin = base / 5;
+    const stepOnce = () => {
+      const focusNode = (sel && sel.rangeCount && sel.getRangeAt(0)) ? sel.getRangeAt(0).commonAncestorContainer : target;
+      const sample = (focusNode instanceof Element) ? focusNode : focusNode?.parentElement || target;
+      const current = Number.parseFloat(getComputedStyle(sample).fontSize || String(base)) || base;
+      const next = dir > 0 ? Math.min(capMax, current * 2) : Math.max(capMin, current * 0.5);
+      const applyToEditable = (el) => { try { el.style.fontSize = next + 'px'; } catch (_) {} };
 
-    const applyToEditable = (el) => {
-      try { el.style.fontSize = next + 'px'; } catch (_) {}
-    };
-
-    if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
-      const range = sel.getRangeAt(0);
-      // Ensure selection is inside the same editable container
-      if (target.contains(range.commonAncestorContainer)) {
-        try {
-          const span = document.createElement('span');
-          span.style.fontSize = next + 'px';
-          span.appendChild(range.extractContents());
-          range.insertNode(span);
-          // Preserve visible selection on the updated text
-          sel.removeAllRanges();
-          const nr = document.createRange();
-          nr.selectNodeContents(span);
-          sel.addRange(nr);
-        } catch (_) {
-          // Fallback to whole cell
+      if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
+        const range = sel.getRangeAt(0);
+        // Ensure selection is inside the same editable container
+        if (target.contains(range.commonAncestorContainer)) {
+          try {
+            const span = document.createElement('span');
+            span.style.fontSize = next + 'px';
+            span.appendChild(range.extractContents());
+            range.insertNode(span);
+            // Preserve visible selection on the updated text
+            sel.removeAllRanges();
+            const nr = document.createRange();
+            nr.selectNodeContents(span);
+            sel.addRange(nr);
+          } catch (_) {
+            applyToEditable(target);
+          }
+        } else {
           applyToEditable(target);
         }
       } else {
+        // No selection: apply to entire editable cell
         applyToEditable(target);
       }
-    } else {
-      // No selection: apply to entire editable cell
-      applyToEditable(target);
-    }
+    };
+
+    for (let i = 0; i < times; i += 1) stepOnce();
 
     try { pushHistoryDebounced(); saveAutosaveDebounced(); } catch (_) {}
     markTemplatesEditingActivity();
