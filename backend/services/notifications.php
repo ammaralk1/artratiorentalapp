@@ -356,9 +356,23 @@ function buildReservationDetailsBlock(array $reservation): string
 
     $packages = [];
     foreach ((array)($reservation['packages'] ?? []) as $pkg) {
+        $metaName = '';
+        try {
+            $metaRaw = $pkg['package_metadata'] ?? null;
+            if (is_string($metaRaw) && trim($metaRaw) !== '') {
+                $decoded = json_decode($metaRaw, true);
+                if (is_array($decoded)) {
+                    $metaName = trim((string)($decoded['name'] ?? $decoded['title'] ?? ''));
+                }
+            } elseif (is_array($metaRaw)) {
+                $metaName = trim((string)($metaRaw['name'] ?? $metaRaw['title'] ?? ''));
+            }
+        } catch (Throwable $_) {}
+
         $name = trim((string)(
             $pkg['package_name']
             ?? $pkg['name']
+            ?? $metaName
             ?? $pkg['package_code']
             ?? ''
         ));
