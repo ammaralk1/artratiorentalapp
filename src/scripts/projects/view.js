@@ -6,6 +6,7 @@ import { state, dom } from './state.js';
 import { resolveReservationProjectState, buildReservationDisplayGroups } from '../reservationsShared.js';
 import {
   MAX_FOCUS_CARDS,
+  FOCUS_CARDS_PER_PAGE,
   ONE_HOUR_IN_MS,
   PROJECT_TAX_RATE,
   statusBadgeClass,
@@ -24,6 +25,16 @@ import {
   getProjectStartTimestamp,
   truncateText
 } from './helpers.js';
+
+function ensureFocusPagination() {
+  if (!state.focusPagination) {
+    state.focusPagination = { page: 1, pageSize: FOCUS_CARDS_PER_PAGE, totalPages: 1 };
+  }
+  if (!state.focusPagination.pageSize) {
+    state.focusPagination.pageSize = FOCUS_CARDS_PER_PAGE;
+  }
+  return state.focusPagination;
+}
 
 function getProjectTypeLabel(type) {
   if (!type) return t('projects.form.types.unknown', 'نوع غير محدد');
@@ -176,6 +187,8 @@ export function renderProjects() {
 
   state.visibleProjects = sortedProjects;
   setTableCount(sortedProjects.length);
+  // Reset focus cards pagination when the visible list changes
+  ensureFocusPagination().page = 1;
 
   dom.projectsTableBody.innerHTML = sortedProjects
     .map((project) => renderProjectRow(project))
@@ -412,20 +425,59 @@ export function renderFocusCards() {
   if (!dom.focusCards) return;
 
   const sourceProjects = state.visibleProjects.length ? state.visibleProjects : getFilteredProjects();
-  const cards = buildFocusCards(sourceProjects, { allowFallback: !hasProjectFilters() });
-  if (!cards.length) {
+  const allCards = buildFocusCards(sourceProjects, { allowFallback: !hasProjectFilters(), limit: Infinity });
+  const pagination = ensureFocusPagination();
+  const pageSize = Number.isFinite(pagination.pageSize) ? pagination.pageSize : FOCUS_CARDS_PER_PAGE;
+  const totalPages = Math.max(1, Math.ceil(allCards.length / pageSize));
+  const currentPage = Math.min(Math.max(1, pagination.page || 1), totalPages);
+  pagination.page = currentPage;
+  pagination.totalPages = totalPages;
+
+  const pageCards = allCards.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  if (!pageCards.length) {
     const emptyMessage = escapeHtml(t('projects.focus.empty', dom.focusCards.dataset.empty || 'لا توجد مشاريع لليوم أو هذا الأسبوع.'));
     dom.focusCards.innerHTML = `<div class="project-card-grid__item project-card-grid__item--full"><div class="alert alert-info mb-0 text-center">${emptyMessage}</div></div>`;
+    renderFocusPagination(1, 1);
     return;
   }
 
-  dom.focusCards.innerHTML = cards.join('');
+  dom.focusCards.innerHTML = pageCards.join('');
+  renderFocusPagination(totalPages, currentPage);
 
   // Sections are always visible; no toggle required
 }
 
+function renderFocusPagination(totalPages, currentPage) {
+  if (!dom.focusPagination) return;
+  if (totalPages <= 1) {
+    dom.focusPagination.innerHTML = '';
+    return;
+  }
+
+  const buttonsHtml = Array.from({ length: totalPages }, (_, idx) => {
+    const page = idx + 1;
+    const active = page === currentPage;
+    const cls = active ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-outline-primary';
+    return `<button type="button" class="${cls}" data-page="${page}">${page}</button>`;
+  }).join('');
+
+  dom.focusPagination.innerHTML = `<div class="btn-group" role="group" aria-label="Project cards pagination">${buttonsHtml}</div>`;
+
+  dom.focusPagination.querySelectorAll('button[data-page]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const page = Number.parseInt(btn.dataset.page, 10);
+      if (!Number.isInteger(page)) return;
+      const pagination = ensureFocusPagination();
+      pagination.page = page;
+      renderFocusCards();
+    });
+  });
+}
+
 function buildFocusCards(projectsPool = [], options = {}) {
   const allowFallback = options.allowFallback !== false;
+  const limit = Number.isFinite(options.limit) ? options.limit : MAX_FOCUS_CARDS;
   const initial = Array.isArray(projectsPool) ? projectsPool : [];
   const source = initial.length ? initial : (allowFallback ? state.projects : []);
   if (!Array.isArray(source) || !source.length) return [];
@@ -437,7 +489,8 @@ function buildFocusCards(projectsPool = [], options = {}) {
   const seen = new Set();
 
   const addCard = (project, category) => {
-    if (!project || seen.has(project.id) || cards.length >= MAX_FOCUS_CARDS) return;
+    if (!project || seen.has(project.id)) return;
+    if (Number.isFinite(limit) && cards.length >= limit) return;
     seen.add(project.id);
     cards.push(renderFocusCard(project, category));
   };
@@ -450,7 +503,7 @@ function buildFocusCards(projectsPool = [], options = {}) {
     .sort((a, b) => getProjectStartTimestamp(a) - getProjectStartTimestamp(b))
     .forEach((project) => addCard(project, 'thisWeek'));
 
-  if (cards.length < MAX_FOCUS_CARDS) {
+  if (cards.length < limit) {
     const now = Date.now();
     const upcomingProjects = [...source]
       .filter((project) => !seen.has(project.id))
@@ -464,7 +517,7 @@ function buildFocusCards(projectsPool = [], options = {}) {
   }
 
   // Fallback: include undated or invalid-date projects as most recent
-  if (cards.length < MAX_FOCUS_CARDS) {
+  if (cards.length < limit) {
     const undated = [...source]
       .filter((project) => !seen.has(project.id))
       .filter((project) => !Number.isFinite(getProjectStartTimestamp(project)))
@@ -476,11 +529,11 @@ function buildFocusCards(projectsPool = [], options = {}) {
   if (cards.length === 0) {
     const latest = [...source]
       .sort((a, b) => getProjectCreatedTimestamp(b) - getProjectCreatedTimestamp(a))
-      .slice(0, MAX_FOCUS_CARDS);
+      .slice(0, Number.isFinite(limit) ? limit : undefined);
     latest.forEach((project) => addCard(project, 'recent'));
   }
 
-  if (cards.length < MAX_FOCUS_CARDS) {
+  if (cards.length < limit) {
     const fallbackProjects = [...source]
       .filter((project) => !seen.has(project.id))
       .sort((a, b) => getProjectCreatedTimestamp(b) - getProjectCreatedTimestamp(a));

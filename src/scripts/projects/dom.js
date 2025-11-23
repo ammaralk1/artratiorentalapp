@@ -72,6 +72,7 @@ export function cacheDom() {
   dom.projectSubTabPanes = Array.from(document.querySelectorAll('[data-project-subtab]'));
   dom.timeline = document.getElementById('project-timeline');
   dom.focusCards = document.getElementById('project-focus-cards');
+  dom.focusPagination = document.getElementById('project-focus-pagination');
 
   if (dom.detailsModalEl && !dom.detailsModalEl.dataset.projectListenerAttached) {
     dom.detailsModalEl.addEventListener('hidden.bs.modal', () => {

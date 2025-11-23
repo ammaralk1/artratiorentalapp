@@ -23,7 +23,12 @@ export const state = {
   editingProjectId: null,
   pendingProjectDetailId: null,
   pendingProjectEditId: null,
-  pendingLinkedToast: false
+  pendingLinkedToast: false,
+  focusPagination: {
+    page: 1,
+    pageSize: 9,
+    totalPages: 1,
+  }
 };
 
 export const dom = {};
