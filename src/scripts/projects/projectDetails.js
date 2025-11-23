@@ -179,7 +179,7 @@ export function openProjectDetails(projectId) {
   const pendingChipText = t('projects.focus.pending', '⏳ غير مؤكد', 'Pending confirmation');
   const confirmedChipHtml = project.confirmed === true || project.confirmed === 'true'
     ? `<span class="reservation-chip status-confirmed">${escapeHtml(confirmedChipText)}</span>`
-    : `<span class="reservation-chip status-info">${escapeHtml(pendingChipText)}</span>`;
+    : `<span class="reservation-chip status-pending">${escapeHtml(pendingChipText)}</span>`;
 
   // Build detailed financial summary when there are linked reservations
   let summaryDetails = [];
