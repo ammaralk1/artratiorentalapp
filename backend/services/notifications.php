@@ -356,7 +356,15 @@ function buildReservationDetailsBlock(array $reservation): string
 
     $packages = [];
     foreach ((array)($reservation['packages'] ?? []) as $pkg) {
-        $name = trim((string)($pkg['name'] ?? $pkg['package_name'] ?? ''));
+        $name = trim((string)(
+            $pkg['package_name']
+            ?? $pkg['name']
+            ?? $pkg['package_code']
+            ?? ''
+        ));
+        if ($name === '' && isset($pkg['package_id'])) {
+            $name = 'حزمة #' . (int)$pkg['package_id'];
+        }
         if ($name === '') { $name = 'حزمة'; }
         $qty = isset($pkg['quantity']) ? (int)$pkg['quantity'] : 0;
         $line = '- ' . $name . ($qty > 0 ? ' ×' . $qty : '');
