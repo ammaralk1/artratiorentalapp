@@ -516,8 +516,11 @@ function renderProjectsPagination(totalPages, currentPage) {
 
   const visiblePages = [];
   const windowSize = 5;
-  const start = Math.max(1, clampedCurrent - 2);
-  const end = Math.min(clampedTotal, start + windowSize - 1);
+  let start = Math.max(1, clampedCurrent - 2);
+  let end = Math.min(clampedTotal, start + windowSize - 1);
+  if ((end - start + 1) < windowSize && start > 1) {
+    start = Math.max(1, end - windowSize + 1);
+  }
   for (let p = start; p <= end; p += 1) {
     visiblePages.push(p);
   }
@@ -537,7 +540,7 @@ function renderProjectsPagination(totalPages, currentPage) {
     container.querySelectorAll('button[data-page]').forEach((btn) => {
       btn.addEventListener('click', () => {
         const page = Number.parseInt(btn.dataset.page || '0', 10);
-        if (!Number.isInteger(page) || page < 1 || page > clampedTotal) return;
+        if (!Number.isInteger(page) || page < 1 || page > clampedTotal || page === clampedCurrent) return;
         const pagination = ensureFocusPagination();
         pagination.page = page;
         renderProjects();
