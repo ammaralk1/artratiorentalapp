@@ -1055,14 +1055,12 @@ function adjustSelectionFont(deltaPx = 0) {
         try {
           const span = document.createElement('span');
           span.style.fontSize = next + 'px';
-          const frag = range.extractContents();
-          span.appendChild(frag);
+          span.appendChild(range.extractContents());
           range.insertNode(span);
-          // Move caret after the inserted span
+          // Preserve visible selection on the updated text
           sel.removeAllRanges();
           const nr = document.createRange();
-          nr.setStartAfter(span);
-          nr.setEndAfter(span);
+          nr.selectNodeContents(span);
           sel.addRange(nr);
         } catch (_) {
           // Fallback to whole cell
