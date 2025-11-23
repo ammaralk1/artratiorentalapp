@@ -477,7 +477,8 @@ function renderFocusPagination(totalPages, currentPage) {
 
 function buildFocusCards(projectsPool = [], options = {}) {
   const allowFallback = options.allowFallback !== false;
-  const limit = Number.isFinite(options.limit) ? options.limit : MAX_FOCUS_CARDS;
+  const limitRaw = options.limit;
+  const limit = limitRaw === undefined ? MAX_FOCUS_CARDS : limitRaw;
   const initial = Array.isArray(projectsPool) ? projectsPool : [];
   const source = initial.length ? initial : (allowFallback ? state.projects : []);
   if (!Array.isArray(source) || !source.length) return [];
