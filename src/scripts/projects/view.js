@@ -177,17 +177,9 @@ export function renderProjects() {
   // Sort by creation time (newest first). Fallback to start date when createdAt missing.
   const sortedProjects = [...filtered]
     .sort((a, b) => {
-      const aCreated = getProjectCreatedTimestamp(a);
-      const bCreated = getProjectCreatedTimestamp(b);
-      if (Number.isFinite(aCreated) && Number.isFinite(bCreated) && aCreated !== bCreated) {
-        return bCreated - aCreated;
-      }
-      const aStart = getProjectStartTimestamp(a);
-      const bStart = getProjectStartTimestamp(b);
-      if (Number.isFinite(aStart) && Number.isFinite(bStart)) {
-        return bStart - aStart;
-      }
-      return 0;
+      const aOrder = resolveProjectOrderValue(a);
+      const bOrder = resolveProjectOrderValue(b);
+      return bOrder - aOrder;
     });
 
   state.visibleProjects = sortedProjects;
@@ -207,6 +199,19 @@ export function renderProjects() {
   renderTimeline(sortedProjects);
   renderFocusCardsInternal(currentPageProjects);
   renderProjectsPagination(totalPages, pagination.page);
+}
+
+function resolveProjectOrderValue(project) {
+  const created = getProjectCreatedTimestamp(project);
+  if (Number.isFinite(created)) return created;
+
+  const idNum = Number(project?.id);
+  if (Number.isFinite(idNum)) return idNum;
+
+  const start = getProjectStartTimestamp(project);
+  if (Number.isFinite(start)) return start;
+
+  return Number.NEGATIVE_INFINITY;
 }
 
 function scheduleChunk(callback) {
