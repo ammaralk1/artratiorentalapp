@@ -26,7 +26,7 @@ import {
   truncateText
 } from './helpers.js';
 
-const PROJECTS_TABLE_CHUNK_SIZE = 60;
+const PROJECTS_TABLE_CHUNK_SIZE = 30;
 const TIMELINE_RENDER_LIMIT = 200;
 
 let projectsRenderToken = 0;
@@ -192,12 +192,21 @@ export function renderProjects() {
 
   state.visibleProjects = sortedProjects;
   setTableCount(sortedProjects.length);
-  // Reset focus cards pagination when the visible list changes
-  ensureFocusPagination().page = 1;
 
-  renderProjectsTableChunked(sortedProjects);
+  const pagination = ensureFocusPagination();
+  const pageSize = pagination.pageSize || FOCUS_CARDS_PER_PAGE;
+  const totalPages = Math.max(1, Math.ceil(sortedProjects.length / pageSize));
+  pagination.totalPages = totalPages;
+  pagination.page = Math.min(Math.max(1, pagination.page || 1), totalPages);
+
+  const start = (pagination.page - 1) * pageSize;
+  const end = start + pageSize;
+  const currentPageProjects = sortedProjects.slice(start, end);
+
+  renderProjectsTableChunked(currentPageProjects);
   renderTimeline(sortedProjects);
-  renderFocusCardsInternal(sortedProjects);
+  renderFocusCardsInternal(currentPageProjects);
+  renderProjectsPagination(totalPages, pagination.page);
 }
 
 function scheduleChunk(callback) {
@@ -482,39 +491,51 @@ function renderFocusCardsInternal(projectsOverride = null) {
   if (!pageCards.length) {
     const emptyMessage = escapeHtml(t('projects.focus.empty', dom.focusCards.dataset.empty || 'لا توجد مشاريع لليوم أو هذا الأسبوع.'));
     dom.focusCards.innerHTML = `<div class="project-card-grid__item project-card-grid__item--full"><div class="alert alert-info mb-0 text-center">${emptyMessage}</div></div>`;
-    renderFocusPagination(1, 1);
+    renderProjectsPagination(1, 1);
     return;
   }
 
   dom.focusCards.innerHTML = pageCards.join('');
-  renderFocusPagination(totalPages, currentPage);
+  renderProjectsPagination(totalPages, currentPage);
 
   // Sections are always visible; no toggle required
 }
 
-function renderFocusPagination(totalPages, currentPage) {
-  if (!dom.focusPagination) return;
-  if (totalPages <= 1) {
-    dom.focusPagination.innerHTML = '';
-    return;
+function renderProjectsPagination(totalPages, currentPage) {
+  const containers = [dom.focusPagination, dom.tablePagination].filter(Boolean);
+  if (!containers.length) return;
+
+  const clampedTotal = Math.max(1, totalPages);
+  const clampedCurrent = Math.min(Math.max(1, currentPage || 1), clampedTotal);
+
+  const visiblePages = [];
+  const windowSize = 5;
+  const start = Math.max(1, clampedCurrent - 2);
+  const end = Math.min(clampedTotal, start + windowSize - 1);
+  for (let p = start; p <= end; p += 1) {
+    visiblePages.push(p);
   }
 
-  const buttonsHtml = Array.from({ length: totalPages }, (_, idx) => {
-    const page = idx + 1;
-    const active = page === currentPage;
-    const cls = active ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-outline-primary';
-    return `<button type="button" class="${cls}" data-page="${page}">${page}</button>`;
-  }).join('');
+  const buttonsHtml = `
+    <button type="button" class="btn btn-sm btn-outline-primary" data-page="${clampedCurrent - 1}" ${clampedCurrent === 1 ? 'disabled' : ''} aria-label="${escapeHtml(t('projects.pagination.prev', 'السابق'))}">‹</button>
+    ${visiblePages.map((page) => {
+      const active = page === clampedCurrent;
+      const cls = active ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-outline-primary';
+      return `<button type="button" class="${cls}" data-page="${page}">${page}</button>`;
+    }).join('')}
+    <button type="button" class="btn btn-sm btn-outline-primary" data-page="${clampedCurrent + 1}" ${clampedCurrent === clampedTotal ? 'disabled' : ''} aria-label="${escapeHtml(t('projects.pagination.next', 'التالي'))}">›</button>
+  `;
 
-  dom.focusPagination.innerHTML = `<div class="btn-group" role="group" aria-label="Project cards pagination">${buttonsHtml}</div>`;
-
-  dom.focusPagination.querySelectorAll('button[data-page]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const page = Number.parseInt(btn.dataset.page, 10);
-      if (!Number.isInteger(page)) return;
-      const pagination = ensureFocusPagination();
-      pagination.page = page;
-      renderFocusCards();
+  containers.forEach((container) => {
+    container.innerHTML = `<div class="btn-group" role="group" aria-label="Projects pagination">${buttonsHtml}</div>`;
+    container.querySelectorAll('button[data-page]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const page = Number.parseInt(btn.dataset.page || '0', 10);
+        if (!Number.isInteger(page) || page < 1 || page > clampedTotal) return;
+        const pagination = ensureFocusPagination();
+        pagination.page = page;
+        renderProjects();
+      });
     });
   });
 }

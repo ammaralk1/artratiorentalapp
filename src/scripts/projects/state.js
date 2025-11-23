@@ -26,7 +26,7 @@ export const state = {
   pendingLinkedToast: false,
   focusPagination: {
     page: 1,
-    pageSize: 9,
+    pageSize: 6,
     totalPages: 1,
   }
 };
