@@ -306,6 +306,28 @@ function appendFooterHtml(string $html): string
     return $html . '<p>لمزيد من المعلومات فضلا ادخل على بطاقة الحجز فريق Art Ratio</p>';
 }
 
+function wrapRtlPlainText(string $text): string
+{
+    if ($text === '') { return $text; }
+    $rle = "\u{202B}";
+    $pdf = "\u{202C}";
+    return $rle . $text . $pdf;
+}
+
+function renderRtlHtmlFromText(string $text): string
+{
+    if ($text === '') { return ''; }
+    return '<div dir="rtl" style="direction:rtl;text-align:right">' .
+        nl2br(htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')) .
+        '</div>';
+}
+
+function wrapHtmlRtl(string $html): string
+{
+    if ($html === '') { return ''; }
+    return '<div dir="rtl" style="direction:rtl;text-align:right">' . $html . '</div>';
+}
+
 function resolvePackageNameForNotification(array $pkg, ?PDO $pdo = null): string
 {
     $metaName = '';
@@ -618,9 +640,9 @@ function sendReservationNotificationsToTechnicians(PDO $pdo, array $reservation,
         'شكراً.';
     $daysLine = $summary['days'] ? "عدد الأيام: {$summary['days']}\n" : '';
     $textUnified = appendFooterText($textBase . $daysLine . $detailsBlock);
-    $textEmail = $textUnified;
-    $textTelegram = $textUnified;
-    $html = '<p>' . nl2br(htmlspecialchars($textUnified, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')) . '</p>';
+    $textEmail = wrapRtlPlainText($textUnified);
+    $textTelegram = $textEmail;
+    $html = renderRtlHtmlFromText($textUnified);
 
     $techs = (array)($reservation['technicians'] ?? []);
     foreach ($techs as $t) {
@@ -665,9 +687,9 @@ function sendReservationNotificationsToManagers(PDO $pdo, array $reservation, st
     $text = "حجز جديد\nرقم الحجز: {$summary['display_id']}\nالوقت: {$summary['when']}\n" .
         ($summary['customer'] !== '' ? "العميل: {$summary['customer']}\n" : '');
     $textUnified = appendFooterText($text . $daysLine . $detailsBlock);
-    $textEmail = $textUnified;
-    $textTelegram = $textUnified;
-    $html = '<p>' . nl2br(htmlspecialchars($textUnified, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')) . '</p>';
+    $textEmail = wrapRtlPlainText($textUnified);
+    $textTelegram = $textEmail;
+    $html = renderRtlHtmlFromText($textUnified);
 
     $emailRecipients = $settings['admin_only']
         ? $settings['admin_emails']
@@ -757,12 +779,14 @@ function notifyProjectCreated(PDO $pdo, array $project): void
         ($code !== '' ? "كود: {$code}\n" : '') .
         ($title !== '' ? "العنوان: {$title}\n" : '') .
         ($when !== '' ? "الوقت: {$when}\n" : '');
+    $textRtl = wrapRtlPlainText($text);
     $htmlTech = '<p>مرحباً،</p><p>تم تعيينك على مشروع جديد.</p>' .
         '<ul>' .
         ($title !== '' ? '<li>العنوان: ' . htmlspecialchars($title) . '</li>' : '') .
         ($code !== '' ? '<li>كود المشروع: ' . htmlspecialchars($code) . '</li>' : '') .
         ($when !== '' ? '<li>الوقت: ' . htmlspecialchars($when) . '</li>' : '') .
         '</ul>';
+    $htmlTech = wrapHtmlRtl($htmlTech);
 
     // notify technicians
     foreach ((array)($project['technicians'] ?? []) as $t) {
@@ -774,7 +798,7 @@ function notifyProjectCreated(PDO $pdo, array $project): void
         if ($channels['email'] && !empty($contacts['email'])) {
             $rcpt = (string) $contacts['email'];
             if (!hasNotificationBeenSent($pdo, $eventType, 'project', $entityId, $rcpt, 'email')) {
-                $ok = sendEmail($rcpt, (string)$contacts['name'], $subjectTech, $htmlTech, $text);
+                $ok = sendEmail($rcpt, (string)$contacts['name'], $subjectTech, $htmlTech, $textRtl);
                 recordNotificationEvent($pdo, $eventType, 'project', $entityId, 'technician', $rcpt, 'email', $ok ? 'sent' : 'failed');
             }
         }
@@ -782,7 +806,7 @@ function notifyProjectCreated(PDO $pdo, array $project): void
         if ($channels['telegram'] && !empty($contacts['telegram_chat_id'])) {
             $rcpt = (string) $contacts['telegram_chat_id'];
             if (!hasNotificationBeenSent($pdo, $eventType, 'project', $entityId, $rcpt, 'telegram')) {
-                $ok = sendTelegramText($rcpt, $text);
+                $ok = sendTelegramText($rcpt, $textRtl);
                 recordNotificationEvent($pdo, $eventType, 'project', $entityId, 'technician', $rcpt, 'telegram', $ok ? 'sent' : 'failed');
             }
         }
@@ -798,6 +822,7 @@ function notifyProjectCreated(PDO $pdo, array $project): void
         ($code !== '' ? '<li>كود المشروع: ' . htmlspecialchars($code) . '</li>' : '') .
         ($when !== '' ? '<li>الوقت: ' . htmlspecialchars($when) . '</li>' : '') .
         '</ul>';
+    $htmlMgr = wrapHtmlRtl($htmlMgr);
 
     $emailRecipients = $settings['admin_only']
         ? $settings['admin_emails']
@@ -806,7 +831,7 @@ function notifyProjectCreated(PDO $pdo, array $project): void
         if ($channels['email']) {
             $rcpt = (string) $email;
             if (!hasNotificationBeenSent($pdo, $eventType, 'project', $entityId, $rcpt, 'email')) {
-                $ok = sendEmail($rcpt, 'Manager', $subjectMgr, $htmlMgr, $text);
+                $ok = sendEmail($rcpt, 'Manager', $subjectMgr, $htmlMgr, $textRtl);
                 recordNotificationEvent($pdo, $eventType, 'project', $entityId, 'manager', $rcpt, 'email', $ok ? 'sent' : 'failed');
             }
         }
@@ -819,7 +844,7 @@ function notifyProjectCreated(PDO $pdo, array $project): void
         if ($channels['telegram']) {
             $rcpt = (string) $chat;
             if (!hasNotificationBeenSent($pdo, $eventType, 'project', $entityId, $rcpt, 'telegram')) {
-                $ok = sendTelegramText($rcpt, $text);
+                $ok = sendTelegramText($rcpt, $textRtl);
                 recordNotificationEvent($pdo, $eventType, 'project', $entityId, 'manager', $rcpt, 'telegram', $ok ? 'sent' : 'failed');
             }
         }
@@ -842,9 +867,9 @@ function notifyReservationTechnicianAssigned(PDO $pdo, array $reservation, array
     $daysLine = $summary['days'] ? "عدد الأيام: {$summary['days']}\n" : '';
     $text = "تم تعيينك على حجز\nرقم الحجز: {$summary['display_id']}\nالوقت: {$summary['when']}\n";
     $textUnified = appendFooterText($text . $daysLine . $detailsBlock);
-    $textEmail = $textUnified;
-    $textTelegram = $textUnified;
-    $html = '<p>' . nl2br(htmlspecialchars($textUnified, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')) . '</p>';
+    $textEmail = wrapRtlPlainText($textUnified);
+    $textTelegram = $textEmail;
+    $html = renderRtlHtmlFromText($textUnified);
 
     foreach ($technicianIds as $techId) {
         $contacts = fetchTechnicianContacts($pdo, (int)$techId);
@@ -871,14 +896,14 @@ function notifyReservationTechnicianAssigned(PDO $pdo, array $reservation, array
         }
         $namesStr = $names ? implode('، ', $names) : 'فني(ون)';
         $adminSubject = 'تم تعيين ' . $namesStr . ' على الحجز: ' . $summary['display_id'];
-        $adminHtml = '<p>' . nl2br(htmlspecialchars($textUnified, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')) . '</p>';
+        $adminHtml = renderRtlHtmlFromText($textUnified);
         $adminText = 'تعيين فنيين: ' . $namesStr . "\n" .
             "رقم الحجز: {$summary['display_id']}\n" .
             "الوقت: {$summary['when']}\n" .
             ($summary['customer'] !== '' ? "العميل: {$summary['customer']}\n" : '') .
             ($summary['project_code'] !== '' ? "المشروع: {$summary['project_code']}\n" : '');
         $adminText .= $detailsBlock;
-        $adminText = appendFooterText($adminText);
+        $adminText = wrapRtlPlainText(appendFooterText($adminText));
 
         if ($channels['email']) {
             foreach ($settings['admin_emails'] as $email) {
@@ -912,23 +937,25 @@ function notifyProjectTechnicianAssigned(PDO $pdo, array $project, array $techni
         ($code !== '' ? "كود: {$code}\n" : '') .
         ($title !== '' ? "العنوان: {$title}\n" : '') .
         ($when !== '' ? "الوقت: {$when}\n" : '');
+    $textRtl = wrapRtlPlainText($text);
     $html = '<p>تم تعيينك على مشروع جديد.</p><ul>' .
         ($title !== '' ? '<li>العنوان: ' . htmlspecialchars($title) . '</li>' : '') .
         ($code !== '' ? '<li>كود المشروع: ' . htmlspecialchars($code) . '</li>' : '') .
         ($when !== '' ? '<li>الوقت: ' . htmlspecialchars($when) . '</li>' : '') .
         '</ul>';
+    $html = wrapHtmlRtl($html);
 
     foreach ($technicianIds as $techId) {
         $contacts = fetchTechnicianContacts($pdo, (int)$techId);
         if (!$contacts) { continue; }
         if ($channels['email'] && !empty($contacts['email'])) {
-            $ok = sendEmail((string)$contacts['email'], (string)$contacts['name'], $subject, $html, $text);
+            $ok = sendEmail((string)$contacts['email'], (string)$contacts['name'], $subject, $html, $textRtl);
             recordNotificationEvent($pdo, $eventType, 'project', $entityId, 'technician', (string)$contacts['email'], 'email', $ok ? 'sent' : 'failed');
         }
         if ($channels['telegram']) {
             $cid = (string) (getTelegramChatIdForTechnician($pdo, $contacts) ?: '');
             if ($cid !== '') {
-                $ok = sendTelegramText($cid, $text);
+                $ok = sendTelegramText($cid, $textRtl);
                 recordNotificationEvent($pdo, $eventType, 'project', $entityId, 'technician', $cid, 'telegram', $ok ? 'sent' : 'failed');
             }
         }
@@ -948,10 +975,12 @@ function notifyProjectTechnicianAssigned(PDO $pdo, array $project, array $techni
             ($title !== '' ? '<li>العنوان: ' . htmlspecialchars($title) . '</li>' : '') .
             ($when !== '' ? '<li>الوقت: ' . htmlspecialchars($when) . '</li>' : '') .
             '</ul>';
+        $adminHtml = wrapHtmlRtl($adminHtml);
         $adminText = 'تعيين فنيين: ' . $namesStr . "\n" .
             ($code !== '' ? "كود المشروع: {$code}\n" : '') .
             ($title !== '' ? "العنوان: {$title}\n" : '') .
             ($when !== '' ? "الوقت: {$when}\n" : '');
+        $adminText = wrapRtlPlainText($adminText);
 
         if ($channels['email']) {
             foreach ($settings['admin_emails'] as $email) {
@@ -985,9 +1014,9 @@ function notifyReservationStatusChanged(PDO $pdo, array $reservation, string $ol
         "رقم الحجز: {$summary['display_id']}\n" .
         "من {$oldStatus} إلى {$newStatus}\nالوقت: {$summary['when']}";
     $textUnified = appendFooterText($text . $daysLine . $detailsBlock);
-    $textEmail = $textUnified;
-    $textTelegram = $textUnified;
-    $html = '<p>' . nl2br(htmlspecialchars($textUnified, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')) . '</p>';
+    $textEmail = wrapRtlPlainText($textUnified);
+    $textTelegram = $textEmail;
+    $html = renderRtlHtmlFromText($textUnified);
 
     // notify technicians currently on reservation
     foreach ((array)($reservation['technicians'] ?? []) as $t) {
@@ -1011,7 +1040,7 @@ function notifyReservationStatusChanged(PDO $pdo, array $reservation, string $ol
     // Admin notification with details (distinct from technician message)
     if (!empty($settings['admin_receive_all'])) {
         $adminSubject = 'تغيير حالة الحجز: ' . $summary['display_id'];
-        $adminHtml = '<p>' . nl2br(htmlspecialchars($textUnified, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')) . '</p>';
+        $adminHtml = renderRtlHtmlFromText($textUnified);
         $adminText = 'تغيير حالة الحجز\n' .
             "رقم الحجز: {$summary['display_id']}\n" .
             "من {$oldStatus} إلى {$newStatus}\n" .
@@ -1020,7 +1049,7 @@ function notifyReservationStatusChanged(PDO $pdo, array $reservation, string $ol
             ($summary['customer'] !== '' ? "العميل: {$summary['customer']}\n" : '') .
             ($summary['project_code'] !== '' ? "المشروع: {$summary['project_code']}\n" : '');
         $adminText .= $detailsBlock;
-        $adminText = appendFooterText($adminText);
+        $adminText = wrapRtlPlainText(appendFooterText($adminText));
 
         if ($channels['email']) {
             foreach ($settings['admin_emails'] as $email) {
