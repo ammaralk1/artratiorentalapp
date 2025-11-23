@@ -904,9 +904,9 @@ html.dark-mode .projects-hero-text {
 }
 
 .timeline-status-badge--cancelled {
-  background: rgba(0, 0, 0, 0.85);
+  background: #0a0a0a;
   color: #f8fafc;
-  border: 1px solid rgba(15, 23, 42, 0.6);
+  border: 1px solid #000;
 }
 
 /* Ensure modal chips inherit the exact timeline colors (override any cascade) */
@@ -932,8 +932,8 @@ html.dark-mode .projects-hero-text {
 }
 .project-details-chips .timeline-status-badge--cancelled {
   color: #f8fafc !important;
-  background: rgba(0, 0, 0, 0.9) !important;
-  border: 1px solid rgba(15, 23, 42, 0.6);
+  background: #0a0a0a !important;
+  border: 1px solid #000;
 }
 
 /* Project type chips with per-type colors */
@@ -996,34 +996,42 @@ html.dark-mode .projects-hero-text {
 }
 .project-focus-card .timeline-status-badge--cancelled {
   color: #f8fafc;
-  background: rgba(0, 0, 0, 0.9);
-  border: 1px solid rgba(15, 23, 42, 0.6);
+  background: #0a0a0a;
+  border: 1px solid #000;
 }
 
 /* Cancelled project card appearance */
 .project-focus-card--cancelled {
-  background: #0b0f1a;
-  border-color: rgba(0, 0, 0, 0.85);
-  color: #e2e8f0;
-  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.35);
+  background: #060606;
+  border-color: #000;
+  color: #f8fafc;
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.45);
 }
 .project-focus-card--cancelled .project-focus-card__accent {
-  background: linear-gradient(135deg, rgba(0, 0, 0, 0.45) 0%, rgba(15, 23, 42, 0) 60%);
+  display: none;
 }
 .project-focus-card--cancelled .project-focus-card__section-box {
-  background: rgba(2, 6, 23, 0.9);
-  border-color: rgba(15, 23, 42, 0.6);
+  background: #0d0d0d;
+  border-color: #000;
 }
 .project-focus-card--cancelled .project-focus-card__title,
 .project-focus-card--cancelled .project-focus-card__description,
 .project-focus-card--cancelled .project-focus-card__row-label,
 .project-focus-card--cancelled .project-focus-card__row-value {
-  color: #e2e8f0;
+  color: #f8fafc;
+}
+.project-focus-card--cancelled .reservation-chip,
+.project-focus-card--cancelled .status-chip,
+.project-focus-card--cancelled .project-focus-card__payment-chip,
+.project-focus-card--cancelled .timeline-status-badge {
+  background: #0a0a0a;
+  color: #f8fafc;
+  border-color: #000;
 }
 
 /* Stronger black glow on hover for cancelled cards */
 .project-focus-card--cancelled:hover {
-  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.6);
 }
 
 /* Closed project appearance (gray theme) */
