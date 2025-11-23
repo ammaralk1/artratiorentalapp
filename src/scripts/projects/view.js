@@ -475,18 +475,17 @@ export function renderFocusCards() {
 function renderFocusCardsInternal(projectsOverride = null) {
   if (!dom.focusCards) return;
 
-  const sourceProjects = Array.isArray(projectsOverride) && projectsOverride.length
+  const sourceProjects = Array.isArray(projectsOverride)
     ? projectsOverride
     : (state.visibleProjects.length ? state.visibleProjects : getFilteredProjects());
-  const allCards = buildFocusCards(sourceProjects, { allowFallback: !hasProjectFilters(), limit: null });
   const pagination = ensureFocusPagination();
   const pageSize = Number.isFinite(pagination.pageSize) ? pagination.pageSize : FOCUS_CARDS_PER_PAGE;
-  const totalPages = Math.max(1, Math.ceil(allCards.length / pageSize));
+  const totalPages = Math.max(1, Math.ceil(sourceProjects.length / pageSize));
   const currentPage = Math.min(Math.max(1, pagination.page || 1), totalPages);
   pagination.page = currentPage;
   pagination.totalPages = totalPages;
 
-  const pageCards = allCards.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const pageCards = sourceProjects.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   if (!pageCards.length) {
     const emptyMessage = escapeHtml(t('projects.focus.empty', dom.focusCards.dataset.empty || 'لا توجد مشاريع لليوم أو هذا الأسبوع.'));
@@ -495,7 +494,7 @@ function renderFocusCardsInternal(projectsOverride = null) {
     return;
   }
 
-  dom.focusCards.innerHTML = pageCards.join('');
+  dom.focusCards.innerHTML = pageCards.map((project) => renderFocusCard(project, 'list')).join('');
   renderProjectsPagination(totalPages, currentPage);
 
   // Sections are always visible; no toggle required
