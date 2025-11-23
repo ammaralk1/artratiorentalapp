@@ -1010,23 +1010,25 @@ html.dark-mode .projects-hero-text {
 
 /* Cancelled project card appearance */
 .project-focus-card--cancelled {
-  background: #050505;
-  border-color: #0a0a0a;
+  background: #000 !important;
+  border-color: #000 !important;
   color: #f8fafc;
-  box-shadow: none;
+  box-shadow: none !important;
+  transform: none !important;
 }
 .project-focus-card--cancelled .project-focus-card__accent {
-  display: none;
+  display: none !important;
 }
 .project-focus-card--cancelled .project-focus-card__section-box {
-  background: #0d0d0d;
-  border-color: #0a0a0a;
+  background: #0b0b0b;
+  border-color: #000;
   box-shadow: none;
 }
 .project-focus-card--cancelled .project-focus-card__title,
 .project-focus-card--cancelled .project-focus-card__description,
 .project-focus-card--cancelled .project-focus-card__row-label,
-.project-focus-card--cancelled .project-focus-card__row-value {
+.project-focus-card--cancelled .project-focus-card__row-value,
+.project-focus-card--cancelled .project-focus-card__section-title {
   color: #f8fafc;
 }
 .project-focus-card--cancelled .reservation-chip,
@@ -1038,10 +1040,15 @@ html.dark-mode .projects-hero-text {
   border-color: #0a0a0a;
   box-shadow: none;
 }
+.project-focus-card--cancelled .project-focus-card__top,
+.project-focus-card--cancelled .project-focus-card__meta {
+  color: #f8fafc;
+}
 
 /* Stronger black glow on hover for cancelled cards */
 .project-focus-card--cancelled:hover {
   box-shadow: none;
+  transform: none !important;
 }
 
 /* Closed project appearance (gray theme) */
