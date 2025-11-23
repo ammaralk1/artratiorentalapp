@@ -3,6 +3,7 @@ import { migrateOldData } from './storage.js';
 import { checkAuth, logout } from './auth.js';
 import { normalizeNumbers } from './utils.js';
 import { getCurrentLanguage, t } from './language.js';
+import { calculatePaymentProgress, determinePaymentStatus } from './reservationsSummary.js';
 
 applyStoredTheme();
 migrateOldData();
@@ -119,6 +120,40 @@ export function buildProjectCard(project, { techniciansMap = new Map(), clientNa
   const status = determineProjectStatus(project);
   const statusLabel = t(`projects.status.${status}`, statusLabelsFallback[status]);
   const statusClass = statusBadgeClass[status] || 'bg-secondary';
+  const expensesTotal = calculateProjectExpenses(project);
+
+  const rawPaymentStatus = String(project?.paymentStatus || project?.payment_status || '').toLowerCase();
+  const basePaymentStatus = ['paid', 'partial', 'unpaid'].includes(rawPaymentStatus) ? rawPaymentStatus : '';
+  const applyTax = project?.applyTax === true || project?.applyTax === 'true';
+  const equipmentEstimate = Number(project?.equipmentEstimate) || 0;
+  const baseSubtotal = equipmentEstimate + expensesTotal;
+  const totalAmount = applyTax ? baseSubtotal * 1.15 : baseSubtotal;
+  const paymentHistory = Array.isArray(project?.paymentHistory)
+    ? project.paymentHistory
+    : (Array.isArray(project?.payments) ? project.payments : []);
+  const progress = calculatePaymentProgress({
+    totalAmount,
+    paidAmount: paymentHistory.length ? 0 : project?.paidAmount,
+    paidPercent: paymentHistory.length ? 0 : project?.paidPercent,
+    history: paymentHistory,
+  });
+  const inferredPaymentStatus = determinePaymentStatus({
+    manualStatus: null,
+    paidAmount: progress.paidAmount,
+    paidPercent: progress.paidPercent,
+    totalAmount,
+  });
+  const paymentStatus = basePaymentStatus || inferredPaymentStatus || 'unpaid';
+  const paymentStatusLabel = t(`projects.paymentStatus.${paymentStatus}`, paymentStatus);
+  const paymentChipClass = paymentStatus === 'paid'
+    ? 'status-paid'
+    : paymentStatus === 'partial'
+      ? 'status-partial'
+      : 'status-unpaid';
+  const paymentChipExtra = status === 'completed' && paymentStatus === 'paid'
+    ? ' project-payment-chip--neutral'
+    : '';
+  const paymentChip = `<span class="reservation-chip status-chip ${paymentChipClass}${paymentChipExtra} project-payment-chip">${escapeHtml(paymentStatusLabel)}</span>`;
 
   const description = (project?.description || '').trim();
   const descriptionText = description
@@ -143,7 +178,6 @@ export function buildProjectCard(project, { techniciansMap = new Map(), clientNa
     crewPreview = `${escapeHtml(namesText)}${extraCount > 0 ? escapeHtml(` +${normalizeNumbers(String(extraCount))}`) : ''}`;
   }
 
-  const expensesTotal = calculateProjectExpenses(project);
   const budgetTotal = (Number(project?.equipmentEstimate) || 0) + expensesTotal;
   const budgetLabel = t('projectCards.stats.budget', '💰 التكلفة التقديرية: {amount}').replace('{amount}', formatCurrencyLocalized(budgetTotal));
   const expensesLabel = expensesTotal > 0
@@ -162,7 +196,10 @@ export function buildProjectCard(project, { techniciansMap = new Map(), clientNa
             <h5 class="mb-1">${escapeHtml(projectTitle)}</h5>
             <span class="text-muted small">${escapeHtml(formatProjectDateRange(project?.start, project?.end))}</span>
           </div>
-          <span class="badge ${statusClass} text-white">${escapeHtml(statusLabel)}</span>
+          <div class="d-flex flex-column align-items-end gap-1">
+            <span class="badge ${statusClass} text-white">${escapeHtml(statusLabel)}</span>
+            ${paymentChip}
+          </div>
         </div>
         <p class="text-muted small mb-3">${descriptionText}</p>
         <div class="d-flex flex-column gap-1 small text-muted">
