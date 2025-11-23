@@ -12,6 +12,70 @@ import {
 import { exportReservationPdf, exportReservationChecklistPdf } from './reservationPdf.js';
 import { ensureTechnicianPositionsLoaded } from '../technicianPositions.js';
 
+const PAGE_SIZE = 8;
+
+function clampPage(value, totalPages) {
+  const pageNumber = Number.parseInt(value, 10);
+  if (!Number.isFinite(pageNumber) || pageNumber <= 0) return 1;
+  return Math.min(pageNumber, Math.max(1, totalPages));
+}
+
+function fingerprintFilters(filters = {}) {
+  const entries = Object.entries(filters || {})
+    .map(([key, value]) => [key, value == null ? '' : String(value)])
+    .sort(([a], [b]) => a.localeCompare(b));
+  return JSON.stringify(entries);
+}
+
+function resolvePageNumbers(currentPage, totalPages) {
+  const windowSize = 5;
+  const halfWindow = Math.floor(windowSize / 2);
+  let start = Math.max(1, currentPage - halfWindow);
+  let end = Math.min(totalPages, start + windowSize - 1);
+  if (end - start + 1 < windowSize) {
+    start = Math.max(1, end - windowSize + 1);
+  }
+  const pages = [];
+  for (let page = start; page <= end; page += 1) {
+    pages.push(page);
+  }
+  return pages;
+}
+
+function buildPaginationHtml({ currentPage, totalPages, totalItems }) {
+  if (totalPages <= 1) return '';
+
+  const prevLabel = t('reservations.list.pagination.prev', 'السابق');
+  const nextLabel = t('reservations.list.pagination.next', 'التالي');
+  const pageLabelTemplate = t('reservations.list.pagination.page', 'صفحة {page}');
+  const rangeTemplate = t('reservations.list.pagination.range', '{from}-{to} من {total}');
+  const rangeStart = ((currentPage - 1) * PAGE_SIZE) + 1;
+  const rangeEnd = Math.min(totalItems, currentPage * PAGE_SIZE);
+  const rangeText = rangeTemplate
+    .replace('{from}', rangeStart)
+    .replace('{to}', rangeEnd)
+    .replace('{total}', totalItems);
+
+  const pageButtons = resolvePageNumbers(currentPage, totalPages).map((page) => {
+    const label = pageLabelTemplate.replace('{page}', page);
+    const isActive = page === currentPage;
+    const activeAttrs = isActive ? ' aria-current="page"' : '';
+    const activeClass = isActive ? ' is-active' : '';
+    return `<button type="button" class="reservation-page-btn${activeClass}" data-page="${page}" aria-label="${label}"${activeAttrs}>${page}</button>`;
+  }).join('');
+
+  return `
+    <div class="reservations-pagination" data-total-pages="${totalPages}">
+      <div class="reservations-pagination__controls">
+        <button type="button" class="reservation-page-nav" data-page="${currentPage - 1}" ${currentPage <= 1 ? 'disabled' : ''} aria-label="${prevLabel}">‹</button>
+        <div class="reservation-page-list">${pageButtons}</div>
+        <button type="button" class="reservation-page-nav" data-page="${currentPage + 1}" ${currentPage >= totalPages ? 'disabled' : ''} aria-label="${nextLabel}">›</button>
+      </div>
+      <div class="reservations-pagination__summary">${rangeText}</div>
+    </div>
+  `;
+}
+
 export function renderReservationsList({
   containerId = 'reservations-list',
   filters = null,
@@ -60,47 +124,90 @@ export function renderReservationsList({
 
   if (filteredEntries.length === 0) {
     container.innerHTML = `<p>${t('reservations.list.noResults', '🔍 لا توجد حجوزات مطابقة للبحث.')}</p>`;
+    container.dataset.reservationsPage = '1';
+    container.dataset.reservationsFilters = fingerprintFilters(activeFilters);
     return;
   }
 
-  container.innerHTML = `<div class="reservations-grid">${buildReservationTilesHtml({
-    entries: filteredEntries,
-    customersMap,
-    techniciansMap,
-    projectsMap
-  })}</div>`;
+  const totalPages = Math.ceil(filteredEntries.length / PAGE_SIZE);
+  const filtersFingerprint = fingerprintFilters(activeFilters);
+  const storedFingerprint = container.dataset.reservationsFilters || '';
+  const filtersChanged = storedFingerprint !== filtersFingerprint;
+  const storedPage = clampPage(container.dataset.reservationsPage, totalPages);
+  let currentPage = filtersChanged ? 1 : storedPage;
+  container.dataset.reservationsFilters = filtersFingerprint;
 
-  container.querySelectorAll('[data-action="details"]').forEach((tile) => {
-    const index = Number(tile.dataset.reservationIndex);
-    if (Number.isNaN(index)) return;
-    tile.addEventListener('click', () => {
-      if (typeof onShowDetails === 'function') {
-        onShowDetails(index);
-      }
+  const bindTileActions = () => {
+    container.querySelectorAll('[data-action="details"]').forEach((tile) => {
+      const index = Number(tile.dataset.reservationIndex);
+      if (Number.isNaN(index)) return;
+      tile.addEventListener('click', () => {
+        if (typeof onShowDetails === 'function') {
+          onShowDetails(index);
+        }
+      });
     });
-  });
 
-  container.querySelectorAll('button[data-action="confirm"]').forEach((btn) => {
-    const index = Number(btn.dataset.reservationIndex);
-    if (Number.isNaN(index)) return;
-    btn.addEventListener('click', (event) => {
-      event.stopPropagation();
-      if (typeof onConfirmReservation === 'function') {
-        onConfirmReservation(index, event);
-      }
+    container.querySelectorAll('button[data-action="confirm"]').forEach((btn) => {
+      const index = Number(btn.dataset.reservationIndex);
+      if (Number.isNaN(index)) return;
+      btn.addEventListener('click', (event) => {
+        event.stopPropagation();
+        if (typeof onConfirmReservation === 'function') {
+          onConfirmReservation(index, event);
+        }
+      });
     });
-  });
 
-  container.querySelectorAll('button[data-action="close"]').forEach((btn) => {
-    const index = Number(btn.dataset.reservationIndex);
-    if (Number.isNaN(index)) return;
-    btn.addEventListener('click', (event) => {
-      event.stopPropagation();
-      if (typeof onCloseReservation === 'function') {
-        onCloseReservation(index, event);
-      }
+    container.querySelectorAll('button[data-action="close"]').forEach((btn) => {
+      const index = Number(btn.dataset.reservationIndex);
+      if (Number.isNaN(index)) return;
+      btn.addEventListener('click', (event) => {
+        event.stopPropagation();
+        if (typeof onCloseReservation === 'function') {
+          onCloseReservation(index, event);
+        }
+      });
     });
-  });
+  };
+
+  const bindPaginationActions = () => {
+    const navButtons = container.querySelectorAll('.reservations-pagination [data-page]');
+    navButtons.forEach((btn) => {
+      const target = Number.parseInt(btn.dataset.page, 10);
+      if (!Number.isFinite(target)) return;
+      btn.addEventListener('click', (event) => {
+        if (btn.disabled) return;
+        event.preventDefault();
+        event.stopPropagation();
+        renderPage(target);
+      });
+    });
+  };
+
+  const renderPage = (pageNumber) => {
+    currentPage = clampPage(pageNumber, totalPages);
+    container.dataset.reservationsPage = String(currentPage);
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const pageEntries = filteredEntries.slice(start, start + PAGE_SIZE);
+    const tilesHtml = buildReservationTilesHtml({
+      entries: pageEntries,
+      customersMap,
+      techniciansMap,
+      projectsMap
+    });
+    const paginationHtml = buildPaginationHtml({
+      currentPage,
+      totalPages,
+      totalItems: filteredEntries.length
+    });
+
+    container.innerHTML = `<div class="reservations-grid">${tilesHtml}</div>${paginationHtml}`;
+    bindTileActions();
+    bindPaginationActions();
+  };
+
+  renderPage(currentPage);
 
   // Reopen is handled only inside the edit modal; no button on tiles.
 }

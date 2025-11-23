@@ -121,6 +121,46 @@ describe('reservations/renderers module', () => {
     expect(onConfirm).toHaveBeenCalledWith(0, expect.any(Event));
   });
 
+  it('renderReservationsList paginates results into pages of 8 with navigation', async () => {
+    const container = document.createElement('div');
+    container.id = 'list';
+    document.body.appendChild(container);
+
+    const reservations = Array.from({ length: 10 }, (_, i) => ({ id: i + 1 }));
+    loadDataMock.mockReturnValue({
+      reservations,
+      customers: [],
+      technicians: [],
+      projects: []
+    });
+    const filtered = reservations.map((reservation, index) => ({ reservation, index }));
+    filterReservationEntriesMock.mockReturnValue(filtered);
+    buildReservationTilesHtmlMock.mockImplementation(({ entries }) => entries.map(({ index }) => `<button data-action="details" data-reservation-index="${index}">Row ${index}</button>`).join(''));
+
+    const module = await import('../../src/scripts/reservations/renderers.js');
+    const onShowDetails = vi.fn();
+
+    module.renderReservationsList({ containerId: 'list', onShowDetails });
+
+    // Page 1 should render the first 8 entries only
+    const firstPageArgs = buildReservationTilesHtmlMock.mock.calls.at(-1)?.[0];
+    expect(firstPageArgs.entries).toHaveLength(8);
+    expect(firstPageArgs.entries.map((e) => e.index)).toEqual(filtered.slice(0, 8).map((e) => e.index));
+    const nextBtn = container.querySelector('.reservation-page-nav[data-page="2"]');
+    expect(nextBtn).toBeTruthy();
+    nextBtn.click();
+
+    // After navigating, only the remaining entries should be rendered
+    const secondPageArgs = buildReservationTilesHtmlMock.mock.calls.at(-1)?.[0];
+    expect(secondPageArgs.entries).toHaveLength(2);
+    expect(secondPageArgs.entries.map((e) => e.index)).toEqual(filtered.slice(8, 10).map((e) => e.index));
+    // And detail callbacks still work with original indexes
+    const lastDetailBtn = container.querySelector('[data-reservation-index="9"]');
+    lastDetailBtn.click();
+    expect(onShowDetails).toHaveBeenCalledWith(9);
+    expect(container.dataset.reservationsPage).toBe('2');
+  });
+
   it('renderReservationDetails shows toast when reservation missing', async () => {
     loadDataMock.mockReturnValue({ reservations: [], customers: [] });
     const module = await import('../../src/scripts/reservations/renderers.js');
