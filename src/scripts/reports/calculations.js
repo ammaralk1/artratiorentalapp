@@ -1009,21 +1009,6 @@ export function filterReservations(reservations, filters, customers, equipment, 
   const technicianMap = new Map((technicians || []).map((tech) => [String(tech.id), tech]));
 
   return (reservations || []).filter((reservation) => {
-    const hasProject = reservation && reservation.projectId != null && String(reservation.projectId).trim() !== '';
-    if (!hasProject) return false; // تقارير المشاريع: نعرض فقط الحجوزات المرتبطة بمشروع
-
-    const project = getProjectForReservation(reservation);
-    if (!project) return false; // لا يمكن التحقق من حالة المشروع
-
-    const projectStatus = normalizeStatusValue(project.status ?? project.projectStatus ?? '');
-    const projectCancelled = projectStatus === 'cancelled' || project.cancelled === true || project.cancelled === 'true';
-    if (projectCancelled) return false;
-
-    // نحسب فقط المشاريع المؤكدة، أو المغلقة بشرط أن تكون مؤكدّة فعلياً
-    const projectConfirmed = project.confirmed === true || project.confirmed === 'true' || projectStatus === 'confirmed';
-    const projectClosed = projectStatus === 'completed' && projectConfirmed;
-    if (!projectConfirmed && !projectClosed) return false;
-
     const start = reservation?.start ? new Date(reservation.start) : null;
     if (!start || Number.isNaN(start.getTime())) return false;
     let end = reservation?.end ? new Date(reservation.end) : start;
