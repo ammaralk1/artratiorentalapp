@@ -314,6 +314,40 @@ export async function updateLinkedReservationsReopened(projectId) {
 }
 
 /**
+ * Mirror project status/confirmation to linked reservations.
+ */
+export async function syncLinkedReservationsWithProject(project) {
+  if (!project) return false;
+  const projectId = project.projectId ?? project.id;
+  if (!projectId) return false;
+
+  const statusRaw = String(project.status || '').toLowerCase();
+  const isCancelled = statusRaw === 'cancelled' || statusRaw === 'canceled';
+  const isClosed = statusRaw === 'completed' || statusRaw === 'closed';
+  const isConfirmed = project.confirmed === true || project.confirmed === 'true';
+
+  if (isCancelled) {
+    return updateLinkedReservationsCancelled(projectId);
+  }
+
+  if (isClosed) {
+    return updateLinkedReservationsClosed(projectId);
+  }
+
+  if (isConfirmed) {
+    // For ongoing/upcoming confirmed projects, ensure reservations are confirmed/reopened
+    const reopened = await updateLinkedReservationsReopened(projectId);
+    if (!reopened) {
+      return updateLinkedReservationsConfirmation(projectId);
+    }
+    return reopened;
+  }
+
+  // Not confirmed: push reservations back to pending/unconfirmed
+  return updateLinkedReservationsUnconfirmation(projectId);
+}
+
+/**
  * Auto-close projects whose end time has passed and are not yet marked completed/cancelled.
  * Adds an auto-close note and mirrors the close to linked reservations.
  */

@@ -59,6 +59,7 @@ import {
   handleProjectReservationSync,
   updateLinkedReservationsConfirmation,
   updateLinkedReservationsUnconfirmation,
+  syncLinkedReservationsWithProject,
   removeProject,
   updateLinkedReservationsCancelled,
   updateLinkedReservationsSchedule,
@@ -1863,15 +1864,7 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
       if (wantCancel) {
         try { await updateLinkedReservationsCancelled(identifier); } catch (e) { console.warn('⚠️ failed to cancel linked reservations', e); }
       } else {
-        try {
-          if (confirmedNext && !initialConfirmed) {
-            await updateLinkedReservationsConfirmation(identifier);
-          } else if (!confirmedNext && initialConfirmed) {
-            await updateLinkedReservationsUnconfirmation(identifier);
-          }
-        } catch (e) {
-          console.warn('⚠️ failed to sync linked reservations confirmation toggle', e);
-        }
+        try { await syncLinkedReservationsWithProject(updated); } catch (e) { console.warn('⚠️ failed to sync linked reservations with project state', e); }
       }
       state.projects = getProjectsState();
       state.reservations = getReservationsState();
