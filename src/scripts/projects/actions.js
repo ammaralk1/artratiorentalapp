@@ -6,7 +6,8 @@ import {
   getProjectsState,
   isApiError as isProjectApiError,
   refreshProjectsFromApi,
-  closeProjectApi
+  closeProjectApi,
+  updateProjectApi
 } from '../projectsService.js';
 import {
   getReservationsState,
@@ -358,6 +359,7 @@ export async function autoCloseExpiredProjects() {
   const now = new Date();
   let changed = false;
   let closedCount = 0;
+  let cancelledCount = 0;
 
   for (const project of projects) {
     try {
@@ -369,7 +371,19 @@ export async function autoCloseExpiredProjects() {
       if (!end || Number.isNaN(end.getTime())) continue;
       if (end >= now) continue;
 
-      // Close project and mirror to reservations
+      const isConfirmed = project.confirmed === true || project.confirmed === 'true';
+
+      if (!isConfirmed) {
+        // لم يتم تأكيد المشروع قبل انتهاء الوقت: اعتبره ملغى
+        const updated = await updateProjectApi(project.projectId ?? project.id, { status: 'cancelled', cancelled: true, confirmed: false });
+        const pid = updated?.projectId ?? updated?.id ?? project.id;
+        await updateLinkedReservationsCancelled(pid);
+        changed = true;
+        cancelledCount += 1;
+        continue;
+      }
+
+      // Close confirmed projects and mirror to reservations
       const note = t('projects.autoClose.note', 'إغلاق تلقائي لانتهاء وقت المشروع');
       const updated = await closeProjectApi(project.projectId ?? project.id, note);
       const pid = updated?.projectId ?? updated?.id ?? project.id;
@@ -387,7 +401,15 @@ export async function autoCloseExpiredProjects() {
     try { document.dispatchEvent(new CustomEvent('projects:changed')); } catch (_) {}
     try { document.dispatchEvent(new CustomEvent('reservations:changed')); } catch (_) {}
     try {
-      const msg = t('projects.toast.autoClosed', 'تم إغلاق {count} مشروع لانتهاء الوقت').replace('{count}', String(closedCount));
+      const parts = [];
+      if (closedCount > 0) {
+        parts.push(t('projects.toast.autoClosed', 'تم إغلاق {count} مشروع لانتهاء الوقت').replace('{count}', String(closedCount)));
+      }
+      if (cancelledCount > 0) {
+        const cancelMsg = t('projects.toast.autoCancelled', 'تم إلغاء {count} مشروع لانتهاء الوقت بدون تأكيد').replace('{count}', String(cancelledCount));
+        parts.push(cancelMsg);
+      }
+      const msg = parts.join(' • ');
       showToast(msg);
     } catch (_) { /* optional toast */ }
   }
