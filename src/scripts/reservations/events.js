@@ -6,7 +6,8 @@ import {
 import {
   initCreateReservationForm,
   refreshCreateReservationForm,
-  renderDraftReservationSummary
+  renderDraftReservationSummary,
+  persistCreateReservationDraft
 } from './createForm.js';
 import {
   setupEditReservationModalEvents
@@ -113,7 +114,10 @@ export function setupReservationEvents() {
   setupEditReservationModalEvents(getReservationsEditContext());
 
   initTechnicianSelection({
-    onDraftChange: renderDraftReservationSummary,
+    onDraftChange: () => {
+      renderDraftReservationSummary();
+      try { persistCreateReservationDraft(); } catch (_) { /* ignore persist errors */ }
+    },
     onEditChange: updateEditReservationSummary
   });
 

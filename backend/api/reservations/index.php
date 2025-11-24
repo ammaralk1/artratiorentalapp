@@ -185,6 +185,7 @@ function handleReservationsCreate(PDO $pdo): void
 {
     ensureReservationProjectColumn($pdo);
     ensureReservationEquipmentCostColumn($pdo);
+    ensureReservationPaymentColumns($pdo);
     ensureReservationPackagesTable($pdo);
     ensureReservationPackagesTable($pdo);
 
@@ -250,6 +251,7 @@ function handleReservationsUpdate(PDO $pdo): void
 
     ensureReservationProjectColumn($pdo);
     ensureReservationEquipmentCostColumn($pdo);
+    ensureReservationPaymentColumns($pdo);
 
     [$data, $errors] = validateReservationPayload(readJsonPayload(), true, $pdo, $id);
 
@@ -1935,6 +1937,34 @@ function ensureReservationEquipmentCostColumn(PDO $pdo): void
     } catch (Throwable $error) {
         // Do not flip $checked so we retry later; log once per request.
         error_log('Failed to ensure unit_cost column on reservation_equipment table: ' . $error->getMessage());
+    }
+}
+
+function ensureReservationPaymentColumns(PDO $pdo): void
+{
+    static $checked = false;
+
+    if ($checked) {
+        return;
+    }
+
+    try {
+        if (!tableColumnExists($pdo, 'reservations', 'paid_amount')) {
+            $pdo->exec('ALTER TABLE reservations ADD COLUMN paid_amount DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER paid_status');
+        }
+        if (!tableColumnExists($pdo, 'reservations', 'paid_percentage')) {
+            $pdo->exec('ALTER TABLE reservations ADD COLUMN paid_percentage DECIMAL(8,2) NOT NULL DEFAULT 0 AFTER paid_amount');
+        }
+        if (!tableColumnExists($pdo, 'reservations', 'payment_progress_type')) {
+            $pdo->exec('ALTER TABLE reservations ADD COLUMN payment_progress_type VARCHAR(20) DEFAULT NULL AFTER paid_percentage');
+        }
+        if (!tableColumnExists($pdo, 'reservations', 'payment_progress_value')) {
+            $pdo->exec('ALTER TABLE reservations ADD COLUMN payment_progress_value DECIMAL(12,2) DEFAULT NULL AFTER payment_progress_type');
+        }
+        $checked = true;
+    } catch (Throwable $error) {
+        // Do not flip $checked so we retry later; log once per request.
+        error_log('Failed to ensure reservation payment columns: ' . $error->getMessage());
     }
 }
 

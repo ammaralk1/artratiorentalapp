@@ -203,7 +203,7 @@ function collectCreateReservationDraft() {
   }
 }
 
-function persistCreateReservationDraft() {
+export function persistCreateReservationDraft() {
   if (__createDraftRestoreInProgress) return; // avoid overwriting saved draft during init/restore
   const storage = getDraftStorage();
   const secondary = getSecondaryStorage();
@@ -2208,6 +2208,7 @@ function renderReservationItems(containerId = 'reservation-items') {
 
   if (items.length === 0) {
     container.innerHTML = `<tr><td colspan="7" class="text-center">${noItemsMessage}</td></tr>`;
+    try { persistCreateReservationDraft(); } catch (_) { /* non-fatal */ }
     return;
   }
 
@@ -2362,6 +2363,8 @@ function renderReservationItems(containerId = 'reservation-items') {
       `;
     })
     .join('');
+
+  try { persistCreateReservationDraft(); } catch (_) { /* non-fatal */ }
 }
 
 function decreaseReservationGroup(groupKey) {
