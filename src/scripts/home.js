@@ -169,7 +169,7 @@ function mergeSummaryWithLocalData(summary) {
     result.projects = {
       ...result.projects,
       total: Math.max(result.projects?.total ?? 0, projects.length),
-      active: Math.max(result.projects?.active ?? 0, activeProjects)
+      active: activeProjects
     };
   }
 
@@ -301,8 +301,8 @@ function mergeSummaryWithLocalData(summary) {
     result.reservations = {
       ...result.reservations,
       total: Math.max(result.reservations?.total ?? 0, reservations.length),
-      today: Math.max(result.reservations?.today ?? 0, todayCount),
-      upcoming: Math.max(result.reservations?.upcoming ?? 0, upcomingCount)
+      today: todayCount,
+      upcoming: upcomingCount
     };
 
     result.technicians = {
@@ -742,6 +742,13 @@ function bootstrapHome() {
     attachRefetch(refreshReservationsFromApi(), 'reservations');
   } catch (error) {
     console.warn('⚠️ [home] Failed to kick off reservations prefetch', error);
+  }
+
+  try {
+    const { refreshProjectsFromApi } = await import('./projectsService.js');
+    attachRefetch(refreshProjectsFromApi(), 'projects');
+  } catch (error) {
+    console.warn('⚠️ [home] Failed to kick off projects prefetch', error);
   }
 }
 
