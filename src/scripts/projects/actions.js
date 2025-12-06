@@ -265,6 +265,47 @@ export async function updateLinkedReservationsCancelled(projectId) {
   return changed;
 }
 
+export async function updateLinkedReservationsReopenFromCancelled(projectId, options = {}) {
+  if (!projectId) return false;
+  const { status, confirmed } = options;
+  const reservations = getReservationsState();
+  const targets = reservations.filter((reservation) => String(reservation.projectId) === String(projectId));
+  if (!targets.length) return false;
+
+  const normalizedStatus = typeof status === 'string' ? status.toLowerCase() : '';
+  const statusToSet = (() => {
+    if (normalizedStatus === 'completed' || normalizedStatus === 'closed') return 'completed';
+    if (normalizedStatus === 'ongoing' || normalizedStatus === 'in_progress' || normalizedStatus === 'in-progress') {
+      return confirmed ? 'in_progress' : 'pending';
+    }
+    if (normalizedStatus === 'upcoming') return confirmed ? 'confirmed' : 'pending';
+    return confirmed ? 'confirmed' : 'pending';
+  })();
+
+  let changed = false;
+  for (const reservation of targets) {
+    const reservationId = reservation.id ?? reservation.reservationId;
+    if (!reservationId) continue;
+    const statusRaw = String(reservation.status || '').toLowerCase();
+    if (statusRaw !== 'cancelled' && statusRaw !== 'canceled') continue;
+    try {
+      await updateReservationApi(reservationId, {
+        status: statusToSet,
+        cancelled: false,
+        confirmed: confirmed === undefined ? false : Boolean(confirmed)
+      });
+      changed = true;
+    } catch (e) {
+      console.warn('[projects] failed to reopen cancelled reservation', reservationId, e);
+    }
+  }
+  if (changed) {
+    state.reservations = getReservationsState();
+    document.dispatchEvent(new CustomEvent('reservations:changed'));
+  }
+  return changed;
+}
+
 export async function updateLinkedReservationsClosed(projectId) {
   if (!projectId) return false;
   const reservations = getReservationsState();

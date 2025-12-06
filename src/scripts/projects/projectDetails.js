@@ -62,6 +62,7 @@ import {
   syncLinkedReservationsWithProject,
   removeProject,
   updateLinkedReservationsCancelled,
+  updateLinkedReservationsReopenFromCancelled,
   updateLinkedReservationsSchedule,
   updateLinkedReservationsClosed,
   updateLinkedReservationsReopened
@@ -980,6 +981,9 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
   const confirmStatusLabel = form.querySelector('#project-edit-confirm-label');
   const confirmHint = form.querySelector('#project-edit-confirm-hint');
   const initialConfirmed = project.confirmed === true || project.confirmed === 'true';
+  const wasCancelled = (project?.cancelled === true || project?.cancelled === 'true')
+    || String(project?.status || '').toLowerCase() === 'cancelled'
+    || String(project?.status || '').toLowerCase() === 'canceled';
 
   let isSyncingShareTax = false;
 
@@ -1842,9 +1846,19 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
     });
 
     const wantCancel = cancelProjectCheckbox?.checked === true;
+    let reopenedStatus = null;
     if (wantCancel) {
       payload.status = 'cancelled';
       payload.cancelled = true;
+    } else if (wasCancelled) {
+      reopenedStatus = determineProjectStatus({
+        ...project,
+        status: '',
+        start: startIso,
+        end: endIso || null
+      });
+      payload.status = reopenedStatus || 'upcoming';
+      payload.cancelled = false;
     }
 
     form.dataset.submitting = 'true';
@@ -1855,6 +1869,12 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
       // Sync linked reservations schedule with project timing when not cancelling
       if (!wantCancel) {
         try {
+          if (wasCancelled) {
+            await updateLinkedReservationsReopenFromCancelled(identifier, {
+              status: reopenedStatus || updated?.status || project.status || 'upcoming',
+              confirmed: confirmedNext
+            });
+          }
           const schedule = { start: startIso };
           if (endIso) schedule.end = endIso;
           // Defer to actions to update all linked reservations' start/end
