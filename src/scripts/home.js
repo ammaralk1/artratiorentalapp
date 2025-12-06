@@ -164,7 +164,7 @@ function mergeSummaryWithLocalData(summary) {
       const isConfirmed = project?.confirmed === true || project?.confirmed === 'true';
       if (!isConfirmed) return false;
       if (isCancelled || isClosed) return false;
-      return statusDerived === 'ongoing';
+      return true;
     }).length;
     result.projects = {
       ...result.projects,
