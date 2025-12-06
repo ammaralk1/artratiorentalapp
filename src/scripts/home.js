@@ -152,7 +152,20 @@ function mergeSummaryWithLocalData(summary) {
   }
 
   if (projects.length) {
-    const activeProjects = projects.filter((project) => determineProjectStatus(project) === 'ongoing').length;
+    const activeProjects = projects.filter((project) => {
+      const statusDerived = determineProjectStatus(project);
+      const statusRaw = String(project?.status || '').toLowerCase();
+      const isCancelled = project?.cancelled === true
+        || String(project?.cancelled).toLowerCase() === 'true'
+        || statusRaw === 'cancelled'
+        || statusRaw === 'canceled'
+        || statusDerived === 'cancelled';
+      const isClosed = statusRaw === 'completed' || statusRaw === 'closed' || statusDerived === 'completed';
+      const isConfirmed = project?.confirmed === true || project?.confirmed === 'true';
+      if (!isConfirmed) return false;
+      if (isCancelled || isClosed) return false;
+      return statusDerived === 'ongoing';
+    }).length;
     result.projects = {
       ...result.projects,
       total: Math.max(result.projects?.total ?? 0, projects.length),
