@@ -246,6 +246,19 @@ function resolveReservationItemQuantity(item) {
   return 1;
 }
 
+// Collect technician ids from any reservation-related arrays
+function resolveReservationTechnicianIds(reservation) {
+  if (!reservation) return [];
+  const ids = new Set();
+  const collect = (list) => {
+    normalizeTechnicianAssignments(list).forEach((id) => ids.add(id));
+  };
+  collect(reservation.technicians);
+  collect(reservation.crewAssignments);
+  collect(reservation.techniciansDetails);
+  return Array.from(ids);
+}
+
 function computeTechnicianSidebarStats(reservations, technicianId) {
   if (!Array.isArray(reservations) || !reservations.length) {
     return {
@@ -270,7 +283,7 @@ function computeTechnicianSidebarStats(reservations, technicianId) {
       projectsSet.add(String(reservation.projectId));
     }
 
-    const technicianIds = normalizeTechnicianAssignments(reservation.technicians);
+    const technicianIds = resolveReservationTechnicianIds(reservation);
     technicianIds.forEach((id) => collaboratorIds.add(id));
 
     if (Array.isArray(reservation.items)) {
@@ -699,9 +712,7 @@ async function refreshTechnicianFinancialSummary(technician) {
     if (rawStatus === 'cancelled' || rawStatus === 'canceled' || rawStatus === 'ملغي' || rawStatus === 'ملغى' || rawStatus === 'ملغية') {
       return false;
     }
-    const technicianIds = Array.isArray(reservation.technicians)
-      ? reservation.technicians.map((id) => String(id))
-      : [];
+    const technicianIds = resolveReservationTechnicianIds(reservation);
     return technicianIds.includes(normalizedId);
   });
 
@@ -895,7 +906,7 @@ function getCurrentPositionLabelForTechnician(id) {
     // Find an active reservation for this technician
     const active = reservations.find((res) => {
       if (!res || (!res.start && !res.startDatetime && !res.start_datetime)) return false;
-      const ids = normalizeTechnicianAssignments(res.technicians);
+      const ids = resolveReservationTechnicianIds(res);
       if (!Array.isArray(ids) || !ids.includes(normalizedId)) return false;
       const start = res.start ?? res.startDatetime ?? res.start_datetime;
       const end = res.end ?? res.endDatetime ?? res.end_datetime;
