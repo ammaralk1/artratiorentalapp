@@ -126,7 +126,7 @@ import{n as I,j as P,t as c,d as Be,b as $t,h as Ei,p as je,z as qi,y as Nt,B as
       </div>
       <div class="quote-header__meta">
         <div class="quote-header__meta-item">
-          <span>${h(c("reservations.details.labels.reservationId","رقم العرض"))}</span>
+          <span>${h(c("projects.details.labels.code","رقم المشروع"))}</span>
           <strong>${h(b)}</strong>
         </div>
         <div class="quote-header__meta-item">
