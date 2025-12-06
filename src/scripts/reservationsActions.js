@@ -81,6 +81,46 @@ export function resetReservationsFetchState() {
   lastReservationsFetchSignature = null;
 }
 
+function resolveDateValue(value) {
+  if (!value) return null;
+  const str = String(value).trim();
+  if (!str) return null;
+  const normalized = str.includes(' ') ? str.replace(' ', 'T') : str;
+  const date = new Date(normalized);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function resolveReservationDates(reservation) {
+  const startCandidates = [
+    reservation?.start,
+    reservation?.startDatetime,
+    reservation?.start_datetime,
+    reservation?.start_date,
+    reservation?.startDate,
+  ];
+  const endCandidates = [
+    reservation?.end,
+    reservation?.endDatetime,
+    reservation?.end_datetime,
+    reservation?.end_date,
+    reservation?.endDate,
+  ];
+  let start = null;
+  for (const candidate of startCandidates) {
+    start = resolveDateValue(candidate);
+    if (start) break;
+  }
+  let end = null;
+  for (const candidate of endCandidates) {
+    end = resolveDateValue(candidate);
+    if (end) break;
+  }
+  if (!end && start) {
+    end = new Date(start.getTime() + 4 * 60 * 60 * 1000);
+  }
+  return { start, end };
+}
+
 export async function deleteReservation(index, { onAfterChange } = {}) {
   if (!userCanManageDestructiveActions()) {
     notifyPermissionDenied();
@@ -255,10 +295,53 @@ export async function reopenReservation(index, { onAfterChange } = {}) {
     return true;
   } catch (error) {
     console.error('❌ [reservationsActions] reopenReservation failed', error);
-    const message = isApiError(error)
-      ? error.message
-      : t('reservations.toast.reopenFailed', 'تعذر إلغاء الإغلاق، حاول مرة أخرى');
-    showToast(message, 'error');
-    return false;
+  const message = isApiError(error)
+    ? error.message
+    : t('reservations.toast.reopenFailed', 'تعذر إلغاء الإغلاق، حاول مرة أخرى');
+  showToast(message, 'error');
+  return false;
+}
+
+export async function autoCloseExpiredStandaloneReservations() {
+  const reservations = getReservationsState();
+  if (!Array.isArray(reservations) || reservations.length === 0) return false;
+
+  const now = new Date();
+  let changed = false;
+  let closedCount = 0;
+
+  for (const reservation of reservations) {
+    const projectLinked = reservation?.projectId != null && reservation.projectId !== '' && reservation.projectId !== 'null';
+    if (projectLinked) continue;
+
+    const statusRaw = String(reservation?.status || '').toLowerCase();
+    if (['cancelled', 'canceled', 'completed', 'closed'].includes(statusRaw)) continue;
+
+    const isConfirmed = reservation?.confirmed === true || reservation?.confirmed === 'true' || statusRaw === 'confirmed';
+    if (!isConfirmed) continue;
+
+    const reservationId = reservation?.id || reservation?.reservationId;
+    if (!reservationId) continue;
+
+    const { start, end } = resolveReservationDates(reservation);
+    if (!start || !end) continue;
+    if (end > now) continue;
+
+    try {
+      await closeReservationApi(reservationId, reservation?.notes || null);
+      changed = true;
+      closedCount += 1;
+    } catch (error) {
+      console.warn('⚠️ [reservations] auto-close standalone failed for', reservationId, error);
+    }
   }
+
+  if (changed) {
+    try { await refreshReservationsFromApi(); } catch (_) {}
+    try { document.dispatchEvent(new CustomEvent('reservations:changed')); } catch (_) {}
+    try { runSharedRefresh(); } catch (_) {}
+  }
+
+  return closedCount > 0;
+}
 }

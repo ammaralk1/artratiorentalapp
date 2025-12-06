@@ -206,6 +206,13 @@ export async function initializeReservationUI() {
   hideReservationsInlineLoader();
 
   try {
+    try {
+      const actions = await import('../reservationsActions.js');
+      await actions.autoCloseExpiredStandaloneReservations?.();
+    } catch (error) {
+      console.warn('⚠️ [reservations/events] auto-close standalone reservations skipped', error);
+    }
+
     renderReservations();
   } catch (error) {
     console.error('❌ [reservations/events] Failed to render reservations after load', error);
