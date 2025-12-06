@@ -5106,11 +5106,11 @@ function buildQuotationHtml(options = {}) {
     : (
       `<div class="quote-header__meta">
         <div class="quote-header__meta-item">
-          <span>رقم العرض</span>
+          <span>${escapeHtml(t('reservations.details.labels.reservationId', 'رقم الحجز', 'Reservation ID'))}</span>
           <strong>${escapeHtml(quoteNumber)}</strong>
         </div>
         <div class="quote-header__meta-item">
-          <span>التاريخ</span>
+          <span>${escapeHtml(t('reservations.quote.labels.date', 'التاريخ'))}</span>
           <strong>${escapeHtml(quoteDate)}</strong>
         </div>
       </div>`
