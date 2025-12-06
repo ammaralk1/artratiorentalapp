@@ -4293,7 +4293,7 @@ const projectDetailsInfoClass = buildInfoPlainClass(activeQuoteState, 'projectDe
       </div>
       <div class="quote-header__meta">
         <div class="quote-header__meta-item">
-          <span>${escapeHtml(t('reservations.details.labels.reservationId', 'رقم العرض'))}</span>
+          <span>${escapeHtml(t('projects.details.labels.code', 'رقم المشروع'))}</span>
           <strong>${escapeHtml(quoteNumber)}</strong>
         </div>
         <div class="quote-header__meta-item">
