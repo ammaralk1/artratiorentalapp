@@ -256,9 +256,13 @@ function mergeSummaryWithLocalData(summary) {
 
     const upcomingCount = reservations.filter((reservation) => {
       if (isCancelled(reservation)) return false;
+      const statusRaw = String(reservation?.status || reservation?.reservationStatus || '').toLowerCase();
+      if (statusRaw === 'completed' || statusRaw === 'closed') return false;
+      const isConfirmed = reservation?.confirmed === true || reservation?.confirmed === 'true';
+      if (!isConfirmed) return false;
       const start = resolveStartDate(reservation);
       if (!start) return false;
-      return start >= now;
+      return start >= startOfDay;
     }).length;
 
     const busyTechnicianIds = new Set();
