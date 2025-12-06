@@ -295,11 +295,12 @@ export async function reopenReservation(index, { onAfterChange } = {}) {
     return true;
   } catch (error) {
     console.error('❌ [reservationsActions] reopenReservation failed', error);
-  const message = isApiError(error)
-    ? error.message
-    : t('reservations.toast.reopenFailed', 'تعذر إلغاء الإغلاق، حاول مرة أخرى');
-  showToast(message, 'error');
-  return false;
+    const message = isApiError(error)
+      ? error.message
+      : t('reservations.toast.reopenFailed', 'تعذر إلغاء الإغلاق، حاول مرة أخرى');
+    showToast(message, 'error');
+    return false;
+  }
 }
 
 export async function autoCloseExpiredStandaloneReservations() {
@@ -317,9 +318,6 @@ export async function autoCloseExpiredStandaloneReservations() {
     const statusRaw = String(reservation?.status || '').toLowerCase();
     if (['cancelled', 'canceled', 'completed', 'closed'].includes(statusRaw)) continue;
 
-    const isConfirmed = reservation?.confirmed === true || reservation?.confirmed === 'true' || statusRaw === 'confirmed';
-    if (!isConfirmed) continue;
-
     const reservationId = reservation?.id || reservation?.reservationId;
     if (!reservationId) continue;
 
@@ -328,9 +326,14 @@ export async function autoCloseExpiredStandaloneReservations() {
     if (end > now) continue;
 
     try {
-      await closeReservationApi(reservationId, reservation?.notes || null);
+      const isConfirmed = reservation?.confirmed === true || reservation?.confirmed === 'true' || statusRaw === 'confirmed';
+      if (isConfirmed) {
+        await closeReservationApi(reservationId, reservation?.notes || null);
+        closedCount += 1;
+      } else {
+        await updateReservationApi(reservationId, { status: 'cancelled', cancelled: true, confirmed: false });
+      }
       changed = true;
-      closedCount += 1;
     } catch (error) {
       console.warn('⚠️ [reservations] auto-close standalone failed for', reservationId, error);
     }
@@ -343,5 +346,4 @@ export async function autoCloseExpiredStandaloneReservations() {
   }
 
   return closedCount > 0;
-}
 }
