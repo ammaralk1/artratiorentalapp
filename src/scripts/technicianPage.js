@@ -259,6 +259,52 @@ function resolveReservationTechnicianIds(reservation) {
   return Array.from(ids);
 }
 
+// Resolve project id/name for references in the financial modal
+let projectLookupCache = null;
+function getProjectLookup() {
+  if (projectLookupCache) return projectLookupCache;
+  const snapshot = loadData();
+  const map = new Map();
+  if (snapshot && Array.isArray(snapshot.projects)) {
+    snapshot.projects.forEach((project) => {
+      const key = project?.id != null ? String(project.id) : (project?.projectId != null ? String(project.projectId) : null);
+      if (key) {
+        map.set(key, project);
+      }
+    });
+  }
+  projectLookupCache = map;
+  return projectLookupCache;
+}
+
+function resolveReservationProjectInfo(reservation) {
+  if (!reservation) return null;
+  const rawId = reservation.projectId ?? reservation.project_id ?? reservation.project?.id ?? reservation.project?.projectId;
+  const id = rawId != null ? String(rawId) : null;
+  const directName = reservation.projectTitle
+    || reservation.project_title
+    || reservation.projectName
+    || reservation.project_name
+    || reservation.project?.title
+    || reservation.project?.name;
+  if (directName && id) {
+    return { id, name: directName };
+  }
+  if (directName) {
+    return { id: null, name: directName };
+  }
+  if (id) {
+    const lookup = getProjectLookup();
+    const project = lookup.get(id);
+    const name = project?.title || project?.name || project?.projectTitle || project?.project_name;
+    if (name) {
+      return { id, name };
+    }
+    return { id, name: null };
+  }
+  return null;
+}
+
 function computeTechnicianSidebarStats(reservations, technicianId) {
   if (!Array.isArray(reservations) || !reservations.length) {
     return {
@@ -742,11 +788,25 @@ async function refreshTechnicianFinancialSummary(technician) {
       const refId = reservation.reservationId || reservation.id;
       referenceParts.push(`#${normalizeNumbers(String(refId))}`);
     }
-    if (reservation.projectId) {
-      referenceParts.push(
-        t('technicianFinancial.list.projectReference', 'مشروع #{id}')
-          .replace('{id}', normalizeNumbers(String(reservation.projectId)))
-      );
+    const projectInfo = resolveReservationProjectInfo(reservation);
+    if (projectInfo?.id) {
+      const projectIdDisplay = normalizeNumbers(String(projectInfo.id));
+      if (projectInfo.name) {
+        const template = t('technicianFinancial.list.projectReferenceWithName', 'مشروع #{id} • {name}');
+        referenceParts.push(
+          template
+            .replace('{id}', projectIdDisplay)
+            .replace('{name}', String(projectInfo.name))
+        );
+      } else {
+        referenceParts.push(
+          t('technicianFinancial.list.projectReference', 'مشروع #{id}')
+            .replace('{id}', projectIdDisplay)
+        );
+      }
+    } else if (projectInfo?.name) {
+      const template = t('technicianFinancial.list.projectReferenceNameOnly', 'مشروع: {name}');
+      referenceParts.push(template.replace('{name}', String(projectInfo.name)));
     }
     if (reservation.status) {
       const statusKey = `reservations.status.${reservation.status}`;
