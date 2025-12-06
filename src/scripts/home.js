@@ -745,8 +745,15 @@ function bootstrapHome() {
   }
 
   try {
-    const { refreshProjectsFromApi } = await import('./projectsService.js');
-    attachRefetch(refreshProjectsFromApi(), 'projects');
+    import('./projectsService.js')
+      .then(({ refreshProjectsFromApi }) => {
+        if (typeof refreshProjectsFromApi === 'function') {
+          attachRefetch(refreshProjectsFromApi(), 'projects');
+        }
+      })
+      .catch((error) => {
+        console.warn('⚠️ [home] Failed to kick off projects prefetch', error);
+      });
   } catch (error) {
     console.warn('⚠️ [home] Failed to kick off projects prefetch', error);
   }
