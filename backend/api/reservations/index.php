@@ -183,13 +183,26 @@ function handleReservationsGet(PDO $pdo): void
 
 function handleReservationsCreate(PDO $pdo): void
 {
+    $reqId = bin2hex(random_bytes(4));
+    $t0 = microtime(true);
+    $mark = function (string $label) use ($t0, $reqId): void {
+        $elapsed = (microtime(true) - $t0) * 1000;
+        error_log(sprintf('[reservations:create:%s] %s +%.1fms', $reqId, $label, $elapsed));
+    };
+
     ensureReservationProjectColumn($pdo);
+    $mark('ensureReservationProjectColumn');
     ensureReservationEquipmentCostColumn($pdo);
+    $mark('ensureReservationEquipmentCostColumn');
     ensureReservationPaymentColumns($pdo);
+    $mark('ensureReservationPaymentColumns');
     ensureReservationPackagesTable($pdo);
+    $mark('ensureReservationPackagesTable');
     ensureReservationPackagesTable($pdo);
+    $mark('ensureReservationPackagesTable (repeat)');
 
     [$data, $errors] = validateReservationPayload(readJsonPayload(), false, $pdo);
+    $mark('validateReservationPayload');
 
     if ($errors) {
         respondError('Validation failed', 422, ['errors' => $errors]);
@@ -200,18 +213,25 @@ function handleReservationsCreate(PDO $pdo): void
 
     try {
         $reservationId = insertReservation($pdo, $data);
+        $mark('insertReservation');
         upsertReservationItems($pdo, $reservationId, $data['items'] ?? []);
+        $mark('upsertReservationItems');
         if (array_key_exists('packages', $data)) {
             upsertReservationPackages($pdo, $reservationId, $data['packages']);
+            $mark('upsertReservationPackages');
         }
         upsertReservationTechnicians($pdo, $reservationId, $data['technicians'] ?? []);
+        $mark('upsertReservationTechnicians');
         if (array_key_exists('payments', $data)) {
             upsertReservationPayments($pdo, $reservationId, $data['payments']);
+            $mark('upsertReservationPayments');
         }
 
         $pdo->commit();
+        $mark('commit');
 
         $reservation = fetchReservationById($pdo, $reservationId);
+        $mark('fetchReservationById');
 
         logActivity($pdo, 'RESERVATION_CREATE', [
             'reservation_id' => $reservationId,
@@ -221,6 +241,7 @@ function handleReservationsCreate(PDO $pdo): void
 
         // Respond immediately to avoid slow notification channels blocking the request.
         respond($reservation, 201);
+        $mark('respond');
         if (function_exists('fastcgi_finish_request')) {
             fastcgi_finish_request();
         } else {
@@ -238,13 +259,14 @@ function handleReservationsCreate(PDO $pdo): void
             if (is_array($reservation)) {
                 notifyReservationCreated($pdo, $reservation);
             }
+            $mark('notifyReservationCreated');
         } catch (Throwable $notifyError) {
             error_log('Reservation create notification failed: ' . $notifyError->getMessage());
         }
         return;
     } catch (Throwable $exception) {
         $pdo->rollBack();
-        error_log(sprintf('Reservation create failed: %s', $exception->getMessage()));
+        error_log(sprintf('[reservations:create:%s] failed after +%.1fms: %s', $reqId, (microtime(true) - $t0) * 1000, $exception->getMessage()));
         respondError('reservations.errors.createFailed', 500, [
             'details' => $exception->getMessage(),
         ]);

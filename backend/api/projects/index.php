@@ -169,11 +169,20 @@ function handleProjectsGet(PDO $pdo): void
 
 function handleProjectsCreate(PDO $pdo): void
 {
+    $reqId = bin2hex(random_bytes(4));
+    $t0 = microtime(true);
+    $mark = function (string $label) use ($t0, $reqId): void {
+        $elapsed = (microtime(true) - $t0) * 1000;
+        error_log(sprintf('[projects:create:%s] %s +%.1fms', $reqId, $label, $elapsed));
+    };
     // Ensure schema supports project status/cancelled flags
     ensureProjectCancellationColumns($pdo);
+    $mark('ensureProjectCancellationColumns');
     // Ensure expenses 'note' column exists when possible
     ensureProjectExpensesNotesColumn($pdo);
+    $mark('ensureProjectExpensesNotesColumn');
     [$result, $errors] = validateProjectPayload(readJsonPayload(), false, $pdo);
+    $mark('validateProjectPayload');
 
     if ($errors) {
         respondError('Validation failed', 422, ['errors' => $errors]);
@@ -185,34 +194,42 @@ function handleProjectsCreate(PDO $pdo): void
     if (empty($payload['project_code'])) {
         $payload['project_code'] = generateProjectCode($pdo);
     }
+    $mark('generateProjectCode');
 
     $pdo->beginTransaction();
 
     try {
         $projectId = insertProject($pdo, $payload);
+        $mark('insertProject');
 
         if (!empty($result['technicians'])) {
             syncProjectTechnicians($pdo, $projectId, $result['technicians']);
+            $mark('syncProjectTechnicians');
         }
 
         if (!empty($result['equipment'])) {
             syncProjectEquipment($pdo, $projectId, $result['equipment']);
+            $mark('syncProjectEquipment');
         }
 
         if (!empty($result['expenses'])) {
             syncProjectExpenses($pdo, $projectId, $result['expenses']);
+            $mark('syncProjectExpenses');
         }
 
         if (!empty($result['payments'])) {
             syncProjectPayments($pdo, $projectId, $result['payments']);
+            $mark('syncProjectPayments');
         }
 
         $pdo->commit();
+        $mark('commit');
 
         $project = fetchProjectById($pdo, $projectId);
         if (!$project) {
             throw new RuntimeException('Failed to load created project');
         }
+        $mark('fetchProjectById');
 
         logActivity($pdo, 'PROJECT_CREATE', [
             'project_id' => $projectId,
@@ -220,17 +237,32 @@ function handleProjectsCreate(PDO $pdo): void
             'technicians' => $result['technicians'] ?? [],
         ]);
 
+        // Respond immediately to avoid slow notification channels blocking the request.
+        respond($project, 201);
+        $mark('respond');
+        if (function_exists('fastcgi_finish_request')) {
+            fastcgi_finish_request();
+        } else {
+            if (function_exists('session_write_close')) {
+                @session_write_close();
+            }
+            @ob_end_flush();
+            @flush();
+            @ignore_user_abort(true);
+        }
+
         // Fire-and-forget notifications; log but do not block response
         try {
             require_once __DIR__ . '/../../services/notifications.php';
             notifyProjectCreated($pdo, $project);
+            $mark('notifyProjectCreated');
         } catch (Throwable $notifyError) {
             error_log('Project create notification failed: ' . $notifyError->getMessage());
         }
-
-        respond($project, 201);
+        return;
     } catch (Throwable $exception) {
         $pdo->rollBack();
+        error_log(sprintf('[projects:create:%s] failed after +%.1fms: %s', $reqId, (microtime(true) - $t0) * 1000, $exception->getMessage()));
         throw $exception;
     }
 }
