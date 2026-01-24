@@ -219,6 +219,19 @@ function handleReservationsCreate(PDO $pdo): void
             'items' => isset($data['items']) ? count((array) $data['items']) : 0,
         ]);
 
+        // Respond immediately to avoid slow notification channels blocking the request.
+        respond($reservation, 201);
+        if (function_exists('fastcgi_finish_request')) {
+            fastcgi_finish_request();
+        } else {
+            if (function_exists('session_write_close')) {
+                @session_write_close();
+            }
+            @ob_end_flush();
+            @flush();
+            @ignore_user_abort(true);
+        }
+
         // Fire-and-forget notifications; log but do not block response
         try {
             require_once __DIR__ . '/../../services/notifications.php';
@@ -228,8 +241,7 @@ function handleReservationsCreate(PDO $pdo): void
         } catch (Throwable $notifyError) {
             error_log('Reservation create notification failed: ' . $notifyError->getMessage());
         }
-
-        respond($reservation, 201);
+        return;
     } catch (Throwable $exception) {
         $pdo->rollBack();
         error_log(sprintf('Reservation create failed: %s', $exception->getMessage()));
