@@ -152,6 +152,10 @@
       else if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
         window.APP_API_BASE = '/backend/api';
       }
+      // Production: route API to the dedicated subdomain to avoid connection pool contention
+      else {
+        window.APP_API_BASE = 'https://api.art-ratio.com/backend/api';
+      }
     }
   } catch (e) {
     // ignore
