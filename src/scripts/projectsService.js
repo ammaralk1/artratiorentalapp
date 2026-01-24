@@ -87,6 +87,7 @@ export async function createProjectApi(payload) {
   const response = await apiRequest('/projects/', {
     method: 'POST',
     body: payload,
+    timeout: 30000,
   });
   const created = mapProjectFromApi(response?.data ?? {});
   const next = [...projectsState, created];
