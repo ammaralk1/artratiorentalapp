@@ -170,10 +170,11 @@ function handleProjectsGet(PDO $pdo): void
 function handleProjectsCreate(PDO $pdo): void
 {
     $reqId = bin2hex(random_bytes(4));
+    $clientReqId = $_SERVER['HTTP_X_REQUEST_ID'] ?? 'none';
     $t0 = microtime(true);
-    $mark = function (string $label) use ($t0, $reqId): void {
+    $mark = function (string $label) use ($t0, $reqId, $clientReqId): void {
         $elapsed = (microtime(true) - $t0) * 1000;
-        error_log(sprintf('[projects:create:%s] %s +%.1fms', $reqId, $label, $elapsed));
+        error_log(sprintf('[projects:create:%s] %s +%.1fms (client=%s)', $reqId, $label, $elapsed, $clientReqId));
     };
     // Ensure schema supports project status/cancelled flags
     ensureProjectCancellationColumns($pdo);

@@ -59,6 +59,9 @@ function sendResponse(array $payload, int $status): void
     http_response_code($status);
     if (!headers_sent()) {
         header('Content-Type: application/json; charset=utf-8');
+        if (!headers_sent() && isset($_SERVER['HTTP_X_REQUEST_ID'])) {
+            header('X-Request-Id: ' . $_SERVER['HTTP_X_REQUEST_ID']);
+        }
     }
     @ini_set('output_buffering', 'off');
     @ini_set('zlib.output_compression', '0');

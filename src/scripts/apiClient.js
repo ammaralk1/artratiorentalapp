@@ -87,6 +87,12 @@ export async function apiRequest(path, { method = 'GET', headers = {}, body, sig
     Accept: 'application/json',
     ...headers,
   };
+  if (!finalHeaders['X-Request-Id']) {
+    try {
+      const rid = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+      finalHeaders['X-Request-Id'] = rid;
+    } catch (_) { /* ignore */ }
+  }
 
   const fetchOptions = {
     method,
