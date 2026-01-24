@@ -107,6 +107,26 @@ let linkedProjectReturnContext = null;
 let equipmentSelectionEventsRegistered = false;
 let packageOptionsCache = [];
 
+const RES_DEBUG_FLAG = '__DEBUG_RESERVATION__';
+function isReservationDebugEnabled() {
+  try {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search || '');
+      if (params.get('debugReservation') === '1') return true;
+      const ls = window.localStorage?.getItem(RES_DEBUG_FLAG);
+      if (ls && ['1', 'true', 'on', 'yes'].includes(String(ls).toLowerCase())) return true;
+    }
+  } catch (_) { /* ignore */ }
+  return false;
+}
+function reservationDebugLog(label, data) {
+  if (!isReservationDebugEnabled()) return;
+  try {
+    // eslint-disable-next-line no-console
+    console.log(`🧭 [reservation:create] ${label}`, data ?? '');
+  } catch (_) { /* ignore */ }
+}
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -2787,6 +2807,8 @@ function setupReservationTimeSync() {
 }
 
 async function handleReservationSubmit() {
+  const debugStart = Date.now();
+  reservationDebugLog('submit:start', { ts: new Date().toISOString() });
   const { input: customerInput, hidden: customerHidden } = getCustomerElements();
   const { input: projectInput, hidden: projectHidden } = getProjectElements();
   const { customers } = loadData();
@@ -2805,6 +2827,7 @@ async function handleReservationSubmit() {
   const customer = customers.find((c) => String(c.id) === customerValue);
 
   if (!customer) {
+    reservationDebugLog('validation:customer_not_found', { customerValue });
     showToast(t('reservations.toast.customerNotFound', '⚠️ لم يتم العثور على العميل بالاسم المدخل'));
     return;
   }
@@ -2827,6 +2850,7 @@ async function handleReservationSubmit() {
   const endTime = document.getElementById('res-end-time')?.value || '00:00';
 
   if (!startDate || !endDate) {
+    reservationDebugLog('validation:missing_dates', { startDate, endDate });
     showToast(t('reservations.toast.requireDates', '⚠️ يرجى تحديد تاريخ البداية والنهاية'));
     return;
   }
@@ -2841,6 +2865,7 @@ async function handleReservationSubmit() {
     Number.isNaN(endDateObj.getTime()) ||
     startDateObj >= endDateObj
   ) {
+    reservationDebugLog('validation:invalid_date_range', { start, end });
     showToast(t('reservations.toast.invalidDateRange', '⚠️ تأكد من أن تاريخ ووقت البداية يسبق تاريخ ووقت النهاية'));
     return;
   }
@@ -2851,6 +2876,7 @@ async function handleReservationSubmit() {
     .filter(Boolean);
   const draftItems = getSelectedItems();
   if (draftItems.length === 0 && crewAssignments.length === 0) {
+    reservationDebugLog('validation:no_items_or_crew', { items: draftItems.length, crew: crewAssignments.length });
     showToast(t('reservations.toast.noItems', '⚠️ يجب إضافة معدة أو عضو واحد من الطاقم الفني على الأقل'));
     return;
   }
@@ -2868,6 +2894,7 @@ async function handleReservationSubmit() {
   const selectedProject = projectIdValue ? findProjectById(projectIdValue) : null;
   const projectConfirmed = isProjectConfirmed(selectedProject);
   if (projectIdValue && !selectedProject) {
+    reservationDebugLog('validation:project_not_found', { projectIdValue });
     showToast(t('reservations.toast.projectNotFound', '⚠️ لم يتم العثور على المشروع المحدد. حاول تحديث الصفحة.'));
     return;
   }
@@ -2875,6 +2902,7 @@ async function handleReservationSubmit() {
   for (const item of draftItems) {
     const status = getEquipmentAvailabilityStatus(item.barcode);
     if (status === 'maintenance' || status === 'retired') {
+      reservationDebugLog('validation:equipment_unavailable', { barcode: item.barcode, status });
       showToast(getEquipmentUnavailableMessage(status));
       return;
     }
@@ -2893,6 +2921,7 @@ async function handleReservationSubmit() {
     }
   }
   if (conflictingEquipment.length) {
+    reservationDebugLog('validation:equipment_conflict', { count: conflictingEquipment.length });
     const prefix = t('reservations.toast.cannotCreateEquipmentConflict', '⚠️ لا يمكن إتمام الحجز، إحدى المعدات محجوزة في نفس الفترة الزمنية');
     // Try to fetch reservation codes causing conflicts (best-effort)
     let annotatedList = null;
@@ -2938,6 +2967,7 @@ async function handleReservationSubmit() {
     }
   }
   if (packageConflicts.length) {
+    reservationDebugLog('validation:package_conflict', { count: packageConflicts.length });
     const details = packageConflicts
       .map(({ label, codes }) => (codes && codes.length ? `${label} (${codes.join('، ')})` : label))
       .join('، ');
@@ -2959,6 +2989,7 @@ async function handleReservationSubmit() {
     crewConflicts.push({ label: normalizeNumbers(String(label)), codes });
   }
   if (crewConflicts.length) {
+    reservationDebugLog('validation:crew_conflict', { count: crewConflicts.length });
     const prefix = t('reservations.toast.cannotCreateCrewConflict', '⚠️ لا يمكن إتمام الحجز، أحد أعضاء الطاقم مرتبط بحجز آخر في نفس الفترة');
     const details = crewConflicts
       .map(({ label, codes }) => (codes && codes.length ? `${label} (${codes.join('، ')})` : label))
@@ -3027,6 +3058,7 @@ async function handleReservationSubmit() {
 
   const shareChecked = Boolean(shareCheckbox?.checked);
   if (!projectLinked && shareChecked !== applyTax) {
+    reservationDebugLog('validation:company_share_requires_tax', { shareChecked, applyTax });
     showToast(t('reservations.toast.companyShareRequiresTax', '⚠️ لا يمكن تفعيل نسبة الشركة بدون تفعيل الضريبة'));
     return;
   }
@@ -3244,6 +3276,17 @@ async function handleReservationSubmit() {
   });
 
   try {
+    reservationDebugLog('submit:payload', {
+      reservationCode,
+      customerId,
+      projectId: projectIdValue || null,
+      start,
+      end,
+      items: itemsWithCostOverrides.length,
+      packages: packagesFromItems.length,
+      technicians: crewAssignments.length,
+      totalAmount: totalCost
+    });
     crewDebugLog('about to submit', { crewAssignments, techniciansPayload: payload?.technicians, payload });
     const createdReservation = await createReservationApi(payload);
     crewDebugLog('server response', {
@@ -3252,16 +3295,23 @@ async function handleReservationSubmit() {
       crewAssignments: createdReservation?.crewAssignments,
       techniciansDetails: createdReservation?.techniciansDetails,
     });
+    reservationDebugLog('submit:success', {
+      reservationId: createdReservation?.id ?? createdReservation?.reservationId ?? createdReservation?.reservation_code,
+      durationMs: Date.now() - debugStart
+    });
     finalizeReservationCreate(createdReservation);
   } catch (error) {
     console.error('❌ [reservations/createForm] Failed to create reservation', error);
     if (error?.name === 'AbortError') {
+      reservationDebugLog('submit:abort', { durationMs: Date.now() - debugStart });
       const recovered = await recoverReservationAfterAbort({ reservationCode });
       if (recovered) {
+        reservationDebugLog('submit:recovered', { reservationId: recovered?.id ?? recovered?.reservationId ?? recovered?.reservation_code });
         finalizeReservationCreate(recovered);
         return;
       }
     }
+    reservationDebugLog('submit:failed', { name: error?.name, message: error?.message, durationMs: Date.now() - debugStart });
     const message = isApiError(error)
       ? error.message
       : t('reservations.toast.createFailed', 'تعذر إنشاء الحجز، حاول مرة أخرى');
