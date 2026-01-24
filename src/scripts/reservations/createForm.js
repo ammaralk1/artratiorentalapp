@@ -107,6 +107,44 @@ let linkedProjectReturnContext = null;
 let equipmentSelectionEventsRegistered = false;
 let packageOptionsCache = [];
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function recoverReservationAfterAbort({ reservationCode } = {}) {
+  if (!reservationCode) return null;
+  try {
+    await sleep(600);
+    const res = await apiRequest(`/reservations/?search=${encodeURIComponent(String(reservationCode))}&limit=5`);
+    const items = Array.isArray(res?.data) ? res.data : [];
+    if (!items.length) return null;
+    const exact = items.find((item) => String(item?.reservation_code || item?.reservationCode) === String(reservationCode));
+    return exact || items[0] || null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function finalizeReservationCreate(createdReservation) {
+  syncEquipmentStatuses();
+  populateEquipmentDescriptionLists();
+  syncTechniciansStatuses();
+  resetForm();
+  showToast(t('reservations.toast.created', '✅ تم إنشاء الحجز'));
+  // بعد النجاح: الانتقال تلقائياً إلى تبويب "حجوزاتي"
+  try {
+    const myTabBtn = document.getElementById('sub-tab-trigger-my-reservations-tab');
+    if (myTabBtn && typeof myTabBtn.click === 'function') {
+      // انقر زر التبويب لضمان تفعيل جميع مستمعي الأحداث وتحديث التفضيلات
+      setTimeout(() => myTabBtn.click(), 0);
+    }
+  } catch (_) { /* تجاهل أي أخطاء غير متوقعة */ }
+  if (typeof afterSubmitCallback === 'function') {
+    afterSubmitCallback({ type: 'created', reservation: createdReservation });
+  }
+  handleLinkedProjectReturn(createdReservation);
+}
+
 export function buildEquipmentConflictToastMessage(conflictCodes = [], fallbackMessage) {
   const codes = Array.isArray(conflictCodes)
     ? conflictCodes
@@ -3214,25 +3252,16 @@ async function handleReservationSubmit() {
       crewAssignments: createdReservation?.crewAssignments,
       techniciansDetails: createdReservation?.techniciansDetails,
     });
-    syncEquipmentStatuses();
-    populateEquipmentDescriptionLists();
-    syncTechniciansStatuses();
-    resetForm();
-    showToast(t('reservations.toast.created', '✅ تم إنشاء الحجز'));
-    // بعد النجاح: الانتقال تلقائياً إلى تبويب "حجوزاتي"
-    try {
-      const myTabBtn = document.getElementById('sub-tab-trigger-my-reservations-tab');
-      if (myTabBtn && typeof myTabBtn.click === 'function') {
-        // انقر زر التبويب لضمان تفعيل جميع مستمعي الأحداث وتحديث التفضيلات
-        setTimeout(() => myTabBtn.click(), 0);
-      }
-    } catch (_) { /* تجاهل أي أخطاء غير متوقعة */ }
-    if (typeof afterSubmitCallback === 'function') {
-      afterSubmitCallback({ type: 'created', reservation: createdReservation });
-    }
-    handleLinkedProjectReturn(createdReservation);
+    finalizeReservationCreate(createdReservation);
   } catch (error) {
     console.error('❌ [reservations/createForm] Failed to create reservation', error);
+    if (error?.name === 'AbortError') {
+      const recovered = await recoverReservationAfterAbort({ reservationCode });
+      if (recovered) {
+        finalizeReservationCreate(recovered);
+        return;
+      }
+    }
     const message = isApiError(error)
       ? error.message
       : t('reservations.toast.createFailed', 'تعذر إنشاء الحجز، حاول مرة أخرى');
