@@ -185,6 +185,11 @@ function handleReservationsCreate(PDO $pdo): void
     ensureReservationPackagesTable($pdo);
     $mark('ensureReservationPackagesTable (repeat)');
 
+    try {
+        $payloadSize = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
+        $mark('requestContentLength=' . $payloadSize);
+    } catch (Throwable $_) {}
+
     [$data, $errors] = validateReservationPayload(readJsonPayload(), false, $pdo);
     $mark('validateReservationPayload');
 
@@ -240,6 +245,7 @@ function handleReservationsCreate(PDO $pdo): void
         // Fire-and-forget notifications after the response is sent.
         register_shutdown_function(function () use ($pdo, $reservation, $mark) {
             try {
+                $mark('notifyReservationCreated:start');
                 require_once __DIR__ . '/../../services/notifications.php';
                 if (is_array($reservation)) {
                     notifyReservationCreated($pdo, $reservation);

@@ -181,6 +181,10 @@ function handleProjectsCreate(PDO $pdo): void
     // Ensure expenses 'note' column exists when possible
     ensureProjectExpensesNotesColumn($pdo);
     $mark('ensureProjectExpensesNotesColumn');
+    try {
+        $payloadSize = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
+        $mark('requestContentLength=' . $payloadSize);
+    } catch (Throwable $_) {}
     [$result, $errors] = validateProjectPayload(readJsonPayload(), false, $pdo);
     $mark('validateProjectPayload');
 
@@ -254,6 +258,7 @@ function handleProjectsCreate(PDO $pdo): void
         // Fire-and-forget notifications after the response is sent.
         register_shutdown_function(function () use ($pdo, $project, $mark) {
             try {
+                $mark('notifyProjectCreated:start');
                 require_once __DIR__ . '/../../services/notifications.php';
                 notifyProjectCreated($pdo, $project);
                 $mark('notifyProjectCreated');
