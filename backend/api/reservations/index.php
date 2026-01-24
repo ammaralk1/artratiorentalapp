@@ -662,8 +662,12 @@ function validateReservationPayload(array $payload, bool $isUpdate, PDO $pdo, ?i
         if (!is_array($technicians)) {
             $errors['technicians'] = 'Technicians must be an array';
         } else {
-            foreach ($technicians as $index => $technicianId) {
-                $techId = (int) $technicianId;
+            foreach ($technicians as $index => $technicianEntry) {
+                if (is_array($technicianEntry)) {
+                    $techId = (int) ($technicianEntry['id'] ?? $technicianEntry['technician_id'] ?? 0);
+                } else {
+                    $techId = (int) $technicianEntry;
+                }
                 if (!$techId) {
                     $errors["technicians.$index"] = 'Technician id is required';
                     continue;
