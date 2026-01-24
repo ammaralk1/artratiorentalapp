@@ -1,12 +1,6 @@
 <?php
 require_once __DIR__ . '/../../bootstrap.php';
 
-use InvalidArgumentException;
-use PDO;
-use PDOException;
-use RuntimeException;
-use Throwable;
-
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
 // Only run the HTTP dispatcher when this file is the direct entrypoint.
@@ -49,16 +43,6 @@ function handleReservationsGet(PDO $pdo): void
     if ($id) {
         $reservation = fetchReservationById($pdo, $id);
 
-        try {
-            if (array_key_exists('packages', $data)) {
-                error_log(sprintf('[reservations] updateReservation payload packages (id=%d): %s', $id, json_encode($data['packages'], JSON_UNESCAPED_UNICODE)));
-            }
-            if (isset($reservation['packages'])) {
-                error_log(sprintf('[reservations] updateReservation DB packages (id=%d): %s', $id, json_encode($reservation['packages'], JSON_UNESCAPED_UNICODE)));
-            }
-        } catch (Throwable $_logError) {
-            // avoid crashing on logging failure
-        }
         if (!$reservation) {
             respondError('Reservation not found', 404);
             return;
@@ -253,16 +237,18 @@ function handleReservationsCreate(PDO $pdo): void
             @ignore_user_abort(true);
         }
 
-        // Fire-and-forget notifications; log but do not block response
-        try {
-            require_once __DIR__ . '/../../services/notifications.php';
-            if (is_array($reservation)) {
-                notifyReservationCreated($pdo, $reservation);
+        // Fire-and-forget notifications after the response is sent.
+        register_shutdown_function(function () use ($pdo, $reservation, $mark) {
+            try {
+                require_once __DIR__ . '/../../services/notifications.php';
+                if (is_array($reservation)) {
+                    notifyReservationCreated($pdo, $reservation);
+                }
+                $mark('notifyReservationCreated');
+            } catch (Throwable $notifyError) {
+                error_log('Reservation create notification failed: ' . $notifyError->getMessage());
             }
-            $mark('notifyReservationCreated');
-        } catch (Throwable $notifyError) {
-            error_log('Reservation create notification failed: ' . $notifyError->getMessage());
-        }
+        });
         return;
     } catch (Throwable $exception) {
         $pdo->rollBack();
@@ -1988,16 +1974,16 @@ function ensureReservationPaymentColumns(PDO $pdo): void
 
     try {
         if (!tableColumnExists($pdo, 'reservations', 'paid_amount')) {
-            $pdo->exec('ALTER TABLE reservations ADD COLUMN paid_amount DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER paid_status');
+            try { $pdo->exec('ALTER TABLE reservations ADD COLUMN paid_amount DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER paid_status'); } catch (Throwable $_) {}
         }
         if (!tableColumnExists($pdo, 'reservations', 'paid_percentage')) {
-            $pdo->exec('ALTER TABLE reservations ADD COLUMN paid_percentage DECIMAL(8,2) NOT NULL DEFAULT 0 AFTER paid_amount');
+            try { $pdo->exec('ALTER TABLE reservations ADD COLUMN paid_percentage DECIMAL(8,2) NOT NULL DEFAULT 0 AFTER paid_amount'); } catch (Throwable $_) {}
         }
         if (!tableColumnExists($pdo, 'reservations', 'payment_progress_type')) {
-            $pdo->exec('ALTER TABLE reservations ADD COLUMN payment_progress_type VARCHAR(20) DEFAULT NULL AFTER paid_percentage');
+            try { $pdo->exec('ALTER TABLE reservations ADD COLUMN payment_progress_type VARCHAR(20) DEFAULT NULL AFTER paid_percentage'); } catch (Throwable $_) {}
         }
         if (!tableColumnExists($pdo, 'reservations', 'payment_progress_value')) {
-            $pdo->exec('ALTER TABLE reservations ADD COLUMN payment_progress_value DECIMAL(12,2) DEFAULT NULL AFTER payment_progress_type');
+            try { $pdo->exec('ALTER TABLE reservations ADD COLUMN payment_progress_value DECIMAL(12,2) DEFAULT NULL AFTER payment_progress_type'); } catch (Throwable $_) {}
         }
         $checked = true;
     } catch (Throwable $error) {

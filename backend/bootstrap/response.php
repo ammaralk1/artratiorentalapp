@@ -60,5 +60,21 @@ function sendResponse(array $payload, int $status): void
     if (!headers_sent()) {
         header('Content-Type: application/json; charset=utf-8');
     }
-    echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    @ini_set('output_buffering', 'off');
+    @ini_set('zlib.output_compression', '0');
+    if (function_exists('apache_setenv')) {
+        @apache_setenv('no-gzip', '1');
+    }
+    $json = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    if (!headers_sent()) {
+        header('Connection: close');
+        header('Content-Length: ' . strlen($json));
+    }
+    echo $json;
+    if (function_exists('fastcgi_finish_request')) {
+        fastcgi_finish_request();
+    } else {
+        @ob_end_flush();
+        @flush();
+    }
 }

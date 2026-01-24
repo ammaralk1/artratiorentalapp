@@ -251,14 +251,16 @@ function handleProjectsCreate(PDO $pdo): void
             @ignore_user_abort(true);
         }
 
-        // Fire-and-forget notifications; log but do not block response
-        try {
-            require_once __DIR__ . '/../../services/notifications.php';
-            notifyProjectCreated($pdo, $project);
-            $mark('notifyProjectCreated');
-        } catch (Throwable $notifyError) {
-            error_log('Project create notification failed: ' . $notifyError->getMessage());
-        }
+        // Fire-and-forget notifications after the response is sent.
+        register_shutdown_function(function () use ($pdo, $project, $mark) {
+            try {
+                require_once __DIR__ . '/../../services/notifications.php';
+                notifyProjectCreated($pdo, $project);
+                $mark('notifyProjectCreated');
+            } catch (Throwable $notifyError) {
+                error_log('Project create notification failed: ' . $notifyError->getMessage());
+            }
+        });
         return;
     } catch (Throwable $exception) {
         $pdo->rollBack();
