@@ -650,7 +650,8 @@ export async function createReservationApi(payload) {
   const response = await apiRequest('/reservations/', {
     method: 'POST',
     body: payload,
-    timeout: 30000,
+    // Reservation creation can be heavy; allow more time before aborting.
+    timeout: 90000,
   });
   const responseData = response?.data ?? {};
   if ((!Array.isArray(responseData.packages) || responseData.packages.length === 0) && Array.isArray(payload?.packages) && payload.packages.length) {

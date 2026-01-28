@@ -134,12 +134,24 @@ function sleep(ms) {
 async function recoverReservationAfterAbort({ reservationCode } = {}) {
   if (!reservationCode) return null;
   try {
-    await sleep(600);
-    const res = await apiRequest(`/reservations/?search=${encodeURIComponent(String(reservationCode))}&limit=5`);
-    const items = Array.isArray(res?.data) ? res.data : [];
-    if (!items.length) return null;
-    const exact = items.find((item) => String(item?.reservation_code || item?.reservationCode) === String(reservationCode));
-    return exact || items[0] || null;
+    const maxAttempts = 4;
+    let delayMs = 600;
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      await sleep(delayMs);
+      let res = null;
+      try {
+        res = await apiRequest(`/reservations/?search=${encodeURIComponent(String(reservationCode))}&limit=5`);
+      } catch (error) {
+        reservationDebugLog('recover:attempt_failed', { attempt, message: error?.message });
+      }
+      const items = Array.isArray(res?.data) ? res.data : [];
+      if (items.length) {
+        const exact = items.find((item) => String(item?.reservation_code || item?.reservationCode) === String(reservationCode));
+        return exact || items[0] || null;
+      }
+      delayMs = Math.min(4000, Math.round(delayMs * 1.8));
+    }
+    return null;
   } catch (_) {
     return null;
   }
