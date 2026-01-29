@@ -62,8 +62,21 @@ function handleCors(array $allowedOrigins): void
         }
 
         if (!in_array($normalizedOrigin, $allowedOrigins, true)) {
-            respondError('Origin not allowed', 403);
-            exit;
+            $host = parse_url($normalizedOrigin, PHP_URL_HOST) ?: '';
+            $host = strtolower((string) $host);
+            $baseHost = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
+            $allowByHost = false;
+            if ($host !== '') {
+                if ($host === $baseHost) {
+                    $allowByHost = true;
+                } elseif (str_ends_with($host, '.art-ratio.com') || $host === 'art-ratio.com') {
+                    $allowByHost = true;
+                }
+            }
+            if (!$allowByHost) {
+                respondError('Origin not allowed', 403);
+                exit;
+            }
         }
 
         $originAllowed = true;
