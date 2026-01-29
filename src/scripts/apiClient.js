@@ -128,6 +128,7 @@ export async function apiRequest(path, { method = 'GET', headers = {}, body, sig
       ? setTimeout(() => { try { controller.abort(); } catch (_) {} }, timeout)
       : null;
     const effectiveSignal = controller ? (signal ? new AbortSignalAny([signal, controller.signal]) : controller.signal) : signal;
+    const startedAt = Date.now();
 
     // A minimal polyfill to merge multiple signals
     function AbortSignalAny(signals) {
@@ -146,9 +147,18 @@ export async function apiRequest(path, { method = 'GET', headers = {}, body, sig
       // Treat fetch/abort errors as network failures for backoff purposes
       __consecutiveNetworkFailures = Math.min(10, __consecutiveNetworkFailures + 1);
       __lastNetworkFailureAt = Date.now();
+      if (err?.name === 'AbortError') {
+        console.warn('⏱️ [api] request aborted', { method, url, timeout, durationMs: Date.now() - startedAt });
+      } else {
+        console.warn('⚠️ [api] request failed', { method, url, durationMs: Date.now() - startedAt, error: err });
+      }
       throw err;
     } finally {
       if (timeoutId) clearTimeout(timeoutId);
+      const durationMs = Date.now() - startedAt;
+      if (durationMs > 5000) {
+        console.warn('🐢 [api] slow request', { method, url, durationMs, timeout });
+      }
     }
   };
 
