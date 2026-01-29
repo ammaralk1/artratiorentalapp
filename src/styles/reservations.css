@@ -4315,6 +4315,16 @@ body[dir="ltr"] .reservation-field textarea {
   background-color: transparent;
 }
 
+:where(html.dark-mode, body.dark-mode, html.dark, body.dark) .reservation-payment-history__table thead {
+  background: rgba(37, 55, 88, 0.95);
+  color: #f8fafc;
+}
+
+:where(html.dark-mode, body.dark-mode, html.dark, body.dark) .reservation-payment-history__table thead th {
+  background-color: transparent;
+  color: inherit;
+}
+
 :is(html.dark-mode, body.dark-mode) .reservation-payment-history__empty {
   color: rgba(203, 213, 225, 0.7);
 }
