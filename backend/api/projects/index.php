@@ -10,6 +10,17 @@ use Throwable;
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
+function projectsTimingLog(string $message): void
+{
+    $logDir = __DIR__ . '/../../logs';
+    if (!is_dir($logDir)) {
+        @mkdir($logDir, 0755, true);
+    }
+    $file = $logDir . '/projects_timing.log';
+    $timestamp = date('Y-m-d H:i:s');
+    @file_put_contents($file, sprintf("[%s] %s\n", $timestamp, $message), FILE_APPEND);
+}
+
 // Guard: only dispatch when this file is the direct entrypoint
 if (!defined('API_INCLUDE_MODE')) {
     try {
@@ -171,11 +182,26 @@ function handleProjectsCreate(PDO $pdo): void
 {
     $reqId = bin2hex(random_bytes(4));
     $clientReqId = $_SERVER['HTTP_X_REQUEST_ID'] ?? 'none';
+    $requestUri = $_SERVER['REQUEST_URI'] ?? 'unknown';
+    $remoteAddr = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
     $t0 = microtime(true);
-    $mark = function (string $label) use ($t0, $reqId, $clientReqId): void {
+    $mark = function (string $label) use ($t0, $reqId, $clientReqId, $requestUri, $remoteAddr): void {
         $elapsed = (microtime(true) - $t0) * 1000;
-        error_log(sprintf('[projects:create:%s] %s +%.1fms (client=%s)', $reqId, $label, $elapsed, $clientReqId));
+        $memory = function_exists('memory_get_usage') ? memory_get_usage(true) : 0;
+        $message = sprintf(
+            '[projects:create:%s] %s +%.1fms (client=%s ip=%s uri=%s mem=%s)',
+            $reqId,
+            $label,
+            $elapsed,
+            $clientReqId,
+            $remoteAddr,
+            $requestUri,
+            $memory
+        );
+        error_log($message);
+        projectsTimingLog($message);
     };
+    $mark('start');
     // Ensure schema supports project status/cancelled flags
     ensureProjectCancellationColumns($pdo);
     $mark('ensureProjectCancellationColumns');
@@ -270,7 +296,14 @@ function handleProjectsCreate(PDO $pdo): void
         return;
     } catch (Throwable $exception) {
         $pdo->rollBack();
-        error_log(sprintf('[projects:create:%s] failed after +%.1fms: %s', $reqId, (microtime(true) - $t0) * 1000, $exception->getMessage()));
+        $failMsg = sprintf(
+            '[projects:create:%s] failed after +%.1fms: %s',
+            $reqId,
+            (microtime(true) - $t0) * 1000,
+            $exception->getMessage()
+        );
+        error_log($failMsg);
+        projectsTimingLog($failMsg);
         throw $exception;
     }
 }
