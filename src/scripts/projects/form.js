@@ -1122,9 +1122,12 @@ async function handleSubmitProject(event) {
     document.dispatchEvent(new CustomEvent('projects:changed'));
   } catch (error) {
     console.error('❌ [projects] handleSubmitProject failed', error);
-    const message = isProjectApiError(error)
-      ? error.message
-      : t('projects.toast.saveFailed', 'تعذر حفظ المشروع، حاول مرة أخرى');
+    const isAbort = error?.name === 'AbortError';
+    const message = isAbort
+      ? t('projects.toast.saveTimeout', 'انتهت مهلة حفظ المشروع. تحقق من الاتصال وحاول مرة أخرى.')
+      : (isProjectApiError(error)
+        ? error.message
+        : t('projects.toast.saveFailed', 'تعذر حفظ المشروع، حاول مرة أخرى'));
     showToast(message, 'error');
   } finally {
     isProjectSubmitInProgress = false;

@@ -87,7 +87,7 @@ export async function createProjectApi(payload) {
   const response = await apiRequest('/projects/', {
     method: 'POST',
     body: payload,
-    timeout: 30000,
+    timeout: 60000,
   });
   const created = mapProjectFromApi(response?.data ?? {});
   const next = [...projectsState, created];
@@ -100,6 +100,7 @@ export async function updateProjectApi(id, payload) {
   const response = await apiRequest(`/projects/?id=${encodeURIComponent(id)}`, {
     method: 'PATCH',
     body: payload,
+    timeout: 60000,
   });
   const updated = mapProjectFromApi(response?.data ?? {});
   const next = projectsState.map((project) => (String(project.id) === String(id) ? updated : project));
