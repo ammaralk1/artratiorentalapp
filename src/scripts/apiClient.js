@@ -87,7 +87,16 @@ export async function apiRequest(path, { method = 'GET', headers = {}, body, sig
     Accept: 'application/json',
     ...headers,
   };
-  if (!finalHeaders['X-Request-Id']) {
+  const isSameOriginRequest = (() => {
+    try {
+      if (typeof window === 'undefined' || !window.location?.origin) return false;
+      const resolved = new URL(url, window.location.origin);
+      return resolved.origin === window.location.origin;
+    } catch (_) {
+      return false;
+    }
+  })();
+  if (isSameOriginRequest && !finalHeaders['X-Request-Id']) {
     try {
       const rid = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
       finalHeaders['X-Request-Id'] = rid;
