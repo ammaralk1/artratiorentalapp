@@ -7,8 +7,12 @@ require_once __DIR__ . '/../../services/telegram.php';
 
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+function debugNotifLogs(string $message): void {
+    error_log('[notifications.logs] ' . $message);
+}
 
 try {
+    debugNotifLogs('start method=' . $method);
     requireRole('admin');
 
     $pdo = getDatabaseConnection();
@@ -16,6 +20,7 @@ try {
 
     if ($method === 'GET') {
         try {
+        debugNotifLogs('fetch begin');
         // If the table still does not exist (e.g., DB user lacks CREATE/ALTER privileges),
         // degrade gracefully by returning an empty list instead of a 500.
         try {
@@ -23,6 +28,7 @@ try {
             $hasTable = $chk && $chk->fetch() ? true : false;
         } catch (Throwable $_) { $hasTable = false; }
         if (!$hasTable) {
+            debugNotifLogs('notification_events missing');
             respond([], 200, [
                 'limit' => 0,
                 'offset' => 0,
@@ -118,6 +124,7 @@ try {
                 'created_at' => $row['created_at'],
             ];
         }
+        debugNotifLogs('fetch done count=' . count($items));
 
         respond($items, 200, [
             'limit' => $limit,
@@ -129,6 +136,7 @@ try {
         ]);
         exit;
         } catch (Throwable $e) {
+            debugNotifLogs('error: ' . $e->getMessage());
             // Graceful fallback: do not block the UI on logs errors in production
             respond([], 200, [
                 'limit' => 0,
@@ -175,6 +183,7 @@ try {
     respondError('Method not allowed', 405);
     exit;
 } catch (Throwable $exception) {
+    debugNotifLogs('fatal: ' . $exception->getMessage());
     respondError('Unexpected server error', 500, [
         'details' => $exception->getMessage(),
     ]);
