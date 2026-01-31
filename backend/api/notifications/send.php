@@ -25,10 +25,15 @@ function readJsonBody(): array {
 }
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+function debugNotifLog(string $message): void {
+    error_log('[notifications.send] ' . $message);
+}
 
 try {
+    $t0 = microtime(true);
     requireRole('admin');
     $pdo = getDatabaseConnection();
+    debugNotifLog('start method=' . $method);
 
     if ($method !== 'POST') {
         respondError('Method not allowed', 405);
@@ -36,6 +41,7 @@ try {
     }
 
     $payload = readJsonBody();
+    debugNotifLog('payload parsed in ' . round((microtime(true) - $t0) * 1000) . 'ms');
 
     $entityType = strtolower(trim((string)($payload['entity_type'] ?? '')));
     $entityId = (int)($payload['entity_id'] ?? 0);
@@ -110,6 +116,7 @@ try {
             if ($id > 0) { $techIds[] = $id; }
         }
     }
+    debugNotifLog('entity loaded in ' . round((microtime(true) - $t0) * 1000) . 'ms');
 
     $channelsSent = [
         'email' => 0,
@@ -269,6 +276,8 @@ try {
         }
     }
 
+    debugNotifLog('targets resolved email=' . count($targets['email']) . ' telegram=' . count($targets['telegram']) . ' in ' . round((microtime(true) - $t0) * 1000) . 'ms');
+
     // Abort if still empty after fallback; include debug hints
     if (empty($targets['email']) && empty($targets['telegram'])) {
         // Build a quick diagnostic for assigned technicians and link status
@@ -320,6 +329,7 @@ try {
     // Build template base context if needed
     $baseCtx = $templateId > 0 ? buildTemplateContextForEntity($pdo, $entityType, $entityId) : [];
 
+    $emailStart = microtime(true);
     foreach ($targets['email'] as $target) {
         $rendered = ['subject' => $subject, 'html' => $htmlBody, 'text' => $textBody];
         if ($templateId > 0) {
@@ -335,6 +345,8 @@ try {
         recordNotificationEvent($pdo, 'manual_notification', $entityType, $entityId, $target['type'], $target['recipient'], 'email', $ok ? 'sent' : 'failed', $ok ? null : $err, $batchId, $commonMeta);
         if ($ok) { $channelsSent['email']++; }
     }
+    debugNotifLog('email loop done sent=' . $channelsSent['email'] . '/' . count($targets['email']) . ' in ' . round((microtime(true) - $emailStart) * 1000) . 'ms');
+    $tgStart = microtime(true);
     foreach ($targets['telegram'] as $target) {
         $renderedText = $textBody; $renderedAttach = null; $renderedGroup = [];
         if ($templateId > 0) {
@@ -372,6 +384,7 @@ try {
         recordNotificationEvent($pdo, 'manual_notification', $entityType, $entityId, $target['type'], $target['recipient'], 'telegram', $ok ? 'sent' : 'failed', $ok ? null : $tgErr, $batchId, $commonMeta);
         if ($ok) { $channelsSent['telegram']++; }
     }
+    debugNotifLog('telegram loop done sent=' . $channelsSent['telegram'] . '/' . count($targets['telegram']) . ' in ' . round((microtime(true) - $tgStart) * 1000) . 'ms');
 
     logActivity($pdo, 'NOTIFICATION_MANUAL_SEND', [
         'entity_type' => $entityType,
@@ -379,6 +392,7 @@ try {
         'email_count' => $channelsSent['email'],
         'telegram_count' => $channelsSent['telegram'],
     ]);
+    debugNotifLog('done total=' . round((microtime(true) - $t0) * 1000) . 'ms');
 
     respond([
         'sent' => $channelsSent,
@@ -409,6 +423,7 @@ try {
 } catch (InvalidArgumentException $exception) {
     respondError($exception->getMessage(), 400);
 } catch (Throwable $exception) {
+    debugNotifLog('error: ' . $exception->getMessage());
     respondError('Unexpected server error', 500, [
         'details' => $exception->getMessage(),
     ]);
