@@ -10,6 +10,7 @@ import { initDashboardShell } from './dashboardShell.js';
 import { ensureReservationsLoaded } from './reservationsActions.js';
 import { getReservationsState, refreshReservationsFromApi } from './reservationsService.js';
 import { calculateReservationDays } from './reservationsSummary.js';
+import { isReservationCompleted } from './reservationsShared.js';
 import { listTechnicianPayouts, createTechnicianPayout, deleteTechnicianPayout } from './technicianPayoutsService.js';
 import { loadData } from './storage.js';
 import { refreshProjectsFromApi } from './projectsService.js';
@@ -214,6 +215,9 @@ function resolveTechnicianScopedReservations() {
     if (!reservation) return false;
     const rawStatus = String(reservation.status || '').toLowerCase();
     if (rawStatus === 'cancelled' || rawStatus === 'canceled' || rawStatus === 'ملغي' || rawStatus === 'ملغى' || rawStatus === 'ملغية') {
+      return false;
+    }
+    if (!isReservationCompleted(reservation)) {
       return false;
     }
     const technicianIds = Array.isArray(reservation.technicians)
@@ -756,6 +760,9 @@ async function refreshTechnicianFinancialSummary(technician) {
     if (!reservation) return false;
     const rawStatus = String(reservation.status || '').toLowerCase();
     if (rawStatus === 'cancelled' || rawStatus === 'canceled' || rawStatus === 'ملغي' || rawStatus === 'ملغى' || rawStatus === 'ملغية') {
+      return false;
+    }
+    if (!isReservationCompleted(reservation)) {
       return false;
     }
     const technicianIds = resolveReservationTechnicianIds(reservation);
