@@ -284,6 +284,7 @@ async function sendManual() {
   try {
     const res = await apiRequest('/notifications/send.php', {
       method: 'POST',
+      timeout: 30000,
       body: {
         entity_type: selected.type,
         entity_id: selected.id,
@@ -345,6 +346,10 @@ async function sendManual() {
     fetchLogs();
   } catch (e) {
     console.error(e);
+    if (e?.name === 'AbortError') {
+      showToast('⏱️ انتهى وقت الطلب، حاول مرة أخرى.');
+      return;
+    }
     const msg = (e && e.message) ? String(e.message) : 'فشل الإرسال';
     showToast(msg);
   }
@@ -354,7 +359,7 @@ async function retryLastBatch() {
   const bid = els.retryLastBtn?.getAttribute('data-batch') || '';
   if (!bid) { showToast('لا توجد دفعة لإعادة المحاولة'); return; }
   try {
-    const res = await apiRequest('/notifications/retry.php', { method: 'POST', body: { batch_id: bid } });
+    const res = await apiRequest('/notifications/retry.php', { method: 'POST', timeout: 30000, body: { batch_id: bid } });
     const sent = Number(res?.data?.sent || 0);
     showToast(`تمت إعادة المحاولة — أُرسلت: ${sent}`);
     fetchLogs();
@@ -378,6 +383,7 @@ async function previewTargets() {
   try {
     const res = await apiRequest('/notifications/resolve.php', {
       method: 'POST',
+      timeout: 20000,
       body: {
         entity_type: selected.type,
         entity_id: selected.id,
