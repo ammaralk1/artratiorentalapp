@@ -277,6 +277,18 @@ try {
     }
 
     debugNotifLog('targets resolved email=' . count($targets['email']) . ' telegram=' . count($targets['telegram']) . ' in ' . round((microtime(true) - $t0) * 1000) . 'ms');
+    try {
+        if (function_exists('getEmailConfig')) {
+            $emailCfg = getEmailConfig();
+            if (!empty($emailCfg['enabled'])) {
+                debugNotifLog('smtp cfg host=' . ($emailCfg['smtp_host'] ?? '') . ' port=' . ($emailCfg['smtp_port'] ?? '') . ' secure=' . ($emailCfg['smtp_secure'] ?? '') . ' user=' . ($emailCfg['smtp_user'] ?? ''));
+            } else {
+                debugNotifLog('smtp cfg disabled');
+            }
+        }
+    } catch (Throwable $e) {
+        debugNotifLog('smtp cfg error: ' . $e->getMessage());
+    }
 
     // Abort if still empty after fallback; include debug hints
     if (empty($targets['email']) && empty($targets['telegram'])) {
