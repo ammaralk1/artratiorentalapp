@@ -331,6 +331,7 @@ try {
 
     $emailStart = microtime(true);
     foreach ($targets['email'] as $target) {
+        $emailTryStart = microtime(true);
         $rendered = ['subject' => $subject, 'html' => $htmlBody, 'text' => $textBody];
         if ($templateId > 0) {
             $tplStmt = $pdo->prepare('SELECT * FROM notification_templates WHERE id = :id AND active = 1 LIMIT 1');
@@ -342,6 +343,7 @@ try {
         }
         $ok = sendEmail($target['recipient'], $target['name'], (string)($rendered['subject'] ?? $subject), (string)($rendered['html'] ?? $htmlBody), (string)($rendered['text'] ?? $textBody));
         $err = function_exists('emailGetLastError') ? (emailGetLastError() ?? null) : null;
+        debugNotifLog('email recipient=' . (string)$target['recipient'] . ' ok=' . ($ok ? '1' : '0') . ' ms=' . round((microtime(true) - $emailTryStart) * 1000) . ($err ? (' err=' . $err) : ''));
         recordNotificationEvent($pdo, 'manual_notification', $entityType, $entityId, $target['type'], $target['recipient'], 'email', $ok ? 'sent' : 'failed', $ok ? null : $err, $batchId, $commonMeta);
         if ($ok) { $channelsSent['email']++; }
     }
