@@ -38,7 +38,7 @@ const QUOTE_TOGGLE_PREFS_STORAGE_KEYS = {
 const QUOTE_TROUBLESHOOT_URL = 'https://help.artratio.sa/guide/quote-preview';
 
 const QUOTE_COMPANY_INFO = {
-  logoUrl: 'https://art-ratio.sirv.com/AR-Logo-v3.5-curved.png',
+  logoUrl: 'https://assets.art-ratio.com/AR-Logo-v3.5-curved.png',
   companyName: 'شركة فود آرت للدعاية والإعلان (شركة شخص واحد)',
   commercialRegistry: '4030485240',
   beneficiaryName: 'شركة فود آرت للدعاية والإعلان (شركة شخص واحد)',
