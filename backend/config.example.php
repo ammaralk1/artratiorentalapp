@@ -17,7 +17,35 @@ return [
         ],
         'session_name' => 'art_ratio_session',
     ],
+    'storage' => [
+        // Global upload constraints (used by active provider)
+        'max_file_size' => 5242880, // 5 MB
+        // 'upload_rules' => [
+        //     [
+        //         'mime' => 'image/jpeg',
+        //         'extensions' => ['jpg', 'jpeg'],
+        //     ],
+        //     [
+        //         'mime' => 'application/pdf',
+        //         'extensions' => ['pdf'],
+        //     ],
+        // ],
+        'cloudflare_r2' => [
+            'enabled' => true,
+            'account_id' => 'YOUR_CLOUDFLARE_ACCOUNT_ID',
+            'access_key_id' => 'YOUR_R2_ACCESS_KEY_ID',
+            'secret_access_key' => 'YOUR_R2_SECRET_ACCESS_KEY',
+            'bucket' => 'art-ratio',
+            // Public custom domain attached to the bucket
+            'public_base_url' => 'https://assets.your-production-domain.com',
+            // Optional: override endpoint (defaults to https://{account_id}.r2.cloudflarestorage.com)
+            // 'endpoint' => 'https://YOUR_ACCOUNT_ID.r2.cloudflarestorage.com',
+            'upload_folder' => '/art-ratio/uploads',
+            'region' => 'auto',
+        ],
+    ],
     'sirv' => [
+        // Legacy fallback only (used when cloudflare_r2.enabled is false or missing credentials)
         // Sirv API credentials – obtain from your Sirv dashboard
         'client_id' => 'YOUR_SIRV_CLIENT_ID',
         'client_secret' => 'YOUR_SIRV_CLIENT_SECRET',

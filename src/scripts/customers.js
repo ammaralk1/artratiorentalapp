@@ -487,7 +487,7 @@ async function handleDocumentInputChange(event) {
       formData.append('customer_id', editingCustomerId);
     }
 
-    const response = await apiRequest('/uploads/sirv.php', {
+    const response = await apiRequest('/uploads/storage.php', {
       method: 'POST',
       body: formData,
     });
@@ -503,13 +503,13 @@ async function handleDocumentInputChange(event) {
       fileName: uploaded.fileName || file.name,
       mimeType: uploaded.mimeType || file.type || 'application/octet-stream',
       size: typeof uploaded.size === 'number' ? uploaded.size : file.size,
-      source: uploaded.source || 'sirv',
+      source: uploaded.source || 'cloudflare',
     };
 
     setDocumentUploadState('success');
     showToast(t('customers.form.document.uploadSuccess', '✅ تم رفع الملف بنجاح'), 'success');
   } catch (error) {
-    console.error('[customers] Failed to upload document to Sirv', error);
+    console.error('[customers] Failed to upload document to storage provider', error);
     currentCustomerDocument = null;
     const message = error instanceof ApiError
       ? error.message

@@ -553,6 +553,11 @@ function buildCustomerDocumentFromRow(array $row): ?array
 
     if ($document['url'] && stripos((string) $document['url'], 'sirv.com') !== false) {
         $document['source'] = 'sirv';
+    } elseif ($document['url'] && (
+        stripos((string) $document['url'], 'r2.cloudflarestorage.com') !== false
+        || stripos((string) $document['url'], 'cloudflare') !== false
+    )) {
+        $document['source'] = 'cloudflare';
     }
 
     return $document;

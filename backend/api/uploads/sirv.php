@@ -58,7 +58,7 @@ try {
         'fileName' => $originalName,
         'mimeType' => $validation['mimeType'],
         'size' => $size,
-        'source' => 'sirv',
+        'source' => getActiveUploadSource(),
     ], 201);
 } catch (\RuntimeException $exception) {
     respondError($exception->getMessage(), 400);
@@ -140,7 +140,7 @@ function validateUploadedFile(array $upload, string $tmpPath): array
 
 function getUploadMaxFileSize(): int
 {
-    $configured = getAppConfig('sirv', 'max_file_size');
+    $configured = getStorageUploadOption('max_file_size');
     if (is_numeric($configured) && (int)$configured > 0) {
         return (int) $configured;
     }
@@ -173,7 +173,7 @@ function getUploadValidationRules(): array
         ],
     ];
 
-    $configuredRules = getAppConfig('sirv', 'upload_rules');
+    $configuredRules = getStorageUploadOption('upload_rules');
 
     if (!is_array($configuredRules) || $configuredRules === []) {
         return $defaultRules;
