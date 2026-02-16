@@ -11,6 +11,7 @@ function formatDateDDMMYY(value) {
   return `${day}/${month}/${year}`;
 }
 import { refreshEquipmentFromApi, renderEquipment } from './equipment.js';
+import { normalizeAssetUrl } from './reservationsEquipment.js';
 import { t } from './language.js';
 import { userCanManageDestructiveActions, notifyPermissionDenied, AUTH_EVENTS } from './auth.js';
 import {
@@ -161,7 +162,7 @@ function getEquipmentOptions() {
     const normalizedBarcode = normalizeBarcodeValue(rawBarcode);
     const quantityValue = Number.parseInt(item?.qty ?? item?.quantity ?? 0, 10);
     const safeQuantity = Number.isFinite(quantityValue) ? Math.max(quantityValue, 0) : 1;
-    const imageUrl = item?.image || item?.imageUrl || item?.image_url || '';
+    const imageUrl = normalizeAssetUrl(item?.image || item?.imageUrl || item?.image_url || '');
     const statusLabel = item?.status || 'متاح';
     const description = item?.desc || item?.description || item?.name || fallbackName;
     const searchValue = buildEquipmentSearchValue({

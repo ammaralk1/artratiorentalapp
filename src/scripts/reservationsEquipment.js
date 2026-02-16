@@ -21,6 +21,8 @@ const STATUS_ALIASES = new Map([
 ]);
 
 const UNAVAILABLE_STATUSES = new Set(['maintenance', 'reserved', 'retired']);
+const LEGACY_SIRV_BASE = 'https://art-ratio.sirv.com';
+const CLOUDFLARE_ASSETS_BASE = 'https://assets.art-ratio.com';
 
 function normalizeEquipmentStatus(status) {
   const normalized = String(status ?? '')
@@ -61,7 +63,17 @@ export function isEquipmentUnavailable(input) {
 }
 
 export function resolveItemImage(item = {}) {
-  return item.image || item.imageUrl || item.img || '';
+  const raw = item.image || item.imageUrl || item.image_url || item.img || '';
+  return normalizeAssetUrl(raw);
+}
+
+export function normalizeAssetUrl(value = '') {
+  const url = String(value || '').trim();
+  if (!url) return '';
+  if (url.startsWith(LEGACY_SIRV_BASE)) {
+    return `${CLOUDFLARE_ASSETS_BASE}${url.slice(LEGACY_SIRV_BASE.length)}`;
+  }
+  return url;
 }
 
 export function resolveEquipmentPrice(item = {}) {

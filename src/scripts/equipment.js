@@ -12,7 +12,7 @@ import {
   EQUIPMENT_SELECTION_EVENTS
 } from "./reservations/equipmentSelection.js";
 import { hasEquipmentConflict, normalizeBarcodeValue } from "./reservations/state.js";
-import { isEquipmentAvailable } from "./reservationsEquipment.js";
+import { isEquipmentAvailable, normalizeAssetUrl } from "./reservationsEquipment.js";
 
 const initialEquipmentData = loadData() || {};
 let equipmentState = (initialEquipmentData.equipment || []).map(mapLegacyEquipment);
@@ -74,7 +74,7 @@ function toInternalEquipment(raw = {}) {
   );
   const barcode = normalizeNumbers(String(raw.barcode ?? "").trim());
   const status = normalizeStatusValue(raw.status ?? raw.state ?? raw.status_label ?? raw.statusLabel ?? "available");
-  const imageUrl = raw.image_url ?? raw.imageUrl ?? raw.image ?? "";
+  const imageUrl = normalizeAssetUrl(raw.image_url ?? raw.imageUrl ?? raw.image ?? "");
   const name = raw.name ?? raw.item_name ?? description;
   const lessor =
     raw.lessor ??
@@ -981,7 +981,7 @@ export async function clearEquipment() {
 }
 
 function getEquipmentImage(item) {
-  return item.image || item.imageUrl || item.img || "";
+  return normalizeAssetUrl(item.image || item.imageUrl || item.image_url || item.img || "");
 }
 
 function renderStatus(status) {

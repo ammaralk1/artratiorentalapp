@@ -85,6 +85,18 @@ const editDocumentNameHint = document.getElementById('edit-document-file-name');
 const editDocumentUrlInput = document.getElementById('edit-document-url');
 const editDocumentNameInput = document.getElementById('edit-document-name');
 
+const LEGACY_SIRV_BASE = 'https://art-ratio.sirv.com';
+const CLOUDFLARE_ASSETS_BASE = 'https://assets.art-ratio.com';
+
+function normalizeAssetUrl(value = '') {
+  const url = String(value || '').trim();
+  if (!url) return '';
+  if (url.startsWith(LEGACY_SIRV_BASE)) {
+    return `${CLOUDFLARE_ASSETS_BASE}${url.slice(LEGACY_SIRV_BASE.length)}`;
+  }
+  return url;
+}
+
 let editDocumentState = null;
 let editDocumentUploadStatus = 'idle';
 let editExistingDocument = null;
@@ -432,7 +444,7 @@ function normalizeCustomerDocument(rawCustomer = {}) {
     return null;
   }
 
-  let normalizedUrl = directUrl;
+  let normalizedUrl = normalizeAssetUrl(directUrl);
   let base64Payload = base64Value;
 
   if (!normalizedUrl && base64Payload && base64Payload.startsWith('data:')) {
@@ -457,7 +469,9 @@ function normalizeCustomerDocument(rawCustomer = {}) {
     size: sizeValue,
   };
 
-  if (normalized.url && /sirv\.com/i.test(normalized.url)) {
+  if (normalized.url && /assets\.art-ratio\.com/i.test(normalized.url)) {
+    normalized.source = 'cloudflare';
+  } else if (normalized.url && /sirv\.com/i.test(normalized.url)) {
     normalized.source = 'sirv';
   }
 
