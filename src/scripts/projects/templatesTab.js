@@ -839,6 +839,18 @@ const COMPANY_INFO = {
   companyLicense: '159460'
 };
 
+const LEGACY_SIRV_BASE = 'https://art-ratio.sirv.com';
+const CLOUDFLARE_ASSETS_BASE = 'https://assets.art-ratio.com';
+
+function normalizeLegacyAssetUrl(value = '') {
+  const url = String(value || '').trim();
+  if (!url) return '';
+  if (url.startsWith(LEGACY_SIRV_BASE)) {
+    return `${CLOUDFLARE_ASSETS_BASE}${url.slice(LEGACY_SIRV_BASE.length)}`;
+  }
+  return url;
+}
+
 let TEMPLATE_LANG = (typeof localStorage !== 'undefined' && localStorage.getItem('templates.lang')) || 'en';
 function setTemplateLang(lang) {
   TEMPLATE_LANG = (lang === 'ar') ? 'ar' : 'en';
@@ -886,8 +898,13 @@ function readHeaderFooterOptions() {
 // ===== Secondary logo state (persisted in localStorage) =====
 function readSecondaryLogoState() {
   try {
+    const rawUrl = localStorage.getItem('templates.callsheet.logo2.url') || '';
+    const normalizedUrl = normalizeLegacyAssetUrl(rawUrl);
+    if (rawUrl && normalizedUrl && rawUrl !== normalizedUrl) {
+      localStorage.setItem('templates.callsheet.logo2.url', normalizedUrl);
+    }
     return {
-      url: localStorage.getItem('templates.callsheet.logo2.url') || '',
+      url: normalizedUrl,
       s: Number(localStorage.getItem('templates.callsheet.logo2.s') || '1') || 1,
       x: Number(localStorage.getItem('templates.callsheet.logo2.x') || '0') || 0,
       y: Number(localStorage.getItem('templates.callsheet.logo2.y') || '0') || 0,
@@ -898,7 +915,7 @@ function writeSecondaryLogoState(patch = {}) {
   try {
     const cur = readSecondaryLogoState();
     const nx = { ...cur, ...patch };
-    if (typeof nx.url === 'string') localStorage.setItem('templates.callsheet.logo2.url', nx.url);
+    if (typeof nx.url === 'string') localStorage.setItem('templates.callsheet.logo2.url', normalizeLegacyAssetUrl(nx.url));
     if (Number.isFinite(nx.s)) localStorage.setItem('templates.callsheet.logo2.s', String(nx.s));
     if (Number.isFinite(nx.x)) localStorage.setItem('templates.callsheet.logo2.x', String(nx.x));
     if (Number.isFinite(nx.y)) localStorage.setItem('templates.callsheet.logo2.y', String(nx.y));

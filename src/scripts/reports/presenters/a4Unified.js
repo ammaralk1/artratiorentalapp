@@ -834,10 +834,26 @@ export async function exportA4ReportCsv(rows = []) {
 }
 
 const DEFAULT_LOGO_URL = 'https://assets.art-ratio.com/AR-Logo-v3.5-curved.png';
+const LEGACY_SIRV_BASE = 'https://art-ratio.sirv.com';
+const CLOUDFLARE_ASSETS_BASE = 'https://assets.art-ratio.com';
+
+function normalizeLegacyAssetUrl(value = '') {
+  const url = String(value || '').trim();
+  if (!url) return '';
+  if (url.startsWith(LEGACY_SIRV_BASE)) {
+    return `${CLOUDFLARE_ASSETS_BASE}${url.slice(LEGACY_SIRV_BASE.length)}`;
+  }
+  return url;
+}
+
 function resolveLogoUrl() {
   try {
-    const v = localStorage.getItem('reportsPdf.logoUrl');
-    if (v && /^https?:|^data:|^blob:/.test(v)) return v;
+    const raw = localStorage.getItem('reportsPdf.logoUrl');
+    const normalized = normalizeLegacyAssetUrl(raw || '');
+    if (raw && normalized && raw !== normalized) {
+      localStorage.setItem('reportsPdf.logoUrl', normalized);
+    }
+    if (normalized && /^https?:|^data:|^blob:/.test(normalized)) return normalized;
   } catch (_) {}
   return DEFAULT_LOGO_URL;
 }

@@ -5,11 +5,40 @@ import { el, buildRoot } from '../core.js';
 
 // el/buildRoot are imported from ../core.js
 
+const LEGACY_SIRV_BASE = 'https://art-ratio.sirv.com';
+const CLOUDFLARE_ASSETS_BASE = 'https://assets.art-ratio.com';
+
+function normalizeLegacyAssetUrl(value = '') {
+  const url = String(value || '').trim();
+  if (!url) return '';
+  if (url.startsWith(LEGACY_SIRV_BASE)) {
+    return `${CLOUDFLARE_ASSETS_BASE}${url.slice(LEGACY_SIRV_BASE.length)}`;
+  }
+  return url;
+}
+
 function readSecondaryLogoState() {
-  try { return { url: localStorage.getItem('templates.callsheet.logo2.url') || '', s: Number(localStorage.getItem('templates.callsheet.logo2.s')||'1')||1, x: Number(localStorage.getItem('templates.callsheet.logo2.x')||'0')||0, y: Number(localStorage.getItem('templates.callsheet.logo2.y')||'0')||0 }; } catch(_) { return { url:'', s:1, x:0, y:0 }; }
+  try {
+    const rawUrl = localStorage.getItem('templates.callsheet.logo2.url') || '';
+    const normalizedUrl = normalizeLegacyAssetUrl(rawUrl);
+    if (rawUrl && normalizedUrl && rawUrl !== normalizedUrl) {
+      localStorage.setItem('templates.callsheet.logo2.url', normalizedUrl);
+    }
+    return {
+      url: normalizedUrl,
+      s: Number(localStorage.getItem('templates.callsheet.logo2.s')||'1')||1,
+      x: Number(localStorage.getItem('templates.callsheet.logo2.x')||'0')||0,
+      y: Number(localStorage.getItem('templates.callsheet.logo2.y')||'0')||0
+    };
+  } catch(_) { return { url:'', s:1, x:0, y:0 }; }
 }
 function writeSecondaryLogoState(nx = {}) {
-  try { if (typeof nx.url === 'string') localStorage.setItem('templates.callsheet.logo2.url', nx.url); if (Number.isFinite(nx.s)) localStorage.setItem('templates.callsheet.logo2.s', String(nx.s)); if (Number.isFinite(nx.x)) localStorage.setItem('templates.callsheet.logo2.x', String(nx.x)); if (Number.isFinite(nx.y)) localStorage.setItem('templates.callsheet.logo2.y', String(nx.y)); } catch(_) {}
+  try {
+    if (typeof nx.url === 'string') localStorage.setItem('templates.callsheet.logo2.url', normalizeLegacyAssetUrl(nx.url));
+    if (Number.isFinite(nx.s)) localStorage.setItem('templates.callsheet.logo2.s', String(nx.s));
+    if (Number.isFinite(nx.x)) localStorage.setItem('templates.callsheet.logo2.x', String(nx.x));
+    if (Number.isFinite(nx.y)) localStorage.setItem('templates.callsheet.logo2.y', String(nx.y));
+  } catch(_) {}
 }
 function enableSecondaryLogoInteractions(wrap, img) {
   try {
