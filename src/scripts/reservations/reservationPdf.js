@@ -36,9 +36,26 @@ const QUOTE_TOGGLE_PREFS_STORAGE_KEYS = {
   reservationChecklist: 'reservations.checklist.togglePrefs.v1'
 };
 const QUOTE_TROUBLESHOOT_URL = 'https://help.artratio.sa/guide/quote-preview';
+const LEGACY_SIRV_BASE = 'https://art-ratio.sirv.com';
+const CLOUDFLARE_ASSETS_BASE = 'https://assets.art-ratio.com';
+const QUOTE_DEFAULT_LOGO_URL = 'https://assets.art-ratio.com/AR%20Logo%20v3.5%20curved%20WH.png';
+
+function normalizeCloudflareAssetUrl(value = '') {
+  const url = String(value || '').trim();
+  if (!url) return '';
+  if (url.startsWith(LEGACY_SIRV_BASE)) {
+    return `${CLOUDFLARE_ASSETS_BASE}${url.slice(LEGACY_SIRV_BASE.length)}`;
+  }
+  return url;
+}
+
+function resolveQuoteLogoUrl(value = '') {
+  const normalized = normalizeCloudflareAssetUrl(value);
+  return normalized || QUOTE_DEFAULT_LOGO_URL;
+}
 
 const QUOTE_COMPANY_INFO = {
-  logoUrl: 'https://assets.art-ratio.com/AR-Logo-v3.5-curved.png',
+  logoUrl: resolveQuoteLogoUrl(QUOTE_DEFAULT_LOGO_URL),
   companyName: 'شركة فود آرت للدعاية والإعلان (شركة شخص واحد)',
   commercialRegistry: '4030485240',
   beneficiaryName: 'شركة فود آرت للدعاية والإعلان (شركة شخص واحد)',
@@ -47,6 +64,8 @@ const QUOTE_COMPANY_INFO = {
   iban: 'SA1680000358608016065706',
   approvalNote: 'الموافقة على هذا العرض تعتبر موافقة على جميع الشروط والأحكام.'
 };
+
+const QUOTE_FALLBACK_LOGO_ATTR = ` onerror="this.onerror=null;this.src='${QUOTE_DEFAULT_LOGO_URL}';"`;
 
 const QUOTE_TERMS = [
   'يوم العمل هو 12 ساعة، ويتم احتساب نصف يوم إضافي بعد 20 ساعة، ثم يوم كامل بعد ذلك.',
@@ -4283,7 +4302,7 @@ const projectDetailsInfoClass = buildInfoPlainClass(activeQuoteState, 'projectDe
   const headerTemplateHtml = `
     <header class="quote-header" data-quote-header-template>
       <div class="quote-header__logo">
-        <img class="quote-logo" src="${escapeHtml(QUOTE_COMPANY_INFO.logoUrl)}" alt="${escapeHtml(QUOTE_COMPANY_INFO.companyName)}" crossorigin="anonymous"/>
+        <img class="quote-logo" src="${escapeHtml(resolveQuoteLogoUrl(QUOTE_COMPANY_INFO.logoUrl))}" alt="${escapeHtml(QUOTE_COMPANY_INFO.companyName)}" crossorigin="anonymous"${QUOTE_FALLBACK_LOGO_ATTR}/>
       </div>
       <div class="quote-header__title">
         <h1>${escapeHtml(t('projects.quote.title', 'عرض سعر'))}</h1>
@@ -5121,7 +5140,7 @@ function buildQuotationHtml(options = {}) {
   const headerTemplateHtml = `
     <header class="quote-header" data-quote-header-template style="${Number.isFinite(Number(options?.headerOffset)) ? `margin-top:${Number(options.headerOffset)}px;` : ''}">
       <div class="quote-header__logo">
-        ${showLogo ? `<img class=\"quote-logo\" src=\"${escapeHtml(QUOTE_COMPANY_INFO.logoUrl)}\" alt=\"${escapeHtml(QUOTE_COMPANY_INFO.companyName)}\" crossorigin=\"anonymous\"/>` : `<span class=\"quote-logo quote-logo--placeholder\" aria-hidden=\"true\"></span>`}
+        ${showLogo ? `<img class=\"quote-logo\" src=\"${escapeHtml(resolveQuoteLogoUrl(QUOTE_COMPANY_INFO.logoUrl))}\" alt=\"${escapeHtml(QUOTE_COMPANY_INFO.companyName)}\" crossorigin=\"anonymous\"${QUOTE_FALLBACK_LOGO_ATTR}/>` : `<span class=\"quote-logo quote-logo--placeholder\" aria-hidden=\"true\"></span>`}
       </div>
       <div class="quote-header__title">
         <h1>${escapeHtml(headerTitle)}</h1>
