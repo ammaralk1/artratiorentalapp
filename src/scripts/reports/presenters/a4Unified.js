@@ -833,7 +833,7 @@ export async function exportA4ReportCsv(rows = []) {
   }
 }
 
-const DEFAULT_LOGO_URL = '/AR-Logo-v3.5-curved-WH.png';
+const DEFAULT_LOGO_URL = '/assets/AR-Logo-v3.5-curved-WH.png';
 const LEGACY_SIRV_BASE = 'https://art-ratio.sirv.com';
 const CLOUDFLARE_ASSETS_BASE = 'https://assets.art-ratio.com';
 

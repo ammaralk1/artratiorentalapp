@@ -38,7 +38,7 @@ const QUOTE_TOGGLE_PREFS_STORAGE_KEYS = {
 const QUOTE_TROUBLESHOOT_URL = 'https://help.artratio.sa/guide/quote-preview';
 const LEGACY_SIRV_BASE = 'https://art-ratio.sirv.com';
 const CLOUDFLARE_ASSETS_BASE = 'https://assets.art-ratio.com';
-const QUOTE_DEFAULT_LOGO_URL = '/AR-Logo-v3.5-curved-WH.png';
+const QUOTE_DEFAULT_LOGO_URL = '/assets/AR-Logo-v3.5-curved-WH.png';
 
 function normalizeCloudflareAssetUrl(value = '') {
   const url = String(value || '').trim();
