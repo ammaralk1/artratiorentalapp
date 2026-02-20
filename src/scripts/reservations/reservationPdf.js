@@ -17,6 +17,7 @@ import { resolveReservationProjectState, buildReservationDisplayGroups, sanitize
 import { findPackageById, getPackagesSnapshot } from '../reservationsPackages.js';
 import { PROJECT_TAX_RATE } from '../projects/constants.js';
 import quotePdfStyles from '../../styles/quotePdf.css?raw';
+import quoteLogoUrl from '../../assets/AR-Logo-v3.5-curved-WH.png?url';
 // Font URLs (served from public/fonts) resolved by Vite for reliable loading in preview/export windows
 import taj400Url from '/assets/Tajawal-400.ttf?url';
 import taj500Url from '/assets/Tajawal-500.ttf?url';
@@ -38,7 +39,7 @@ const QUOTE_TOGGLE_PREFS_STORAGE_KEYS = {
 const QUOTE_TROUBLESHOOT_URL = 'https://help.artratio.sa/guide/quote-preview';
 const LEGACY_SIRV_BASE = 'https://art-ratio.sirv.com';
 const CLOUDFLARE_ASSETS_BASE = 'https://assets.art-ratio.com';
-const QUOTE_DEFAULT_LOGO_URL = '/assets/AR-Logo-v3.5-curved-WH.png';
+const QUOTE_DEFAULT_LOGO_URL = quoteLogoUrl;
 
 function normalizeCloudflareAssetUrl(value = '') {
   const url = String(value || '').trim();

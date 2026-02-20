@@ -3,6 +3,7 @@ import { paymentLabelText } from '../calculations.js';
 import reportsState from '../state.js';
 import { ensureHtml2Pdf, ensureXlsx, ensureJsZip, loadExternalScript } from '../external.js';
 import reportsA4Css from '../../../styles/reportsA4.css?raw';
+import quoteLogoUrl from '../../../assets/AR-Logo-v3.5-curved-WH.png?url';
 
 const CSS_DPI = 96;
 const MM_PER_INCH = 25.4;
@@ -833,7 +834,7 @@ export async function exportA4ReportCsv(rows = []) {
   }
 }
 
-const DEFAULT_LOGO_URL = '/assets/AR-Logo-v3.5-curved-WH.png';
+const DEFAULT_LOGO_URL = quoteLogoUrl;
 const LEGACY_SIRV_BASE = 'https://art-ratio.sirv.com';
 const CLOUDFLARE_ASSETS_BASE = 'https://assets.art-ratio.com';
 

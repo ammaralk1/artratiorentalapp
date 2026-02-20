@@ -26,6 +26,7 @@ import { ensureCellToolbar as ensureCellToolbarExt } from '../templates/toolbar.
 import { autoPaginateTemplates as autoPaginateTemplatesExt, paginateExpDetailsTables as paginateExpDetailsTablesExt, paginateGenericTplTables as paginateGenericTplTablesExt, pruneEmptyA4Pages as pruneEmptyA4PagesExt, trimTrailingEmptyRows as trimTrailingEmptyRowsExt, shrinkSingleWordCells as shrinkSingleWordCellsExt, shrinkScheduleHeaderLabels as shrinkScheduleHeaderLabelsExt } from '../templates/pagination.js';
 import { bindExpensesRowActions } from '../templates/expensesTools.js';
 import { bindTableInteractions } from '../templates/tableInteractions.js';
+import quoteLogoUrl from '../../assets/AR-Logo-v3.5-curved-WH.png?url';
 import { snapshotShading, applyShadingSnapshot } from '../templates/shading.js';
 import {
   patchHtml2CanvasColorParsing,
@@ -833,7 +834,7 @@ function getSelectedReservations(projectId) {
 }
 
 const COMPANY_INFO = {
-  logoUrl: '/assets/AR-Logo-v3.5-curved-WH.png',
+  logoUrl: quoteLogoUrl,
   companyName: 'شركة فود آرت للدعاية والإعلان (شركة شخص واحد)',
   companyCR: '4030485240',
   companyLicense: '159460'
@@ -852,10 +853,13 @@ function normalizeLegacyAssetUrl(value = '') {
 }
 
 function normalizeTemplateHtmlLegacyUrls(html = '') {
-  const normalizedCloudflare = normalizeLegacyAssetUrl(html);
-  return String(normalizedCloudflare)
-    .replaceAll('https://assets.art-ratio.com/AR-Logo-v3.5-curved.png', COMPANY_INFO.logoUrl)
-    .replaceAll('https://assets.art-ratio.com/AR%20Logo%20v3.5%20curved%20WH.png', COMPANY_INFO.logoUrl);
+  let output = String(html || '');
+  output = output.replaceAll('https://art-ratio.sirv.com/AR-Logo-v3.5-curved.png', COMPANY_INFO.logoUrl);
+  output = output.replaceAll('https://art-ratio.sirv.com/AR%20Logo%20v3.5%20curved%20WH.png', COMPANY_INFO.logoUrl);
+  output = output.replaceAll('https://assets.art-ratio.com/AR-Logo-v3.5-curved.png', COMPANY_INFO.logoUrl);
+  output = output.replaceAll('https://assets.art-ratio.com/AR%20Logo%20v3.5%20curved%20WH.png', COMPANY_INFO.logoUrl);
+  output = output.replaceAll('/AR-Logo-v3.5-curved-WH.png', COMPANY_INFO.logoUrl);
+  return output;
 }
 
 let TEMPLATE_LANG = (typeof localStorage !== 'undefined' && localStorage.getItem('templates.lang')) || 'en';
