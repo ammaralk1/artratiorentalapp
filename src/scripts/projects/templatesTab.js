@@ -487,7 +487,7 @@ function ensureLogoControls(type = 'expenses') {
           if (parsed.snap && parsed.snap.r) { parsed.snap.r.url = ''; }
           if (parsed.html && typeof parsed.html === 'string') {
             try {
-              const tmp = document.createElement('div'); tmp.innerHTML = parsed.html;
+              const tmp = document.createElement('div'); tmp.innerHTML = normalizeTemplateHtmlLegacyUrls(parsed.html);
               const root = tmp.firstElementChild;
               const img = root && root.querySelector('.cs-logo--right img');
               if (img) { img.removeAttribute('src'); const wrap = img.closest('.cs-logo--right'); if (wrap) wrap.setAttribute('data-empty','1'); }
@@ -833,7 +833,7 @@ function getSelectedReservations(projectId) {
 }
 
 const COMPANY_INFO = {
-  logoUrl: 'https://assets.art-ratio.com/AR%20Logo%20v3.5%20curved%20WH.png',
+  logoUrl: '/AR-Logo-v3.5-curved-WH.png',
   companyName: 'شركة فود آرت للدعاية والإعلان (شركة شخص واحد)',
   companyCR: '4030485240',
   companyLicense: '159460'
@@ -849,6 +849,13 @@ function normalizeLegacyAssetUrl(value = '') {
     return `${CLOUDFLARE_ASSETS_BASE}${url.slice(LEGACY_SIRV_BASE.length)}`;
   }
   return url;
+}
+
+function normalizeTemplateHtmlLegacyUrls(html = '') {
+  const normalizedCloudflare = normalizeLegacyAssetUrl(html);
+  return String(normalizedCloudflare)
+    .replaceAll('https://assets.art-ratio.com/AR-Logo-v3.5-curved.png', COMPANY_INFO.logoUrl)
+    .replaceAll('https://assets.art-ratio.com/AR%20Logo%20v3.5%20curved%20WH.png', COMPANY_INFO.logoUrl);
 }
 
 let TEMPLATE_LANG = (typeof localStorage !== 'undefined' && localStorage.getItem('templates.lang')) || 'en';
@@ -1279,7 +1286,7 @@ function restoreTemplatesAutosaveIfPresent() {
       try {
         host.innerHTML = '';
         const wrap = document.createElement('div');
-        wrap.innerHTML = parsed.html;
+        wrap.innerHTML = normalizeTemplateHtmlLegacyUrls(parsed.html);
         const root = wrap.firstElementChild;
         if (root) {
           host.appendChild(root);
@@ -1392,7 +1399,7 @@ function writeRemoteAutosaveId(id) {
 function sanitizeHtmlForExport(html) {
   try {
     const tmp = document.createElement('div');
-    tmp.innerHTML = String(html || '');
+    tmp.innerHTML = normalizeTemplateHtmlLegacyUrls(String(html || ''));
     // Remove script tags entirely
     tmp.querySelectorAll('script').forEach((s) => s.parentElement?.removeChild(s));
     // Remove inline event handlers (on*) but keep style attributes (needed for transforms)
@@ -3187,7 +3194,7 @@ async function loadSnapshotById(id) {
     const data = typeof item.data === 'string' ? JSON.parse(item.data) : item.data;
     if (data?.html) {
       const wrap = document.createElement('div');
-      wrap.innerHTML = data.html;
+      wrap.innerHTML = normalizeTemplateHtmlLegacyUrls(data.html);
       const root = wrap.firstElementChild;
       if (root) host.appendChild(root);
       // Keep loaded HTML as-is when restoring a saved template
