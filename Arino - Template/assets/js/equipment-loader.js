@@ -27,7 +27,7 @@
 
   const keyGroups = {
     image: ['Image', 'Image Link', 'الصورة', 'لينك الصورة', 'رابط الصورة'],
-    name: ['Product Name', 'Name', 'اسم المنتج'],
+    name: ['Product Name', 'Name', 'اسم المنتج', 'Description', 'الوصف'],
     category: ['Category', 'القسم', 'Main Category', 'القسم الرئيسي'],
     subcategory: ['Subcategory', 'Sub Category', 'القسم الثانوي'],
   };
