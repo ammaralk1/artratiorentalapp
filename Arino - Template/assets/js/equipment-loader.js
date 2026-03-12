@@ -410,8 +410,12 @@
       makeBtn(isArabic() ? 'السابق' : 'Prev', Math.max(1, state.page - 1), state.page === 1)
     );
     const windowSize = 3;
-    const startPage = Math.floor((state.page - 1) / windowSize) * windowSize + 1;
-    const endPage = Math.min(totalPages, startPage + windowSize - 1);
+    let startPage = Math.max(1, state.page);
+    let endPage = Math.min(totalPages, startPage + windowSize - 1);
+    // Keep 3 visible pages whenever possible near the tail.
+    if (endPage - startPage + 1 < windowSize) {
+      startPage = Math.max(1, endPage - windowSize + 1);
+    }
     for (let i = startPage; i <= endPage; i++) {
       paginationEl.appendChild(makeBtn(String(i), i, false, i === state.page));
     }
