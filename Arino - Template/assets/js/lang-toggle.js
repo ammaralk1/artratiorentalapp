@@ -72,6 +72,51 @@
     nav_portfolio: { en: 'Portfolio', ar: 'أعمالنا' },
     nav_gallery: { en: 'Photo Gallery', ar: 'معرض الصور' },
     nav_blog: { en: 'Blog', ar: 'كشكولنا' },
+    home_page_title: { en: 'Art Ratio - Home', ar: 'آرت ريشو - الرئيسية' },
+    about_page_title: { en: 'Art Ratio - About', ar: 'آرت ريشو - من نحن' },
+    services_page_title: { en: 'Art Ratio - Services', ar: 'آرت ريشو - خدماتنا' },
+    service_consultancy_page_title: {
+      en: 'Art Ratio - Service: Production Consultancy',
+      ar: 'آرت ريشو - خدمة: الاستشارات الإنتاجية',
+    },
+    service_photography_page_title: {
+      en: 'Art Ratio - Service: Commercial Photography',
+      ar: 'آرت ريشو - خدمة: التصوير التجاري',
+    },
+    service_events_page_title: {
+      en: 'Art Ratio - Service: Events Coverage',
+      ar: 'آرت ريشو - خدمة: تغطية الفعاليات',
+    },
+    service_social_page_title: {
+      en: 'Art Ratio - Service: Social Media Content',
+      ar: 'آرت ريشو - خدمة: محتوى السوشال ميديا',
+    },
+    service_tv_page_title: {
+      en: 'Art Ratio - Service: TV & Commercial Ads',
+      ar: 'آرت ريشو - خدمة: إعلانات التلفزيون والإعلانات التجارية',
+    },
+    service_rental_page_title: {
+      en: 'Art Ratio - Service: Equipment Rental',
+      ar: 'آرت ريشو - خدمة: تأجير المعدات',
+    },
+    portfolio_page_title: { en: 'Art Ratio - Portfolio', ar: 'آرت ريشو - أعمالنا' },
+    portfolio_airport_lounge_page_title: {
+      en: 'Art Ratio - Project: Airport Executive Lounge',
+      ar: 'آرت ريشو - مشروع: صالة كبار الشخصيات في المطار',
+    },
+    portfolio_golf_tournament_page_title: {
+      en: 'Art Ratio - Project: Golf Tournament',
+      ar: 'آرت ريشو - مشروع: بطولة الجولف',
+    },
+    portfolio_saudi_dent_page_title: {
+      en: 'Art Ratio - Project: Saudi Dent',
+      ar: 'آرت ريشو - مشروع: سعودي دنت',
+    },
+    blog_page_title: { en: 'Art Ratio - Blog', ar: 'آرت ريشو - كشكولنا' },
+    team_page_title: { en: 'Art Ratio - Team', ar: 'آرت ريشو - فريقنا' },
+    contact_page_title: { en: 'Art Ratio - Contact', ar: 'آرت ريشو - تواصل معنا' },
+    feedback_page_title: { en: 'Art Ratio - Feedback', ar: 'آرت ريشو - آراء العملاء' },
+    faq_page_title: { en: 'Art Ratio - FAQ', ar: 'آرت ريشو - الأسئلة الشائعة' },
     gallery_breadcrumb: { en: 'Photo Gallery', ar: 'معرض الصور' },
     photo_gallery_page_title: { en: 'Photo Gallery', ar: 'معرض الصور' },
     privacy_page_title: { en: 'Privacy Policy | Art Ratio', ar: 'سياسة الخصوصية | آرت ريشو' },
