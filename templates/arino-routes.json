@@ -391,38 +391,38 @@
   },
   {
     "file": "shop.html",
-    "en": "/en/shop/",
-    "ar": "/ar/shop/",
+    "en": "/shop/",
+    "ar": "/shop/",
     "arSlug": "معداتنا"
   },
   {
     "file": "shop-cart.html",
-    "en": "/en/shop-cart/",
-    "ar": "/ar/shop-cart/",
+    "en": "/shop-cart/",
+    "ar": "/shop-cart/",
     "arSlug": "سلة-المعدات"
   },
   {
     "file": "shop-checkout.html",
-    "en": "/en/shop-checkout/",
-    "ar": "/ar/shop-checkout/",
+    "en": "/shop-checkout/",
+    "ar": "/shop-checkout/",
     "arSlug": "طلب-المعدات"
   },
   {
     "file": "shop-product-details.html",
-    "en": "/en/shop-product-details/",
-    "ar": "/ar/shop-product-details/",
+    "en": "/shop-product-details/",
+    "ar": "/shop-product-details/",
     "arSlug": "تفاصيل-معدة"
   },
   {
     "file": "shop-wishlist.html",
-    "en": "/en/shop-wishlist/",
-    "ar": "/ar/shop-wishlist/",
+    "en": "/shop-wishlist/",
+    "ar": "/shop-wishlist/",
     "arSlug": "المفضلة"
   },
   {
     "file": "shop-order-recived.html",
-    "en": "/en/shop-order-recived/",
-    "ar": "/ar/shop-order-recived/",
+    "en": "/shop-order-recived/",
+    "ar": "/shop-order-recived/",
     "arSlug": "تأكيد-الطلب"
   },
   {

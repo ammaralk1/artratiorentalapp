@@ -2,7 +2,10 @@
   const page = document.body && document.body.getAttribute('data-page');
   if (page !== 'shop') return;
 
-  const excelUrl = 'equipment-all-20251130-1640.xlsx';
+  const excelUrls = [
+    '/assets/data/equipment-all-20251130-1640.xlsx',
+    '/assets/data/equipment.xlsx',
+  ];
   const grid = document.getElementById('equipment-grid');
   const countEl = document.getElementById('equipment-count');
   const categoryList = document.getElementById('equipment-category-list');
@@ -400,15 +403,29 @@
 
   async function loadExcel() {
     try {
-      const res = await fetch(excelUrl);
-      if (!res.ok) {
-        throw new Error(`Equipment file request failed (${res.status}) for ${excelUrl}`);
+      let buf = null;
+      let loadedFrom = '';
+      for (const url of excelUrls) {
+        try {
+          const res = await fetch(url, { cache: 'no-store' });
+          if (!res.ok) continue;
+          buf = await res.arrayBuffer();
+          loadedFrom = url;
+          break;
+        } catch (e) {}
       }
-      const buf = await res.arrayBuffer();
+
+      if (!buf) {
+        throw new Error(`Equipment file request failed for all sources: ${excelUrls.join(', ')}`);
+      }
+
       const wb = XLSX.read(buf, { type: 'array' });
       const sheet = wb.Sheets[wb.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
       items = dedupeItemsByName(rows.map(normalizeRow).filter((i) => i.name));
+      if (loadedFrom) {
+        console.info('Equipment loaded from', loadedFrom, 'items:', items.length);
+      }
       renderFilters();
       setActiveFilter('category', state.category);
       setActiveFilter('subcategory', state.subcategory);
