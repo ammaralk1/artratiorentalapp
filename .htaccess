@@ -15,6 +15,7 @@ RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
 # Serve clean URLs for the built static assets and pages.
 RewriteRule ^assets/(.*)$ dist/assets/$1 [L,NC]
+RewriteRule ^js/(gtm-init|embed-vimeo-controls|video-thumb-inline|hero-vimeo-loop)\.js$ Arino\ -\ Template/assets/js/$1.js [L,NC]
 RewriteRule ^js/(.*)$ dist/js/$1 [L,NC]
 RewriteRule ^css/(.*)$ dist/css/$1 [L,NC]
 RewriteRule ^profile(?:/index\.html)?/?$ dist/profile/index.html [L,NC]
