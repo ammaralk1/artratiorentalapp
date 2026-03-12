@@ -158,6 +158,7 @@
       'Sony FX6 Charger 3PCS',
       'RavPower Battary Charger',
       'Domy Battary for Cine 7',
+      'Benro Legs A673',
     ].map(normalizeEquipmentName),
   );
 
