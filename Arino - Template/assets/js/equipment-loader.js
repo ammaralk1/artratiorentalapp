@@ -54,7 +54,7 @@
     const imageCandidates = buildImageCandidates(rawImage);
     return {
       name: pick(row, keyGroups.name) || fallbackName,
-      image: imageCandidates[0] || rawImage || 'assets/img/shop/product_1.jpeg',
+      image: imageCandidates[0] || '',
       imageCandidates: imageCandidates.slice(1),
       imageOriginal: rawImage,
       category: pick(row, keyGroups.category) || fallbackCategory,
@@ -66,10 +66,12 @@
     const raw = String(input || '').trim();
     if (!raw) return [];
 
-    // Keep already-migrated Cloudflare PNG URLs untouched.
-    if (/^https?:\/\/assets\.art-ratio\.com\/.*\.png(?:\?.*)?$/i.test(raw)) return [raw];
-    // For direct absolute image URLs (e.g., Sirv JPG), prefer the original URL first.
-    if (/^https?:\/\/.+\.(png|jpe?g|webp|gif|avif|svg)(?:\?.*)?$/i.test(raw)) {
+    // Keep already-migrated Cloudflare URLs only when they are PNG in allowed folders.
+    if (
+      /^https?:\/\/assets\.art-ratio\.com\/(?:png2|png|outsource)\/[^?#]+\.png(?:\?.*)?$/i.test(
+        raw
+      )
+    ) {
       return [raw];
     }
 
