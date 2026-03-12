@@ -31,6 +31,7 @@
     category: ['Category', 'القسم', 'Main Category', 'القسم الرئيسي'],
     subcategory: ['Subcategory', 'Sub Category', 'القسم الثانوي'],
   };
+  const cloudflareBase = 'https://assets.art-ratio.com/';
 
   function pick(row, keys) {
     for (const key of keys) {
@@ -40,12 +41,62 @@
   }
 
   function normalizeRow(row) {
+    const rawImage = pick(row, keyGroups.image);
+    const imageCandidates = buildImageCandidates(rawImage);
     return {
       name: pick(row, keyGroups.name),
-      image: pick(row, keyGroups.image),
+      image: imageCandidates[0] || rawImage,
+      imageCandidates: imageCandidates.slice(1),
+      imageOriginal: rawImage,
       category: pick(row, keyGroups.category),
       subcategory: pick(row, keyGroups.subcategory),
     };
+  }
+
+  function buildImageCandidates(input) {
+    const raw = String(input || '').trim();
+    if (!raw) return [];
+
+    // Keep already-migrated Cloudflare URLs untouched.
+    if (/^https?:\/\/assets\.art-ratio\.com\//i.test(raw)) return [raw];
+
+    let fileName = raw;
+    let folderName = '';
+    try {
+      const parsed = new URL(raw, window.location.origin);
+      const parts = (parsed.pathname || '').split('/').filter(Boolean);
+      fileName = parts[parts.length - 1] || raw;
+      folderName = (parts[parts.length - 2] || '').toLowerCase();
+    } catch (e) {}
+
+    try {
+      fileName = decodeURIComponent(fileName);
+    } catch (e) {}
+
+    const stem = fileName.replace(/\.[^.]+$/, '').trim();
+    const candidates = [];
+    const pushCandidate = (url) => {
+      if (!url) return;
+      if (!candidates.includes(url)) candidates.push(url);
+    };
+
+    if (stem) {
+      // Primary location used for numeric rental images.
+      pushCandidate(cloudflareBase + 'png/' + encodeURIComponent(stem) + '.png');
+    }
+    if (folderName) {
+      // Support split folders (e.g. Rental / outsource) on Cloudflare.
+      pushCandidate(cloudflareBase + folderName + '/' + encodeURIComponent(fileName));
+      if (stem) {
+        pushCandidate(cloudflareBase + folderName + '/' + encodeURIComponent(stem) + '.png');
+      }
+    }
+    // Optional fallback if original extension is preserved under /png.
+    pushCandidate(cloudflareBase + 'png/' + encodeURIComponent(fileName));
+
+    // Last fallback keeps legacy source.
+    pushCandidate(raw);
+    return candidates;
   }
 
   function uniqueList(arr) {
@@ -140,7 +191,7 @@
       col.innerHTML = `
         <div class="cs-product_card cs_style_1">
           <div class="cs-product_thumb">
-            <img src="${item.image}" alt="${item.name}">
+            <img src="${item.image}" alt="${item.name}" data-fallback-src='${JSON.stringify(item.imageCandidates || [])}'>
           </div>
           <div class="cs-product_info">
             <h2 class="cs-product_title"><span>${item.name}</span></h2>
@@ -160,6 +211,21 @@
       `;
       const btn = col.querySelector('.cs-add-to-list');
       const qtyInput = col.querySelector('.cs-qty-input');
+      const img = col.querySelector('img[data-fallback-src]');
+      if (img) {
+        img.addEventListener('error', () => {
+          let remaining = [];
+          try {
+            remaining = JSON.parse(img.getAttribute('data-fallback-src') || '[]');
+          } catch (e) {}
+          if (!Array.isArray(remaining) || !remaining.length) return;
+          const nextSrc = remaining.shift();
+          img.setAttribute('data-fallback-src', JSON.stringify(remaining));
+          if (nextSrc && img.getAttribute('src') !== nextSrc) {
+            img.setAttribute('src', nextSrc);
+          }
+        });
+      }
       btn.addEventListener('click', (e) => {
         e.preventDefault();
         const qty = Math.max(1, parseInt(qtyInput.value, 10) || 1);
