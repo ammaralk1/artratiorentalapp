@@ -2379,6 +2379,91 @@
     },
   };
 
+  const enToArPath = {
+    '/': '/',
+    '/about.html': '/من-نحن',
+    '/service.html': '/خدماتنا',
+    '/portfolio.html': '/اعمالنا',
+    '/photography-agency.html': '/معرض-الصور',
+    '/blog.html': '/كشكولنا',
+    '/team.html': '/فريقنا',
+    '/contact.html': '/تواصل-معنا',
+    '/feedback.html': '/اراء-العملاء',
+    '/faq.html': '/الاسئلة-الشائعة',
+    '/privacy.html': '/سياسة-الخصوصية',
+    '/terms.html': '/شروط-الاستخدام',
+  };
+  const arToEnPath = Object.fromEntries(
+    Object.entries(enToArPath).map(([enPath, arPath]) => [arPath, enPath]),
+  );
+
+  const normalizePath = (rawPath) => {
+    let path = rawPath || '/';
+    try {
+      path = decodeURIComponent(path);
+    } catch (e) {}
+    if (!path.startsWith('/')) path = `/${path}`;
+    path = path.replace(/\/{2,}/g, '/');
+    if (path === '/index.html') path = '/';
+    if (path !== '/' && path.endsWith('/')) path = path.slice(0, -1);
+    return path;
+  };
+
+  const mapPathForLanguage = (rawPath, lang) => {
+    const normalized = normalizePath(rawPath);
+    const englishPath = arToEnPath[normalized] || normalized;
+    if (lang === 'ar') return enToArPath[englishPath] || normalized;
+    return englishPath;
+  };
+
+  const syncCurrentPathWithLanguage = (lang) => {
+    const current = normalizePath(window.location.pathname || '/');
+    const target = mapPathForLanguage(current, lang);
+    if (target && target !== current) {
+      const nextUrl = `${target}${window.location.search || ''}${window.location.hash || ''}`;
+      window.history.replaceState({}, '', nextUrl);
+    }
+  };
+
+  const localizeInternalLinks = (lang) => {
+    document.querySelectorAll('a[href]').forEach((anchor) => {
+      const href = anchor.getAttribute('href');
+      if (!href) return;
+      if (/^(#|mailto:|tel:|javascript:)/i.test(href)) return;
+
+      if (!anchor.dataset.i18nHrefBase) {
+        anchor.dataset.i18nHrefBase = href;
+      }
+      const baseHref = anchor.dataset.i18nHrefBase;
+      let parsed;
+      try {
+        parsed = new URL(baseHref, window.location.origin);
+      } catch (e) {
+        return;
+      }
+      if (parsed.origin !== window.location.origin) return;
+
+      const targetPath = mapPathForLanguage(parsed.pathname, lang);
+      if (!targetPath) return;
+      const nextHref = `${targetPath}${parsed.search || ''}${parsed.hash || ''}`;
+      anchor.setAttribute('href', nextHref);
+    });
+  };
+
+  const syncSeoHead = () => {
+    const title = document.title || '';
+    document
+      .querySelectorAll('meta[property="og:title"], meta[name="twitter:title"]')
+      .forEach((meta) => meta.setAttribute('content', title));
+
+    const absoluteUrl = `${window.location.origin}${window.location.pathname}${window.location.search || ''}`;
+    const canonical = document.querySelector('link[rel="canonical"]');
+    if (canonical) canonical.setAttribute('href', absoluteUrl);
+    document
+      .querySelectorAll('meta[property="og:url"]')
+      .forEach((meta) => meta.setAttribute('content', absoluteUrl));
+  };
+
   const applyTranslations = (lang) => {
     const pageKey = (document.body && document.body.dataset.page) || '';
     document.querySelectorAll('[data-i18n-key]').forEach((el) => {
@@ -2567,12 +2652,15 @@
 
   const setLanguage = (lang) => {
     const selected = lang === 'ar' ? 'ar' : 'en';
+    syncCurrentPathWithLanguage(selected);
     const isArabic = selected === 'ar';
     document.documentElement.lang = selected;
     document.documentElement.dir = isArabic ? 'rtl' : 'ltr';
     document.body.classList.toggle('rtl', isArabic);
     reorderHomeTeamSlides(selected);
     applyTranslations(selected);
+    localizeInternalLinks(selected);
+    syncSeoHead();
     applyTestimonialImageSwap(selected);
 
     updateToggleLabel(selected);

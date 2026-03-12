@@ -33,6 +33,20 @@ RewriteRule ^(dashboard|home|login|customer|technician|projects|projects-reports
 # Redirect any legacy /src/pages/* paths to the built pages
 RewriteRule ^src/pages/(.*)$ dist/src/pages/$1 [L,NC]
 
+# Arabic localized routes for key public pages (no redirect; internal rewrite only)
+RewriteRule ^الرئيسية/?$ Arino\ -\ Template/index.html [L,NC]
+RewriteRule ^من-نحن/?$ Arino\ -\ Template/about.html [L,NC]
+RewriteRule ^خدماتنا/?$ Arino\ -\ Template/service.html [L,NC]
+RewriteRule ^اعمالنا/?$ Arino\ -\ Template/portfolio.html [L,NC]
+RewriteRule ^معرض-الصور/?$ Arino\ -\ Template/photography-agency.html [L,NC]
+RewriteRule ^كشكولنا/?$ Arino\ -\ Template/blog.html [L,NC]
+RewriteRule ^فريقنا/?$ Arino\ -\ Template/team.html [L,NC]
+RewriteRule ^تواصل-معنا/?$ Arino\ -\ Template/contact.html [L,NC]
+RewriteRule ^اراء-العملاء/?$ Arino\ -\ Template/feedback.html [L,NC]
+RewriteRule ^الاسئلة-الشائعة/?$ Arino\ -\ Template/faq.html [L,NC]
+RewriteRule ^سياسة-الخصوصية/?$ Arino\ -\ Template/privacy.html [L,NC]
+RewriteRule ^شروط-الاستخدام/?$ Arino\ -\ Template/terms.html [L,NC]
+
 # Serve Arino template HTML pages at root without URL redirect:
 # /about.html -> /Arino - Template/about.html (internal rewrite only)
 RewriteCond %{REQUEST_URI} \.html$ [NC]
