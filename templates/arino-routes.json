@@ -1,0 +1,446 @@
+[
+  {
+    "file": "about.html",
+    "en": "/en/about/",
+    "ar": "/ar/من-نحن/",
+    "arSlug": "من-نحن"
+  },
+  {
+    "file": "blog.html",
+    "en": "/en/blog/",
+    "ar": "/ar/كشكولنا/",
+    "arSlug": "كشكولنا"
+  },
+  {
+    "file": "contact.html",
+    "en": "/en/contact/",
+    "ar": "/ar/تواصل-معنا/",
+    "arSlug": "تواصل-معنا"
+  },
+  {
+    "file": "faq.html",
+    "en": "/en/faq/",
+    "ar": "/ar/الأسئلة-الشائعة/",
+    "arSlug": "الأسئلة-الشائعة"
+  },
+  {
+    "file": "feedback.html",
+    "en": "/en/feedback/",
+    "ar": "/ar/آراء-العملاء/",
+    "arSlug": "آراء-العملاء"
+  },
+  {
+    "file": "index.html",
+    "en": "/en/",
+    "ar": "/ar/",
+    "arSlug": "الرئيسية"
+  },
+  {
+    "file": "photography-agency.html",
+    "en": "/en/photography-agency/",
+    "ar": "/ar/معرض-الصور/",
+    "arSlug": "معرض-الصور"
+  },
+  {
+    "file": "portfolio-details-airport-executive-lounge.html",
+    "en": "/en/portfolio-details-airport-executive-lounge/",
+    "ar": "/ar/مشروع-صالة-كبار-الشخصيات-في-المطار/",
+    "arSlug": "مشروع-صالة-كبار-الشخصيات-في-المطار"
+  },
+  {
+    "file": "portfolio-details-golf-tournament.html",
+    "en": "/en/portfolio-details-golf-tournament/",
+    "ar": "/ar/مشروع-بطولة-الجولف/",
+    "arSlug": "مشروع-بطولة-الجولف"
+  },
+  {
+    "file": "portfolio-details-saudi-dent.html",
+    "en": "/en/portfolio-details-saudi-dent/",
+    "ar": "/ar/مشروع-سعودي-دنت/",
+    "arSlug": "مشروع-سعودي-دنت"
+  },
+  {
+    "file": "portfolio-details-video-1132890882.html",
+    "en": "/en/portfolio-details-video-1132890882/",
+    "ar": "/ar/ساندوتش-تيكا-من-الطازج/",
+    "arSlug": "ساندوتش-تيكا-من-الطازج"
+  },
+  {
+    "file": "portfolio-details-video-2.html",
+    "en": "/en/portfolio-details-video-2/",
+    "ar": "/ar/برج-ترامب-جدة/",
+    "arSlug": "برج-ترامب-جدة"
+  },
+  {
+    "file": "portfolio-details-video-3.html",
+    "en": "/en/portfolio-details-video-3/",
+    "ar": "/ar/ريل-لأم-الزلف/",
+    "arSlug": "ريل-لأم-الزلف"
+  },
+  {
+    "file": "portfolio-details-video-4.html",
+    "en": "/en/portfolio-details-video-4/",
+    "ar": "/ar/الفيلم-النهائي-للستي-ووك-٢٠٢٤/",
+    "arSlug": "الفيلم-النهائي-للستي-ووك-٢٠٢٤"
+  },
+  {
+    "file": "portfolio-details-video-5.html",
+    "en": "/en/portfolio-details-video-5/",
+    "ar": "/ar/ايفنت-هوبلو/",
+    "arSlug": "ايفنت-هوبلو"
+  },
+  {
+    "file": "portfolio-details-video-6.html",
+    "en": "/en/portfolio-details-video-6/",
+    "ar": "/ar/ريل-لميت-ذا-فيش/",
+    "arSlug": "ريل-لميت-ذا-فيش"
+  },
+  {
+    "file": "portfolio-details-video-7.html",
+    "en": "/en/portfolio-details-video-7/",
+    "ar": "/ar/معرض-الكتاب/",
+    "arSlug": "معرض-الكتاب"
+  },
+  {
+    "file": "portfolio.html",
+    "en": "/en/portfolio/",
+    "ar": "/ar/أعمالنا/",
+    "arSlug": "أعمالنا"
+  },
+  {
+    "file": "portfolio2-details-video-1.html",
+    "en": "/en/portfolio2-details-video-1/",
+    "ar": "/ar/ريل-إعلاني-لعبدالصمد-القرشي/",
+    "arSlug": "ريل-إعلاني-لعبدالصمد-القرشي"
+  },
+  {
+    "file": "portfolio2-details-video-2.html",
+    "en": "/en/portfolio2-details-video-2/",
+    "ar": "/ar/ريل-للكوتش-البيتي-الفيصل/",
+    "arSlug": "ريل-للكوتش-البيتي-الفيصل"
+  },
+  {
+    "file": "portfolio2-details-video-3.html",
+    "en": "/en/portfolio2-details-video-3/",
+    "ar": "/ar/نهائي-دوري-أبطال-آسيا-للنخبة/",
+    "arSlug": "نهائي-دوري-أبطال-آسيا-للنخبة"
+  },
+  {
+    "file": "portfolio2-details-video-4.html",
+    "en": "/en/portfolio2-details-video-4/",
+    "ar": "/ar/توبا-ذا-ون/",
+    "arSlug": "توبا-ذا-ون"
+  },
+  {
+    "file": "portfolio2-details-video-5.html",
+    "en": "/en/portfolio2-details-video-5/",
+    "ar": "/ar/ايفنت-معوض/",
+    "arSlug": "ايفنت-معوض"
+  },
+  {
+    "file": "portfolio2-details-video-6.html",
+    "en": "/en/portfolio2-details-video-6/",
+    "ar": "/ar/ريل-اليوم-الوطني/",
+    "arSlug": "ريل-اليوم-الوطني"
+  },
+  {
+    "file": "portfolio2-details-video-7.html",
+    "en": "/en/portfolio2-details-video-7/",
+    "ar": "/ar/موفي-بوكس-الطازج/",
+    "arSlug": "موفي-بوكس-الطازج"
+  },
+  {
+    "file": "portfolio2.html",
+    "en": "/en/portfolio2/",
+    "ar": "/ar/أعمالنا-2/",
+    "arSlug": "أعمالنا-2"
+  },
+  {
+    "file": "portfolio3-details-video-1.html",
+    "en": "/en/portfolio3-details-video-1/",
+    "ar": "/ar/ريل-رنة-خلخال/",
+    "arSlug": "ريل-رنة-خلخال"
+  },
+  {
+    "file": "portfolio3-details-video-2.html",
+    "en": "/en/portfolio3-details-video-2/",
+    "ar": "/ar/اوفردوز-ايس-كريم/",
+    "arSlug": "اوفردوز-ايس-كريم"
+  },
+  {
+    "file": "portfolio3-details-video-3.html",
+    "en": "/en/portfolio3-details-video-3/",
+    "ar": "/ar/سفاري-اكستريم/",
+    "arSlug": "سفاري-اكستريم"
+  },
+  {
+    "file": "portfolio3-details-video-4.html",
+    "en": "/en/portfolio3-details-video-4/",
+    "ar": "/ar/تغطية-محلات-في-السيتي-ووك/",
+    "arSlug": "تغطية-محلات-في-السيتي-ووك"
+  },
+  {
+    "file": "portfolio3-details-video-5.html",
+    "en": "/en/portfolio3-details-video-5/",
+    "ar": "/ar/فيديو-مجوهرات/",
+    "arSlug": "فيديو-مجوهرات"
+  },
+  {
+    "file": "portfolio3-details-video-6.html",
+    "en": "/en/portfolio3-details-video-6/",
+    "ar": "/ar/فول-جرين-فارمز/",
+    "arSlug": "فول-جرين-فارمز"
+  },
+  {
+    "file": "portfolio3-details-video-7.html",
+    "en": "/en/portfolio3-details-video-7/",
+    "ar": "/ar/صنع-في-باكستان/",
+    "arSlug": "صنع-في-باكستان"
+  },
+  {
+    "file": "portfolio3.html",
+    "en": "/en/portfolio3/",
+    "ar": "/ar/أعمالنا-3/",
+    "arSlug": "أعمالنا-3"
+  },
+  {
+    "file": "portfolio4-details-video-1.html",
+    "en": "/en/portfolio4-details-video-1/",
+    "ar": "/ar/افتتاح-فرع-روومرز/",
+    "arSlug": "افتتاح-فرع-روومرز"
+  },
+  {
+    "file": "portfolio4-details-video-2.html",
+    "en": "/en/portfolio4-details-video-2/",
+    "ar": "/ar/تغطية-كشك-في-ويشن/",
+    "arSlug": "تغطية-كشك-في-ويشن"
+  },
+  {
+    "file": "portfolio4-details-video-3.html",
+    "en": "/en/portfolio4-details-video-3/",
+    "ar": "/ar/كيكو-ميلانو/",
+    "arSlug": "كيكو-ميلانو"
+  },
+  {
+    "file": "portfolio4-details-video-4.html",
+    "en": "/en/portfolio4-details-video-4/",
+    "ar": "/ar/العروض-الجوالة-سيتي-ووك/",
+    "arSlug": "العروض-الجوالة-سيتي-ووك"
+  },
+  {
+    "file": "portfolio4-details-video-5.html",
+    "en": "/en/portfolio4-details-video-5/",
+    "ar": "/ar/قرية-التأسيس-عرعر/",
+    "arSlug": "قرية-التأسيس-عرعر"
+  },
+  {
+    "file": "portfolio4-details-video-6.html",
+    "en": "/en/portfolio4-details-video-6/",
+    "ar": "/ar/معرض-الكتاب-2/",
+    "arSlug": "معرض-الكتاب-2"
+  },
+  {
+    "file": "portfolio4-details-video-7.html",
+    "en": "/en/portfolio4-details-video-7/",
+    "ar": "/ar/مقابلات-مختارة/",
+    "arSlug": "مقابلات-مختارة"
+  },
+  {
+    "file": "portfolio4.html",
+    "en": "/en/portfolio4/",
+    "ar": "/ar/أعمالنا-4/",
+    "arSlug": "أعمالنا-4"
+  },
+  {
+    "file": "portfolio5-details-video-1.html",
+    "en": "/en/portfolio5-details-video-1/",
+    "ar": "/ar/في-60/",
+    "arSlug": "في-60"
+  },
+  {
+    "file": "portfolio5-details-video-2.html",
+    "en": "/en/portfolio5-details-video-2/",
+    "ar": "/ar/مجوهرات/",
+    "arSlug": "مجوهرات"
+  },
+  {
+    "file": "portfolio5-details-video-3.html",
+    "en": "/en/portfolio5-details-video-3/",
+    "ar": "/ar/مجوهرات-2/",
+    "arSlug": "مجوهرات-2"
+  },
+  {
+    "file": "portfolio5-details-video-4.html",
+    "en": "/en/portfolio5-details-video-4/",
+    "ar": "/ar/اوفردوز-عام/",
+    "arSlug": "اوفردوز-عام"
+  },
+  {
+    "file": "portfolio5-details-video-5.html",
+    "en": "/en/portfolio5-details-video-5/",
+    "ar": "/ar/قيمرية/",
+    "arSlug": "قيمرية"
+  },
+  {
+    "file": "portfolio5-details-video-6.html",
+    "en": "/en/portfolio5-details-video-6/",
+    "ar": "/ar/ريل-للطريقة-المعينة/",
+    "arSlug": "ريل-للطريقة-المعينة"
+  },
+  {
+    "file": "portfolio5-details-video-7.html",
+    "en": "/en/portfolio5-details-video-7/",
+    "ar": "/ar/عدنان-خان-مجھ-سے-دور/",
+    "arSlug": "عدنان-خان-مجھ-سے-دور"
+  },
+  {
+    "file": "portfolio5.html",
+    "en": "/en/portfolio5/",
+    "ar": "/ar/أعمالنا-5/",
+    "arSlug": "أعمالنا-5"
+  },
+  {
+    "file": "portfolio6-details-video-1.html",
+    "en": "/en/portfolio6-details-video-1/",
+    "ar": "/ar/كيكة-كوز/",
+    "arSlug": "كيكة-كوز"
+  },
+  {
+    "file": "portfolio6-details-video-2.html",
+    "en": "/en/portfolio6-details-video-2/",
+    "ar": "/ar/هنجرستيشن/",
+    "arSlug": "هنجرستيشن"
+  },
+  {
+    "file": "portfolio6-details-video-3.html",
+    "en": "/en/portfolio6-details-video-3/",
+    "ar": "/ar/ايوا/",
+    "arSlug": "ايوا"
+  },
+  {
+    "file": "portfolio6-details-video-4.html",
+    "en": "/en/portfolio6-details-video-4/",
+    "ar": "/ar/بوكس-الباربكيو-زد/",
+    "arSlug": "بوكس-الباربكيو-زد"
+  },
+  {
+    "file": "portfolio6-details-video-5.html",
+    "en": "/en/portfolio6-details-video-5/",
+    "ar": "/ar/اعلان-قهوة/",
+    "arSlug": "اعلان-قهوة"
+  },
+  {
+    "file": "portfolio6-details-video-6.html",
+    "en": "/en/portfolio6-details-video-6/",
+    "ar": "/ar/تجمع-نادي-فيراري-السعودي/",
+    "arSlug": "تجمع-نادي-فيراري-السعودي"
+  },
+  {
+    "file": "portfolio6-details-video-7.html",
+    "en": "/en/portfolio6-details-video-7/",
+    "ar": "/ar/اعلان-ازار/",
+    "arSlug": "اعلان-ازار"
+  },
+  {
+    "file": "portfolio6.html",
+    "en": "/en/portfolio6/",
+    "ar": "/ar/أعمالنا-6/",
+    "arSlug": "أعمالنا-6"
+  },
+  {
+    "file": "privacy.html",
+    "en": "/en/privacy/",
+    "ar": "/ar/سياسة-الخصوصية/",
+    "arSlug": "سياسة-الخصوصية"
+  },
+  {
+    "file": "service-details-consultancy.html",
+    "en": "/en/service-details-consultancy/",
+    "ar": "/ar/خدمة-الاستشارات-الإنتاجية/",
+    "arSlug": "خدمة-الاستشارات-الإنتاجية"
+  },
+  {
+    "file": "service-details-equipment-rental.html",
+    "en": "/en/service-details-equipment-rental/",
+    "ar": "/ar/خدمة-تأجير-المعدات/",
+    "arSlug": "خدمة-تأجير-المعدات"
+  },
+  {
+    "file": "service-details-events-coverage.html",
+    "en": "/en/service-details-events-coverage/",
+    "ar": "/ar/خدمة-تغطية-الفعاليات/",
+    "arSlug": "خدمة-تغطية-الفعاليات"
+  },
+  {
+    "file": "service-details-photography.html",
+    "en": "/en/service-details-photography/",
+    "ar": "/ar/خدمة-التصوير-التجاري/",
+    "arSlug": "خدمة-التصوير-التجاري"
+  },
+  {
+    "file": "service-details-social-media-content.html",
+    "en": "/en/service-details-social-media-content/",
+    "ar": "/ar/خدمة-محتوى-السوشال-ميديا/",
+    "arSlug": "خدمة-محتوى-السوشال-ميديا"
+  },
+  {
+    "file": "service-details-tv-commercial-ads.html",
+    "en": "/en/service-details-tv-commercial-ads/",
+    "ar": "/ar/خدمة-إعلانات-التلفزيون-والإعلانات-التجارية/",
+    "arSlug": "خدمة-إعلانات-التلفزيون-والإعلانات-التجارية"
+  },
+  {
+    "file": "service.html",
+    "en": "/en/service/",
+    "ar": "/ar/خدماتنا/",
+    "arSlug": "خدماتنا"
+  },
+  {
+    "file": "team-details-abdulqader-bdawi.html",
+    "en": "/en/team-details-abdulqader-bdawi/",
+    "ar": "/ar/عبدالقادر-البديوي-تفاصيل-الفريق/",
+    "arSlug": "عبدالقادر-البديوي-تفاصيل-الفريق"
+  },
+  {
+    "file": "team-details-adnan-alkhatib.html",
+    "en": "/en/team-details-adnan-alkhatib/",
+    "ar": "/ar/عدنان-الخطيب-تفاصيل-الفريق/",
+    "arSlug": "عدنان-الخطيب-تفاصيل-الفريق"
+  },
+  {
+    "file": "team-details-ammar-alkhatib.html",
+    "en": "/en/team-details-ammar-alkhatib/",
+    "ar": "/ar/عمار-الخطيب-تفاصيل-الفريق/",
+    "arSlug": "عمار-الخطيب-تفاصيل-الفريق"
+  },
+  {
+    "file": "team-details-mohammed-hararah.html",
+    "en": "/en/team-details-mohammed-hararah/",
+    "ar": "/ar/محمد-حرارة-تفاصيل-الفريق/",
+    "arSlug": "محمد-حرارة-تفاصيل-الفريق"
+  },
+  {
+    "file": "team-details-mohammed-leon.html",
+    "en": "/en/team-details-mohammed-leon/",
+    "ar": "/ar/محمد-ليون-تفاصيل-الفريق/",
+    "arSlug": "محمد-ليون-تفاصيل-الفريق"
+  },
+  {
+    "file": "team-details-taha-zarifah.html",
+    "en": "/en/team-details-taha-zarifah/",
+    "ar": "/ar/طه-ظريفة-تفاصيل-الفريق/",
+    "arSlug": "طه-ظريفة-تفاصيل-الفريق"
+  },
+  {
+    "file": "team.html",
+    "en": "/en/team/",
+    "ar": "/ar/فريقنا/",
+    "arSlug": "فريقنا"
+  },
+  {
+    "file": "terms.html",
+    "en": "/en/terms/",
+    "ar": "/ar/شروط-الاستخدام/",
+    "arSlug": "شروط-الاستخدام"
+  }
+]

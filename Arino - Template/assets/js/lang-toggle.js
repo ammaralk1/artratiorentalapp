@@ -2379,48 +2379,125 @@
     },
   };
 
-  const enToArPath = {
-    '/': '/',
-    '/about.html': '/من-نحن',
-    '/service.html': '/خدماتنا',
-    '/portfolio.html': '/اعمالنا',
-    '/photography-agency.html': '/معرض-الصور',
-    '/blog.html': '/كشكولنا',
-    '/team.html': '/فريقنا',
-    '/contact.html': '/تواصل-معنا',
-    '/feedback.html': '/اراء-العملاء',
-    '/faq.html': '/الاسئلة-الشائعة',
-    '/privacy.html': '/سياسة-الخصوصية',
-    '/terms.html': '/شروط-الاستخدام',
+  const localizedRouteMap = {
+    'about.html': { en: '/en/about/', ar: '/ar/من-نحن/' },
+    'blog.html': { en: '/en/blog/', ar: '/ar/كشكولنا/' },
+    'contact.html': { en: '/en/contact/', ar: '/ar/تواصل-معنا/' },
+    'faq.html': { en: '/en/faq/', ar: '/ar/الأسئلة-الشائعة/' },
+    'feedback.html': { en: '/en/feedback/', ar: '/ar/آراء-العملاء/' },
+    'index.html': { en: '/en/', ar: '/ar/' },
+    'photography-agency.html': { en: '/en/photography-agency/', ar: '/ar/معرض-الصور/' },
+    'portfolio-details-airport-executive-lounge.html': { en: '/en/portfolio-details-airport-executive-lounge/', ar: '/ar/مشروع-صالة-كبار-الشخصيات-في-المطار/' },
+    'portfolio-details-golf-tournament.html': { en: '/en/portfolio-details-golf-tournament/', ar: '/ar/مشروع-بطولة-الجولف/' },
+    'portfolio-details-saudi-dent.html': { en: '/en/portfolio-details-saudi-dent/', ar: '/ar/مشروع-سعودي-دنت/' },
+    'portfolio-details-video-1132890882.html': { en: '/en/portfolio-details-video-1132890882/', ar: '/ar/ساندوتش-تيكا-من-الطازج/' },
+    'portfolio-details-video-2.html': { en: '/en/portfolio-details-video-2/', ar: '/ar/برج-ترامب-جدة/' },
+    'portfolio-details-video-3.html': { en: '/en/portfolio-details-video-3/', ar: '/ar/ريل-لأم-الزلف/' },
+    'portfolio-details-video-4.html': { en: '/en/portfolio-details-video-4/', ar: '/ar/الفيلم-النهائي-للستي-ووك-٢٠٢٤/' },
+    'portfolio-details-video-5.html': { en: '/en/portfolio-details-video-5/', ar: '/ar/ايفنت-هوبلو/' },
+    'portfolio-details-video-6.html': { en: '/en/portfolio-details-video-6/', ar: '/ar/ريل-لميت-ذا-فيش/' },
+    'portfolio-details-video-7.html': { en: '/en/portfolio-details-video-7/', ar: '/ar/معرض-الكتاب/' },
+    'portfolio.html': { en: '/en/portfolio/', ar: '/ar/أعمالنا/' },
+    'portfolio2-details-video-1.html': { en: '/en/portfolio2-details-video-1/', ar: '/ar/ريل-إعلاني-لعبدالصمد-القرشي/' },
+    'portfolio2-details-video-2.html': { en: '/en/portfolio2-details-video-2/', ar: '/ar/ريل-للكوتش-البيتي-الفيصل/' },
+    'portfolio2-details-video-3.html': { en: '/en/portfolio2-details-video-3/', ar: '/ar/نهائي-دوري-أبطال-آسيا-للنخبة/' },
+    'portfolio2-details-video-4.html': { en: '/en/portfolio2-details-video-4/', ar: '/ar/توبا-ذا-ون/' },
+    'portfolio2-details-video-5.html': { en: '/en/portfolio2-details-video-5/', ar: '/ar/ايفنت-معوض/' },
+    'portfolio2-details-video-6.html': { en: '/en/portfolio2-details-video-6/', ar: '/ar/ريل-اليوم-الوطني/' },
+    'portfolio2-details-video-7.html': { en: '/en/portfolio2-details-video-7/', ar: '/ar/موفي-بوكس-الطازج/' },
+    'portfolio2.html': { en: '/en/portfolio2/', ar: '/ar/أعمالنا-2/' },
+    'portfolio3-details-video-1.html': { en: '/en/portfolio3-details-video-1/', ar: '/ar/ريل-رنة-خلخال/' },
+    'portfolio3-details-video-2.html': { en: '/en/portfolio3-details-video-2/', ar: '/ar/اوفردوز-ايس-كريم/' },
+    'portfolio3-details-video-3.html': { en: '/en/portfolio3-details-video-3/', ar: '/ar/سفاري-اكستريم/' },
+    'portfolio3-details-video-4.html': { en: '/en/portfolio3-details-video-4/', ar: '/ar/تغطية-محلات-في-السيتي-ووك/' },
+    'portfolio3-details-video-5.html': { en: '/en/portfolio3-details-video-5/', ar: '/ar/فيديو-مجوهرات/' },
+    'portfolio3-details-video-6.html': { en: '/en/portfolio3-details-video-6/', ar: '/ar/فول-جرين-فارمز/' },
+    'portfolio3-details-video-7.html': { en: '/en/portfolio3-details-video-7/', ar: '/ar/صنع-في-باكستان/' },
+    'portfolio3.html': { en: '/en/portfolio3/', ar: '/ar/أعمالنا-3/' },
+    'portfolio4-details-video-1.html': { en: '/en/portfolio4-details-video-1/', ar: '/ar/افتتاح-فرع-روومرز/' },
+    'portfolio4-details-video-2.html': { en: '/en/portfolio4-details-video-2/', ar: '/ar/تغطية-كشك-في-ويشن/' },
+    'portfolio4-details-video-3.html': { en: '/en/portfolio4-details-video-3/', ar: '/ar/كيكو-ميلانو/' },
+    'portfolio4-details-video-4.html': { en: '/en/portfolio4-details-video-4/', ar: '/ar/العروض-الجوالة-سيتي-ووك/' },
+    'portfolio4-details-video-5.html': { en: '/en/portfolio4-details-video-5/', ar: '/ar/قرية-التأسيس-عرعر/' },
+    'portfolio4-details-video-6.html': { en: '/en/portfolio4-details-video-6/', ar: '/ar/معرض-الكتاب-2/' },
+    'portfolio4-details-video-7.html': { en: '/en/portfolio4-details-video-7/', ar: '/ar/مقابلات-مختارة/' },
+    'portfolio4.html': { en: '/en/portfolio4/', ar: '/ar/أعمالنا-4/' },
+    'portfolio5-details-video-1.html': { en: '/en/portfolio5-details-video-1/', ar: '/ar/في-60/' },
+    'portfolio5-details-video-2.html': { en: '/en/portfolio5-details-video-2/', ar: '/ar/مجوهرات/' },
+    'portfolio5-details-video-3.html': { en: '/en/portfolio5-details-video-3/', ar: '/ar/مجوهرات-2/' },
+    'portfolio5-details-video-4.html': { en: '/en/portfolio5-details-video-4/', ar: '/ar/اوفردوز-عام/' },
+    'portfolio5-details-video-5.html': { en: '/en/portfolio5-details-video-5/', ar: '/ar/قيمرية/' },
+    'portfolio5-details-video-6.html': { en: '/en/portfolio5-details-video-6/', ar: '/ar/ريل-للطريقة-المعينة/' },
+    'portfolio5-details-video-7.html': { en: '/en/portfolio5-details-video-7/', ar: '/ar/عدنان-خان-مجھ-سے-دور/' },
+    'portfolio5.html': { en: '/en/portfolio5/', ar: '/ar/أعمالنا-5/' },
+    'portfolio6-details-video-1.html': { en: '/en/portfolio6-details-video-1/', ar: '/ar/كيكة-كوز/' },
+    'portfolio6-details-video-2.html': { en: '/en/portfolio6-details-video-2/', ar: '/ar/هنجرستيشن/' },
+    'portfolio6-details-video-3.html': { en: '/en/portfolio6-details-video-3/', ar: '/ar/ايوا/' },
+    'portfolio6-details-video-4.html': { en: '/en/portfolio6-details-video-4/', ar: '/ar/بوكس-الباربكيو-زد/' },
+    'portfolio6-details-video-5.html': { en: '/en/portfolio6-details-video-5/', ar: '/ar/اعلان-قهوة/' },
+    'portfolio6-details-video-6.html': { en: '/en/portfolio6-details-video-6/', ar: '/ar/تجمع-نادي-فيراري-السعودي/' },
+    'portfolio6-details-video-7.html': { en: '/en/portfolio6-details-video-7/', ar: '/ar/اعلان-ازار/' },
+    'portfolio6.html': { en: '/en/portfolio6/', ar: '/ar/أعمالنا-6/' },
+    'privacy.html': { en: '/en/privacy/', ar: '/ar/سياسة-الخصوصية/' },
+    'service-details-consultancy.html': { en: '/en/service-details-consultancy/', ar: '/ar/خدمة-الاستشارات-الإنتاجية/' },
+    'service-details-equipment-rental.html': { en: '/en/service-details-equipment-rental/', ar: '/ar/خدمة-تأجير-المعدات/' },
+    'service-details-events-coverage.html': { en: '/en/service-details-events-coverage/', ar: '/ar/خدمة-تغطية-الفعاليات/' },
+    'service-details-photography.html': { en: '/en/service-details-photography/', ar: '/ar/خدمة-التصوير-التجاري/' },
+    'service-details-social-media-content.html': { en: '/en/service-details-social-media-content/', ar: '/ar/خدمة-محتوى-السوشال-ميديا/' },
+    'service-details-tv-commercial-ads.html': { en: '/en/service-details-tv-commercial-ads/', ar: '/ar/خدمة-إعلانات-التلفزيون-والإعلانات-التجارية/' },
+    'service.html': { en: '/en/service/', ar: '/ar/خدماتنا/' },
+    'team-details-abdulqader-bdawi.html': { en: '/en/team-details-abdulqader-bdawi/', ar: '/ar/عبدالقادر-البديوي-تفاصيل-الفريق/' },
+    'team-details-adnan-alkhatib.html': { en: '/en/team-details-adnan-alkhatib/', ar: '/ar/عدنان-الخطيب-تفاصيل-الفريق/' },
+    'team-details-ammar-alkhatib.html': { en: '/en/team-details-ammar-alkhatib/', ar: '/ar/عمار-الخطيب-تفاصيل-الفريق/' },
+    'team-details-mohammed-hararah.html': { en: '/en/team-details-mohammed-hararah/', ar: '/ar/محمد-حرارة-تفاصيل-الفريق/' },
+    'team-details-mohammed-leon.html': { en: '/en/team-details-mohammed-leon/', ar: '/ar/محمد-ليون-تفاصيل-الفريق/' },
+    'team-details-taha-zarifah.html': { en: '/en/team-details-taha-zarifah/', ar: '/ar/طه-ظريفة-تفاصيل-الفريق/' },
+    'team.html': { en: '/en/team/', ar: '/ar/فريقنا/' },
+    'terms.html': { en: '/en/terms/', ar: '/ar/شروط-الاستخدام/' }
   };
-  const arToEnPath = Object.fromEntries(
-    Object.entries(enToArPath).map(([enPath, arPath]) => [arPath, enPath]),
-  );
 
   const normalizePath = (rawPath) => {
-    let path = rawPath || '/';
+    let p = rawPath || '/';
     try {
-      path = decodeURIComponent(path);
+      p = decodeURIComponent(p);
     } catch (e) {}
-    if (!path.startsWith('/')) path = `/${path}`;
-    path = path.replace(/\/{2,}/g, '/');
-    if (path === '/index.html') path = '/';
-    if (path !== '/' && path.endsWith('/')) path = path.slice(0, -1);
-    return path;
+    if (!p.startsWith('/')) p = '/' + p;
+    p = p.replace(/\/{2,}/g, '/');
+    if (p !== '/' && p.endsWith('/')) p = p.slice(0, -1);
+    return p || '/';
   };
 
-  const mapPathForLanguage = (rawPath, lang) => {
+  const enPathToFile = Object.fromEntries(
+    Object.entries(localizedRouteMap).map(([file, paths]) => [normalizePath(paths.en), file]),
+  );
+  const arPathToFile = Object.fromEntries(
+    Object.entries(localizedRouteMap).map(([file, paths]) => [normalizePath(paths.ar), file]),
+  );
+
+  const resolveFileFromPath = (rawPath) => {
     const normalized = normalizePath(rawPath);
-    const englishPath = arToEnPath[normalized] || normalized;
-    if (lang === 'ar') return enToArPath[englishPath] || normalized;
-    return englishPath;
+    if (normalized === '/' || normalized === '/index.html') return 'index.html';
+    if (enPathToFile[normalized]) return enPathToFile[normalized];
+    if (arPathToFile[normalized]) return arPathToFile[normalized];
+
+    const htmlMatch = normalized.match(/^\/([^/]+\.html)$/i);
+    if (htmlMatch) return htmlMatch[1].toLowerCase();
+    return null;
+  };
+
+  const pathForLanguage = (file, lang) => {
+    const route = localizedRouteMap[file] || localizedRouteMap['index.html'];
+    return lang === 'ar' ? route.ar : route.en;
   };
 
   const syncCurrentPathWithLanguage = (lang) => {
+    const file = resolveFileFromPath(window.location.pathname || '/');
+    if (!file) return;
+
     const current = normalizePath(window.location.pathname || '/');
-    const target = mapPathForLanguage(current, lang);
+    const target = normalizePath(pathForLanguage(file, lang));
     if (target && target !== current) {
-      const nextUrl = `${target}${window.location.search || ''}${window.location.hash || ''}`;
+      const nextUrl = target + (window.location.search || '') + (window.location.hash || '');
       window.history.replaceState({}, '', nextUrl);
     }
   };
@@ -2434,18 +2511,20 @@
       if (!anchor.dataset.i18nHrefBase) {
         anchor.dataset.i18nHrefBase = href;
       }
-      const baseHref = anchor.dataset.i18nHrefBase;
+
       let parsed;
       try {
-        parsed = new URL(baseHref, window.location.origin);
+        parsed = new URL(anchor.dataset.i18nHrefBase, window.location.origin);
       } catch (e) {
         return;
       }
       if (parsed.origin !== window.location.origin) return;
 
-      const targetPath = mapPathForLanguage(parsed.pathname, lang);
-      if (!targetPath) return;
-      const nextHref = `${targetPath}${parsed.search || ''}${parsed.hash || ''}`;
+      const file = resolveFileFromPath(parsed.pathname);
+      if (!file) return;
+
+      const targetPath = pathForLanguage(file, lang);
+      const nextHref = targetPath + (parsed.search || '') + (parsed.hash || '');
       anchor.setAttribute('href', nextHref);
     });
   };
@@ -2456,12 +2535,42 @@
       .querySelectorAll('meta[property="og:title"], meta[name="twitter:title"]')
       .forEach((meta) => meta.setAttribute('content', title));
 
-    const absoluteUrl = `${window.location.origin}${window.location.pathname}${window.location.search || ''}`;
+    const absoluteUrl = window.location.origin + window.location.pathname + (window.location.search || '');
     const canonical = document.querySelector('link[rel="canonical"]');
     if (canonical) canonical.setAttribute('href', absoluteUrl);
-    document
-      .querySelectorAll('meta[property="og:url"]')
-      .forEach((meta) => meta.setAttribute('content', absoluteUrl));
+    document.querySelectorAll('meta[property="og:url"]').forEach((meta) => meta.setAttribute('content', absoluteUrl));
+
+    const currentFile = resolveFileFromPath(window.location.pathname || '/');
+    if (!currentFile) return;
+    const enHref = window.location.origin + pathForLanguage(currentFile, 'en');
+    const arHref = window.location.origin + pathForLanguage(currentFile, 'ar');
+
+    let enAlt = document.querySelector('link[rel="alternate"][hreflang="en"]');
+    if (!enAlt) {
+      enAlt = document.createElement('link');
+      enAlt.setAttribute('rel', 'alternate');
+      enAlt.setAttribute('hreflang', 'en');
+      document.head.appendChild(enAlt);
+    }
+    enAlt.setAttribute('href', enHref);
+
+    let arAlt = document.querySelector('link[rel="alternate"][hreflang="ar"]');
+    if (!arAlt) {
+      arAlt = document.createElement('link');
+      arAlt.setAttribute('rel', 'alternate');
+      arAlt.setAttribute('hreflang', 'ar');
+      document.head.appendChild(arAlt);
+    }
+    arAlt.setAttribute('href', arHref);
+
+    let xDefault = document.querySelector('link[rel="alternate"][hreflang="x-default"]');
+    if (!xDefault) {
+      xDefault = document.createElement('link');
+      xDefault.setAttribute('rel', 'alternate');
+      xDefault.setAttribute('hreflang', 'x-default');
+      document.head.appendChild(xDefault);
+    }
+    xDefault.setAttribute('href', enHref);
   };
 
   const applyTranslations = (lang) => {
@@ -2729,7 +2838,10 @@
     toggleLanguage(e);
   });
 
+  const normalizedInitialPath = normalizePath(window.location.pathname || '/');
+  const pathLang = normalizedInitialPath.startsWith('/ar') ? 'ar' : normalizedInitialPath.startsWith('/en') ? 'en' : '';
   let currentLang =
+    pathLang ||
     localStorage.getItem(STORAGE_KEY) ||
     (document.documentElement.lang || '').slice(0, 2).toLowerCase() ||
     'en';
