@@ -20,9 +20,30 @@
   let items = [];
   let itemsLoaded = false;
   let cart = loadCart();
-  const loadLastPage = () => {
+  const isReloadNavigation = () => {
     try {
-      const raw = localStorage.getItem(SHOP_LAST_PAGE_KEY);
+      const navEntries = performance.getEntriesByType
+        ? performance.getEntriesByType('navigation')
+        : [];
+      if (navEntries && navEntries[0] && navEntries[0].type) {
+        return navEntries[0].type === 'reload';
+      }
+    } catch (e) {}
+    try {
+      return performance.navigation && performance.navigation.type === 1;
+    } catch (e) {}
+    return false;
+  };
+
+  const loadLastPage = () => {
+    if (!isReloadNavigation()) {
+      try {
+        sessionStorage.removeItem(SHOP_LAST_PAGE_KEY);
+      } catch (e) {}
+      return 1;
+    }
+    try {
+      const raw = sessionStorage.getItem(SHOP_LAST_PAGE_KEY);
       if (!raw) return 1;
       const parsed = Number(raw);
       if (!Number.isFinite(parsed) || parsed < 1) return 1;
@@ -426,7 +447,7 @@
 
   function persistLastPage() {
     try {
-      localStorage.setItem(SHOP_LAST_PAGE_KEY, String(state.page));
+      sessionStorage.setItem(SHOP_LAST_PAGE_KEY, String(state.page));
     } catch (e) {}
   }
 
