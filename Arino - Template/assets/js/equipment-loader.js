@@ -34,6 +34,7 @@
   const cloudflareBase = 'https://assets.art-ratio.com/';
   const cloudflarePngFolderPrimary = 'png2';
   const cloudflarePngFolderSecondary = 'png';
+  const cloudflareOutsourceFolder = 'outsource';
 
   function pick(row, keys) {
     for (const key of keys) {
@@ -81,22 +82,28 @@
     };
 
     if (stem) {
-      // Allowed sources only: png2 then png.
+      // Allowed sources: png2, png, then outsource (PNG only).
       pushCandidate(
         cloudflareBase + cloudflarePngFolderPrimary + '/' + encodeURIComponent(stem) + '.png'
       );
       pushCandidate(
         cloudflareBase + cloudflarePngFolderSecondary + '/' + encodeURIComponent(stem) + '.png'
       );
+      pushCandidate(
+        cloudflareBase + cloudflareOutsourceFolder + '/' + encodeURIComponent(stem) + '.png'
+      );
     }
 
-    // Also allow existing .png names under png2/png.
+    // Also allow existing .png names under png2/png/outsource.
     if (/\.png$/i.test(fileName)) {
       pushCandidate(
         cloudflareBase + cloudflarePngFolderPrimary + '/' + encodeURIComponent(fileName)
       );
       pushCandidate(
         cloudflareBase + cloudflarePngFolderSecondary + '/' + encodeURIComponent(fileName)
+      );
+      pushCandidate(
+        cloudflareBase + cloudflareOutsourceFolder + '/' + encodeURIComponent(fileName)
       );
     }
     return candidates;
