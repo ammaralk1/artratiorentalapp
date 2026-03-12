@@ -32,7 +32,8 @@
     subcategory: ['Subcategory', 'Sub Category', 'القسم الثانوي'],
   };
   const cloudflareBase = 'https://assets.art-ratio.com/';
-  const cloudflarePngFolder = 'png2';
+  const cloudflarePngFolderPrimary = 'png2';
+  const cloudflarePngFolderSecondary = 'png';
 
   function pick(row, keys) {
     for (const key of keys) {
@@ -62,12 +63,10 @@
     if (/^https?:\/\/assets\.art-ratio\.com\/.*\.png(?:\?.*)?$/i.test(raw)) return [raw];
 
     let fileName = raw;
-    let folderName = '';
     try {
       const parsed = new URL(raw, window.location.origin);
       const parts = (parsed.pathname || '').split('/').filter(Boolean);
       fileName = parts[parts.length - 1] || raw;
-      folderName = parts[parts.length - 2] || '';
     } catch (e) {}
 
     try {
@@ -82,24 +81,23 @@
     };
 
     if (stem) {
-      // Primary location for equipment images.
-      pushCandidate(cloudflareBase + cloudflarePngFolder + '/' + encodeURIComponent(stem) + '.png');
-    }
-    if (folderName) {
-      // Support split folders (e.g. Rental / outsource) with case variants.
-      const variants = [
-        folderName,
-        folderName.toLowerCase(),
-        folderName.charAt(0).toUpperCase() + folderName.slice(1).toLowerCase(),
-      ];
-      variants.forEach((folder) => {
-        if (stem) pushCandidate(cloudflareBase + folder + '/' + encodeURIComponent(stem) + '.png');
-      });
+      // Allowed sources only: png2 then png.
+      pushCandidate(
+        cloudflareBase + cloudflarePngFolderPrimary + '/' + encodeURIComponent(stem) + '.png'
+      );
+      pushCandidate(
+        cloudflareBase + cloudflarePngFolderSecondary + '/' + encodeURIComponent(stem) + '.png'
+      );
     }
 
-    // Also allow legacy names that may already include .png under /png2.
+    // Also allow existing .png names under png2/png.
     if (/\.png$/i.test(fileName)) {
-      pushCandidate(cloudflareBase + cloudflarePngFolder + '/' + encodeURIComponent(fileName));
+      pushCandidate(
+        cloudflareBase + cloudflarePngFolderPrimary + '/' + encodeURIComponent(fileName)
+      );
+      pushCandidate(
+        cloudflareBase + cloudflarePngFolderSecondary + '/' + encodeURIComponent(fileName)
+      );
     }
     return candidates;
   }
