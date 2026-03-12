@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+
+# Private app routes
+Disallow: /dashboard
+Disallow: /home
+Disallow: /users
+Disallow: /customer
+Disallow: /technician
+Disallow: /projects
+Disallow: /projects-reports
+Disallow: /projects-expenses
+Disallow: /notifications
+
+Sitemap: https://art-ratio.com/sitemap.xml
