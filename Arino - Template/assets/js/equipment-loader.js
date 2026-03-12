@@ -2,7 +2,7 @@
   const page = document.body && document.body.getAttribute('data-page');
   if (page !== 'shop') return;
 
-  const excelUrl = 'assets/data/equipment.xlsx';
+  const excelUrl = 'equipment-all-20251130-1640.xlsx';
   const grid = document.getElementById('equipment-grid');
   const countEl = document.getElementById('equipment-count');
   const categoryList = document.getElementById('equipment-category-list');
@@ -123,6 +123,31 @@
 
   function uniqueList(arr) {
     return [...new Set(arr.filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  }
+
+  function normalizeEquipmentName(value) {
+    return String(value || '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase();
+  }
+
+  function dedupeItemsByName(list) {
+    const byName = new Map();
+    list.forEach((item) => {
+      const key = normalizeEquipmentName(item && item.name);
+      if (!key) return;
+      const existing = byName.get(key);
+      if (!existing) {
+        byName.set(key, item);
+        return;
+      }
+      // Keep first by default; replace only if existing has no usable image.
+      if (!existing.image && item.image) {
+        byName.set(key, item);
+      }
+    });
+    return Array.from(byName.values());
   }
 
   function renderFilters() {
@@ -383,8 +408,7 @@
       const wb = XLSX.read(buf, { type: 'array' });
       const sheet = wb.Sheets[wb.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-      // Keep items visible even when image columns vary; use placeholder when needed.
-      items = rows.map(normalizeRow).filter((i) => i.name);
+      items = dedupeItemsByName(rows.map(normalizeRow).filter((i) => i.name));
       renderFilters();
       setActiveFilter('category', state.category);
       setActiveFilter('subcategory', state.subcategory);
