@@ -15,41 +15,28 @@
   if (!grid || !countEl) return;
 
   const CART_KEY = 'equipmentCart';
-  const SHOP_VIEW_STATE_KEY = 'shopViewState';
+  const SHOP_LAST_PAGE_KEY = 'shopLastPage';
   const pageSize = 15;
   let items = [];
+  let itemsLoaded = false;
   let cart = loadCart();
-  const loadViewState = () => {
+  const loadLastPage = () => {
     try {
-      const raw = localStorage.getItem(SHOP_VIEW_STATE_KEY);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw);
-      if (!parsed || typeof parsed !== 'object') return null;
-      return parsed;
+      const raw = localStorage.getItem(SHOP_LAST_PAGE_KEY);
+      if (!raw) return 1;
+      const parsed = Number(raw);
+      if (!Number.isFinite(parsed) || parsed < 1) return 1;
+      return Math.floor(parsed);
     } catch (e) {
-      return null;
+      return 1;
     }
   };
-  const initialViewState = loadViewState();
+  const initialPage = loadLastPage();
   const state = {
-    category:
-      initialViewState && typeof initialViewState.category === 'string'
-        ? initialViewState.category
-        : 'all',
-    subcategory:
-      initialViewState && Array.isArray(initialViewState.subcategory)
-        ? initialViewState.subcategory.filter(Boolean)
-        : [],
-    query:
-      initialViewState && typeof initialViewState.query === 'string'
-        ? initialViewState.query
-        : '',
-    page:
-      initialViewState &&
-      Number.isFinite(initialViewState.page) &&
-      Number(initialViewState.page) > 0
-        ? Math.floor(Number(initialViewState.page))
-        : 1,
+    category: 'all',
+    subcategory: [],
+    query: '',
+    page: initialPage,
   };
   const isArabic = () =>
     (document.documentElement.lang || '').toLowerCase().startsWith('ar') ||
@@ -433,17 +420,9 @@
     );
   }
 
-  function persistViewState() {
+  function persistLastPage() {
     try {
-      localStorage.setItem(
-        SHOP_VIEW_STATE_KEY,
-        JSON.stringify({
-          category: state.category,
-          subcategory: state.subcategory,
-          query: state.query,
-          page: state.page,
-        }),
-      );
+      localStorage.setItem(SHOP_LAST_PAGE_KEY, String(state.page));
     } catch (e) {}
   }
 
@@ -454,6 +433,7 @@
   }
 
   function applyFilters() {
+    if (!itemsLoaded) return;
     const q = state.query.toLowerCase();
     const filtered = items.filter((item) => {
       if (state.category !== 'all' && item.category !== state.category) return false;
@@ -478,7 +458,7 @@
         : `Showing ${start + 1}-${Math.min(total, start + pageSize)} of ${total} items`;
     }
     renderPagination(totalPages);
-    persistViewState();
+    persistLastPage();
   }
 
   async function loadExcel() {
@@ -503,6 +483,7 @@
       const sheet = wb.Sheets[wb.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
       items = dedupeItemsByName(rows.map(normalizeRow).filter((i) => i.name));
+      itemsLoaded = true;
       if (loadedFrom) {
         console.info('Equipment loaded from', loadedFrom, 'items:', items.length);
       }
@@ -527,7 +508,10 @@
   }
 
   // Re-render texts when language attribute changes (toggle Arabic/English)
-  const langObserver = new MutationObserver(() => applyFilters());
+  const langObserver = new MutationObserver(() => {
+    if (!itemsLoaded) return;
+    applyFilters();
+  });
   langObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['lang', 'dir'] });
 
   loadExcel();
