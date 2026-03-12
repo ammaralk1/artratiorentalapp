@@ -44,15 +44,21 @@
   }
 
   function normalizeRow(row) {
-    const rawImage = pick(row, keyGroups.image);
+    const values = Object.values(row || {});
+    const fallbackCategory = String(values[0] || '').trim();
+    const fallbackSubcategory = String(values[1] || '').trim();
+    const fallbackName = String(values[2] || '').trim();
+    const fallbackImage = String(values[7] || '').trim();
+
+    const rawImage = pick(row, keyGroups.image) || fallbackImage;
     const imageCandidates = buildImageCandidates(rawImage);
     return {
-      name: pick(row, keyGroups.name),
+      name: pick(row, keyGroups.name) || fallbackName,
       image: imageCandidates[0] || rawImage,
       imageCandidates: imageCandidates.slice(1),
       imageOriginal: rawImage,
-      category: pick(row, keyGroups.category),
-      subcategory: pick(row, keyGroups.subcategory),
+      category: pick(row, keyGroups.category) || fallbackCategory,
+      subcategory: pick(row, keyGroups.subcategory) || fallbackSubcategory,
     };
   }
 
