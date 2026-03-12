@@ -2445,6 +2445,11 @@
     'service-details-photography.html': { en: '/en/service-details-photography/', ar: '/ar/خدمة-التصوير-التجاري/' },
     'service-details-social-media-content.html': { en: '/en/service-details-social-media-content/', ar: '/ar/خدمة-محتوى-السوشال-ميديا/' },
     'service-details-tv-commercial-ads.html': { en: '/en/service-details-tv-commercial-ads/', ar: '/ar/خدمة-إعلانات-التلفزيون-والإعلانات-التجارية/' },
+    // Virtual aliases kept for template compatibility (legacy shop links).
+    'shop.html': { en: '/en/shop/', ar: '/ar/معداتنا/' },
+    'shop-cart.html': { en: '/en/shop-cart/', ar: '/ar/سلة-المعدات/' },
+    'shop-checkout.html': { en: '/en/shop-checkout/', ar: '/ar/طلب-المعدات/' },
+    'shop-product-details.html': { en: '/en/shop-product-details/', ar: '/ar/تفاصيل-معدة/' },
     'service.html': { en: '/en/service/', ar: '/ar/خدماتنا/' },
     'team-details-abdulqader-bdawi.html': { en: '/en/team-details-abdulqader-bdawi/', ar: '/ar/عبدالقادر-البديوي-تفاصيل-الفريق/' },
     'team-details-adnan-alkhatib.html': { en: '/en/team-details-adnan-alkhatib/', ar: '/ar/عدنان-الخطيب-تفاصيل-الفريق/' },
