@@ -57,8 +57,8 @@
     const raw = String(input || '').trim();
     if (!raw) return [];
 
-    // Keep already-migrated Cloudflare URLs untouched.
-    if (/^https?:\/\/assets\.art-ratio\.com\//i.test(raw)) return [raw];
+    // Keep already-migrated Cloudflare PNG URLs untouched.
+    if (/^https?:\/\/assets\.art-ratio\.com\/.*\.png(?:\?.*)?$/i.test(raw)) return [raw];
 
     let fileName = raw;
     let folderName = '';
@@ -92,14 +92,14 @@
         folderName.charAt(0).toUpperCase() + folderName.slice(1).toLowerCase(),
       ];
       variants.forEach((folder) => {
-        pushCandidate(cloudflareBase + folder + '/' + encodeURIComponent(fileName));
-        if (stem) {
-          pushCandidate(cloudflareBase + folder + '/' + encodeURIComponent(stem) + '.png');
-        }
+        if (stem) pushCandidate(cloudflareBase + folder + '/' + encodeURIComponent(stem) + '.png');
       });
     }
-    // Optional fallback if original extension is preserved under /png.
-    pushCandidate(cloudflareBase + 'png/' + encodeURIComponent(fileName));
+
+    // Also allow legacy names that may already include .png under /png.
+    if (/\.png$/i.test(fileName)) {
+      pushCandidate(cloudflareBase + 'png/' + encodeURIComponent(fileName));
+    }
     return candidates;
   }
 
