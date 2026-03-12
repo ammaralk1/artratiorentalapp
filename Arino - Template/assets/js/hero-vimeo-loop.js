@@ -148,15 +148,14 @@
       scheduleHardSegmentRestart();
     } else {
       if (vimeoPlayer) {
+        try { vimeoPlayer.pause(); } catch (e) {}
         vimeoPlayer.off('ended');
         vimeoPlayer.off('timeupdate');
         vimeoPlayer.off('pause');
-        vimeoPlayer = null;
       }
       reachedLoopWindow = false;
       clearLoopWatchdog();
       clearSegmentRestartTimer();
-      frame.setAttribute('src', '');
     }
 
     try { localStorage.setItem('homeHeroMediaMode', isVideo ? 'video' : 'image'); } catch (e) {}
