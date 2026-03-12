@@ -44,6 +44,16 @@ RewriteRule ^en/shop-order-recived/?$ Arino\ -\ Template/shop-order-recived.html
 RewriteCond %{REQUEST_URI} !^/en/?$ [NC]
 RewriteCond %{DOCUMENT_ROOT}/Arino\ -\ Template/$1.html -f
 RewriteRule ^en/([A-Za-z0-9-]+)/?$ Arino\ -\ Template/$1.html [L,NC]
+
+# Blog internal routes (article/category/tag slugs) -> blog listing page
+RewriteRule ^blog/?$ Arino\ -\ Template/blog.html [L,NC]
+RewriteRule ^ar/المدونة/?$ Arino\ -\ Template/blog.html [L,NC]
+RewriteRule ^blog/(?:category|tag)/[^/]+/?$ Arino\ -\ Template/blog.html [L,NC,QSA]
+RewriteRule ^blog/[^/]+/[^/]+/?$ Arino\ -\ Template/blog.html [L,NC,QSA]
+RewriteRule ^en/blog/(?:category|tag)/[^/]+/?$ Arino\ -\ Template/blog.html [L,NC,QSA]
+RewriteRule ^en/blog/[^/]+/[^/]+/?$ Arino\ -\ Template/blog.html [L,NC,QSA]
+RewriteRule ^ar/المدونة/(?:التصنيف|وسم)/[^/]+/?$ Arino\ -\ Template/blog.html [L,NC,QSA]
+RewriteRule ^ar/المدونة/[^/]+/[^/]+/?$ Arino\ -\ Template/blog.html [L,NC,QSA]
 RewriteRule ^shop(?:\.html)?/?$ Arino\ -\ Template/shop.html [L,NC]
 RewriteRule ^shop-cart(?:\.html)?/?$ Arino\ -\ Template/shop-cart.html [L,NC]
 RewriteRule ^shop-checkout(?:\.html)?/?$ Arino\ -\ Template/shop-checkout.html [L,NC]
