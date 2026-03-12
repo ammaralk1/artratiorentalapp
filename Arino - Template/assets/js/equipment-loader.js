@@ -135,11 +135,24 @@
       .toLowerCase();
   }
 
+  const excludedEquipmentNames = new Set(
+    [
+      'V-Mount PK',
+      'Sony a7Siii Charger',
+      'Canon Battary Charger',
+      'Sony FX6 Charger',
+      '3PCS RavPower Battary Charger',
+      'V-Mount Charger',
+      'Sound PK',
+    ].map(normalizeEquipmentName),
+  );
+
   function dedupeItemsByName(list) {
     const byName = new Map();
     list.forEach((item) => {
       const key = normalizeEquipmentName(item && item.name);
       if (!key) return;
+      if (excludedEquipmentNames.has(key)) return;
       const existing = byName.get(key);
       if (!existing) {
         byName.set(key, item);
