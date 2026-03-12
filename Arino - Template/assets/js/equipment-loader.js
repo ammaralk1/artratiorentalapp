@@ -15,14 +15,41 @@
   if (!grid || !countEl) return;
 
   const CART_KEY = 'equipmentCart';
+  const SHOP_VIEW_STATE_KEY = 'shopViewState';
   const pageSize = 15;
   let items = [];
   let cart = loadCart();
+  const loadViewState = () => {
+    try {
+      const raw = localStorage.getItem(SHOP_VIEW_STATE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object') return null;
+      return parsed;
+    } catch (e) {
+      return null;
+    }
+  };
+  const initialViewState = loadViewState();
   const state = {
-    category: 'all',
-    subcategory: [],
-    query: '',
-    page: 1,
+    category:
+      initialViewState && typeof initialViewState.category === 'string'
+        ? initialViewState.category
+        : 'all',
+    subcategory:
+      initialViewState && Array.isArray(initialViewState.subcategory)
+        ? initialViewState.subcategory.filter(Boolean)
+        : [],
+    query:
+      initialViewState && typeof initialViewState.query === 'string'
+        ? initialViewState.query
+        : '',
+    page:
+      initialViewState &&
+      Number.isFinite(initialViewState.page) &&
+      Number(initialViewState.page) > 0
+        ? Math.floor(Number(initialViewState.page))
+        : 1,
   };
   const isArabic = () =>
     (document.documentElement.lang || '').toLowerCase().startsWith('ar') ||
@@ -395,12 +422,29 @@
     paginationEl.appendChild(
       makeBtn(isArabic() ? 'السابق' : 'Prev', Math.max(1, state.page - 1), state.page === 1)
     );
-    for (let i = 1; i <= totalPages; i++) {
+    const windowSize = 3;
+    const startPage = Math.floor((state.page - 1) / windowSize) * windowSize + 1;
+    const endPage = Math.min(totalPages, startPage + windowSize - 1);
+    for (let i = startPage; i <= endPage; i++) {
       paginationEl.appendChild(makeBtn(String(i), i, false, i === state.page));
     }
     paginationEl.appendChild(
       makeBtn(isArabic() ? 'التالي' : 'Next', Math.min(totalPages, state.page + 1), state.page === totalPages)
     );
+  }
+
+  function persistViewState() {
+    try {
+      localStorage.setItem(
+        SHOP_VIEW_STATE_KEY,
+        JSON.stringify({
+          category: state.category,
+          subcategory: state.subcategory,
+          query: state.query,
+          page: state.page,
+        }),
+      );
+    } catch (e) {}
   }
 
   function scrollToGridTop() {
@@ -434,6 +478,7 @@
         : `Showing ${start + 1}-${Math.min(total, start + pageSize)} of ${total} items`;
     }
     renderPagination(totalPages);
+    persistViewState();
   }
 
   async function loadExcel() {
@@ -473,6 +518,7 @@
   }
 
   if (searchInput) {
+    searchInput.value = state.query;
     searchInput.addEventListener('input', (e) => {
       state.query = e.target.value.trim().toLowerCase();
       state.page = 1;
