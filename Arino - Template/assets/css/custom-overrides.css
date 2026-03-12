@@ -1266,41 +1266,6 @@ body[data-page="home"]:not(.rtl) section.cs-shape_wrap_4 .cs-shape_4:nth-child(2
   display: none !important;
 }
 
-/* LightGallery icon fallback when lg font files are unavailable */
-.lg-toolbar .lg-icon,
-.lg-actions .lg-next,
-.lg-actions .lg-prev {
-  font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands", sans-serif !important;
-  font-weight: 900 !important;
-}
-.lg-toolbar .lg-close:after {
-  content: "\f00d" !important;
-}
-.lg-toolbar .lg-download:after {
-  content: "\f019" !important;
-}
-#lg-zoom-in:after {
-  content: "\f00e" !important;
-}
-#lg-zoom-out:after {
-  content: "\f010" !important;
-}
-#lg-actual-size:after {
-  content: "\f065" !important;
-}
-.lg-autoplay-button:after {
-  content: "\f04b" !important;
-}
-.lg-show-autoplay .lg-autoplay-button:after {
-  content: "\f04c" !important;
-}
-.lg-actions .lg-next:before {
-  content: "\f054" !important;
-}
-.lg-actions .lg-prev:after {
-  content: "\f053" !important;
-}
-
 /* Photo Gallery thumbnails hover highlight */
 body[data-page="photo-gallery"] .cs-isotop.cs-lightgallery .cs-portfolio.cs-style1 .cs-portfolio_hover,
 body[data-page="photo-gallery"] .cs-isotop.cs-lightgallery .cs-portfolio.cs-style1.cs-type2 .cs-portfolio_hover {
