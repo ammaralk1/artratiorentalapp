@@ -144,6 +144,14 @@
       '3PCS RavPower Battary Charger',
       'V-Mount Charger',
       'Sound PK',
+      'Reven Eye',
+      'Manfrotto Fast legs',
+      'Tilta Nucleus-N',
+      'Manfrotto Legs 190',
+      'Manfrotto Legs 055',
+      'Strip Box 02 35X150',
+      'Sony FX6 Charger 3PCS',
+      'RavPower Battary Charger',
     ].map(normalizeEquipmentName),
   );
 
