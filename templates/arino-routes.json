@@ -390,6 +390,42 @@
     "arSlug": "خدمة-إعلانات-التلفزيون-والإعلانات-التجارية"
   },
   {
+    "file": "shop.html",
+    "en": "/en/shop/",
+    "ar": "/ar/shop/",
+    "arSlug": "معداتنا"
+  },
+  {
+    "file": "shop-cart.html",
+    "en": "/en/shop-cart/",
+    "ar": "/ar/shop-cart/",
+    "arSlug": "سلة-المعدات"
+  },
+  {
+    "file": "shop-checkout.html",
+    "en": "/en/shop-checkout/",
+    "ar": "/ar/shop-checkout/",
+    "arSlug": "طلب-المعدات"
+  },
+  {
+    "file": "shop-product-details.html",
+    "en": "/en/shop-product-details/",
+    "ar": "/ar/shop-product-details/",
+    "arSlug": "تفاصيل-معدة"
+  },
+  {
+    "file": "shop-wishlist.html",
+    "en": "/en/shop-wishlist/",
+    "ar": "/ar/shop-wishlist/",
+    "arSlug": "المفضلة"
+  },
+  {
+    "file": "shop-order-recived.html",
+    "en": "/en/shop-order-recived/",
+    "ar": "/ar/shop-order-recived/",
+    "arSlug": "تأكيد-الطلب"
+  },
+  {
     "file": "service.html",
     "en": "/en/service/",
     "ar": "/ar/خدماتنا/",
