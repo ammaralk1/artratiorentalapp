@@ -66,7 +66,7 @@ RewriteRule ^shop-checkout(?:\.html)?/?$ Arino\ -\ Template/shop-checkout.html [
 RewriteRule ^shop-product-details(?:\.html)?/?$ Arino\ -\ Template/shop-product-details.html [L,NC]
 RewriteRule ^shop-wishlist(?:\.html)?/?$ Arino\ -\ Template/shop-wishlist.html [L,NC]
 RewriteRule ^shop-order-recived(?:\.html)?/?$ Arino\ -\ Template/shop-order-recived.html [L,NC]
-RewriteRule ^ar/معداتنا/?$ Arino\ -\ Template/shop.html [L,NC]
+RewriteRule ^ar/(?:shop|معداتنا|%D9%85%D8%B9%D8%AF%D8%A7%D8%AA%D9%86%D8%A7)/?$ Arino\ -\ Template/shop.html [L,NC]
 RewriteRule ^ar/سلة-المعدات/?$ Arino\ -\ Template/shop-cart.html [L,NC]
 RewriteRule ^ar/طلب-المعدات/?$ Arino\ -\ Template/shop-checkout.html [L,NC]
 RewriteRule ^ar/تفاصيل-معدة/?$ Arino\ -\ Template/shop-product-details.html [L,NC]
