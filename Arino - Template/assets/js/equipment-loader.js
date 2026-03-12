@@ -55,8 +55,13 @@
 
     const rawImage = pick(row, keyGroups.image) || fallbackImage;
     const imageCandidates = buildImageCandidates(rawImage);
+    const rawName = pick(row, keyGroups.name) || fallbackName;
+    const normalizedName = normalizeEquipmentName(rawName);
+    const renamedName =
+      renamedEquipmentNames.get(normalizedName) || rawName;
+
     return {
-      name: pick(row, keyGroups.name) || fallbackName,
+      name: renamedName,
       image: imageCandidates[0] || '',
       imageCandidates: imageCandidates.slice(1),
       imageOriginal: rawImage,
@@ -152,8 +157,16 @@
       'Strip Box 02 35X150',
       'Sony FX6 Charger 3PCS',
       'RavPower Battary Charger',
+      'Domy Battary for Cine 7',
     ].map(normalizeEquipmentName),
   );
+
+  const renamedEquipmentNames = new Map([
+    [
+      normalizeEquipmentName('Domy Battary for Ninja V+'),
+      'Dummy Battery for Ninja / SmallHD',
+    ],
+  ]);
 
   function dedupeItemsByName(list) {
     const byName = new Map();
