@@ -32,6 +32,7 @@
     subcategory: ['Subcategory', 'Sub Category', 'القسم الثانوي'],
   };
   const cloudflareBase = 'https://assets.art-ratio.com/';
+  const cloudflarePngFolder = 'png2';
 
   function pick(row, keys) {
     for (const key of keys) {
@@ -81,8 +82,8 @@
     };
 
     if (stem) {
-      // Primary location used for numeric rental images.
-      pushCandidate(cloudflareBase + 'png/' + encodeURIComponent(stem) + '.png');
+      // Primary location for equipment images.
+      pushCandidate(cloudflareBase + cloudflarePngFolder + '/' + encodeURIComponent(stem) + '.png');
     }
     if (folderName) {
       // Support split folders (e.g. Rental / outsource) with case variants.
@@ -96,9 +97,9 @@
       });
     }
 
-    // Also allow legacy names that may already include .png under /png.
+    // Also allow legacy names that may already include .png under /png2.
     if (/\.png$/i.test(fileName)) {
-      pushCandidate(cloudflareBase + 'png/' + encodeURIComponent(fileName));
+      pushCandidate(cloudflareBase + cloudflarePngFolder + '/' + encodeURIComponent(fileName));
     }
     return candidates;
   }
