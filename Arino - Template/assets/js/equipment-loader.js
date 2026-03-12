@@ -66,7 +66,7 @@
       const parsed = new URL(raw, window.location.origin);
       const parts = (parsed.pathname || '').split('/').filter(Boolean);
       fileName = parts[parts.length - 1] || raw;
-      folderName = (parts[parts.length - 2] || '').toLowerCase();
+      folderName = parts[parts.length - 2] || '';
     } catch (e) {}
 
     try {
@@ -85,17 +85,21 @@
       pushCandidate(cloudflareBase + 'png/' + encodeURIComponent(stem) + '.png');
     }
     if (folderName) {
-      // Support split folders (e.g. Rental / outsource) on Cloudflare.
-      pushCandidate(cloudflareBase + folderName + '/' + encodeURIComponent(fileName));
-      if (stem) {
-        pushCandidate(cloudflareBase + folderName + '/' + encodeURIComponent(stem) + '.png');
-      }
+      // Support split folders (e.g. Rental / outsource) with case variants.
+      const variants = [
+        folderName,
+        folderName.toLowerCase(),
+        folderName.charAt(0).toUpperCase() + folderName.slice(1).toLowerCase(),
+      ];
+      variants.forEach((folder) => {
+        pushCandidate(cloudflareBase + folder + '/' + encodeURIComponent(fileName));
+        if (stem) {
+          pushCandidate(cloudflareBase + folder + '/' + encodeURIComponent(stem) + '.png');
+        }
+      });
     }
     // Optional fallback if original extension is preserved under /png.
     pushCandidate(cloudflareBase + 'png/' + encodeURIComponent(fileName));
-
-    // Last fallback keeps legacy source.
-    pushCandidate(raw);
     return candidates;
   }
 
