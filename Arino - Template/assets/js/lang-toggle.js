@@ -2490,14 +2490,20 @@
     return lang === 'ar' ? route.ar : route.en;
   };
 
-  const syncCurrentPathWithLanguage = (lang) => {
+  const getLocalizedUrlForCurrentPage = (lang) => {
     const file = resolveFileFromPath(window.location.pathname || '/');
-    if (!file) return;
+    if (!file) return '';
 
     const current = normalizePath(window.location.pathname || '/');
     const target = normalizePath(pathForLanguage(file, lang));
-    if (target && target !== current) {
-      const nextUrl = target + (window.location.search || '') + (window.location.hash || '');
+    if (!target) return '';
+    if (target === current) return '';
+    return target + (window.location.search || '') + (window.location.hash || '');
+  };
+
+  const syncCurrentPathWithLanguage = (lang) => {
+    const nextUrl = getLocalizedUrlForCurrentPage(lang);
+    if (nextUrl) {
       window.history.replaceState({}, '', nextUrl);
     }
   };
@@ -2759,8 +2765,15 @@
     });
   };
 
-  const setLanguage = (lang) => {
+  const setLanguage = (lang, options = {}) => {
+    const { navigate = false } = options;
     const selected = lang === 'ar' ? 'ar' : 'en';
+    const localizedUrl = getLocalizedUrlForCurrentPage(selected);
+    if (navigate && localizedUrl) {
+      localStorage.setItem(STORAGE_KEY, selected);
+      window.location.assign(localizedUrl);
+      return;
+    }
     syncCurrentPathWithLanguage(selected);
     const isArabic = selected === 'ar';
     document.documentElement.lang = selected;
@@ -2794,7 +2807,7 @@
       event.stopPropagation();
     }
     const next = (document.documentElement.lang || '').toLowerCase().startsWith('ar') ? 'en' : 'ar';
-    setLanguage(next);
+    setLanguage(next, { navigate: true });
   };
 
   const injectToggle = () => {
