@@ -288,6 +288,9 @@
   async function loadExcel() {
     try {
       const res = await fetch(excelUrl);
+      if (!res.ok) {
+        throw new Error(`Equipment file request failed (${res.status}) for ${excelUrl}`);
+      }
       const buf = await res.arrayBuffer();
       const wb = XLSX.read(buf, { type: 'array' });
       const sheet = wb.Sheets[wb.SheetNames[0]];
@@ -300,7 +303,7 @@
       updateCartCount();
     } catch (err) {
       console.error('Equipment load failed', err);
-      countEl.textContent = 'Failed to load equipment.';
+      countEl.textContent = isArabic() ? 'فشل تحميل ملف المعدات.' : 'Failed to load equipment file.';
     }
   }
 

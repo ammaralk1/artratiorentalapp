@@ -4,6 +4,18 @@
   var container = document.querySelector(".col-lg-8");
   if (!container) return;
   var PAGE_SIZE = 3;
+  var normalizedPath = (function (rawPath) {
+    var p = rawPath || "/";
+    try {
+      p = decodeURIComponent(p);
+    } catch (e) {}
+    p = p.replace(/\/{2,}/g, "/");
+    if (p.length > 1 && p.endsWith("/")) p = p.slice(0, -1);
+    return p;
+  })(window.location.pathname || "/");
+  var isArabic = function () {
+    return (document.documentElement.lang || "en").toLowerCase().startsWith("ar");
+  };
 
   var posts = Array.prototype.slice.call(
     container.querySelectorAll(":scope > .cs-post.cs-style2")
@@ -35,11 +47,27 @@
       ? raw.slice(0, 7)
       : String(dateObj.getFullYear()) + "-" + String(dateObj.getMonth() + 1).padStart(2, "0");
     var category = (post.getAttribute("data-post-category") || "").toLowerCase();
+    var mainLink = post.querySelector(".cs-post_title a") || post.querySelector("a[href]");
+    var categorySlug = "";
+    var postSlug = "";
+    if (mainLink) {
+      try {
+        var parsed = new URL(mainLink.getAttribute("href") || "", window.location.origin);
+        var pathParts = (parsed.pathname || "").split("/").filter(Boolean);
+        var blogStart = pathParts.indexOf("blog");
+        if (blogStart >= 0 && pathParts.length >= blogStart + 3) {
+          categorySlug = (pathParts[blogStart + 1] || "").toLowerCase();
+          postSlug = (pathParts[blogStart + 2] || "").toLowerCase();
+        }
+      } catch (e) {}
+    }
     return {
       el: post,
       date: dateObj,
       monthKey: monthKey,
       category: category,
+      categorySlug: categorySlug,
+      postSlug: postSlug,
     };
   });
 
@@ -66,6 +94,65 @@
     });
   };
 
+  var parsePathState = function (path) {
+    var parts = path.split("/").filter(Boolean);
+    if (!parts.length) return { mode: "list" };
+
+    var first = parts[0];
+    var langPrefix = first === "en" || first === "ar" ? first : "";
+    var rest = langPrefix ? parts.slice(1) : parts.slice(0);
+    if (!rest.length) return { mode: "list" };
+
+    var section = rest[0];
+    var isBlogSection =
+      section === "blog" ||
+      section === "المدونة" ||
+      section === "كشكولنا" ||
+      (section && section.toLowerCase() === "blog.html");
+    if (!isBlogSection) return { mode: "list" };
+
+    if (rest.length === 1) return { mode: "list" };
+
+    var second = (rest[1] || "").toLowerCase();
+    var third = (rest[2] || "").toLowerCase();
+    if (second === "category" || second === "التصنيف") {
+      return { mode: "list", category: third };
+    }
+    if (second === "tag" || second === "وسم") {
+      return { mode: "list", tag: third };
+    }
+    if (rest.length >= 3) {
+      return {
+        mode: "post",
+        categorySlug: second,
+        postSlug: third,
+      };
+    }
+
+    return { mode: "list" };
+  };
+
+  var pathState = parsePathState(normalizedPath);
+  var pageHeadingActive = document.querySelector(".breadcrumb-item.active");
+  var defaultBread = pageHeadingActive ? pageHeadingActive.textContent : "";
+  var defaultTitle = document.title;
+
+  var updateSeoTitle = function (titleText) {
+    if (!titleText) return;
+    document.title = titleText;
+    document
+      .querySelectorAll('meta[property="og:title"], meta[name="twitter:title"]')
+      .forEach(function (meta) {
+        meta.setAttribute("content", titleText);
+      });
+  };
+
+  var getBlogBasePath = function () {
+    if (normalizedPath.indexOf("/ar/") === 0 || isArabic()) return "/ar/كشكولنا/";
+    if (normalizedPath.indexOf("/en/") === 0) return "/en/blog/";
+    return "/blog/";
+  };
+
   var renderPosts = function (filtered) {
     removeLegacySpacers();
     clearInsertedSpacers();
@@ -90,10 +177,12 @@
     var params = new URLSearchParams(window.location.search);
     var parsedPage = parseInt(params.get("page") || "1", 10);
     var page = isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
+    var categoryFromPath = pathState.category || "";
+    var tagFromPath = pathState.tag || "";
     return {
-      category: (params.get("category") || "").toLowerCase(),
+      category: (params.get("category") || categoryFromPath || "").toLowerCase(),
       month: (params.get("month") || "").toLowerCase(),
-      tag: (params.get("tag") || "").toLowerCase(),
+      tag: (params.get("tag") || tagFromPath || "").toLowerCase(),
       page: page,
     };
   };
@@ -105,7 +194,7 @@
     if (q.tag) params.set("tag", q.tag);
     if (page > 1) params.set("page", String(page));
     var query = params.toString();
-    return "blog.html" + (query ? "?" + query : "");
+    return getBlogBasePath() + (query ? "?" + query : "");
   };
 
   var renderPagination = function (totalPages, currentPage, q) {
@@ -144,7 +233,7 @@
     var langIsAr = (document.documentElement.lang || "en").toLowerCase().startsWith("ar");
     var allLi = document.createElement("li");
     var allA = document.createElement("a");
-    allA.href = "blog.html";
+    allA.href = getBlogBasePath();
     allA.textContent = langIsAr ? "الأرشيف الكامل" : "Full Archive";
     allLi.appendChild(allA);
     archiveList.appendChild(allLi);
@@ -153,7 +242,7 @@
     months.forEach(function (monthKey) {
       var li = document.createElement("li");
       var a = document.createElement("a");
-      a.href = "blog.html?month=" + monthKey;
+      a.href = getBlogBasePath() + "?month=" + monthKey;
       var date = new Date(monthKey + "-01T00:00:00");
       a.textContent = formatter.format(date) + " (" + counts[monthKey] + ")";
       li.appendChild(a);
@@ -161,7 +250,69 @@
     });
   };
 
+  var detailsBackNode = null;
+  var ensureBackLink = function () {
+    if (detailsBackNode) return detailsBackNode;
+    var wrapper = document.createElement("div");
+    wrapper.className = "cs-height_30 cs-height_lg_20 js-blog-back-wrap";
+
+    var link = document.createElement("a");
+    link.className = "cs-text_btn js-blog-back-link";
+    link.href = getBlogBasePath();
+    wrapper.appendChild(link);
+    detailsBackNode = wrapper;
+    return detailsBackNode;
+  };
+
+  var updateBackLabel = function () {
+    if (!detailsBackNode) return;
+    var link = detailsBackNode.querySelector(".js-blog-back-link");
+    if (!link) return;
+    link.href = getBlogBasePath();
+    link.textContent = isArabic() ? "العودة إلى كل المقالات" : "Back to all articles";
+  };
+
+  var resetDetailView = function () {
+    if (detailsBackNode && detailsBackNode.parentNode) detailsBackNode.remove();
+    if (pageHeadingActive) pageHeadingActive.textContent = defaultBread;
+    updateSeoTitle(defaultTitle);
+  };
+
+  var renderSinglePostView = function (meta) {
+    if (!meta) return false;
+    removeLegacySpacers();
+    clearInsertedSpacers();
+    postMeta.forEach(function (item) {
+      item.el.style.display = "none";
+    });
+    container.insertBefore(meta.el, marker || null);
+    meta.el.style.display = "";
+    if (pagination) pagination.style.display = "none";
+
+    var backWrap = ensureBackLink();
+    updateBackLabel();
+    container.insertBefore(backWrap, meta.el);
+
+    var titleNode = meta.el.querySelector(".cs-post_title a");
+    if (pageHeadingActive && titleNode) pageHeadingActive.textContent = titleNode.textContent.trim();
+    if (titleNode) {
+      updateSeoTitle("Art Ratio - " + titleNode.textContent.trim());
+    }
+    return true;
+  };
+
   var applyFilter = function () {
+    if (pathState.mode === "post") {
+      var selected = postMeta.find(function (meta) {
+        return (
+          meta.categorySlug === (pathState.categorySlug || "") &&
+          meta.postSlug === (pathState.postSlug || "")
+        );
+      });
+      if (renderSinglePostView(selected)) return;
+    }
+
+    resetDetailView();
     var q = getQuery();
     var filtered = postMeta.filter(function (meta) {
       var catOk = !q.category || meta.category === q.category;
