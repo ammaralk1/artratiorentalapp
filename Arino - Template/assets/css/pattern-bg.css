@@ -1,0 +1,13 @@
+/* Pattern overlay for website background */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  background: #000 url('../img/pattern-bg.jpeg') repeat;
+  opacity: 0.7;
+  pointer-events: none;
+}

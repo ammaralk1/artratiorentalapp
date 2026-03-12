@@ -1,0 +1,28 @@
+Reachable from index.html (with dynamic portfolio discovery): 75
+Total HTML files: 98
+Unlinked HTML files: 23
+
+UNLINKED LIST
+architecture-agency.html
+blog-details-1.html
+blog-details-2.html
+blog-details-3.html
+blog-details.html
+case-study-showcase.html
+case-study.html
+creative-portfolio.html
+creative-solution.html
+digital-agency.html
+faq.html
+freelancer-agency.html
+marketing-agency.html
+personal-portfolio.html
+photography-agency.html
+portfolio-details.html
+service-details.html
+shop-checkout.html
+shop-order-recived.html
+shop-wishlist.html
+showcase-portfolio.html
+team-details.html
+video-showcase.html
