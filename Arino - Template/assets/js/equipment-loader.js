@@ -228,22 +228,13 @@
       const btn = col.querySelector('.cs-add-to-list');
       const qtyInput = col.querySelector('.cs-qty-input');
       const img = col.querySelector('img[data-fallback-src]');
-      const isBatteryItem = (() => {
-        const hay = `${item.name || ''} ${item.category || ''} ${item.subcategory || ''}`.toLowerCase();
-        return hay.includes('battery') || hay.includes('بطارية');
-      })();
       if (img) {
         img.addEventListener('error', () => {
           let remaining = [];
           try {
             remaining = JSON.parse(img.getAttribute('data-fallback-src') || '[]');
           } catch (e) {}
-          if (!Array.isArray(remaining) || !remaining.length) {
-            if (isBatteryItem) {
-              col.style.display = 'none';
-            }
-            return;
-          }
+          if (!Array.isArray(remaining) || !remaining.length) return;
           const nextSrc = remaining.shift();
           img.setAttribute('data-fallback-src', JSON.stringify(remaining));
           if (nextSrc && img.getAttribute('src') !== nextSrc) {
