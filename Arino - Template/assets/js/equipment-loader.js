@@ -54,7 +54,7 @@
     const imageCandidates = buildImageCandidates(rawImage);
     return {
       name: pick(row, keyGroups.name) || fallbackName,
-      image: imageCandidates[0] || rawImage,
+      image: imageCandidates[0] || rawImage || 'assets/img/shop/product_1.jpeg',
       imageCandidates: imageCandidates.slice(1),
       imageOriginal: rawImage,
       category: pick(row, keyGroups.category) || fallbackCategory,
@@ -68,6 +68,10 @@
 
     // Keep already-migrated Cloudflare PNG URLs untouched.
     if (/^https?:\/\/assets\.art-ratio\.com\/.*\.png(?:\?.*)?$/i.test(raw)) return [raw];
+    // For direct absolute image URLs (e.g., Sirv JPG), prefer the original URL first.
+    if (/^https?:\/\/.+\.(png|jpe?g|webp|gif|avif|svg)(?:\?.*)?$/i.test(raw)) {
+      return [raw];
+    }
 
     let fileName = raw;
     try {
@@ -377,7 +381,8 @@
       const wb = XLSX.read(buf, { type: 'array' });
       const sheet = wb.Sheets[wb.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-      items = rows.map(normalizeRow).filter((i) => i.name && i.image);
+      // Keep items visible even when image columns vary; use placeholder when needed.
+      items = rows.map(normalizeRow).filter((i) => i.name);
       renderFilters();
       setActiveFilter('category', state.category);
       setActiveFilter('subcategory', state.subcategory);
