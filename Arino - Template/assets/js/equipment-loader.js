@@ -62,6 +62,58 @@
     };
   }
 
+  function testImageUrl(url) {
+    return new Promise((resolve) => {
+      if (!url) {
+        resolve(false);
+        return;
+      }
+      const img = new Image();
+      let done = false;
+      const finish = (ok) => {
+        if (done) return;
+        done = true;
+        resolve(ok);
+      };
+      const timer = setTimeout(() => finish(false), 6000);
+      img.onload = () => {
+        clearTimeout(timer);
+        finish(true);
+      };
+      img.onerror = () => {
+        clearTimeout(timer);
+        finish(false);
+      };
+      img.src = url;
+    });
+  }
+
+  async function resolveWorkingImage(item) {
+    const urls = [item.image, ...(item.imageCandidates || [])].filter(Boolean);
+    const seen = new Set();
+    for (const url of urls) {
+      if (seen.has(url)) continue;
+      seen.add(url);
+      const ok = await testImageUrl(url);
+      if (ok) return { ...item, image: url };
+    }
+    return null;
+  }
+
+  async function filterItemsWithWorkingImages(list) {
+    const out = [];
+    // Keep concurrency controlled to avoid hammering the CDN.
+    const concurrency = 8;
+    for (let i = 0; i < list.length; i += concurrency) {
+      const chunk = list.slice(i, i + concurrency);
+      const resolved = await Promise.all(chunk.map(resolveWorkingImage));
+      resolved.forEach((item) => {
+        if (item) out.push(item);
+      });
+    }
+    return out;
+  }
+
   function buildImageCandidates(input) {
     const raw = String(input || '').trim();
     if (!raw) return [];
@@ -377,7 +429,8 @@
       const wb = XLSX.read(buf, { type: 'array' });
       const sheet = wb.Sheets[wb.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-      items = rows.map(normalizeRow).filter((i) => i.name && i.image);
+      const parsedItems = rows.map(normalizeRow).filter((i) => i.name && i.image);
+      items = await filterItemsWithWorkingImages(parsedItems);
       renderFilters();
       setActiveFilter('category', state.category);
       setActiveFilter('subcategory', state.subcategory);
