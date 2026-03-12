@@ -14,6 +14,10 @@ RewriteCond %{HTTPS} !=on
 RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
 # Serve clean URLs for the built static assets and pages.
+# Prefer Arino template assets when present (for /about.html, /contact.html, ...),
+# then fall back to built app assets.
+RewriteCond %{DOCUMENT_ROOT}/Arino\ -\ Template/assets/$1 -f
+RewriteRule ^assets/(.*)$ Arino\ -\ Template/assets/$1 [L,NC]
 RewriteRule ^assets/(.*)$ dist/assets/$1 [L,NC]
 RewriteRule ^js/(gtm-init|embed-vimeo-controls|video-thumb-inline|hero-vimeo-loop)\.js$ Arino\ -\ Template/assets/js/$1.js [L,NC]
 RewriteRule ^js/(.*)$ dist/js/$1 [L,NC]
@@ -28,6 +32,13 @@ RewriteRule ^site\.webmanifest$ dist/favicon_io/site.webmanifest [L,NC]
 RewriteRule ^(dashboard|home|login|customer|technician|projects|projects-reports|projects-expenses|users|notifications)(?:\.html)?/?$ dist/src/pages/$1.html [L,NC]
 # Redirect any legacy /src/pages/* paths to the built pages
 RewriteRule ^src/pages/(.*)$ dist/src/pages/$1 [L,NC]
+
+# Serve Arino template HTML pages at root without URL redirect:
+# /about.html -> /Arino - Template/about.html (internal rewrite only)
+RewriteCond %{REQUEST_URI} \.html$ [NC]
+RewriteCond %{DOCUMENT_ROOT}/Arino\ -\ Template%{REQUEST_URI} -f
+RewriteRule ^(.+\.html)$ Arino\ -\ Template/$1 [L,NC]
+
 RewriteRule ^$ Arino\ -\ Template/index.html [L,NC]
 
 Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
