@@ -16,6 +16,28 @@
   var loopWatchdog = null;
   var segmentRestartTimer = null;
   var reachedLoopWindow = false;
+  var mobileMediaQuery = window.matchMedia('(max-width: 991px)');
+
+  function ensureHeroImageBackground() {
+    var heroImage = hero.getAttribute('data-src');
+    if (!heroImage) return;
+    var encoded = encodeURI(heroImage);
+    var bg = window.getComputedStyle(hero).backgroundImage || '';
+    if (!bg || bg === 'none') {
+      hero.style.backgroundImage = 'url("' + encoded + '")';
+      hero.style.backgroundSize = 'cover';
+      hero.style.backgroundPosition = 'center center';
+    }
+  }
+
+  function shouldForceImageMode() {
+    var isSmallScreen = mobileMediaQuery.matches;
+    var prefersReducedMotion = false;
+    try {
+      prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    } catch (e) {}
+    return isSmallScreen || prefersReducedMotion;
+  }
 
   function clearLoopWatchdog() {
     if (!loopWatchdog) return;
@@ -127,7 +149,7 @@
   }
 
   function setHeroMedia(mode) {
-    var isVideo = mode !== 'image';
+    var isVideo = mode !== 'image' && !shouldForceImageMode();
     hero.classList.toggle('cs-home-hero--video-active', isVideo);
 
     switchButtons.forEach(function (button) {
@@ -147,6 +169,7 @@
       attachVimeoLoop();
       scheduleHardSegmentRestart();
     } else {
+      ensureHeroImageBackground();
       if (vimeoPlayer) {
         try { vimeoPlayer.pause(); } catch (e) {}
         vimeoPlayer.off('ended');
@@ -170,11 +193,15 @@
 
   window.addEventListener('scroll', ensurePlaybackWhenVisible, { passive: true });
   window.addEventListener('focus', ensurePlaybackWhenVisible);
+  window.addEventListener('resize', function () {
+    if (shouldForceImageMode()) setHeroMedia('image');
+  });
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'visible') ensurePlaybackWhenVisible();
   });
 
+  ensureHeroImageBackground();
   var savedMode = null;
   try { savedMode = localStorage.getItem('homeHeroMediaMode'); } catch (e) {}
-  setHeroMedia(savedMode === 'image' ? 'image' : 'video');
+  setHeroMedia(shouldForceImageMode() ? 'image' : (savedMode === 'image' ? 'image' : 'video'));
 })();

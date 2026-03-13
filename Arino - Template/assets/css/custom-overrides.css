@@ -262,9 +262,7 @@ body[data-page="home"] .cs-home-hero .cs-home-shape-3 {
     background-position: center 0% !important;
   }
   body[data-page="home"] .cs-home-hero .cs-home-hero_media_switch {
-    top: 116px;
-    transform: translateX(-50%) scale(0.42);
-    transform-origin: top center;
+    display: none;
   }
   body[data-page="home"] .cs-home-hero .container {
     width: 100%;
@@ -324,8 +322,7 @@ body[data-page="home"] .cs-home-hero .cs-home-shape-3 {
     background-position: center 0% !important;
   }
   body[data-page="home"] .cs-home-hero .cs-home-hero_media_switch {
-    top: 96px;
-    transform: translateX(-50%) scale(0.42);
+    display: none;
   }
   body[data-page="home"] .cs-home-hero .cs-home-hero_video_frame {
     transform: scale(1.45) translateY(-5%);
