@@ -162,7 +162,15 @@
   }
 
   if (switchWrap) {
-    switchWrap.addEventListener('click', function () {
+    switchWrap.addEventListener('click', function (event) {
+      var target = event.target.closest('[data-hero-media]');
+      if (target) {
+        var requestedMode = target.getAttribute('data-hero-media');
+        if (requestedMode === 'image' || requestedMode === 'video') {
+          setHeroMedia(requestedMode);
+          return;
+        }
+      }
       var nextMode = hero.classList.contains('cs-home-hero--video-active') ? 'image' : 'video';
       setHeroMedia(nextMode);
     });
