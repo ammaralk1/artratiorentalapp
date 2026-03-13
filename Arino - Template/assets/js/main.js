@@ -313,25 +313,25 @@
   function dynamicBackground() {
     var isMobile = window.matchMedia('(max-width: 991px)').matches;
     var mobileHeroMap = {
-      'assets/img/hero_bg.jpeg': 'assets/img/Mob Hero BG/hero_bg.jpg',
+      'assets/img/hero_bg.jpeg': 'assets/img/mob-hero-bg/hero_bg.jpg',
       'assets/img/about_hero_bg.jpeg':
-        'assets/img/Mob Hero BG/about_hero_bg-mobile.jpeg',
+        'assets/img/mob-hero-bg/about_hero_bg-mobile.jpeg',
       'assets/img/blog_hero_bg.jpeg':
-        'assets/img/Mob Hero BG/blog_hero_bg_mobile.jpeg',
+        'assets/img/mob-hero-bg/blog_hero_bg_mobile.jpeg',
       'assets/img/blog_details_hero_bg.jpeg':
-        'assets/img/Mob Hero BG/blog_hero_bg_mobile.jpeg',
+        'assets/img/mob-hero-bg/blog_hero_bg_mobile.jpeg',
       'assets/img/contact_hero_bg.jpeg':
-        'assets/img/Mob Hero BG/contact_hero_bg_mobile.jpeg',
+        'assets/img/mob-hero-bg/contact_hero_bg_mobile.jpeg',
       'assets/img/portfolio_hero_bg.jpeg':
-        'assets/img/Mob Hero BG/portfolio_hero_bg_mobile.jpeg',
+        'assets/img/mob-hero-bg/portfolio_hero_bg_mobile.jpeg',
       'assets/img/portfolio_details_bg.jpeg':
-        'assets/img/Mob Hero BG/portfolio_hero_bg_mobile.jpeg',
+        'assets/img/mob-hero-bg/portfolio_hero_bg_mobile.jpeg',
       'assets/img/service_hero_bg.jpeg':
-        'assets/img/Mob Hero BG/service_hero_bg_mobile.jpeg',
+        'assets/img/mob-hero-bg/service_hero_bg_mobile.jpeg',
       'assets/img/shop_hero_bg.jpeg':
-        'assets/img/Mob Hero BG/shop_hero_bg_mobile.jpeg',
+        'assets/img/mob-hero-bg/shop_hero_bg_mobile.jpeg',
       'assets/img/team_hero_bg.jpeg':
-        'assets/img/Mob Hero BG/team_hero_bg_mobile.jpeg',
+        'assets/img/mob-hero-bg/team_hero_bg_mobile.jpeg',
     };
 
     $('[data-src]').each(function () {
