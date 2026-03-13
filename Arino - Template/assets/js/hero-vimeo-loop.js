@@ -2,6 +2,7 @@
   var hero = document.querySelector('.cs-home-hero');
   if (!hero) return;
 
+  var heroMedia = hero.querySelector('.cs-home-hero_media');
   var frame = hero.querySelector('.cs-home-hero_video_frame');
   var frameSrc = frame ? frame.getAttribute('data-vimeo-src') : '';
   var switchButtons = hero.querySelectorAll('[data-hero-media]');
@@ -16,6 +17,27 @@
   var loopWatchdog = null;
   var segmentRestartTimer = null;
   var reachedLoopWindow = false;
+
+  function resolveHeroImageSrc() {
+    var src = hero.getAttribute('data-src') || '';
+    if (!src) return '';
+
+    var isMobile = window.matchMedia('(max-width: 991px)').matches;
+    if (!isMobile) return src;
+
+    var mobileHeroMap = {
+      'assets/img/hero_bg.jpeg': 'assets/img/Mob Hero BG/hero_bg.jpg',
+    };
+    return mobileHeroMap[src] || src;
+  }
+
+  function ensureHeroImageBackground() {
+    var src = resolveHeroImageSrc();
+    if (!src) return;
+    hero.style.backgroundImage = 'url("' + encodeURI(src) + '")';
+    hero.style.backgroundSize = 'cover';
+    hero.style.backgroundPosition = 'center center';
+  }
 
   function clearLoopWatchdog() {
     if (!loopWatchdog) return;
@@ -129,6 +151,11 @@
   function setHeroMedia(mode) {
     var isVideo = mode !== 'image';
     hero.classList.toggle('cs-home-hero--video-active', isVideo);
+    ensureHeroImageBackground();
+    if (heroMedia) {
+      heroMedia.style.opacity = isVideo ? '1' : '0';
+      heroMedia.style.pointerEvents = isVideo ? 'auto' : 'none';
+    }
 
     switchButtons.forEach(function (button) {
       var active = button.getAttribute('data-hero-media') === (isVideo ? 'video' : 'image');
@@ -162,17 +189,15 @@
   }
 
   if (switchWrap) {
-    switchWrap.addEventListener('click', function (event) {
-      var target = event.target.closest('[data-hero-media]');
-      if (target) {
-        var requestedMode = target.getAttribute('data-hero-media');
+    switchButtons.forEach(function (button) {
+      button.addEventListener('click', function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        var requestedMode = button.getAttribute('data-hero-media');
         if (requestedMode === 'image' || requestedMode === 'video') {
           setHeroMedia(requestedMode);
-          return;
         }
-      }
-      var nextMode = hero.classList.contains('cs-home-hero--video-active') ? 'image' : 'video';
-      setHeroMedia(nextMode);
+      });
     });
   }
 
