@@ -259,6 +259,9 @@ body[data-page="home"] .cs-home-hero .cs-home-shape-3 {
     padding-bottom: 70px;
     display: flex;
     align-items: flex-end;
+    background-image: url("../img/mob-hero-bg/hero_bg.jpg") !important;
+    background-size: cover !important;
+    background-repeat: no-repeat !important;
     background-position: center 0% !important;
   }
   body[data-page="home"] .cs-home-hero .cs-home-hero_media_switch {
@@ -321,6 +324,9 @@ body[data-page="home"] .cs-home-hero .cs-home-shape-3 {
     padding-bottom: 56px;
     min-height: 90svh;
     height: 90svh;
+    background-image: url("../img/mob-hero-bg/hero_bg.jpg") !important;
+    background-size: cover !important;
+    background-repeat: no-repeat !important;
     background-position: center 0% !important;
   }
   body[data-page="home"] .cs-home-hero .cs-home-hero_media_switch {

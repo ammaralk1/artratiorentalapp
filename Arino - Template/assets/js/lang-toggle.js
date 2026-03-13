@@ -2871,6 +2871,12 @@
   });
 
   const normalizedInitialPath = normalizePath(window.location.pathname || '/');
+  if (normalizedInitialPath === '/' || normalizedInitialPath === '/index.html') {
+    if (window.location.pathname !== '/ar/' && window.location.pathname !== '/ar') {
+      window.location.replace('/ar/');
+      return;
+    }
+  }
   const pathLang = normalizedInitialPath.startsWith('/ar') ? 'ar' : normalizedInitialPath.startsWith('/en') ? 'en' : '';
   let currentLang =
     pathLang ||
