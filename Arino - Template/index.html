@@ -1468,6 +1468,7 @@
             if (!hero.classList.contains("cs-home-hero--video-active")) return;
 
             // Hard fallback: reload iframe at loop start to guarantee no Vimeo end screen.
+            clearVideoReady();
             showPosterForLoopLoading();
             frame.setAttribute("src", buildSegmentSrc());
             vimeoPlayer = null;
