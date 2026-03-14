@@ -55,10 +55,9 @@
     frame.style.visibility = mobileVideoReady ? 'visible' : 'hidden';
   }
 
-  function bindMobileDownButtonScroll() {
+  function bindDownButtonScroll() {
     if (!downButton) return;
     downButton.addEventListener('click', function (event) {
-      if (!isMobileViewport()) return;
       var targetSelector = downButton.getAttribute('href');
       if (!targetSelector || targetSelector.charAt(0) !== '#') return;
       var target = document.querySelector(targetSelector);
@@ -325,7 +324,7 @@
   });
 
   syncSwitchVisibilityForViewport();
-  bindMobileDownButtonScroll();
+  bindDownButtonScroll();
   setMobileVideoReadyState(!isMobileViewport());
   setHeroMedia('video');
 })();
