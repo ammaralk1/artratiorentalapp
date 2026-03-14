@@ -1277,11 +1277,45 @@ body[data-page="home"]:not(.rtl) section.cs-shape_wrap_4 .cs-shape_4:nth-child(2
 .cs-preloader_in {
   position: relative;
   z-index: 1;
+  width: 176px;
+  height: 176px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: url("../img/logo.svg") center center / 132px auto no-repeat;
+  animation: cs-preloader-logo-breathe 1.7s ease-in-out infinite;
   transition: opacity 0.28s ease, transform 0.34s ease;
+}
+.cs-preloader .cs-preloader_in::before {
+  display: none;
+}
+.cs-preloader .cs-preloader_in::after {
+  content: "";
+  position: absolute;
+  inset: -12px;
+  width: auto;
+  height: auto;
+  left: auto;
+  top: auto;
+  margin: 0;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #fff;
+  border-right-color: #9f7a4a;
+  border-radius: 999px;
+  animation: spin 1s linear infinite;
 }
 .cs-preloader_in.cs-preloader_in--fade-out {
   opacity: 0;
   transform: scale(0.94);
+}
+@keyframes cs-preloader-logo-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.03);
+  }
 }
 
 /* Photo Gallery lightbox backdrop: black + site pattern (safe, no overlay layers) */
