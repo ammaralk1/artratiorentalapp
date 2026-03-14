@@ -239,7 +239,13 @@
   }
 
   function setHeroMedia(mode) {
-    var isVideo = isMobileViewport() ? true : mode !== 'image';
+    var isMobile = isMobileViewport();
+    var requestedMode = isMobile ? 'video' : (mode === 'image' ? 'image' : 'video');
+    var currentMode = hero.classList.contains('cs-home-hero--video-active') ? 'video' : 'image';
+
+    if (!isMobile && requestedMode === currentMode) return;
+
+    var isVideo = requestedMode === 'video';
     syncSwitchVisibilityForViewport();
     hero.classList.toggle('cs-home-hero--video-active', isVideo);
     ensureHeroImageBackground();
@@ -291,29 +297,20 @@
   if (switchWrap) {
     switchWrap.addEventListener('click', function (event) {
       if (isMobileViewport()) return;
-      if (event.target.closest('[data-hero-media]')) return;
 
       event.preventDefault();
       event.stopPropagation();
 
-      var requestedMode = resolveDesktopModeFromWrapClick(event);
+      var modeButton = event.target.closest('[data-hero-media]');
+      var requestedMode = modeButton
+        ? modeButton.getAttribute('data-hero-media')
+        : resolveDesktopModeFromWrapClick(event);
       if (requestedMode !== 'image' && requestedMode !== 'video') {
         requestedMode = hero.classList.contains('cs-home-hero--video-active')
           ? 'image'
           : 'video';
       }
       setHeroMedia(requestedMode);
-    });
-
-    switchButtons.forEach(function (button) {
-      button.addEventListener('click', function (event) {
-        event.preventDefault();
-        event.stopPropagation();
-        var requestedMode = button.getAttribute('data-hero-media');
-        if (requestedMode === 'image' || requestedMode === 'video') {
-          setHeroMedia(requestedMode);
-        }
-      });
     });
   }
 
