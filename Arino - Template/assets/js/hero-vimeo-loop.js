@@ -70,6 +70,25 @@
     });
   }
 
+  function resolveDesktopModeFromWrapClick(event) {
+    if (!switchButtons || !switchButtons.length) return null;
+    var clickX = typeof event.clientX === 'number' ? event.clientX : 0;
+    var closestButton = null;
+    var closestDistance = Infinity;
+
+    switchButtons.forEach(function (button) {
+      var rect = button.getBoundingClientRect();
+      var centerX = rect.left + (rect.width / 2);
+      var distance = Math.abs(clickX - centerX);
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestButton = button;
+      }
+    });
+
+    return closestButton ? closestButton.getAttribute('data-hero-media') : null;
+  }
+
   function resolveHeroImageSrc() {
     var src = hero.getAttribute('data-src') || '';
     if (!src) return '';
@@ -268,6 +287,22 @@
   }
 
   if (switchWrap) {
+    switchWrap.addEventListener('click', function (event) {
+      if (isMobileViewport()) return;
+      if (event.target.closest('[data-hero-media]')) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      var requestedMode = resolveDesktopModeFromWrapClick(event);
+      if (requestedMode !== 'image' && requestedMode !== 'video') {
+        requestedMode = hero.classList.contains('cs-home-hero--video-active')
+          ? 'image'
+          : 'video';
+      }
+      setHeroMedia(requestedMode);
+    });
+
     switchButtons.forEach(function (button) {
       button.addEventListener('click', function (event) {
         event.preventDefault();
@@ -290,13 +325,8 @@
     if (document.visibilityState === 'visible') ensurePlaybackWhenVisible();
   });
 
-  var savedMode = null;
-  try { savedMode = localStorage.getItem('homeHeroMediaMode'); } catch (e) {}
-  var initialMode = isMobileViewport()
-    ? 'video'
-    : (savedMode === 'image' ? 'image' : 'video');
   syncSwitchVisibilityForViewport();
   bindMobileDownButtonScroll();
   setMobileVideoReadyState(!isMobileViewport());
-  setHeroMedia(initialMode);
+  setHeroMedia('video');
 })();

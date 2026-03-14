@@ -2816,7 +2816,7 @@
       lang ||
       (document.documentElement.lang || '').slice(0, 2).toLowerCase() ||
       currentLang ||
-      'en';
+      'ar';
     setLanguage(next);
   };
 
@@ -2882,7 +2882,7 @@
     pathLang ||
     localStorage.getItem(STORAGE_KEY) ||
     (document.documentElement.lang || '').slice(0, 2).toLowerCase() ||
-    'en';
+    'ar';
 
   document.addEventListener('DOMContentLoaded', () => {
     setLanguage(currentLang);
