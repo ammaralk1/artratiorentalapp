@@ -77,40 +77,6 @@
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="assets/css/custom-overrides.css?v=20260314-mobilefix3">
     <link rel="stylesheet" href="assets/css/pattern-bg.css">
-    <style>
-      @media (max-width: 991px) {
-        body[data-page="home"] .cs-home-hero .cs-home-hero_media_switch { display: none !important; }
-        body[data-page="home"] .cs-home-hero .cs-home-hero_media { background: transparent !important; pointer-events: none !important; }
-        body[data-page="home"] .cs-home-hero .cs-home-hero_video_frame { opacity: 0; visibility: hidden; transition: opacity .35s ease; }
-        body[data-page="home"] .cs-home-hero .cs-home-hero_mobile_video_loader {
-          position: absolute;
-          inset: 0;
-          z-index: 1;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          opacity: 0;
-          visibility: hidden;
-          pointer-events: none;
-          transition: opacity .25s ease, visibility .25s ease;
-          background: radial-gradient(circle at center, rgba(0,0,0,.26) 0%, rgba(0,0,0,.45) 65%, rgba(0,0,0,.6) 100%);
-        }
-        body[data-page="home"] .cs-home-hero.is-mobile-video-loading .cs-home-hero_mobile_video_loader {
-          opacity: 1;
-          visibility: visible;
-        }
-        body[data-page="home"] .cs-home-hero .cs-home-hero_mobile_video_spinner {
-          width: 42px;
-          height: 42px;
-          border: 3px solid rgba(255, 255, 255, .38);
-          border-top-color: #fff;
-          border-radius: 50%;
-          animation: csMobileHeroSpin .8s linear infinite;
-        }
-        body[data-page="home"] .cs-home-hero .cs-down_btn { pointer-events: auto !important; z-index: 4 !important; }
-      }
-      @keyframes csMobileHeroSpin { to { transform: rotate(360deg); } }
-    </style>
   </head>
   <body data-page="home">
     <!-- Google Tag Manager (noscript) -->
@@ -223,32 +189,10 @@
     </div>
     <!-- End Header Section -->
     <!-- Start Hero -->
-    <div class="cs-hero cs-style1 cs-bg cs-fixed_bg cs-shape_wrap_1 cs-home-hero" data-src="assets/img/hero_bg.jpeg" id="home">
-      <div class="cs-home-hero_media" aria-hidden="true">
-        <iframe
-          class="cs-home-hero_video_frame"
-          data-vimeo-src="https://player.vimeo.com/video/1132903455?autoplay=1&muted=1&loop=0&autopause=0&controls=0&title=0&byline=0&portrait=0&dnt=1&background=1&playsinline=1"
-          src="https://player.vimeo.com/video/1132903455?autoplay=1&muted=1&loop=0&autopause=0&controls=0&title=0&byline=0&portrait=0&dnt=1&background=1&playsinline=1#t=44s"
-          frameborder="0"
-          allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
-         
-          title="Home Hero Background Video"
-        ></iframe>
-      </div>
-      <div class="cs-home-hero_mobile_video_loader" aria-hidden="true">
-        <span class="cs-home-hero_mobile_video_spinner"></span>
-      </div>
-      <div class="cs-home-hero_media_switch" role="group" aria-label="Hero background mode">
-        <button type="button" class="is-active" data-hero-media="video" aria-pressed="true" aria-label="Video background">
-          <span class="cs-home-hero_toggle_label">Video</span>
-        </button>
-        <button type="button" data-hero-media="image" aria-pressed="false" aria-label="Image background">
-          <span class="cs-home-hero_toggle_label">Image</span>
-        </button>
-      </div>
-      <div class="cs-shape_1 cs-home-shape-1"></div>
-      <div class="cs-shape_1 cs-home-shape-2"></div>
-      <div class="cs-shape_1 cs-home-shape-3"></div>
+    <div class="cs-hero cs-style1 cs-bg cs-fixed_bg cs-shape_wrap_1" data-src="assets/img/hero_bg.jpeg" id="home">
+      <div class="cs-shape_1"></div>
+      <div class="cs-shape_1"></div>
+      <div class="cs-shape_1"></div>
       <div class="container">
         <div class="cs-hero_text">
           <h1 class="cs-hero_title wow fadeInRight" data-wow-duration="0.8s" data-wow-delay="0.2s"> Creativity In <br>Our Blood Line </h1>
@@ -392,7 +336,33 @@
     </div>
     <!-- End Third Video Block -->
     <script src="https://player.vimeo.com/api/player.js" defer></script>
-    <script src="/js/embed-vimeo-controls.js" defer></script>
+    <script>
+      window.addEventListener("load", function () {
+        if (typeof Vimeo === "undefined") return;
+        document.querySelectorAll(".cs-video_embed_wrap").forEach(function (wrap) {
+          var iframe = wrap.querySelector("iframe");
+          var overlay = wrap.querySelector(".cs-play_over_embed");
+          if (!iframe || !overlay) return;
+          var player = new Vimeo.Player(iframe);
+
+          overlay.addEventListener("click", function (e) {
+            e.preventDefault();
+            overlay.style.display = "none";
+            player.play();
+          });
+
+          player.on("pause", function () {
+            overlay.style.display = "flex";
+          });
+          player.on("ended", function () {
+            overlay.style.display = "flex";
+          });
+          player.on("play", function () {
+            overlay.style.display = "none";
+          });
+        });
+      });
+    </script>
     <div class="cs-height_145 cs-height_lg_80"></div>
     <!-- Start Service Section -->
     <section id="service">
@@ -1356,8 +1326,42 @@
       </div>
     </div>
     <!-- End Video Popup -->
-    <script src="/js/video-thumb-inline.js" defer></script>
-    <script src="/js/hero-vimeo-loop.js?v=20260314-servicejump1" defer></script>
+    <script>
+      (function () {
+        var thumb = document.querySelector(".cs-video_thumb");
+        var playBtn = document.querySelector(".cs-video_play_btn");
+        if (thumb && playBtn) {
+          var src = thumb.getAttribute("data-video-src");
+          playBtn.addEventListener("click", function (e) {
+            e.preventDefault();
+            var existing = thumb.querySelector("iframe");
+            if (existing) existing.remove();
+            var iframe = document.createElement("iframe");
+            iframe.src = src;
+            iframe.allow =
+              "autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share";
+            iframe.allowFullscreen = true;
+            iframe.style.position = "absolute";
+            iframe.style.inset = "0";
+            iframe.style.width = "100%";
+            iframe.style.height = "100%";
+            iframe.style.border = "0";
+            thumb.appendChild(iframe);
+            thumb.classList.add("is-playing");
+            playBtn.style.display = "none";
+          });
+
+          thumb.addEventListener("click", function (e) {
+            if (!thumb.classList.contains("is-playing")) return;
+            if (e.target.closest(".cs-video_play_btn")) return;
+            var existing = thumb.querySelector("iframe");
+            if (existing) existing.remove();
+            thumb.classList.remove("is-playing");
+            playBtn.style.display = "flex";
+          });
+        }
+      })();
+    </script>
     <!-- Script -->
     <script src="assets/js/plugins/jquery-3.6.0.min.js"></script>
     <script src="assets/js/plugins/isotope.pkg.min.js"></script>
