@@ -1404,6 +1404,9 @@
         var hasBroadcastedVideoReady = false;
         var hasInitialVideoReady = false;
         var hasFirstFrameReady = false;
+        var minPosterHoldMs = 1000;
+        var posterShownAt = 0;
+        var posterHideTimer = null;
 
         function clearLoopWatchdog() {
           if (!loopWatchdog) return;
@@ -1411,9 +1414,14 @@
           loopWatchdog = null;
         }
 
-        function markVideoReady() {
-          if (hasFirstFrameReady) return;
-          hasFirstFrameReady = true;
+        function clearPosterHideTimer() {
+          if (!posterHideTimer) return;
+          clearTimeout(posterHideTimer);
+          posterHideTimer = null;
+        }
+
+        function finalizeVideoReady() {
+          if (!hero.classList.contains("cs-home-hero--video-active")) return;
           hero.classList.add("cs-home-hero--video-ready");
           hero.classList.remove("cs-home-hero--show-poster");
           hasInitialVideoReady = true;
@@ -1425,17 +1433,31 @@
           window.dispatchEvent(new CustomEvent("arino:home-hero-video-ready"));
         }
 
+        function markVideoReady() {
+          if (hasFirstFrameReady) return;
+          hasFirstFrameReady = true;
+          clearPosterHideTimer();
+          var elapsed = posterShownAt ? Date.now() - posterShownAt : minPosterHoldMs;
+          var remaining = Math.max(0, minPosterHoldMs - elapsed);
+          posterHideTimer = setTimeout(function () {
+            posterHideTimer = null;
+            finalizeVideoReady();
+          }, remaining);
+        }
+
         function clearVideoReady() {
           hasFirstFrameReady = false;
+          clearPosterHideTimer();
           hero.classList.remove("cs-home-hero--video-ready");
         }
 
-        function showPosterForLoopLoading() {
-          if (!hasInitialVideoReady) return;
+        function showPosterForLoading() {
+          posterShownAt = Date.now();
           hero.classList.add("cs-home-hero--show-poster");
         }
 
-        function hidePosterForLoopLoading() {
+        function hidePosterForLoading() {
+          posterShownAt = 0;
           hero.classList.remove("cs-home-hero--show-poster");
         }
 
@@ -1460,7 +1482,7 @@
 
             // Hard fallback: reload iframe at loop start to guarantee no Vimeo end screen.
             clearVideoReady();
-            showPosterForLoopLoading();
+            showPosterForLoading();
             frame.setAttribute("src", buildSegmentSrc());
             vimeoPlayer = null;
             reachedLoopWindow = false;
@@ -1605,6 +1627,7 @@
           if (frame) {
             if (isVideo) {
               clearVideoReady();
+              showPosterForLoading();
               if (!frame.getAttribute("src") && frameSrc) {
                 frame.setAttribute("src", buildSegmentSrc());
                 vimeoPlayer = null;
@@ -1615,7 +1638,7 @@
               scheduleHardSegmentRestart();
             } else {
               clearVideoReady();
-              hidePosterForLoopLoading();
+              hidePosterForLoading();
               if (vimeoPlayer) {
                 vimeoPlayer.off("ended");
                 vimeoPlayer.off("timeupdate");
@@ -1664,7 +1687,7 @@
         try {
           savedMode = localStorage.getItem("homeHeroMediaMode");
         } catch (e) {}
-        hidePosterForLoopLoading();
+        hidePosterForLoading();
         setHeroMedia(savedMode === "image" ? "image" : "video");
       })();
     </script>
@@ -1677,6 +1700,6 @@
     <script src="assets/js/plugins/wow.min.js"></script>
     <script src="assets/js/plugins/gsap.min.js"></script>
     <script src="assets/js/lang-toggle.js?v=20260314-defaultar1"></script>
-    <script src="assets/js/main.js?v=20260314-herohujrasa2"></script>
+    <script src="assets/js/main.js?v=20260314-herohujrasa3"></script>
   </body>
 </html>

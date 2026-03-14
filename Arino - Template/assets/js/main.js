@@ -190,19 +190,7 @@
   }
 
   function shouldDeferHomeHeroPreloader() {
-    var body = document.body;
-    if (!body || body.dataset.page !== 'home') return false;
-    try {
-      if (sessionStorage.getItem('arinoHomeHeroVideoPreloaded') === '1') return false;
-    } catch (e) {}
-
-    var hero = document.querySelector('.cs-home-hero');
-    if (!hero) return false;
-    if (!hero.classList.contains('cs-home-hero--video-active')) return false;
-    if (hero.classList.contains('cs-home-hero--video-ready')) return false;
-
-    var frame = hero.querySelector('.cs-home-hero_video_frame');
-    return !!(frame && frame.getAttribute('data-vimeo-src'));
+    return false;
   }
 
   // Fallback: force-hide preloader even if external resources block window load
