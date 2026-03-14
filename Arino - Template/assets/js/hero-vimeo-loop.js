@@ -20,6 +20,7 @@
   var segmentRestartTimer = null;
   var reachedLoopWindow = false;
   var downButton = hero.querySelector('.cs-down_btn[href^="#"]');
+  var mobileVideoReady = false;
 
   function isMobileViewport() {
     return window.matchMedia('(max-width: 991px)').matches;
@@ -34,6 +35,22 @@
     }
     switchWrap.style.display = '';
     switchWrap.removeAttribute('hidden');
+  }
+
+  function setMobileVideoReadyState(isReady) {
+    if (!heroMedia || !frame) return;
+
+    if (!isMobileViewport()) {
+      mobileVideoReady = true;
+      frame.style.opacity = '1';
+      frame.style.visibility = 'visible';
+      return;
+    }
+
+    mobileVideoReady = Boolean(isReady);
+    heroMedia.style.opacity = mobileVideoReady ? '1' : '0';
+    frame.style.opacity = mobileVideoReady ? '1' : '0';
+    frame.style.visibility = mobileVideoReady ? 'visible' : 'hidden';
   }
 
   function bindMobileDownButtonScroll() {
@@ -97,6 +114,7 @@
   }
 
   function scheduleHardSegmentRestart() {
+    if (isMobileViewport()) return;
     clearSegmentRestartTimer();
     if (!hero.classList.contains('cs-home-hero--video-active')) return;
     if (!frame || !frame.getAttribute('src')) return;
@@ -106,6 +124,7 @@
       frame.setAttribute('src', buildSegmentSrc());
       vimeoPlayer = null;
       reachedLoopWindow = false;
+      setMobileVideoReadyState(false);
       setTimeout(attachVimeoLoop, 140);
       scheduleHardSegmentRestart();
     }, Math.max(2000, segmentDurationMs - 250));
@@ -132,6 +151,9 @@
         .then(function (seconds) {
           if (typeof seconds !== 'number') return;
           if (seconds >= loopStartSeconds - 1) reachedLoopWindow = true;
+          if (isMobileViewport() && !mobileVideoReady && seconds >= loopStartSeconds - 1) {
+            setMobileVideoReadyState(true);
+          }
           if (isLoopSeeking) return;
           if (seconds >= loopEndSeconds - loopGuardSeconds) return jumpToLoopStart();
           if (reachedLoopWindow && seconds < loopStartSeconds - loopResetGuardSeconds) jumpToLoopStart();
@@ -153,6 +175,10 @@
     if (!frame || !frame.getAttribute('src')) return;
     if (!window.Vimeo || !window.Vimeo.Player) return;
 
+    if (isMobileViewport() && !mobileVideoReady) {
+      setMobileVideoReadyState(false);
+    }
+
     if (!vimeoPlayer) vimeoPlayer = new window.Vimeo.Player(frame);
     if (!vimeoPlayer) return;
 
@@ -162,6 +188,9 @@
 
     vimeoPlayer.on('timeupdate', function (data) {
       if (!data || typeof data.seconds !== 'number') return;
+      if (isMobileViewport() && !mobileVideoReady && data.seconds >= loopStartSeconds - 1) {
+        setMobileVideoReadyState(true);
+      }
       if (isLoopSeeking) return;
       if (reachedLoopWindow && data.seconds < loopStartSeconds - loopResetGuardSeconds) return jumpToLoopStart();
       if (data.seconds >= loopEndSeconds - loopGuardSeconds) jumpToLoopStart();
@@ -197,6 +226,15 @@
       heroMedia.style.opacity = isVideo ? '1' : '0';
       heroMedia.style.pointerEvents = 'none';
     }
+    if (isVideo) {
+      if (isMobileViewport()) {
+        setMobileVideoReadyState(false);
+      } else {
+        setMobileVideoReadyState(true);
+      }
+    } else {
+      setMobileVideoReadyState(false);
+    }
 
     switchButtons.forEach(function (button) {
       var active = button.getAttribute('data-hero-media') === (isVideo ? 'video' : 'image');
@@ -213,7 +251,7 @@
         setTimeout(attachVimeoLoop, 120);
       }
       attachVimeoLoop();
-      scheduleHardSegmentRestart();
+      if (!isMobileViewport()) scheduleHardSegmentRestart();
     } else {
       if (vimeoPlayer) {
         try { vimeoPlayer.pause(); } catch (e) {}
@@ -244,7 +282,10 @@
 
   window.addEventListener('scroll', ensurePlaybackWhenVisible, { passive: true });
   window.addEventListener('focus', ensurePlaybackWhenVisible);
-  window.addEventListener('resize', syncSwitchVisibilityForViewport);
+  window.addEventListener('resize', function () {
+    syncSwitchVisibilityForViewport();
+    if (!isMobileViewport()) setMobileVideoReadyState(true);
+  });
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'visible') ensurePlaybackWhenVisible();
   });
@@ -256,5 +297,6 @@
     : (savedMode === 'image' ? 'image' : 'video');
   syncSwitchVisibilityForViewport();
   bindMobileDownButtonScroll();
+  setMobileVideoReadyState(!isMobileViewport());
   setHeroMedia(initialMode);
 })();

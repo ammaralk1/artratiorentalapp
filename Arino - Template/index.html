@@ -75,12 +75,13 @@
     <link rel="stylesheet" href="assets/css/plugins/lightgallery.min.css">
     <link rel="stylesheet" href="assets/css/plugins/animate.css">
     <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="stylesheet" href="assets/css/custom-overrides.css?v=20260314-mobilefix2">
+    <link rel="stylesheet" href="assets/css/custom-overrides.css?v=20260314-mobilefix3">
     <link rel="stylesheet" href="assets/css/pattern-bg.css">
     <style>
       @media (max-width: 991px) {
         body[data-page="home"] .cs-home-hero .cs-home-hero_media_switch { display: none !important; }
-        body[data-page="home"] .cs-home-hero .cs-home-hero_media { pointer-events: none !important; }
+        body[data-page="home"] .cs-home-hero .cs-home-hero_media { background: transparent !important; pointer-events: none !important; }
+        body[data-page="home"] .cs-home-hero .cs-home-hero_video_frame { opacity: 0; visibility: hidden; transition: opacity .35s ease; }
         body[data-page="home"] .cs-home-hero .cs-down_btn { pointer-events: auto !important; z-index: 4 !important; }
       }
     </style>
@@ -196,7 +197,7 @@
     </div>
     <!-- End Header Section -->
     <!-- Start Hero -->
-    <div class="cs-hero cs-style1 cs-bg cs-fixed_bg cs-shape_wrap_1 cs-home-hero cs-home-hero--video-active" data-src="assets/img/hero_bg.jpeg" id="home">
+    <div class="cs-hero cs-style1 cs-bg cs-fixed_bg cs-shape_wrap_1 cs-home-hero" data-src="assets/img/hero_bg.jpeg" id="home">
       <div class="cs-home-hero_media" aria-hidden="true">
         <iframe
           class="cs-home-hero_video_frame"
@@ -1327,7 +1328,7 @@
     </div>
     <!-- End Video Popup -->
     <script src="/js/video-thumb-inline.js" defer></script>
-    <script src="/js/hero-vimeo-loop.js?v=20260314-mobilefix2" defer></script>
+    <script src="/js/hero-vimeo-loop.js?v=20260314-mobilefix3" defer></script>
     <!-- Script -->
     <script src="assets/js/plugins/jquery-3.6.0.min.js"></script>
     <script src="assets/js/plugins/isotope.pkg.min.js"></script>
