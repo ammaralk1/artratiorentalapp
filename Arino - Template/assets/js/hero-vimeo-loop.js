@@ -7,6 +7,8 @@
   var frameSrc = frame ? frame.getAttribute('data-vimeo-src') : '';
   var switchButtons = hero.querySelectorAll('[data-hero-media]');
   var switchWrap = hero.querySelector('.cs-home-hero_media_switch');
+  var homeHeroPrimaryMobile = '/assets/img/mob-hero-bg/untitled folder/hero_bg.jpeg';
+  var homeHeroFallbackMobile = '/assets/img/mob-hero-bg/hero_bg_home_mobile.jpeg';
   var loopStartSeconds = 44;
   var loopEndSeconds = 61;
   var loopGuardSeconds = 0.35;
@@ -26,8 +28,7 @@
     if (!isMobile) return src.indexOf('assets/') === 0 ? '/' + src : src;
 
     var mobileHeroMap = {
-      'assets/img/hero_bg.jpeg':
-        '/assets/img/mob-hero-bg/untitled folder/hero_bg.jpeg',
+      'assets/img/hero_bg.jpeg': homeHeroPrimaryMobile,
     };
     var mapped = mobileHeroMap[src] || src;
     return mapped.indexOf('assets/') === 0 ? '/' + mapped : mapped;
@@ -36,7 +37,11 @@
   function ensureHeroImageBackground() {
     var src = resolveHeroImageSrc();
     if (!src) return;
-    hero.style.backgroundImage = 'url("' + encodeURI(src) + '")';
+    var backgroundImage = 'url("' + encodeURI(src) + '")';
+    if (src === homeHeroPrimaryMobile) {
+      backgroundImage += ', url("' + homeHeroFallbackMobile + '")';
+    }
+    hero.style.backgroundImage = backgroundImage;
     hero.style.backgroundSize = 'cover';
     hero.style.backgroundPosition = 'center center';
   }
@@ -211,5 +216,8 @@
 
   var savedMode = null;
   try { savedMode = localStorage.getItem('homeHeroMediaMode'); } catch (e) {}
-  setHeroMedia(savedMode === 'image' ? 'image' : 'video');
+  var initialMode = window.matchMedia('(max-width: 991px)').matches
+    ? 'image'
+    : (savedMode === 'image' ? 'image' : 'video');
+  setHeroMedia(initialMode);
 })();

@@ -259,7 +259,7 @@ body[data-page="home"] .cs-home-hero .cs-home-shape-3 {
     padding-bottom: 70px;
     display: flex;
     align-items: flex-end;
-    background-image: url("../img/mob-hero-bg/hero_bg_home_mobile.jpeg") !important;
+    background-image: url("../img/mob-hero-bg/untitled%20folder/hero_bg.jpeg"), url("../img/mob-hero-bg/hero_bg_home_mobile.jpeg") !important;
     background-size: cover !important;
     background-repeat: no-repeat !important;
     background-position: center 0% !important;
@@ -324,7 +324,7 @@ body[data-page="home"] .cs-home-hero .cs-home-shape-3 {
     padding-bottom: 56px;
     min-height: 90svh;
     height: 90svh;
-    background-image: url("../img/mob-hero-bg/hero_bg_home_mobile.jpeg") !important;
+    background-image: url("../img/mob-hero-bg/untitled%20folder/hero_bg.jpeg"), url("../img/mob-hero-bg/hero_bg_home_mobile.jpeg") !important;
     background-size: cover !important;
     background-repeat: no-repeat !important;
     background-position: center 0% !important;
