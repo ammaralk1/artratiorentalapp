@@ -17,6 +17,7 @@
   var loopWatchdog = null;
   var segmentRestartTimer = null;
   var reachedLoopWindow = false;
+  var videoLoadWatchdog = null;
 
   function resolveHeroImageSrc() {
     var src = hero.getAttribute('data-src') || '';
@@ -56,6 +57,21 @@
     segmentRestartTimer = null;
   }
 
+  function clearVideoLoadWatchdog() {
+    if (!videoLoadWatchdog) return;
+    clearTimeout(videoLoadWatchdog);
+    videoLoadWatchdog = null;
+  }
+
+  function markVideoLoaded() {
+    hero.classList.add('cs-home-hero--video-loaded');
+    clearVideoLoadWatchdog();
+  }
+
+  function markVideoPending() {
+    hero.classList.remove('cs-home-hero--video-loaded');
+  }
+
   function scheduleHardSegmentRestart() {
     clearSegmentRestartTimer();
     if (!hero.classList.contains('cs-home-hero--video-active')) return;
@@ -64,6 +80,7 @@
     segmentRestartTimer = setTimeout(function forceSegmentRestart() {
       if (!hero.classList.contains('cs-home-hero--video-active')) return;
       frame.setAttribute('src', buildSegmentSrc());
+      markVideoPending();
       vimeoPlayer = null;
       reachedLoopWindow = false;
       setTimeout(attachVimeoLoop, 140);
@@ -142,6 +159,7 @@
       .then(function () { return vimeoPlayer.setLoop(false); })
       .then(function () { return vimeoPlayer.setCurrentTime(loopStartSeconds); })
       .then(function () { return vimeoPlayer.play(); })
+      .then(markVideoLoaded)
       .catch(function () {});
 
     startLoopWatchdog();
@@ -165,15 +183,24 @@
 
     if (!frame) return;
     if (isVideo) {
+      markVideoPending();
       if (!frame.getAttribute('src') && frameSrc) {
         frame.setAttribute('src', buildSegmentSrc());
         vimeoPlayer = null;
         reachedLoopWindow = false;
         setTimeout(attachVimeoLoop, 120);
       }
+      clearVideoLoadWatchdog();
+      videoLoadWatchdog = setTimeout(function () {
+        if (!hero.classList.contains('cs-home-hero--video-loaded')) {
+          setHeroMedia('image');
+        }
+      }, 2200);
       attachVimeoLoop();
       scheduleHardSegmentRestart();
     } else {
+      markVideoPending();
+      clearVideoLoadWatchdog();
       if (vimeoPlayer) {
         try { vimeoPlayer.pause(); } catch (e) {}
         vimeoPlayer.off('ended');
@@ -199,6 +226,13 @@
         }
       });
     });
+  }
+
+  if (frame) {
+    frame.addEventListener('load', markVideoLoaded, { passive: true });
+    frame.addEventListener('error', function () {
+      setHeroMedia('image');
+    }, { passive: true });
   }
 
   window.addEventListener('scroll', ensurePlaybackWhenVisible, { passive: true });

@@ -138,6 +138,9 @@ body[data-page="home"] .cs-home-hero .cs-home-hero_media {
   will-change: opacity;
 }
 body[data-page="home"] .cs-home-hero.cs-home-hero--video-active .cs-home-hero_media {
+  opacity: 0;
+}
+body[data-page="home"] .cs-home-hero.cs-home-hero--video-active.cs-home-hero--video-loaded .cs-home-hero_media {
   opacity: 1;
 }
 body[data-page="home"] .cs-home-hero .cs-home-hero_media::after {
