@@ -253,10 +253,10 @@ body[data-page="home"] .cs-home-hero .cs-home-shape-3 {
     align-self: flex-start !important;
   }
   body[data-page="home"] .cs-home-hero {
-    min-height: 400px;
-    height: 400px;
-    padding-top: 100px;
-    padding-bottom: 50px;
+    min-height: 92svh;
+    height: 92svh;
+    padding-top: 112px;
+    padding-bottom: 70px;
     display: flex;
     align-items: flex-end;
     background-image: url("../img/mob-hero-bg/hero_bg.jpg") !important;
@@ -290,8 +290,8 @@ body[data-page="home"] .cs-home-hero .cs-home-shape-3 {
   body[data-page="home"] .cs-home-hero .cs-hero_text {
     width: 100%;
     margin: 0;
-    margin-bottom: 24px;
-    transform: translateY(0);
+    margin-bottom: clamp(190px, 24vh, 300px);
+    transform: translateY(24px);
   }
   body[data-page="home"] .cs-home-hero .cs-hero_title {
     font-size: clamp(36px, 9.6vw, 52px);
@@ -306,7 +306,7 @@ body[data-page="home"] .cs-home-hero .cs-home-shape-3 {
     margin-bottom: 18px;
   }
   body[data-page="home"] .cs-home-hero .cs-down_btn {
-    bottom: 20px;
+    bottom: 160px;
   }
   html[dir="rtl"] body[data-page="home"] .cs-home-hero .cs-hero_text,
   body.rtl[data-page="home"] .cs-home-hero .cs-hero_text {
@@ -320,10 +320,10 @@ body[data-page="home"] .cs-home-hero .cs-home-shape-3 {
 }
 @media (max-width: 575px) {
   body[data-page="home"] .cs-home-hero {
-    padding-top: 100px;
-    padding-bottom: 50px;
-    min-height: 400px;
-    height: 400px;
+    padding-top: 98px;
+    padding-bottom: 56px;
+    min-height: 90svh;
+    height: 90svh;
     background-image: url("../img/mob-hero-bg/hero_bg.jpg") !important;
     background-size: cover !important;
     background-repeat: no-repeat !important;
@@ -342,8 +342,8 @@ body[data-page="home"] .cs-home-hero .cs-home-shape-3 {
     margin-bottom: 12px;
   }
   body[data-page="home"] .cs-home-hero .cs-hero_text {
-    margin-bottom: 24px;
-    transform: translateY(0);
+    margin-bottom: clamp(220px, 28vh, 340px);
+    transform: translateY(30px);
   }
   body[data-page="home"] .cs-home-hero .cs-hero_subtitle {
     font-size: 15px;
@@ -353,7 +353,7 @@ body[data-page="home"] .cs-home-hero .cs-home-shape-3 {
     display: block !important;
   }
   body[data-page="home"] .cs-home-hero .cs-down_btn {
-    bottom: 20px;
+    bottom: 162px;
   }
 }
 
