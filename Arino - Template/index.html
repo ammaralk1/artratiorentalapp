@@ -75,8 +75,15 @@
     <link rel="stylesheet" href="assets/css/plugins/lightgallery.min.css">
     <link rel="stylesheet" href="assets/css/plugins/animate.css">
     <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="stylesheet" href="assets/css/custom-overrides.css">
+    <link rel="stylesheet" href="assets/css/custom-overrides.css?v=20260314-mobilefix2">
     <link rel="stylesheet" href="assets/css/pattern-bg.css">
+    <style>
+      @media (max-width: 991px) {
+        body[data-page="home"] .cs-home-hero .cs-home-hero_media_switch { display: none !important; }
+        body[data-page="home"] .cs-home-hero .cs-home-hero_media { pointer-events: none !important; }
+        body[data-page="home"] .cs-home-hero .cs-down_btn { pointer-events: auto !important; z-index: 4 !important; }
+      }
+    </style>
   </head>
   <body data-page="home">
     <!-- Google Tag Manager (noscript) -->
@@ -193,8 +200,8 @@
       <div class="cs-home-hero_media" aria-hidden="true">
         <iframe
           class="cs-home-hero_video_frame"
-          data-vimeo-src="https://player.vimeo.com/video/1132903455?autoplay=1&muted=1&loop=0&autopause=0&controls=0&title=0&byline=0&portrait=0&dnt=1"
-          src="https://player.vimeo.com/video/1132903455?autoplay=1&muted=1&loop=0&autopause=0&controls=0&title=0&byline=0&portrait=0&dnt=1#t=44s"
+          data-vimeo-src="https://player.vimeo.com/video/1132903455?autoplay=1&muted=1&loop=0&autopause=0&controls=0&title=0&byline=0&portrait=0&dnt=1&background=1&playsinline=1"
+          src="https://player.vimeo.com/video/1132903455?autoplay=1&muted=1&loop=0&autopause=0&controls=0&title=0&byline=0&portrait=0&dnt=1&background=1&playsinline=1#t=44s"
           frameborder="0"
           allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
          
@@ -1320,7 +1327,7 @@
     </div>
     <!-- End Video Popup -->
     <script src="/js/video-thumb-inline.js" defer></script>
-    <script src="/js/hero-vimeo-loop.js" defer></script>
+    <script src="/js/hero-vimeo-loop.js?v=20260314-mobilefix2" defer></script>
     <!-- Script -->
     <script src="assets/js/plugins/jquery-3.6.0.min.js"></script>
     <script src="assets/js/plugins/isotope.pkg.min.js"></script>
