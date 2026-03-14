@@ -313,7 +313,7 @@
   function dynamicBackground() {
     var isMobile = window.matchMedia('(max-width: 991px)').matches;
     var mobileHeroMap = {
-      'assets/img/hero_bg.jpeg': 'assets/img/mob-hero-bg/hero_bg.jpg',
+      'assets/img/hero_bg.jpeg': 'assets/img/mob-hero-bg/hero_bg_home_mobile.jpeg',
       'assets/img/about_hero_bg.jpeg':
         'assets/img/mob-hero-bg/about_hero_bg-mobile.jpeg',
       'assets/img/blog_hero_bg.jpeg':

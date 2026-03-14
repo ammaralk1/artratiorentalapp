@@ -26,7 +26,7 @@
     if (!isMobile) return src;
 
     var mobileHeroMap = {
-      'assets/img/hero_bg.jpeg': 'assets/img/mob-hero-bg/hero_bg.jpg',
+      'assets/img/hero_bg.jpeg': 'assets/img/mob-hero-bg/hero_bg_home_mobile.jpeg',
     };
     return mobileHeroMap[src] || src;
   }
