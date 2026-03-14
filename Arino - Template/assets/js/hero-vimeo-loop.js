@@ -26,7 +26,8 @@
     if (!isMobile) return src.indexOf('assets/') === 0 ? '/' + src : src;
 
     var mobileHeroMap = {
-      'assets/img/hero_bg.jpeg': '/assets/img/mob-hero-bg/hero_bg_home_mobile.jpeg',
+      'assets/img/hero_bg.jpeg':
+        '/assets/img/mob-hero-bg/untitled folder/hero_bg.jpeg',
     };
     var mapped = mobileHeroMap[src] || src;
     return mapped.indexOf('assets/') === 0 ? '/' + mapped : mapped;
