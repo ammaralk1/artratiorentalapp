@@ -1392,8 +1392,8 @@
         var switchButtons = hero.querySelectorAll("[data-hero-media]");
         var switchWrap = hero.querySelector(".cs-home-hero_media_switch");
         var loopStartSeconds = 43;
-        var loopEndSeconds = 62;
-        var loopGuardSeconds = 0.35;
+        var loopEndSeconds = 61;
+        var loopGuardSeconds = 0.06;
         var loopResetGuardSeconds = 1.5;
         var segmentDurationMs = (loopEndSeconds - loopStartSeconds) * 1000;
         var vimeoPlayer = null;
@@ -1412,6 +1412,7 @@
         var playbackProbeStableTicks = 0;
         var playbackProbeTickMs = 220;
         var playbackProbeRequiredTicks = 5;
+        var isSegmentRestarting = false;
 
         function clearLoopWatchdog() {
           if (!loopWatchdog) return;
@@ -1524,23 +1525,35 @@
           segmentRestartTimer = null;
         }
 
+        function restartSegmentWithPoster() {
+          if (!hero.classList.contains("cs-home-hero--video-active")) return;
+          if (isSegmentRestarting) return;
+          isSegmentRestarting = true;
+          clearVideoReady();
+          showPosterForLoading();
+          clearLoopWatchdog();
+          clearSegmentRestartTimer();
+          if (frame) {
+            frame.setAttribute("src", buildSegmentSrc());
+          }
+          vimeoPlayer = null;
+          reachedLoopWindow = false;
+          setTimeout(function () {
+            isSegmentRestarting = false;
+            attachVimeoLoop();
+            scheduleHardSegmentRestart();
+          }, 140);
+        }
+
         function scheduleHardSegmentRestart() {
           clearSegmentRestartTimer();
           if (!hero.classList.contains("cs-home-hero--video-active")) return;
           if (!frame || !frame.getAttribute("src")) return;
 
+          // Safety-net only: if Vimeo stalls and events fail, force a restart after expected segment end.
           segmentRestartTimer = setTimeout(function forceSegmentRestart() {
-            if (!hero.classList.contains("cs-home-hero--video-active")) return;
-
-            // Hard fallback: reload iframe at loop start to guarantee no Vimeo end screen.
-            clearVideoReady();
-            showPosterForLoading();
-            frame.setAttribute("src", buildSegmentSrc());
-            vimeoPlayer = null;
-            reachedLoopWindow = false;
-            setTimeout(attachVimeoLoop, 140);
-            scheduleHardSegmentRestart();
-          }, Math.max(2400, segmentDurationMs + 450));
+            restartSegmentWithPoster();
+          }, Math.max(2800, segmentDurationMs + 2800));
         }
 
         function jumpToLoopStart() {
@@ -1571,12 +1584,11 @@
                     }
                 if (isLoopSeeking) return;
                 if (seconds >= loopEndSeconds - loopGuardSeconds) {
-                  jumpToLoopStart();
+                  restartSegmentWithPoster();
                   return;
                 }
                 if (reachedLoopWindow && seconds < loopStartSeconds - loopResetGuardSeconds) {
-                  // Vimeo sometimes resets to 0 after internal loop; force it back to segment start.
-                  jumpToLoopStart();
+                  restartSegmentWithPoster();
                 }
               })
               .catch(function () {});
@@ -1612,22 +1624,22 @@
             }
             if (isLoopSeeking) return;
             if (reachedLoopWindow && data.seconds < loopStartSeconds - loopResetGuardSeconds) {
-              jumpToLoopStart();
+              restartSegmentWithPoster();
               return;
             }
             if (data.seconds < loopEndSeconds - loopGuardSeconds) return;
-            jumpToLoopStart();
+            restartSegmentWithPoster();
           });
           vimeoPlayer.on("ended", function () {
-            jumpToLoopStart();
+            restartSegmentWithPoster();
           });
           vimeoPlayer.on("pause", function () {
             vimeoPlayer
               .getCurrentTime()
               .then(function (seconds) {
                 if (typeof seconds !== "number") return;
-                if (seconds >= loopEndSeconds - 1) {
-                  jumpToLoopStart();
+                if (seconds >= loopEndSeconds - 0.05) {
+                  restartSegmentWithPoster();
                 }
               })
               .catch(function () {});
@@ -1691,6 +1703,7 @@
             } else {
               clearVideoReady();
               hidePosterForLoading();
+              isSegmentRestarting = false;
               if (vimeoPlayer) {
                 vimeoPlayer.off("ended");
                 vimeoPlayer.off("timeupdate");
