@@ -1404,7 +1404,6 @@
         var hasBroadcastedVideoReady = false;
         var hasInitialVideoReady = false;
         var hasFirstFrameReady = false;
-        var readyFallbackTimer = null;
 
         function clearLoopWatchdog() {
           if (!loopWatchdog) return;
@@ -1415,10 +1414,6 @@
         function markVideoReady() {
           if (hasFirstFrameReady) return;
           hasFirstFrameReady = true;
-          if (readyFallbackTimer) {
-            clearTimeout(readyFallbackTimer);
-            readyFallbackTimer = null;
-          }
           hero.classList.add("cs-home-hero--video-ready");
           hero.classList.remove("cs-home-hero--show-poster");
           hasInitialVideoReady = true;
@@ -1432,10 +1427,6 @@
 
         function clearVideoReady() {
           hasFirstFrameReady = false;
-          if (readyFallbackTimer) {
-            clearTimeout(readyFallbackTimer);
-            readyFallbackTimer = null;
-          }
           hero.classList.remove("cs-home-hero--video-ready");
         }
 
@@ -1568,10 +1559,17 @@
               .catch(function () {});
           });
           vimeoPlayer.on("play", function () {
-            if (hasFirstFrameReady || readyFallbackTimer) return;
-            readyFallbackTimer = setTimeout(function () {
-              markVideoReady();
-            }, 1200);
+            if (hasFirstFrameReady) return;
+            vimeoPlayer
+              .getCurrentTime()
+              .then(function (seconds) {
+                if (typeof seconds !== "number") return;
+                if (seconds >= loopStartSeconds - 0.05) {
+                  reachedLoopWindow = true;
+                  markVideoReady();
+                }
+              })
+              .catch(function () {});
           });
 
           vimeoPlayer
@@ -1679,6 +1677,6 @@
     <script src="assets/js/plugins/wow.min.js"></script>
     <script src="assets/js/plugins/gsap.min.js"></script>
     <script src="assets/js/lang-toggle.js?v=20260314-defaultar1"></script>
-    <script src="assets/js/main.js?v=20260314-herohujrasa1"></script>
+    <script src="assets/js/main.js?v=20260314-herohujrasa2"></script>
   </body>
 </html>

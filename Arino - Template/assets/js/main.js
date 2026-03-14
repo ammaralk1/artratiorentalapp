@@ -34,7 +34,7 @@
     setTimeout(() => {
       window.__arinoAllowEarlyPreloaderHide = true;
       hide();
-    }, 9000);
+    }, 18000);
   })();
 
   /*
@@ -238,7 +238,7 @@
     }
 
     window.addEventListener('arino:home-hero-video-ready', releaseFromHeroReady, { once: true });
-    setTimeout(releaseFromHeroReady, 9000);
+    setTimeout(releaseFromHeroReady, 18000);
   }
 
   /*--------------------------------------------------------------
