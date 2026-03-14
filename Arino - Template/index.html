@@ -1391,7 +1391,7 @@
         var frameSrc = frame ? frame.getAttribute("data-vimeo-src") : "";
         var switchButtons = hero.querySelectorAll("[data-hero-media]");
         var switchWrap = hero.querySelector(".cs-home-hero_media_switch");
-        var loopStartSeconds = 42;
+        var loopStartSeconds = 43;
         var loopEndSeconds = 61;
         var loopGuardSeconds = 0.35;
         var loopResetGuardSeconds = 1.5;
@@ -1540,7 +1540,7 @@
             reachedLoopWindow = false;
             setTimeout(attachVimeoLoop, 140);
             scheduleHardSegmentRestart();
-          }, Math.max(2000, segmentDurationMs - 250));
+          }, Math.max(2400, segmentDurationMs + 450));
         }
 
         function jumpToLoopStart() {
