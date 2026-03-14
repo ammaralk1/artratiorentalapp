@@ -20,11 +20,15 @@
   var segmentRestartTimer = null;
   var reachedLoopWindow = false;
 
+  function isMobileViewport() {
+    return window.matchMedia('(max-width: 991px)').matches;
+  }
+
   function resolveHeroImageSrc() {
     var src = hero.getAttribute('data-src') || '';
     if (!src) return '';
 
-    var isMobile = window.matchMedia('(max-width: 991px)').matches;
+    var isMobile = isMobileViewport();
     if (!isMobile) return src.indexOf('assets/') === 0 ? '/' + src : src;
 
     var mobileHeroMap = {
@@ -156,7 +160,7 @@
   }
 
   function setHeroMedia(mode) {
-    var isVideo = mode !== 'image';
+    var isVideo = isMobileViewport() ? true : mode !== 'image';
     hero.classList.toggle('cs-home-hero--video-active', isVideo);
     ensureHeroImageBackground();
     if (heroMedia) {
@@ -216,8 +220,8 @@
 
   var savedMode = null;
   try { savedMode = localStorage.getItem('homeHeroMediaMode'); } catch (e) {}
-  var initialMode = window.matchMedia('(max-width: 991px)').matches
-    ? 'image'
+  var initialMode = isMobileViewport()
+    ? 'video'
     : (savedMode === 'image' ? 'image' : 'video');
   setHeroMedia(initialMode);
 })();
