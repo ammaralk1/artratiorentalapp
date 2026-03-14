@@ -313,31 +313,34 @@
   function dynamicBackground() {
     var isMobile = window.matchMedia('(max-width: 991px)').matches;
     var mobileHeroMap = {
-      'assets/img/hero_bg.jpeg': 'assets/img/mob-hero-bg/hero_bg_home_mobile.jpeg',
+      'assets/img/hero_bg.jpeg': '/assets/img/mob-hero-bg/hero_bg_home_mobile.jpeg',
       'assets/img/about_hero_bg.jpeg':
-        'assets/img/mob-hero-bg/about_hero_bg-mobile.jpeg',
+        '/assets/img/mob-hero-bg/about_hero_bg-mobile.jpeg',
       'assets/img/blog_hero_bg.jpeg':
-        'assets/img/mob-hero-bg/blog_hero_bg_mobile.jpeg',
+        '/assets/img/mob-hero-bg/blog_hero_bg_mobile.jpeg',
       'assets/img/blog_details_hero_bg.jpeg':
-        'assets/img/mob-hero-bg/blog_hero_bg_mobile.jpeg',
+        '/assets/img/mob-hero-bg/blog_hero_bg_mobile.jpeg',
       'assets/img/contact_hero_bg.jpeg':
-        'assets/img/mob-hero-bg/contact_hero_bg_mobile.jpeg',
+        '/assets/img/mob-hero-bg/contact_hero_bg_mobile.jpeg',
       'assets/img/portfolio_hero_bg.jpeg':
-        'assets/img/mob-hero-bg/portfolio_hero_bg_mobile.jpeg',
+        '/assets/img/mob-hero-bg/portfolio_hero_bg_mobile.jpeg',
       'assets/img/portfolio_details_bg.jpeg':
-        'assets/img/mob-hero-bg/portfolio_hero_bg_mobile.jpeg',
+        '/assets/img/mob-hero-bg/portfolio_hero_bg_mobile.jpeg',
       'assets/img/service_hero_bg.jpeg':
-        'assets/img/mob-hero-bg/service_hero_bg_mobile.jpeg',
+        '/assets/img/mob-hero-bg/service_hero_bg_mobile.jpeg',
       'assets/img/shop_hero_bg.jpeg':
-        'assets/img/mob-hero-bg/shop_hero_bg_mobile.jpeg',
+        '/assets/img/mob-hero-bg/shop_hero_bg_mobile.jpeg',
       'assets/img/team_hero_bg.jpeg':
-        'assets/img/mob-hero-bg/team_hero_bg_mobile.jpeg',
+        '/assets/img/mob-hero-bg/team_hero_bg_mobile.jpeg',
     };
 
     $('[data-src]').each(function () {
       var src = $(this).attr('data-src');
       if (isMobile && mobileHeroMap[src]) {
         src = mobileHeroMap[src];
+      }
+      if (src && src.indexOf('assets/') === 0) {
+        src = '/' + src;
       }
       var safeSrc = encodeURI(src);
       $(this).css({

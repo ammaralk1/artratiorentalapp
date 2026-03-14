@@ -23,12 +23,13 @@
     if (!src) return '';
 
     var isMobile = window.matchMedia('(max-width: 991px)').matches;
-    if (!isMobile) return src;
+    if (!isMobile) return src.indexOf('assets/') === 0 ? '/' + src : src;
 
     var mobileHeroMap = {
-      'assets/img/hero_bg.jpeg': 'assets/img/mob-hero-bg/hero_bg_home_mobile.jpeg',
+      'assets/img/hero_bg.jpeg': '/assets/img/mob-hero-bg/hero_bg_home_mobile.jpeg',
     };
-    return mobileHeroMap[src] || src;
+    var mapped = mobileHeroMap[src] || src;
+    return mapped.indexOf('assets/') === 0 ? '/' + mapped : mapped;
   }
 
   function ensureHeroImageBackground() {
