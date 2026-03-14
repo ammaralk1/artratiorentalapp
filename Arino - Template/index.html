@@ -75,7 +75,7 @@
     <link rel="stylesheet" href="assets/css/plugins/lightgallery.min.css">
     <link rel="stylesheet" href="assets/css/plugins/animate.css">
     <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="stylesheet" href="assets/css/custom-overrides.css?v=20260314-mobilefix3">
+    <link rel="stylesheet" href="assets/css/custom-overrides.css?v=20260314-herohujrasa1">
     <link rel="stylesheet" href="assets/css/pattern-bg.css">
   </head>
   <body data-page="home">
@@ -189,10 +189,30 @@
     </div>
     <!-- End Header Section -->
     <!-- Start Hero -->
-    <div class="cs-hero cs-style1 cs-bg cs-fixed_bg cs-shape_wrap_1" data-src="assets/img/hero_bg.jpeg" id="home">
-      <div class="cs-shape_1"></div>
-      <div class="cs-shape_1"></div>
-      <div class="cs-shape_1"></div>
+    <div class="cs-hero cs-style1 cs-bg cs-fixed_bg cs-shape_wrap_1 cs-home-hero cs-home-hero--video-active" data-src="assets/img/hero_bg.jpeg" id="home">
+      <div class="cs-home-hero_media" aria-hidden="true">
+        <div class="cs-home-hero_poster" aria-hidden="true"></div>
+        <iframe
+          class="cs-home-hero_video_frame"
+          data-vimeo-src="https://player.vimeo.com/video/1132903455?autoplay=1&muted=1&loop=0&autopause=0&controls=0&title=0&byline=0&portrait=0&dnt=1"
+          src="https://player.vimeo.com/video/1132903455?autoplay=1&muted=1&loop=0&autopause=0&controls=0&title=0&byline=0&portrait=0&dnt=1#t=44s"
+          frameborder="0"
+          allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
+          allowfullscreen
+          title="Home Hero Background Video"
+        ></iframe>
+      </div>
+      <div class="cs-home-hero_media_switch" role="group" aria-label="Hero background mode">
+        <button type="button" class="is-active" data-hero-media="video" aria-pressed="true" aria-label="Video background">
+          <span class="cs-home-hero_toggle_label">Video</span>
+        </button>
+        <button type="button" data-hero-media="image" aria-pressed="false" aria-label="Image background">
+          <span class="cs-home-hero_toggle_label">Image</span>
+        </button>
+      </div>
+      <div class="cs-shape_1 cs-home-shape-1"></div>
+      <div class="cs-shape_1 cs-home-shape-2"></div>
+      <div class="cs-shape_1 cs-home-shape-3"></div>
       <div class="container">
         <div class="cs-hero_text">
           <h1 class="cs-hero_title wow fadeInRight" data-wow-duration="0.8s" data-wow-delay="0.2s"> Creativity In <br>Our Blood Line </h1>
@@ -335,7 +355,7 @@
       </div>
     </div>
     <!-- End Third Video Block -->
-    <script src="https://player.vimeo.com/api/player.js" defer></script>
+    <script src="https://player.vimeo.com/api/player.js"></script>
     <script>
       window.addEventListener("load", function () {
         if (typeof Vimeo === "undefined") return;
@@ -1362,6 +1382,293 @@
         }
       })();
     </script>
+    <script>
+      (function () {
+        var hero = document.querySelector(".cs-home-hero");
+        if (!hero) return;
+
+        var frame = hero.querySelector(".cs-home-hero_video_frame");
+        var frameSrc = frame ? frame.getAttribute("data-vimeo-src") : "";
+        var switchButtons = hero.querySelectorAll("[data-hero-media]");
+        var switchWrap = hero.querySelector(".cs-home-hero_media_switch");
+        var loopStartSeconds = 44;
+        var loopEndSeconds = 61;
+        var loopGuardSeconds = 0.35;
+        var loopResetGuardSeconds = 1.5;
+        var segmentDurationMs = (loopEndSeconds - loopStartSeconds) * 1000;
+        var vimeoPlayer = null;
+        var isLoopSeeking = false;
+        var loopWatchdog = null;
+        var segmentRestartTimer = null;
+        var reachedLoopWindow = false;
+        var hasBroadcastedVideoReady = false;
+        var hasInitialVideoReady = false;
+        var hasFirstFrameReady = false;
+        var readyFallbackTimer = null;
+
+        function clearLoopWatchdog() {
+          if (!loopWatchdog) return;
+          clearInterval(loopWatchdog);
+          loopWatchdog = null;
+        }
+
+        function markVideoReady() {
+          if (hasFirstFrameReady) return;
+          hasFirstFrameReady = true;
+          if (readyFallbackTimer) {
+            clearTimeout(readyFallbackTimer);
+            readyFallbackTimer = null;
+          }
+          hero.classList.add("cs-home-hero--video-ready");
+          hero.classList.remove("cs-home-hero--show-poster");
+          hasInitialVideoReady = true;
+          if (hasBroadcastedVideoReady) return;
+          hasBroadcastedVideoReady = true;
+          try {
+            sessionStorage.setItem("arinoHomeHeroVideoPreloaded", "1");
+          } catch (e) {}
+          window.dispatchEvent(new CustomEvent("arino:home-hero-video-ready"));
+        }
+
+        function clearVideoReady() {
+          hasFirstFrameReady = false;
+          if (readyFallbackTimer) {
+            clearTimeout(readyFallbackTimer);
+            readyFallbackTimer = null;
+          }
+          hero.classList.remove("cs-home-hero--video-ready");
+        }
+
+        function showPosterForLoopLoading() {
+          if (!hasInitialVideoReady) return;
+          hero.classList.add("cs-home-hero--show-poster");
+        }
+
+        function hidePosterForLoopLoading() {
+          hero.classList.remove("cs-home-hero--show-poster");
+        }
+
+        function buildSegmentSrc() {
+          var sep = frameSrc.indexOf("?") > -1 ? "&" : "?";
+          return frameSrc + sep + "_ts=" + Date.now() + "#t=" + loopStartSeconds + "s";
+        }
+
+        function clearSegmentRestartTimer() {
+          if (!segmentRestartTimer) return;
+          clearTimeout(segmentRestartTimer);
+          segmentRestartTimer = null;
+        }
+
+        function scheduleHardSegmentRestart() {
+          clearSegmentRestartTimer();
+          if (!hero.classList.contains("cs-home-hero--video-active")) return;
+          if (!frame || !frame.getAttribute("src")) return;
+
+          segmentRestartTimer = setTimeout(function forceSegmentRestart() {
+            if (!hero.classList.contains("cs-home-hero--video-active")) return;
+
+            // Hard fallback: reload iframe at loop start to guarantee no Vimeo end screen.
+            showPosterForLoopLoading();
+            frame.setAttribute("src", buildSegmentSrc());
+            vimeoPlayer = null;
+            reachedLoopWindow = false;
+            setTimeout(attachVimeoLoop, 140);
+            scheduleHardSegmentRestart();
+          }, Math.max(2000, segmentDurationMs - 250));
+        }
+
+        function jumpToLoopStart() {
+          if (!vimeoPlayer || isLoopSeeking) return;
+          isLoopSeeking = true;
+          vimeoPlayer
+            .setCurrentTime(loopStartSeconds)
+            .then(function () {
+              return vimeoPlayer.play();
+            })
+            .catch(function () {})
+            .finally(function () {
+              isLoopSeeking = false;
+            });
+        }
+
+        function startLoopWatchdog() {
+          clearLoopWatchdog();
+          if (!vimeoPlayer) return;
+          loopWatchdog = setInterval(function () {
+                vimeoPlayer
+                  .getCurrentTime()
+                  .then(function (seconds) {
+                    if (typeof seconds !== "number") return;
+                    if (!hasFirstFrameReady && seconds >= loopStartSeconds - 0.05) {
+                      reachedLoopWindow = true;
+                      markVideoReady();
+                    }
+                if (isLoopSeeking) return;
+                if (seconds >= loopEndSeconds - loopGuardSeconds) {
+                  jumpToLoopStart();
+                  return;
+                }
+                if (reachedLoopWindow && seconds < loopStartSeconds - loopResetGuardSeconds) {
+                  // Vimeo sometimes resets to 0 after internal loop; force it back to segment start.
+                  jumpToLoopStart();
+                }
+              })
+              .catch(function () {});
+          }, 90);
+        }
+
+        function ensurePlaybackWhenVisible() {
+          if (!vimeoPlayer || !hero.classList.contains("cs-home-hero--video-active")) return;
+          var rect = hero.getBoundingClientRect();
+          var viewportH = window.innerHeight || document.documentElement.clientHeight;
+          var visible = rect.bottom > 0 && rect.top < viewportH;
+          if (!visible) return;
+          vimeoPlayer.play().catch(function () {});
+        }
+
+        function attachVimeoLoop() {
+          if (!frame || !frame.getAttribute("src")) return;
+          if (!window.Vimeo || !window.Vimeo.Player) return;
+
+          if (!vimeoPlayer) {
+            vimeoPlayer = new window.Vimeo.Player(frame);
+          }
+
+          vimeoPlayer.off("timeupdate");
+          vimeoPlayer.off("ended");
+          vimeoPlayer.off("pause");
+          vimeoPlayer.off("play");
+          vimeoPlayer.on("timeupdate", function (data) {
+            if (!data || typeof data.seconds !== "number") return;
+            if (!hasFirstFrameReady && data.seconds >= loopStartSeconds - 0.05) {
+              reachedLoopWindow = true;
+              markVideoReady();
+            }
+            if (isLoopSeeking) return;
+            if (reachedLoopWindow && data.seconds < loopStartSeconds - loopResetGuardSeconds) {
+              jumpToLoopStart();
+              return;
+            }
+            if (data.seconds < loopEndSeconds - loopGuardSeconds) return;
+            jumpToLoopStart();
+          });
+          vimeoPlayer.on("ended", function () {
+            jumpToLoopStart();
+          });
+          vimeoPlayer.on("pause", function () {
+            vimeoPlayer
+              .getCurrentTime()
+              .then(function (seconds) {
+                if (typeof seconds !== "number") return;
+                if (seconds >= loopEndSeconds - 1) {
+                  jumpToLoopStart();
+                }
+              })
+              .catch(function () {});
+          });
+          vimeoPlayer.on("play", function () {
+            if (hasFirstFrameReady || readyFallbackTimer) return;
+            readyFallbackTimer = setTimeout(function () {
+              markVideoReady();
+            }, 1200);
+          });
+
+          vimeoPlayer
+            .ready()
+            .then(function () {
+              return vimeoPlayer.setVolume(0);
+            })
+            .then(function () {
+              return vimeoPlayer.setLoop(false);
+            })
+            .then(function () {
+              return vimeoPlayer.setCurrentTime(loopStartSeconds);
+            })
+            .then(function () {
+              return vimeoPlayer.play();
+            })
+            .catch(function () {});
+
+          startLoopWatchdog();
+          ensurePlaybackWhenVisible();
+        }
+
+        function setHeroMedia(mode) {
+          var isVideo = mode !== "image";
+          hero.classList.toggle("cs-home-hero--video-active", isVideo);
+
+          switchButtons.forEach(function (button) {
+            var active = button.getAttribute("data-hero-media") === (isVideo ? "video" : "image");
+            button.classList.toggle("is-active", active);
+            button.setAttribute("aria-pressed", active ? "true" : "false");
+          });
+
+          if (frame) {
+            if (isVideo) {
+              clearVideoReady();
+              if (!frame.getAttribute("src") && frameSrc) {
+                frame.setAttribute("src", buildSegmentSrc());
+                vimeoPlayer = null;
+                reachedLoopWindow = false;
+                setTimeout(attachVimeoLoop, 120);
+              }
+              attachVimeoLoop();
+              scheduleHardSegmentRestart();
+            } else {
+              clearVideoReady();
+              hidePosterForLoopLoading();
+              if (vimeoPlayer) {
+                vimeoPlayer.off("ended");
+                vimeoPlayer.off("timeupdate");
+                vimeoPlayer.off("pause");
+                vimeoPlayer.off("play");
+                vimeoPlayer = null;
+              }
+              reachedLoopWindow = false;
+              clearLoopWatchdog();
+              clearSegmentRestartTimer();
+              frame.setAttribute("src", "");
+            }
+          }
+
+          try {
+            localStorage.setItem("homeHeroMediaMode", isVideo ? "video" : "image");
+          } catch (e) {}
+        }
+
+        if (switchWrap) {
+          switchWrap.addEventListener("click", function () {
+            var nextMode = hero.classList.contains("cs-home-hero--video-active") ? "image" : "video";
+            setHeroMedia(nextMode);
+          });
+        }
+
+        var downBtn = hero.querySelector(".cs-down_btn");
+        if (downBtn) {
+          downBtn.addEventListener("click", function (event) {
+            event.preventDefault();
+            var serviceSection = document.getElementById("service");
+            if (!serviceSection) return;
+            serviceSection.scrollIntoView({ behavior: "smooth", block: "start" });
+          });
+        }
+
+        window.addEventListener("scroll", ensurePlaybackWhenVisible, { passive: true });
+        window.addEventListener("focus", ensurePlaybackWhenVisible);
+        document.addEventListener("visibilitychange", function () {
+          if (document.visibilityState === "visible") {
+            ensurePlaybackWhenVisible();
+          }
+        });
+
+        var savedMode = null;
+        try {
+          savedMode = localStorage.getItem("homeHeroMediaMode");
+        } catch (e) {}
+        hidePosterForLoopLoading();
+        setHeroMedia(savedMode === "image" ? "image" : "video");
+      })();
+    </script>
     <!-- Script -->
     <script src="assets/js/plugins/jquery-3.6.0.min.js"></script>
     <script src="assets/js/plugins/isotope.pkg.min.js"></script>
@@ -1371,6 +1678,6 @@
     <script src="assets/js/plugins/wow.min.js"></script>
     <script src="assets/js/plugins/gsap.min.js"></script>
     <script src="assets/js/lang-toggle.js?v=20260314-defaultar1"></script>
-    <script src="assets/js/main.js"></script>
+    <script src="assets/js/main.js?v=20260314-herohujrasa1"></script>
   </body>
 </html>

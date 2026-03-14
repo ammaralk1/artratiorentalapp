@@ -3,16 +3,38 @@
 
   // Minimal preloader escape hatch (no dependencies)
   (function () {
-    const hide = () => {
+    const softHide = () => {
       const pre = document.querySelector('.cs-preloader');
       const inner = document.querySelector('.cs-preloader_in');
-      if (inner) inner.style.display = 'none';
-      if (pre) pre.style.display = 'none';
+      if (!pre) return;
+      pre.classList.add('cs-preloader--fade-out');
+      if (inner) inner.classList.add('cs-preloader_in--fade-out');
+      setTimeout(() => {
+        if (inner) inner.style.display = 'none';
+        pre.style.display = 'none';
+      }, 520);
+    };
+
+    const hide = () => {
+      if (shouldDeferHomeHeroPreloader() && !window.__arinoAllowEarlyPreloaderHide) return;
+      softHide();
       document.body && (document.body.style.overflow = 'unset');
     };
     setTimeout(hide, 3500);
     document.addEventListener('DOMContentLoaded', hide, { once: true });
     window.addEventListener('load', hide, { once: true });
+    window.addEventListener(
+      'arino:home-hero-video-ready',
+      () => {
+        window.__arinoAllowEarlyPreloaderHide = true;
+        hide();
+      },
+      { once: true },
+    );
+    setTimeout(() => {
+      window.__arinoAllowEarlyPreloaderHide = true;
+      hide();
+    }, 9000);
   })();
 
   /*
@@ -60,7 +82,7 @@
   $(window).on('load', function () {
     $(window).trigger('scroll');
     $(window).trigger('resize');
-    preloader();
+    requestPreloaderRelease();
     isotopInit();
     autoSkipHeroForPortfolio();
   });
@@ -160,18 +182,64 @@
     $('.cs-preloader_in').fadeOut();
     $('.cs-preloader').delay(150).fadeOut('slow');
   }
-  // Fallback: hide preloader even if external resources block window load
+
+  function setHomeHeroPreloadedFlag() {
+    try {
+      sessionStorage.setItem('arinoHomeHeroVideoPreloaded', '1');
+    } catch (e) {}
+  }
+
+  function shouldDeferHomeHeroPreloader() {
+    var body = document.body;
+    if (!body || body.dataset.page !== 'home') return false;
+    try {
+      if (sessionStorage.getItem('arinoHomeHeroVideoPreloaded') === '1') return false;
+    } catch (e) {}
+
+    var hero = document.querySelector('.cs-home-hero');
+    if (!hero) return false;
+    if (!hero.classList.contains('cs-home-hero--video-active')) return false;
+    if (hero.classList.contains('cs-home-hero--video-ready')) return false;
+
+    var frame = hero.querySelector('.cs-home-hero_video_frame');
+    return !!(frame && frame.getAttribute('data-vimeo-src'));
+  }
+
+  // Fallback: force-hide preloader even if external resources block window load
   function hidePreloaderFast() {
     const pre = document.querySelector('.cs-preloader');
     const inner = document.querySelector('.cs-preloader_in');
     if (inner) inner.style.display = 'none';
     if (pre) pre.style.display = 'none';
   }
-  setTimeout(() => {
+
+  function releasePreloaderNow() {
+    if (window.__arinoPreloaderReleased) return;
+    window.__arinoPreloaderReleased = true;
+    window.__arinoAllowEarlyPreloaderHide = true;
     preloader();
-    hidePreloaderFast();
-  }, 5000);
-  document.addEventListener('DOMContentLoaded', hidePreloaderFast);
+    setTimeout(hidePreloaderFast, 1100);
+  }
+
+  function requestPreloaderRelease() {
+    if (!shouldDeferHomeHeroPreloader()) {
+      releasePreloaderNow();
+      return;
+    }
+    if (window.__arinoPreloaderWaitingForHeroVideo) return;
+    window.__arinoPreloaderWaitingForHeroVideo = true;
+
+    var released = false;
+    function releaseFromHeroReady() {
+      if (released) return;
+      released = true;
+      setHomeHeroPreloadedFlag();
+      releasePreloaderNow();
+    }
+
+    window.addEventListener('arino:home-hero-video-ready', releaseFromHeroReady, { once: true });
+    setTimeout(releaseFromHeroReady, 9000);
+  }
 
   /*--------------------------------------------------------------
     2. Mobile Menu
