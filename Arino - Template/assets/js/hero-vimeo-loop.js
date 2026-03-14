@@ -42,12 +42,14 @@
 
     if (!isMobileViewport()) {
       mobileVideoReady = true;
+      hero.classList.remove('is-mobile-video-loading');
       frame.style.opacity = '1';
       frame.style.visibility = 'visible';
       return;
     }
 
     mobileVideoReady = Boolean(isReady);
+    hero.classList.toggle('is-mobile-video-loading', !mobileVideoReady);
     heroMedia.style.opacity = mobileVideoReady ? '1' : '0';
     frame.style.opacity = mobileVideoReady ? '1' : '0';
     frame.style.visibility = mobileVideoReady ? 'visible' : 'hidden';
