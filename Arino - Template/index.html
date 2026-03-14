@@ -1404,9 +1404,14 @@
         var hasBroadcastedVideoReady = false;
         var hasInitialVideoReady = false;
         var hasFirstFrameReady = false;
-        var minPosterHoldMs = 1000;
+        var minPosterHoldMs = 1800;
         var posterShownAt = 0;
         var posterHideTimer = null;
+        var playbackProbeTimer = null;
+        var playbackProbeLastSecond = null;
+        var playbackProbeStableTicks = 0;
+        var playbackProbeTickMs = 220;
+        var playbackProbeRequiredTicks = 5;
 
         function clearLoopWatchdog() {
           if (!loopWatchdog) return;
@@ -1418,6 +1423,15 @@
           if (!posterHideTimer) return;
           clearTimeout(posterHideTimer);
           posterHideTimer = null;
+        }
+
+        function clearPlaybackProbe() {
+          if (playbackProbeTimer) {
+            clearInterval(playbackProbeTimer);
+            playbackProbeTimer = null;
+          }
+          playbackProbeLastSecond = null;
+          playbackProbeStableTicks = 0;
         }
 
         function finalizeVideoReady() {
@@ -1448,6 +1462,7 @@
         function clearVideoReady() {
           hasFirstFrameReady = false;
           clearPosterHideTimer();
+          clearPlaybackProbe();
           hero.classList.remove("cs-home-hero--video-ready");
         }
 
@@ -1458,7 +1473,44 @@
 
         function hidePosterForLoading() {
           posterShownAt = 0;
+          clearPlaybackProbe();
           hero.classList.remove("cs-home-hero--show-poster");
+        }
+
+        function probeStablePlayback() {
+          if (hasFirstFrameReady || playbackProbeTimer || !vimeoPlayer) return;
+          playbackProbeTimer = setInterval(function () {
+            if (!vimeoPlayer || !hero.classList.contains("cs-home-hero--video-active")) {
+              clearPlaybackProbe();
+              return;
+            }
+            vimeoPlayer
+              .getCurrentTime()
+              .then(function (seconds) {
+                if (typeof seconds !== "number") {
+                  playbackProbeStableTicks = 0;
+                  return;
+                }
+                if (playbackProbeLastSecond === null) {
+                  playbackProbeLastSecond = seconds;
+                  return;
+                }
+                var delta = seconds - playbackProbeLastSecond;
+                playbackProbeLastSecond = seconds;
+                if (delta > 0.03) {
+                  playbackProbeStableTicks += 1;
+                  if (playbackProbeStableTicks >= playbackProbeRequiredTicks) {
+                    clearPlaybackProbe();
+                    markVideoReady();
+                  }
+                  return;
+                }
+                playbackProbeStableTicks = 0;
+              })
+              .catch(function () {
+                playbackProbeStableTicks = 0;
+              });
+          }, playbackProbeTickMs);
         }
 
         function buildSegmentSrc() {
@@ -1515,7 +1567,7 @@
                     if (typeof seconds !== "number") return;
                     if (!hasFirstFrameReady && seconds >= loopStartSeconds - 0.05) {
                       reachedLoopWindow = true;
-                      markVideoReady();
+                      probeStablePlayback();
                     }
                 if (isLoopSeeking) return;
                 if (seconds >= loopEndSeconds - loopGuardSeconds) {
@@ -1556,7 +1608,7 @@
             if (!data || typeof data.seconds !== "number") return;
             if (!hasFirstFrameReady && data.seconds >= loopStartSeconds - 0.05) {
               reachedLoopWindow = true;
-              markVideoReady();
+              probeStablePlayback();
             }
             if (isLoopSeeking) return;
             if (reachedLoopWindow && data.seconds < loopStartSeconds - loopResetGuardSeconds) {
@@ -1588,7 +1640,7 @@
                 if (typeof seconds !== "number") return;
                 if (seconds >= loopStartSeconds - 0.05) {
                   reachedLoopWindow = true;
-                  markVideoReady();
+                  probeStablePlayback();
                 }
               })
               .catch(function () {});
