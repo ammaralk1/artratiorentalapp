@@ -202,14 +202,6 @@
           title="Home Hero Background Video"
         ></iframe>
       </div>
-      <div class="cs-home-hero_media_switch" role="group" aria-label="Hero background mode">
-        <button type="button" class="is-active" data-hero-media="video" aria-pressed="true" aria-label="Video background">
-          <span class="cs-home-hero_toggle_label">Video</span>
-        </button>
-        <button type="button" data-hero-media="image" aria-pressed="false" aria-label="Image background">
-          <span class="cs-home-hero_toggle_label">Image</span>
-        </button>
-      </div>
       <div class="cs-shape_1 cs-home-shape-1"></div>
       <div class="cs-shape_1 cs-home-shape-2"></div>
       <div class="cs-shape_1 cs-home-shape-3"></div>
@@ -1389,8 +1381,6 @@
 
         var frame = hero.querySelector(".cs-home-hero_video_frame");
         var frameSrc = frame ? frame.getAttribute("data-vimeo-src") : "";
-        var switchButtons = hero.querySelectorAll("[data-hero-media]");
-        var switchWrap = hero.querySelector(".cs-home-hero_media_switch");
         var loopStartSeconds = 43;
         var loopEndSeconds = 61;
         var loopGuardSeconds = 0.06;
@@ -1678,56 +1668,25 @@
           ensurePlaybackWhenVisible();
         }
 
-        function setHeroMedia(mode) {
-          var isVideo = mode !== "image";
-          hero.classList.toggle("cs-home-hero--video-active", isVideo);
-
-          switchButtons.forEach(function (button) {
-            var active = button.getAttribute("data-hero-media") === (isVideo ? "video" : "image");
-            button.classList.toggle("is-active", active);
-            button.setAttribute("aria-pressed", active ? "true" : "false");
-          });
+        function setHeroMedia() {
+          hero.classList.add("cs-home-hero--video-active");
 
           if (frame) {
-            if (isVideo) {
-              clearVideoReady();
-              showPosterForLoading();
-              if (!frame.getAttribute("src") && frameSrc) {
-                frame.setAttribute("src", buildSegmentSrc());
-                vimeoPlayer = null;
-                reachedLoopWindow = false;
-                setTimeout(attachVimeoLoop, 120);
-              }
-              attachVimeoLoop();
-              scheduleHardSegmentRestart();
-            } else {
-              clearVideoReady();
-              hidePosterForLoading();
-              isSegmentRestarting = false;
-              if (vimeoPlayer) {
-                vimeoPlayer.off("ended");
-                vimeoPlayer.off("timeupdate");
-                vimeoPlayer.off("pause");
-                vimeoPlayer.off("play");
-                vimeoPlayer = null;
-              }
+            clearVideoReady();
+            showPosterForLoading();
+            if (!frame.getAttribute("src") && frameSrc) {
+              frame.setAttribute("src", buildSegmentSrc());
+              vimeoPlayer = null;
               reachedLoopWindow = false;
-              clearLoopWatchdog();
-              clearSegmentRestartTimer();
-              frame.setAttribute("src", "");
+              setTimeout(attachVimeoLoop, 120);
             }
+            attachVimeoLoop();
+            scheduleHardSegmentRestart();
           }
 
           try {
-            localStorage.setItem("homeHeroMediaMode", isVideo ? "video" : "image");
+            localStorage.removeItem("homeHeroMediaMode");
           } catch (e) {}
-        }
-
-        if (switchWrap) {
-          switchWrap.addEventListener("click", function () {
-            var nextMode = hero.classList.contains("cs-home-hero--video-active") ? "image" : "video";
-            setHeroMedia(nextMode);
-          });
         }
 
         var downBtn = hero.querySelector(".cs-down_btn");
@@ -1748,12 +1707,8 @@
           }
         });
 
-        var savedMode = null;
-        try {
-          savedMode = localStorage.getItem("homeHeroMediaMode");
-        } catch (e) {}
         hidePosterForLoading();
-        setHeroMedia(savedMode === "image" ? "image" : "video");
+        setHeroMedia();
       })();
     </script>
     <!-- Script -->
