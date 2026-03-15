@@ -278,11 +278,11 @@ body[data-page="home"] .cs-home-hero .cs-home-shape-3 {
     padding-bottom: 70px;
     display: flex;
     align-items: flex-end;
-    background-position: 95% 0% !important;
+    background-position: center 0% !important;
   }
   body[data-page="home"] .cs-home-hero .cs-home-hero_poster {
     background-image: url("../img/Mob Hero BG/hero_bg.jpg");
-    background-position: 95% 0% !important;
+    background-position: center 0% !important;
   }
   body[data-page="home"] .cs-home-hero .cs-home-hero_media_switch {
     top: 116px;
@@ -344,11 +344,11 @@ body[data-page="home"] .cs-home-hero .cs-home-shape-3 {
     padding-bottom: 56px;
     min-height: 90svh;
     height: 90svh;
-    background-position: 95% 0% !important;
+    background-position: center 0% !important;
   }
   body[data-page="home"] .cs-home-hero .cs-home-hero_poster {
     background-image: url("../img/Mob Hero BG/hero_bg.jpg");
-    background-position: 95% 0% !important;
+    background-position: center 0% !important;
   }
   body[data-page="home"] .cs-home-hero .cs-home-hero_media_switch {
     top: 96px;
