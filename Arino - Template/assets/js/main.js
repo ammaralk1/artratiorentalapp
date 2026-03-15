@@ -4,6 +4,8 @@
   // Minimal preloader escape hatch (no dependencies)
   (function () {
     const softHide = () => {
+      if (window.__arinoPreloaderHidden) return;
+      window.__arinoPreloaderHidden = true;
       const pre = document.querySelector('.cs-preloader');
       const inner = document.querySelector('.cs-preloader_in');
       if (!pre) return;
@@ -12,15 +14,15 @@
       setTimeout(() => {
         if (inner) inner.style.display = 'none';
         pre.style.display = 'none';
-      }, 520);
+      }, 620);
     };
+    window.__arinoSoftHidePreloader = softHide;
 
     const hide = () => {
       if (shouldDeferHomeHeroPreloader() && !window.__arinoAllowEarlyPreloaderHide) return;
       softHide();
       document.body && (document.body.style.overflow = 'unset');
     };
-    setTimeout(hide, 3500);
     document.addEventListener('DOMContentLoaded', hide, { once: true });
     window.addEventListener('load', hide, { once: true });
     window.addEventListener(
@@ -34,7 +36,7 @@
     setTimeout(() => {
       window.__arinoAllowEarlyPreloaderHide = true;
       hide();
-    }, 18000);
+    }, 7000);
   })();
 
   /*
@@ -179,8 +181,12 @@
     1. Preloader
   --------------------------------------------------------------*/
   function preloader() {
-    $('.cs-preloader_in').fadeOut();
-    $('.cs-preloader').delay(150).fadeOut('slow');
+    if (typeof window.__arinoSoftHidePreloader === 'function') {
+      window.__arinoSoftHidePreloader();
+      return;
+    }
+    $('.cs-preloader_in').fadeOut(120);
+    $('.cs-preloader').delay(160).fadeOut(420);
   }
 
   function setHomeHeroPreloadedFlag() {
@@ -206,7 +212,7 @@
     window.__arinoPreloaderReleased = true;
     window.__arinoAllowEarlyPreloaderHide = true;
     preloader();
-    setTimeout(hidePreloaderFast, 1100);
+    setTimeout(hidePreloaderFast, 900);
   }
 
   function requestPreloaderRelease() {
