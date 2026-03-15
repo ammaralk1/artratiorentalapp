@@ -238,7 +238,7 @@ body[data-page="home"] .cs-home-hero .cs-home-shape-1 {
 }
 body[data-page="home"] .cs-home-hero .cs-home-shape-2 {
   top: 29%;
-  left: 82%;
+  left: 72%;
   transform: rotate(-10deg);
   animation: semi-rotate-anim 14s cubic-bezier(0.33, 1, 0.68, 1) infinite;
 }
