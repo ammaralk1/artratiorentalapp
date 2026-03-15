@@ -69,13 +69,17 @@
     ]
   }
   </script>
+    <link rel="preconnect" href="https://player.vimeo.com">
+    <link rel="preconnect" href="https://i.vimeocdn.com" crossorigin>
+    <link rel="dns-prefetch" href="//player.vimeo.com">
+    <link rel="dns-prefetch" href="//i.vimeocdn.com">
     <link rel="stylesheet" href="assets/css/plugins/bootstrap.min.css">
     <link rel="stylesheet" href="assets/css/plugins/fontawesome.min.css">
     <link rel="stylesheet" href="assets/css/plugins/slick.css">
     <link rel="stylesheet" href="assets/css/plugins/lightgallery.min.css">
     <link rel="stylesheet" href="assets/css/plugins/animate.css">
     <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="stylesheet" href="assets/css/custom-overrides.css?v=20260315-preloaderhujrasa13">
+    <link rel="stylesheet" href="assets/css/custom-overrides.css?v=20260315-preloaderhujrasa14">
     <link rel="stylesheet" href="assets/css/pattern-bg.css">
   </head>
   <body data-page="home">
@@ -198,6 +202,7 @@
           class="cs-home-hero_video_frame"
           data-vimeo-src="https://player.vimeo.com/video/1132903455?autoplay=1&muted=1&loop=0&autopause=0&controls=0&title=0&byline=0&portrait=0&dnt=1"
           src="https://player.vimeo.com/video/1132903455?autoplay=1&muted=1&loop=0&autopause=0&controls=0&title=0&byline=0&portrait=0&dnt=1#t=44s"
+          loading="eager"
           frameborder="0"
           allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
           allowfullscreen
@@ -1405,6 +1410,26 @@
         var playbackProbeTickMs = 220;
         var playbackProbeRequiredTicks = 5;
         var isSegmentRestarting = false;
+        var mobileMinPosterHoldMs = 1000;
+        var attachRetryTimer = null;
+
+        function isMobileViewport() {
+          return window.matchMedia("(max-width: 991px)").matches;
+        }
+
+        function clearAttachRetryTimer() {
+          if (!attachRetryTimer) return;
+          clearTimeout(attachRetryTimer);
+          attachRetryTimer = null;
+        }
+
+        function scheduleAttachRetry() {
+          clearAttachRetryTimer();
+          attachRetryTimer = setTimeout(function () {
+            attachRetryTimer = null;
+            attachVimeoLoop();
+          }, 180);
+        }
 
         function clearLoopWatchdog() {
           if (!loopWatchdog) return;
@@ -1444,8 +1469,9 @@
           if (hasFirstFrameReady) return;
           hasFirstFrameReady = true;
           clearPosterHideTimer();
-          var elapsed = posterShownAt ? Date.now() - posterShownAt : minPosterHoldMs;
-          var remaining = Math.max(0, minPosterHoldMs - elapsed);
+          var posterHoldMs = isMobileViewport() ? mobileMinPosterHoldMs : minPosterHoldMs;
+          var elapsed = posterShownAt ? Date.now() - posterShownAt : posterHoldMs;
+          var remaining = Math.max(0, posterHoldMs - elapsed);
           posterHideTimer = setTimeout(function () {
             posterHideTimer = null;
             finalizeVideoReady();
@@ -1456,6 +1482,7 @@
           hasFirstFrameReady = false;
           clearPosterHideTimer();
           clearPlaybackProbe();
+          clearAttachRetryTimer();
           hero.classList.remove("cs-home-hero--video-ready");
         }
 
@@ -1472,6 +1499,8 @@
 
         function probeStablePlayback() {
           if (hasFirstFrameReady || playbackProbeTimer || !vimeoPlayer) return;
+          var probeTickMs = isMobileViewport() ? 150 : playbackProbeTickMs;
+          var requiredTicks = isMobileViewport() ? 2 : playbackProbeRequiredTicks;
           playbackProbeTimer = setInterval(function () {
             if (!vimeoPlayer || !hero.classList.contains("cs-home-hero--video-active")) {
               clearPlaybackProbe();
@@ -1492,7 +1521,7 @@
                 playbackProbeLastSecond = seconds;
                 if (delta > 0.03) {
                   playbackProbeStableTicks += 1;
-                  if (playbackProbeStableTicks >= playbackProbeRequiredTicks) {
+                  if (playbackProbeStableTicks >= requiredTicks) {
                     clearPlaybackProbe();
                     markVideoReady();
                   }
@@ -1503,7 +1532,7 @@
               .catch(function () {
                 playbackProbeStableTicks = 0;
               });
-          }, playbackProbeTickMs);
+          }, probeTickMs);
         }
 
         function buildSegmentSrc() {
@@ -1598,7 +1627,11 @@
 
         function attachVimeoLoop() {
           if (!frame || !frame.getAttribute("src")) return;
-          if (!window.Vimeo || !window.Vimeo.Player) return;
+          if (!window.Vimeo || !window.Vimeo.Player) {
+            scheduleAttachRetry();
+            return;
+          }
+          clearAttachRetryTimer();
 
           if (!vimeoPlayer) {
             vimeoPlayer = new window.Vimeo.Player(frame);
@@ -1608,6 +1641,7 @@
           vimeoPlayer.off("ended");
           vimeoPlayer.off("pause");
           vimeoPlayer.off("play");
+          vimeoPlayer.off("seeked");
           vimeoPlayer.on("timeupdate", function (data) {
             if (!data || typeof data.seconds !== "number") return;
             if (!hasFirstFrameReady && data.seconds >= loopStartSeconds - 0.05) {
@@ -1636,8 +1670,20 @@
               })
               .catch(function () {});
           });
+          vimeoPlayer.on("seeked", function (data) {
+            if (hasFirstFrameReady || !isMobileViewport()) return;
+            if (data && typeof data.seconds === "number" && data.seconds >= loopStartSeconds - 0.5) {
+              markVideoReady();
+              return;
+            }
+            probeStablePlayback();
+          });
           vimeoPlayer.on("play", function () {
             if (hasFirstFrameReady) return;
+            if (isMobileViewport()) {
+              markVideoReady();
+              return;
+            }
             vimeoPlayer
               .getCurrentTime()
               .then(function (seconds) {
@@ -1663,6 +1709,11 @@
             })
             .then(function () {
               return vimeoPlayer.play();
+            })
+            .then(function () {
+              if (isMobileViewport()) {
+                markVideoReady();
+              }
             })
             .catch(function () {});
 
