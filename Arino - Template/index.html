@@ -200,8 +200,8 @@
         <div class="cs-home-hero_poster" aria-hidden="true"></div>
         <iframe
           class="cs-home-hero_video_frame"
-          data-vimeo-src="https://player.vimeo.com/video/1132903455?autoplay=1&muted=1&loop=0&autopause=0&controls=0&title=0&byline=0&portrait=0&dnt=1"
-          src="https://player.vimeo.com/video/1132903455?autoplay=1&muted=1&loop=0&autopause=0&controls=0&title=0&byline=0&portrait=0&dnt=1#t=44s"
+          data-vimeo-src="https://player.vimeo.com/video/1132903455?autoplay=1&muted=1&loop=0&autopause=0&controls=0&title=0&byline=0&portrait=0&dnt=1&playsinline=1&quality=540p"
+          src="https://player.vimeo.com/video/1132903455?autoplay=1&muted=1&loop=0&autopause=0&controls=0&title=0&byline=0&portrait=0&dnt=1&playsinline=1&quality=540p#t=44s"
           loading="eager"
           frameborder="0"
           allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
@@ -1705,6 +1705,7 @@
               return vimeoPlayer.setLoop(false);
             })
             .then(function () {
+              if (isMobileViewport()) return null;
               return vimeoPlayer.setCurrentTime(loopStartSeconds);
             })
             .then(function () {
