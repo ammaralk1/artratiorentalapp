@@ -143,7 +143,7 @@ body[data-page="home"] .cs-home-hero .cs-home-hero_poster {
   z-index: 1;
   background-image: url("../img/hero_bg.jpeg");
   background-size: cover;
-  background-position: center center;
+  background-position: 95% center;
   background-repeat: no-repeat;
   opacity: 0;
   transition: opacity 0.45s ease;
@@ -238,7 +238,7 @@ body[data-page="home"] .cs-home-hero .cs-home-shape-1 {
 }
 body[data-page="home"] .cs-home-hero .cs-home-shape-2 {
   top: 29%;
-  left: 46%;
+  left: 20%;
   transform: rotate(-10deg);
   animation: semi-rotate-anim 14s cubic-bezier(0.33, 1, 0.68, 1) infinite;
 }
@@ -278,11 +278,11 @@ body[data-page="home"] .cs-home-hero .cs-home-shape-3 {
     padding-bottom: 70px;
     display: flex;
     align-items: flex-end;
-    background-position: center 0% !important;
+    background-position: 95% 0% !important;
   }
   body[data-page="home"] .cs-home-hero .cs-home-hero_poster {
     background-image: url("../img/Mob Hero BG/hero_bg.jpg");
-    background-position: center 0% !important;
+    background-position: 95% 0% !important;
   }
   body[data-page="home"] .cs-home-hero .cs-home-hero_media_switch {
     top: 116px;
@@ -344,11 +344,11 @@ body[data-page="home"] .cs-home-hero .cs-home-shape-3 {
     padding-bottom: 56px;
     min-height: 90svh;
     height: 90svh;
-    background-position: center 0% !important;
+    background-position: 95% 0% !important;
   }
   body[data-page="home"] .cs-home-hero .cs-home-hero_poster {
     background-image: url("../img/Mob Hero BG/hero_bg.jpg");
-    background-position: center 0% !important;
+    background-position: 95% 0% !important;
   }
   body[data-page="home"] .cs-home-hero .cs-home-hero_media_switch {
     top: 96px;
