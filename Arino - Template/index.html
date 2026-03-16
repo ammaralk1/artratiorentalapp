@@ -1579,13 +1579,13 @@
         function applyMobileHeroFraming() {
           var mobile = isMobileViewport();
           var isSmallMobile = window.matchMedia("(max-width: 575px)").matches;
-          var scale = isSmallMobile ? 1.12 : 1.08;
-          var translateY = isSmallMobile ? "-1.5%" : "-1%";
+          var scale = isSmallMobile ? 1.05 : 1.03;
+          var translateY = isSmallMobile ? "3%" : "2%";
 
           if (frame) {
             if (mobile) {
               frame.style.transform = "scale(" + scale + ") translateY(" + translateY + ")";
-              frame.style.transformOrigin = "center center";
+              frame.style.transformOrigin = "center top";
             } else {
               frame.style.transform = "";
               frame.style.transformOrigin = "";
@@ -1596,7 +1596,7 @@
             if (mobile) {
               mobileVideo.style.objectFit = "cover";
               mobileVideo.style.transform = "scale(" + scale + ") translateY(" + translateY + ")";
-              mobileVideo.style.transformOrigin = "center center";
+              mobileVideo.style.transformOrigin = "center top";
             } else {
               mobileVideo.style.objectFit = "";
               mobileVideo.style.transform = "";
