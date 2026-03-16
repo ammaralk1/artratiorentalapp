@@ -28,6 +28,9 @@ const contentTypes = new Map([
   ['.ttf', 'font/ttf'],
   ['.eot', 'application/vnd.ms-fontobject'],
   ['.ico', 'image/x-icon'],
+  ['.mp4', 'video/mp4'],
+  ['.webm', 'video/webm'],
+  ['.mov', 'video/quicktime'],
   ['.map', 'application/json; charset=utf-8'],
 ]);
 
@@ -51,7 +54,31 @@ function firstExistingFile(candidates) {
   return null;
 }
 
-function sendFile(filePath, res) {
+function parseRangeHeader(rangeHeader, fileSize) {
+  if (!rangeHeader || !rangeHeader.startsWith('bytes=')) return null;
+  const [startRaw, endRaw] = rangeHeader.replace('bytes=', '').split('-', 2);
+  const start = startRaw === '' ? Number.NaN : Number.parseInt(startRaw, 10);
+  const end = endRaw === '' ? Number.NaN : Number.parseInt(endRaw, 10);
+
+  if (Number.isNaN(start) && Number.isNaN(end)) return null;
+
+  let chunkStart = start;
+  let chunkEnd = end;
+  if (Number.isNaN(chunkStart)) {
+    const suffixLength = Math.max(0, end);
+    if (suffixLength <= 0) return null;
+    chunkStart = Math.max(0, fileSize - suffixLength);
+    chunkEnd = fileSize - 1;
+  } else if (Number.isNaN(chunkEnd)) {
+    chunkEnd = fileSize - 1;
+  }
+
+  if (chunkStart < 0 || chunkEnd < chunkStart || chunkStart >= fileSize) return null;
+  chunkEnd = Math.min(chunkEnd, fileSize - 1);
+  return { start: chunkStart, end: chunkEnd };
+}
+
+function sendFile(filePath, req, res) {
   fs.stat(filePath, (statErr, stat) => {
     if (statErr || !stat.isFile()) {
       res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
@@ -61,9 +88,27 @@ function sendFile(filePath, res) {
 
     const ext = path.extname(filePath).toLowerCase();
     const contentType = contentTypes.get(ext) || 'application/octet-stream';
+    const fileSize = stat.size;
+    const range = parseRangeHeader(req.headers.range, fileSize);
+
+    if (range) {
+      const chunkSize = range.end - range.start + 1;
+      res.writeHead(206, {
+        'Content-Type': contentType,
+        'Cache-Control': 'no-store',
+        'Accept-Ranges': 'bytes',
+        'Content-Range': `bytes ${range.start}-${range.end}/${fileSize}`,
+        'Content-Length': chunkSize,
+      });
+      fs.createReadStream(filePath, { start: range.start, end: range.end }).pipe(res);
+      return;
+    }
+
     res.writeHead(200, {
       'Content-Type': contentType,
       'Cache-Control': 'no-store',
+      'Accept-Ranges': 'bytes',
+      'Content-Length': fileSize,
     });
     fs.createReadStream(filePath).pipe(res);
   });
@@ -125,7 +170,7 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  sendFile(filePath, res);
+  sendFile(filePath, req, res);
 });
 
 server.listen(port, host, () => {

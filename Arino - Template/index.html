@@ -79,7 +79,7 @@
     <link rel="stylesheet" href="assets/css/plugins/lightgallery.min.css">
     <link rel="stylesheet" href="assets/css/plugins/animate.css">
     <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="stylesheet" href="assets/css/custom-overrides.css?v=20260315-preloaderhujrasa14">
+    <link rel="stylesheet" href="assets/css/custom-overrides.css?v=20260315-preloaderhujrasa22">
     <link rel="stylesheet" href="assets/css/pattern-bg.css">
   </head>
   <body data-page="home">
@@ -200,14 +200,25 @@
         <div class="cs-home-hero_poster" aria-hidden="true"></div>
         <iframe
           class="cs-home-hero_video_frame"
-          data-vimeo-src="https://player.vimeo.com/video/1132903455?autoplay=1&muted=1&loop=0&autopause=0&controls=0&title=0&byline=0&portrait=0&dnt=1&playsinline=1&quality=540p"
-          src="https://player.vimeo.com/video/1132903455?autoplay=1&muted=1&loop=0&autopause=0&controls=0&title=0&byline=0&portrait=0&dnt=1&playsinline=1&quality=540p#t=44s"
+          data-vimeo-src="https://player.vimeo.com/video/1132903455?autoplay=1&muted=1&loop=0&autopause=0&controls=0&title=0&byline=0&portrait=0&dnt=1&playsinline=1&background=1&quality=360p"
+          src="https://player.vimeo.com/video/1132903455?autoplay=1&muted=1&loop=0&autopause=0&controls=0&title=0&byline=0&portrait=0&dnt=1&playsinline=1&background=1&quality=360p"
           loading="eager"
           frameborder="0"
           allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
           allowfullscreen
           title="Home Hero Background Video"
         ></iframe>
+        <video
+          class="cs-home-hero_mobile_video"
+          muted
+          playsinline
+          autoplay
+          loop
+          preload="auto"
+          aria-hidden="true"
+        >
+          <source src="assets/video/home-hero-mobile.mp4" type="video/mp4" />
+        </video>
       </div>
       <div class="cs-shape_1 cs-home-shape-1"></div>
       <div class="cs-shape_1 cs-home-shape-2"></div>
@@ -1387,6 +1398,7 @@
         if (!hero) return;
 
         var frame = hero.querySelector(".cs-home-hero_video_frame");
+        var mobileVideo = hero.querySelector(".cs-home-hero_mobile_video");
         var frameSrc = frame ? frame.getAttribute("data-vimeo-src") : "";
         var loopStartSeconds = 43;
         var loopEndSeconds = 61;
@@ -1412,6 +1424,9 @@
         var isSegmentRestarting = false;
         var mobileMinPosterHoldMs = 1000;
         var attachRetryTimer = null;
+        var mobileBootstrapSeekAttempts = 0;
+        var mobileReadyFallbackTimer = null;
+        var lastViewportMobile = isMobileViewport();
 
         function isMobileViewport() {
           return window.matchMedia("(max-width: 991px)").matches;
@@ -1429,6 +1444,124 @@
             attachRetryTimer = null;
             attachVimeoLoop();
           }, 180);
+        }
+
+        function clearMobileReadyFallbackTimer() {
+          if (!mobileReadyFallbackTimer) return;
+          clearTimeout(mobileReadyFallbackTimer);
+          mobileReadyFallbackTimer = null;
+        }
+
+        function scheduleMobileReadyFallback() {
+          clearMobileReadyFallbackTimer();
+          mobileReadyFallbackTimer = setTimeout(function () {
+            mobileReadyFallbackTimer = null;
+            if (!hasFirstFrameReady && hero.classList.contains("cs-home-hero--video-active")) {
+              markVideoReady();
+            }
+          }, 3200);
+        }
+
+        function isMobileLocalVideoMode() {
+          return isMobileViewport() && !!mobileVideo;
+        }
+
+        function applyMobileHeroFraming() {
+          var mobile = isMobileViewport();
+          var isSmallMobile = window.matchMedia("(max-width: 575px)").matches;
+          var scale = isSmallMobile ? 1.26 : 1.18;
+          var translateY = isSmallMobile ? "-3%" : "-2%";
+
+          if (frame) {
+            if (mobile) {
+              frame.style.transform = "scale(" + scale + ") translateY(" + translateY + ")";
+              frame.style.transformOrigin = "center center";
+            } else {
+              frame.style.transform = "";
+              frame.style.transformOrigin = "";
+            }
+          }
+
+          if (mobileVideo) {
+            if (mobile) {
+              mobileVideo.style.objectFit = "contain";
+              mobileVideo.style.transform = "scale(" + scale + ") translateY(" + translateY + ")";
+              mobileVideo.style.transformOrigin = "center center";
+            } else {
+              mobileVideo.style.objectFit = "";
+              mobileVideo.style.transform = "";
+              mobileVideo.style.transformOrigin = "";
+            }
+          }
+        }
+
+        function getMobileLoopWindow() {
+          if (!mobileVideo) {
+            return { start: loopStartSeconds, end: loopEndSeconds };
+          }
+          var duration = Number(mobileVideo.duration);
+          if (!Number.isFinite(duration) || duration <= 0) {
+            return { start: loopStartSeconds, end: loopEndSeconds };
+          }
+          if (duration <= loopStartSeconds + 0.3) {
+            return { start: 0, end: Math.max(0.25, duration - 0.05) };
+          }
+          return {
+            start: loopStartSeconds,
+            end: Math.min(loopEndSeconds, Math.max(loopStartSeconds + 0.25, duration - 0.05)),
+          };
+        }
+
+        function bindMobileVideoEvents() {
+          if (!mobileVideo) return;
+          if (mobileVideo.dataset.boundHomeHero === "1") return;
+          mobileVideo.dataset.boundHomeHero = "1";
+
+          mobileVideo.addEventListener("loadedmetadata", function () {
+            if (!hero.classList.contains("cs-home-hero--video-active")) return;
+            var mobileLoopWindow = getMobileLoopWindow();
+            try {
+              mobileVideo.currentTime = mobileLoopWindow.start;
+            } catch (e) {}
+          });
+
+          mobileVideo.addEventListener("loadeddata", function () {
+            if (!hero.classList.contains("cs-home-hero--video-active")) return;
+            markVideoReady();
+          });
+
+          mobileVideo.addEventListener("playing", function () {
+            if (!hero.classList.contains("cs-home-hero--video-active")) return;
+            markVideoReady();
+          });
+
+          mobileVideo.addEventListener("timeupdate", function () {
+            if (!hero.classList.contains("cs-home-hero--video-active")) return;
+            var mobileLoopWindow = getMobileLoopWindow();
+            if (mobileVideo.currentTime >= mobileLoopWindow.end - 0.08) {
+              mobileVideo.currentTime = mobileLoopWindow.start;
+              mobileVideo.play().catch(function () {});
+            }
+          });
+
+          mobileVideo.addEventListener("stalled", function () {
+            if (!hero.classList.contains("cs-home-hero--video-active")) return;
+            showPosterForLoading();
+            scheduleMobileReadyFallback();
+          });
+        }
+
+        function tryMobileBootstrapSeek(delayMs) {
+          if (!isMobileViewport()) return;
+          setTimeout(function () {
+            if (!vimeoPlayer || mobileBootstrapSeekAttempts >= 3) return;
+            mobileBootstrapSeekAttempts += 1;
+            vimeoPlayer
+              .setCurrentTime(loopStartSeconds)
+              .catch(function () {
+                tryMobileBootstrapSeek(900);
+              });
+          }, delayMs);
         }
 
         function clearLoopWatchdog() {
@@ -1483,6 +1616,8 @@
           clearPosterHideTimer();
           clearPlaybackProbe();
           clearAttachRetryTimer();
+          clearMobileReadyFallbackTimer();
+          mobileBootstrapSeekAttempts = 0;
           hero.classList.remove("cs-home-hero--video-ready");
         }
 
@@ -1549,6 +1684,17 @@
         function restartSegmentWithPoster() {
           if (!hero.classList.contains("cs-home-hero--video-active")) return;
           if (isSegmentRestarting) return;
+          if (isMobileLocalVideoMode()) {
+            clearVideoReady();
+            showPosterForLoading();
+            if (mobileVideo) {
+              var mobileLoopWindow = getMobileLoopWindow();
+              mobileVideo.currentTime = mobileLoopWindow.start;
+              mobileVideo.play().catch(function () {});
+            }
+            scheduleMobileReadyFallback();
+            return;
+          }
           isSegmentRestarting = true;
           clearVideoReady();
           showPosterForLoading();
@@ -1568,6 +1714,7 @@
 
         function scheduleHardSegmentRestart() {
           clearSegmentRestartTimer();
+          if (isMobileLocalVideoMode()) return;
           if (!hero.classList.contains("cs-home-hero--video-active")) return;
           if (!frame || !frame.getAttribute("src")) return;
 
@@ -1617,15 +1764,23 @@
         }
 
         function ensurePlaybackWhenVisible() {
-          if (!vimeoPlayer || !hero.classList.contains("cs-home-hero--video-active")) return;
+          if (!hero.classList.contains("cs-home-hero--video-active")) return;
           var rect = hero.getBoundingClientRect();
           var viewportH = window.innerHeight || document.documentElement.clientHeight;
           var visible = rect.bottom > 0 && rect.top < viewportH;
           if (!visible) return;
+          if (isMobileLocalVideoMode()) {
+            if (mobileVideo) {
+              mobileVideo.play().catch(function () {});
+            }
+            return;
+          }
+          if (!vimeoPlayer) return;
           vimeoPlayer.play().catch(function () {});
         }
 
         function attachVimeoLoop() {
+          if (isMobileLocalVideoMode()) return;
           if (!frame || !frame.getAttribute("src")) return;
           if (!window.Vimeo || !window.Vimeo.Player) {
             scheduleAttachRetry();
@@ -1714,6 +1869,7 @@
             .then(function () {
               if (isMobileViewport()) {
                 markVideoReady();
+                tryMobileBootstrapSeek(1200);
               }
             })
             .catch(function () {});
@@ -1723,11 +1879,48 @@
         }
 
         function setHeroMedia() {
+          applyMobileHeroFraming();
           hero.classList.add("cs-home-hero--video-active");
+          clearVideoReady();
+          showPosterForLoading();
 
-          if (frame) {
-            clearVideoReady();
-            showPosterForLoading();
+          if (isMobileLocalVideoMode()) {
+            clearLoopWatchdog();
+            clearSegmentRestartTimer();
+            bindMobileVideoEvents();
+            reachedLoopWindow = false;
+            vimeoPlayer = null;
+
+            if (frame) {
+              frame.removeAttribute("src");
+              frame.style.opacity = "0";
+              frame.style.visibility = "hidden";
+            }
+            if (mobileVideo) {
+              var mobileLoopWindow = getMobileLoopWindow();
+              try {
+                if (
+                  mobileVideo.currentTime < mobileLoopWindow.start - 0.4 ||
+                  mobileVideo.currentTime > mobileLoopWindow.end + 0.6
+                ) {
+                  mobileVideo.currentTime = mobileLoopWindow.start;
+                }
+              } catch (e) {}
+              scheduleMobileReadyFallback();
+              mobileVideo.play().then(function () {
+                markVideoReady();
+              }).catch(function () {
+                scheduleMobileReadyFallback();
+              });
+            }
+          } else if (frame) {
+            if (mobileVideo) {
+              try {
+                mobileVideo.pause();
+              } catch (e) {}
+            }
+            frame.style.opacity = "";
+            frame.style.visibility = "";
             if (!frame.getAttribute("src") && frameSrc) {
               frame.setAttribute("src", buildSegmentSrc());
               vimeoPlayer = null;
@@ -1755,6 +1948,13 @@
 
         window.addEventListener("scroll", ensurePlaybackWhenVisible, { passive: true });
         window.addEventListener("focus", ensurePlaybackWhenVisible);
+        window.addEventListener("resize", function () {
+          applyMobileHeroFraming();
+          var isMobileNow = isMobileViewport();
+          if (isMobileNow === lastViewportMobile) return;
+          lastViewportMobile = isMobileNow;
+          setHeroMedia();
+        });
         document.addEventListener("visibilitychange", function () {
           if (document.visibilityState === "visible") {
             ensurePlaybackWhenVisible();
@@ -1762,6 +1962,7 @@
         });
 
         hidePosterForLoading();
+        applyMobileHeroFraming();
         setHeroMedia();
       })();
     </script>
