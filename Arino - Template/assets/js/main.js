@@ -257,26 +257,75 @@
 
     function normalizeMobileContactMenu() {
       if (window.innerWidth > 991) return;
+      var isArabic = document.documentElement.dir === 'rtl' || $('body').hasClass('rtl');
 
       $('.cs-nav_list > li.menu-item-has-children').each(function () {
         var $item = $(this);
         if ($item.data('mobileContactNormalized')) return;
 
-        var $parentContact = $item.children('a[href*="contact.html"]').first();
+        var $parentContact = $item
+          .children(
+            'a[data-i18n-key="nav_contact"], a[href*="contact.html"], a[href*="/contact"], a[href*="تواصل"]',
+          )
+          .first();
         var $submenu = $item.children('ul');
         if (!$parentContact.length || !$submenu.length) return;
 
-        var $feedbackItem = $submenu.find('a[href*="feedback.html"]').first().closest('li');
-        if (!$feedbackItem.length) return;
+        var $feedbackItem = $submenu
+          .find(
+            'a[data-i18n-key="nav_feedback"], a[href*="feedback.html"], a[href*="/feedback"], a[href*="آراء"], a[href*="رأي"]',
+          )
+          .first()
+          .closest('li');
+        if (!$feedbackItem.length) {
+          $feedbackItem = $(
+            '<li><a href="feedback.html" data-i18n-key="nav_feedback">' +
+              (isArabic ? 'رأيك يهمنا' : 'Feedback') +
+              '</a></li>',
+          );
+        }
 
         // Remove duplicated "Contact" inside submenu on mobile.
-        $submenu.find('a[href*="contact.html"]').closest('li').remove();
+        $submenu
+          .find(
+            'a[data-i18n-key="nav_contact"], a[href*="contact.html"], a[href*="/contact"], a[href*="تواصل"]',
+          )
+          .closest('li')
+          .remove();
 
         // Flatten "Feedback" under Contact in mobile list and remove + toggle.
         $item.after($feedbackItem);
         $submenu.remove();
         $item.removeClass('menu-item-has-children active');
         $item.children('.cs-munu_dropdown_toggle').remove();
+
+        // Keep a single mobile login action under contact links.
+        var $loginItem = $item
+          .siblings('li')
+          .filter(function () {
+            var href = $(this).children('a').attr('href') || '';
+            return (
+              href === 'https://art-ratio.com/login' ||
+              href === 'https://art-ratio.com/login/' ||
+              href === '/login' ||
+              href === '/login/'
+            );
+          })
+          .first();
+
+        if (!$loginItem.length) {
+          $loginItem = $(
+            '<li class="cs-mobile-login-item"><a class="cs-login-link" href="https://art-ratio.com/login" data-i18n-key="nav_login">' +
+              (isArabic ? 'تسجيل دخول' : 'Login') +
+              '</a></li>',
+          );
+        }
+        var $loginAnchor = $loginItem.children('a').first();
+        $loginAnchor.attr('href', 'https://art-ratio.com/login');
+        $loginAnchor.attr('data-i18n-key', 'nav_login');
+        $loginAnchor.addClass('cs-login-link');
+        $feedbackItem.after($loginItem);
+
         $item.data('mobileContactNormalized', true);
       });
     }

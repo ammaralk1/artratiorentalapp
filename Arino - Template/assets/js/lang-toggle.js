@@ -2136,7 +2136,8 @@
       },
       { selector: 'a[data-i18n-key="nav_pages"]', type: 'text', en: 'Pages', ar: 'الصفحات' },
       { selector: 'a[data-i18n-key="nav_contact"]', type: 'text', en: 'Contact', ar: 'تواصل معنا' },
-      { selector: 'a[data-i18n-key="nav_feedback"]', type: 'text', en: 'Feedback', ar: 'آراء العملاء' },
+      { selector: 'a[data-i18n-key="nav_feedback"]', type: 'text', en: 'Feedback', ar: 'رأيك يهمنا' },
+      { selector: 'a[data-i18n-key="nav_login"]', type: 'text', en: 'Login', ar: 'تسجيل دخول' },
       { selector: 'a[data-i18n-key="nav_team"]', type: 'text', en: 'Team', ar: 'فريقنا' },
       {
         selector: '.cs-nav_list a[href="contact.html"]',
@@ -2154,7 +2155,13 @@
         selector: '.cs-nav_list a[href="feedback.html"]',
         type: 'text',
         en: 'Feedback',
-        ar: 'آراء العملاء',
+        ar: 'رأيك يهمنا',
+      },
+      {
+        selector: '.cs-nav_list a[href="https://art-ratio.com/login"]',
+        type: 'text',
+        en: 'Login',
+        ar: 'تسجيل دخول',
       },
       {
         selector: '.cs-nav_list a[href="team-details.html"]',

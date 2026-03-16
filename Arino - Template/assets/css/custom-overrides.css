@@ -23,10 +23,23 @@ body :where(h1, h2, h3, h4, h5, h6, p, li, a, span, small, button, img, svg) {
 .cs-lang_toggle:hover { background: var(--brand-dark); color: #fff; border-color: var(--brand-dark); }
 .cs-site_header.cs-style1 .cs-munu_toggle:hover,
 .cs-site_header.cs-style1 .cs-munu_toggle:focus-visible { color: var(--brand-dark); }
-.cs-site_header.cs-style1 .cs-site_branding { transition: transform .2s ease, filter .2s ease; will-change: transform; }
-.cs-site_header.cs-style1 .cs-site_branding:hover { transform: scale(1.04); filter: drop-shadow(0 6px 14px rgba(31,48,34,.25)); }
+.cs-site_header.cs-style1 .cs-site_branding {
+  transition: none;
+  transform: none !important;
+  filter: none !important;
+  will-change: auto;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+.cs-site_header.cs-style1 .cs-site_branding:hover {
+  transform: none !important;
+  filter: none !important;
+}
 .cs-site_header.cs-style1 .cs-main_header_left {
-  transform: translateX(28px) !important;
+  margin-inline-end: 0;
+  transform: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 .cs-toolbox .cs-header_cart {
   transform: none;
@@ -36,13 +49,14 @@ body :where(h1, h2, h3, h4, h5, h6, p, li, a, span, small, button, img, svg) {
 .cs-nav .cs-nav_list ul { background-color: #1F2F22; }
 @media (max-width: 1199px) {
   .cs-site_header.cs-style1 .cs-main_header_left {
-    transform: translateX(20px) !important;
-  }
-  .cs-site_header.cs-style1 .cs-main_header_center .cs-site_branding {
-    left: 20px !important;
+    margin-inline-end: 0;
+    position: relative;
+    inset-inline-start: -30px;
+    z-index: 5;
   }
   .cs-site_header .cs-site_branding img {
     max-height: 50px;
+    display: block;
   }
   .cs-nav .cs-nav_list,
   .cs-nav .cs-nav_list ul { background-color: #1F2F22; }
@@ -97,13 +111,12 @@ body :where(h1, h2, h3, h4, h5, h6, p, li, a, span, small, button, img, svg) {
 }
 @media (max-width: 575px) {
   .cs-site_header.cs-style1 .cs-main_header_left {
-    transform: translateX(16px) !important;
-  }
-  .cs-site_header.cs-style1 .cs-main_header_center .cs-site_branding {
-    left: 16px !important;
+    margin-inline-end: 0;
+    inset-inline-start: -24px;
   }
   .cs-site_header .cs-site_branding img {
     max-height: 44px;
+    display: block;
   }
 }
 
@@ -1766,4 +1779,42 @@ body[data-page="terms"] .cs-page_heading.cs-style1.cs-bg {
   color: #fff;
   border-color: #9bad90;
   background: rgba(255, 255, 255, 0.06);
+}
+
+@media (max-width: 1199px) {
+  .cs-nav .cs-nav_list .cs-mobile-login-item {
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
+    padding: 4px 20px 0;
+  }
+  html[dir="rtl"] .cs-nav .cs-nav_list .cs-mobile-login-item,
+  body.rtl .cs-nav .cs-nav_list .cs-mobile-login-item {
+    justify-content: flex-start;
+  }
+  .cs-nav .cs-nav_list .cs-mobile-login-item > a.cs-login-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    margin: 0;
+    padding: 6px 12px;
+    min-height: 34px;
+    box-sizing: border-box;
+    border-radius: 999px;
+    border-color: rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.02);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+    color: rgba(255, 255, 255, 0.78);
+    opacity: 0.82;
+    text-align: center;
+  }
+  .cs-nav .cs-nav_list .cs-mobile-login-item > a.cs-login-link:hover {
+    opacity: 1;
+    border-color: rgba(157, 173, 144, 0.68);
+    background: rgba(157, 173, 144, 0.12);
+    color: #fff;
+  }
 }
