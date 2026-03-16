@@ -25,6 +25,10 @@ body :where(h1, h2, h3, h4, h5, h6, p, li, a, span, small, button, img, svg) {
 .cs-site_header.cs-style1 .cs-munu_toggle:focus-visible { color: var(--brand-dark); }
 .cs-site_header.cs-style1 .cs-site_branding { transition: transform .2s ease, filter .2s ease; will-change: transform; }
 .cs-site_header.cs-style1 .cs-site_branding:hover { transform: scale(1.04); filter: drop-shadow(0 6px 14px rgba(31,48,34,.25)); }
+.cs-site_header.cs-style1 .cs-main_header_left {
+  position: relative;
+  left: 22px;
+}
 .cs-toolbox .cs-header_cart {
   transform: none;
 }
@@ -32,6 +36,12 @@ body :where(h1, h2, h3, h4, h5, h6, p, li, a, span, small, button, img, svg) {
 /* Dropdown backgrounds */
 .cs-nav .cs-nav_list ul { background-color: #1F2F22; }
 @media (max-width: 1199px) {
+  .cs-site_header.cs-style1 .cs-main_header_left {
+    left: 14px;
+  }
+  .cs-site_header.cs-style1 .cs-main_header_center .cs-site_branding {
+    left: 14px;
+  }
   .cs-site_header .cs-site_branding img {
     max-height: 50px;
   }
@@ -87,6 +97,12 @@ body :where(h1, h2, h3, h4, h5, h6, p, li, a, span, small, button, img, svg) {
   }
 }
 @media (max-width: 575px) {
+  .cs-site_header.cs-style1 .cs-main_header_left {
+    left: 10px;
+  }
+  .cs-site_header.cs-style1 .cs-main_header_center .cs-site_branding {
+    left: 10px;
+  }
   .cs-site_header .cs-site_branding img {
     max-height: 44px;
   }
