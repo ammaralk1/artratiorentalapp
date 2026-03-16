@@ -79,7 +79,7 @@
     <link rel="stylesheet" href="assets/css/plugins/lightgallery.min.css">
     <link rel="stylesheet" href="assets/css/plugins/animate.css">
     <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="stylesheet" href="assets/css/custom-overrides.css?v=20260316-preloaderhujrasa23">
+    <link rel="stylesheet" href="assets/css/custom-overrides.css?v=20260316-preloaderhujrasa24">
     <link rel="stylesheet" href="assets/css/pattern-bg.css">
   </head>
   <body data-page="home">
@@ -1528,8 +1528,8 @@
         function applyMobileHeroFraming() {
           var mobile = isMobileViewport();
           var isSmallMobile = window.matchMedia("(max-width: 575px)").matches;
-          var scale = isSmallMobile ? 1.26 : 1.18;
-          var translateY = isSmallMobile ? "-3%" : "-2%";
+          var scale = isSmallMobile ? 1.12 : 1.08;
+          var translateY = isSmallMobile ? "-1.5%" : "-1%";
 
           if (frame) {
             if (mobile) {
@@ -1556,18 +1556,15 @@
 
         function getMobileLoopWindow() {
           if (!mobileVideo) {
-            return { start: loopStartSeconds, end: loopEndSeconds };
+            return { start: 0, end: Math.max(1, loopEndSeconds) };
           }
           var duration = Number(mobileVideo.duration);
           if (!Number.isFinite(duration) || duration <= 0) {
-            return { start: loopStartSeconds, end: loopEndSeconds };
-          }
-          if (duration <= loopStartSeconds + 0.3) {
-            return { start: 0, end: Math.max(0.25, duration - 0.05) };
+            return { start: 0, end: Math.max(1, loopEndSeconds) };
           }
           return {
-            start: loopStartSeconds,
-            end: Math.min(loopEndSeconds, Math.max(loopStartSeconds + 0.25, duration - 0.05)),
+            start: 0,
+            end: Math.max(0.25, duration - 0.05),
           };
         }
 
