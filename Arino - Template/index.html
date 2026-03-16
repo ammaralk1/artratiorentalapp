@@ -79,7 +79,7 @@
     <link rel="stylesheet" href="assets/css/plugins/lightgallery.min.css">
     <link rel="stylesheet" href="assets/css/plugins/animate.css">
     <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="stylesheet" href="assets/css/custom-overrides.css?v=20260315-preloaderhujrasa22">
+    <link rel="stylesheet" href="assets/css/custom-overrides.css?v=20260316-preloaderhujrasa23">
     <link rel="stylesheet" href="assets/css/pattern-bg.css">
   </head>
   <body data-page="home">
@@ -212,8 +212,10 @@
           class="cs-home-hero_mobile_video"
           muted
           playsinline
+          webkit-playsinline
           autoplay
           loop
+          poster="assets/img/Mob%20Hero%20BG/hero_bg.jpg"
           preload="auto"
           aria-hidden="true"
         >
@@ -1426,6 +1428,7 @@
         var attachRetryTimer = null;
         var mobileBootstrapSeekAttempts = 0;
         var mobileReadyFallbackTimer = null;
+        var mobileUnlockHandlersBound = false;
         var lastViewportMobile = isMobileViewport();
 
         function isMobileViewport() {
@@ -1457,6 +1460,17 @@
           mobileReadyFallbackTimer = setTimeout(function () {
             mobileReadyFallbackTimer = null;
             if (!hasFirstFrameReady && hero.classList.contains("cs-home-hero--video-active")) {
+              if (isMobileLocalVideoMode()) {
+                showPosterForLoading();
+                bindMobileUnlockHandlers();
+                if (mobileVideo && mobileVideo.readyState >= 2) {
+                  mobileVideo.play().then(function () {
+                    markVideoReady();
+                    unbindMobileUnlockHandlers();
+                  }).catch(function () {});
+                }
+                return;
+              }
               markVideoReady();
             }
           }, 3200);
@@ -1464,6 +1478,30 @@
 
         function isMobileLocalVideoMode() {
           return isMobileViewport() && !!mobileVideo;
+        }
+
+        function handleMobileUnlockGesture() {
+          if (!isMobileLocalVideoMode()) return;
+          if (!hero.classList.contains("cs-home-hero--video-active")) return;
+          if (!mobileVideo) return;
+          mobileVideo.play().then(function () {
+            markVideoReady();
+            unbindMobileUnlockHandlers();
+          }).catch(function () {});
+        }
+
+        function bindMobileUnlockHandlers() {
+          if (mobileUnlockHandlersBound) return;
+          mobileUnlockHandlersBound = true;
+          document.addEventListener("touchstart", handleMobileUnlockGesture, { passive: true });
+          document.addEventListener("click", handleMobileUnlockGesture, { passive: true });
+        }
+
+        function unbindMobileUnlockHandlers() {
+          if (!mobileUnlockHandlersBound) return;
+          mobileUnlockHandlersBound = false;
+          document.removeEventListener("touchstart", handleMobileUnlockGesture);
+          document.removeEventListener("click", handleMobileUnlockGesture);
         }
 
         function applyMobileHeroFraming() {
@@ -1484,7 +1522,7 @@
 
           if (mobileVideo) {
             if (mobile) {
-              mobileVideo.style.objectFit = "contain";
+              mobileVideo.style.objectFit = "cover";
               mobileVideo.style.transform = "scale(" + scale + ") translateY(" + translateY + ")";
               mobileVideo.style.transformOrigin = "center center";
             } else {
@@ -1530,9 +1568,15 @@
             markVideoReady();
           });
 
+          mobileVideo.addEventListener("canplay", function () {
+            if (!hero.classList.contains("cs-home-hero--video-active")) return;
+            markVideoReady();
+          });
+
           mobileVideo.addEventListener("playing", function () {
             if (!hero.classList.contains("cs-home-hero--video-active")) return;
             markVideoReady();
+            unbindMobileUnlockHandlers();
           });
 
           mobileVideo.addEventListener("timeupdate", function () {
@@ -1548,6 +1592,17 @@
             if (!hero.classList.contains("cs-home-hero--video-active")) return;
             showPosterForLoading();
             scheduleMobileReadyFallback();
+          });
+
+          mobileVideo.addEventListener("waiting", function () {
+            if (!hero.classList.contains("cs-home-hero--video-active")) return;
+            showPosterForLoading();
+          });
+
+          mobileVideo.addEventListener("error", function () {
+            if (!hero.classList.contains("cs-home-hero--video-active")) return;
+            showPosterForLoading();
+            bindMobileUnlockHandlers();
           });
         }
 
@@ -1909,11 +1964,14 @@
               scheduleMobileReadyFallback();
               mobileVideo.play().then(function () {
                 markVideoReady();
+                unbindMobileUnlockHandlers();
               }).catch(function () {
+                bindMobileUnlockHandlers();
                 scheduleMobileReadyFallback();
               });
             }
           } else if (frame) {
+            unbindMobileUnlockHandlers();
             if (mobileVideo) {
               try {
                 mobileVideo.pause();
