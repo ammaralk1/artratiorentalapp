@@ -1463,11 +1463,14 @@
               if (isMobileLocalVideoMode()) {
                 showPosterForLoading();
                 bindMobileUnlockHandlers();
+                prepareMobileVideoForAutoplay();
                 if (mobileVideo && mobileVideo.readyState >= 2) {
                   mobileVideo.play().then(function () {
                     markVideoReady();
                     unbindMobileUnlockHandlers();
                   }).catch(function () {});
+                } else {
+                  scheduleMobileReadyFallback();
                 }
                 return;
               }
@@ -1480,10 +1483,26 @@
           return isMobileViewport() && !!mobileVideo;
         }
 
+        function prepareMobileVideoForAutoplay() {
+          if (!mobileVideo) return;
+          mobileVideo.muted = true;
+          mobileVideo.defaultMuted = true;
+          mobileVideo.playsInline = true;
+          mobileVideo.setAttribute("playsinline", "");
+          mobileVideo.setAttribute("webkit-playsinline", "");
+          mobileVideo.preload = "auto";
+          if (mobileVideo.networkState === 0) {
+            try {
+              mobileVideo.load();
+            } catch (e) {}
+          }
+        }
+
         function handleMobileUnlockGesture() {
           if (!isMobileLocalVideoMode()) return;
           if (!hero.classList.contains("cs-home-hero--video-active")) return;
           if (!mobileVideo) return;
+          prepareMobileVideoForAutoplay();
           mobileVideo.play().then(function () {
             markVideoReady();
             unbindMobileUnlockHandlers();
@@ -1494,6 +1513,7 @@
           if (mobileUnlockHandlersBound) return;
           mobileUnlockHandlersBound = true;
           document.addEventListener("touchstart", handleMobileUnlockGesture, { passive: true });
+          document.addEventListener("touchend", handleMobileUnlockGesture, { passive: true });
           document.addEventListener("click", handleMobileUnlockGesture, { passive: true });
         }
 
@@ -1501,6 +1521,7 @@
           if (!mobileUnlockHandlersBound) return;
           mobileUnlockHandlersBound = false;
           document.removeEventListener("touchstart", handleMobileUnlockGesture);
+          document.removeEventListener("touchend", handleMobileUnlockGesture);
           document.removeEventListener("click", handleMobileUnlockGesture);
         }
 
@@ -1561,6 +1582,9 @@
             try {
               mobileVideo.currentTime = mobileLoopWindow.start;
             } catch (e) {}
+            if (mobileVideo.readyState >= 2) {
+              markVideoReady();
+            }
           });
 
           mobileVideo.addEventListener("loadeddata", function () {
@@ -1584,7 +1608,9 @@
             var mobileLoopWindow = getMobileLoopWindow();
             if (mobileVideo.currentTime >= mobileLoopWindow.end - 0.08) {
               mobileVideo.currentTime = mobileLoopWindow.start;
-              mobileVideo.play().catch(function () {});
+              mobileVideo.play().catch(function () {
+                bindMobileUnlockHandlers();
+              });
             }
           });
 
@@ -1745,7 +1771,10 @@
             if (mobileVideo) {
               var mobileLoopWindow = getMobileLoopWindow();
               mobileVideo.currentTime = mobileLoopWindow.start;
-              mobileVideo.play().catch(function () {});
+              prepareMobileVideoForAutoplay();
+              mobileVideo.play().catch(function () {
+                bindMobileUnlockHandlers();
+              });
             }
             scheduleMobileReadyFallback();
             return;
@@ -1826,7 +1855,14 @@
           if (!visible) return;
           if (isMobileLocalVideoMode()) {
             if (mobileVideo) {
-              mobileVideo.play().catch(function () {});
+              prepareMobileVideoForAutoplay();
+              mobileVideo.play().then(function () {
+                if (!hasFirstFrameReady) {
+                  markVideoReady();
+                }
+              }).catch(function () {
+                bindMobileUnlockHandlers();
+              });
             }
             return;
           }
@@ -1952,6 +1988,7 @@
               frame.style.visibility = "hidden";
             }
             if (mobileVideo) {
+              prepareMobileVideoForAutoplay();
               var mobileLoopWindow = getMobileLoopWindow();
               try {
                 if (
