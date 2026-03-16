@@ -79,7 +79,7 @@
     <link rel="stylesheet" href="assets/css/plugins/lightgallery.min.css">
     <link rel="stylesheet" href="assets/css/plugins/animate.css">
     <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="stylesheet" href="assets/css/custom-overrides.css?v=20260316-preloaderhujrasa24">
+    <link rel="stylesheet" href="assets/css/custom-overrides.css?v=20260316-hero-mobile-sync1">
     <link rel="stylesheet" href="assets/css/pattern-bg.css">
   </head>
   <body data-page="home">
@@ -1579,13 +1579,13 @@
         function applyMobileHeroFraming() {
           var mobile = isMobileViewport();
           var isSmallMobile = window.matchMedia("(max-width: 575px)").matches;
-          var scale = isSmallMobile ? 1.05 : 1.03;
-          var translateY = isSmallMobile ? "3%" : "2%";
+          var scale = isSmallMobile ? 1.45 : 1.32;
+          var translateY = isSmallMobile ? "-5%" : "-4%";
 
           if (frame) {
             if (mobile) {
               frame.style.transform = "scale(" + scale + ") translateY(" + translateY + ")";
-              frame.style.transformOrigin = "center top";
+              frame.style.transformOrigin = "center center";
             } else {
               frame.style.transform = "";
               frame.style.transformOrigin = "";
@@ -1596,7 +1596,7 @@
             if (mobile) {
               mobileVideo.style.objectFit = "cover";
               mobileVideo.style.transform = "scale(" + scale + ") translateY(" + translateY + ")";
-              mobileVideo.style.transformOrigin = "center top";
+              mobileVideo.style.transformOrigin = "center center";
             } else {
               mobileVideo.style.objectFit = "";
               mobileVideo.style.transform = "";
