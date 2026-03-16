@@ -382,8 +382,6 @@
         'assets/img/Mob Hero BG/blog_hero_bg_mobile.jpeg',
       'assets/img/contact_hero_bg.jpeg':
         'assets/img/Mob Hero BG/contact_hero_bg_mobile.jpeg',
-      'assets/img/portfolio_hero_bg.jpeg':
-        'assets/img/Mob Hero BG/portfolio_hero_bg_mobile.jpeg',
       'assets/img/service_hero_bg.jpeg':
         'assets/img/Mob Hero BG/service_hero_bg_mobile.jpeg',
       'assets/img/shop_hero_bg.jpeg':
@@ -394,6 +392,10 @@
 
     $('[data-src]').each(function () {
       var src = $(this).attr('data-src');
+      // Keep portfolio detail hero aligned with portfolio page hero image.
+      if (src === 'assets/img/portfolio_details_bg.jpeg') {
+        src = 'assets/img/portfolio_hero_bg.jpeg';
+      }
       if (isMobile && mobileHeroMap[src]) {
         src = mobileHeroMap[src];
       }
