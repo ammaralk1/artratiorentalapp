@@ -1428,6 +1428,9 @@
         var attachRetryTimer = null;
         var mobileBootstrapSeekAttempts = 0;
         var mobileReadyFallbackTimer = null;
+        var mobileReadyFallbackAttempts = 0;
+        var mobileReadyFallbackMaxAttempts = 3;
+        var mobileVimeoFallbackActive = false;
         var mobileUnlockHandlersBound = false;
         var lastViewportMobile = isMobileViewport();
 
@@ -1461,6 +1464,7 @@
             mobileReadyFallbackTimer = null;
             if (!hasFirstFrameReady && hero.classList.contains("cs-home-hero--video-active")) {
               if (isMobileLocalVideoMode()) {
+                mobileReadyFallbackAttempts += 1;
                 showPosterForLoading();
                 bindMobileUnlockHandlers();
                 prepareMobileVideoForAutoplay();
@@ -1468,8 +1472,18 @@
                   mobileVideo.play().then(function () {
                     markVideoReady();
                     unbindMobileUnlockHandlers();
-                  }).catch(function () {});
+                  }).catch(function () {
+                    if (mobileReadyFallbackAttempts >= mobileReadyFallbackMaxAttempts) {
+                      activateMobileVimeoFallback();
+                      return;
+                    }
+                    scheduleMobileReadyFallback();
+                  });
                 } else {
+                  if (mobileReadyFallbackAttempts >= mobileReadyFallbackMaxAttempts) {
+                    activateMobileVimeoFallback();
+                    return;
+                  }
                   scheduleMobileReadyFallback();
                 }
                 return;
@@ -1480,7 +1494,44 @@
         }
 
         function isMobileLocalVideoMode() {
-          return isMobileViewport() && !!mobileVideo;
+          return isMobileViewport() && !!mobileVideo && !mobileVimeoFallbackActive;
+        }
+
+        function activateMobileVimeoFallback() {
+          if (mobileVimeoFallbackActive) return;
+          if (!isMobileViewport()) return;
+          if (!frame || !frameSrc) return;
+
+          mobileVimeoFallbackActive = true;
+          clearMobileReadyFallbackTimer();
+          clearPlaybackProbe();
+          clearLoopWatchdog();
+          clearSegmentRestartTimer();
+          clearAttachRetryTimer();
+          clearPosterHideTimer();
+          hasFirstFrameReady = false;
+          showPosterForLoading();
+          unbindMobileUnlockHandlers();
+
+          if (mobileVideo) {
+            try {
+              mobileVideo.pause();
+            } catch (e) {}
+            mobileVideo.style.display = "none";
+            mobileVideo.style.opacity = "0";
+          }
+
+          frame.style.display = "block";
+          frame.style.opacity = "";
+          frame.style.visibility = "";
+          if (!frame.getAttribute("src")) {
+            frame.setAttribute("src", buildSegmentSrc());
+          }
+
+          vimeoPlayer = null;
+          reachedLoopWindow = false;
+          setTimeout(attachVimeoLoop, 120);
+          scheduleHardSegmentRestart();
         }
 
         function prepareMobileVideoForAutoplay() {
@@ -1626,6 +1677,7 @@
             if (!hero.classList.contains("cs-home-hero--video-active")) return;
             showPosterForLoading();
             bindMobileUnlockHandlers();
+            activateMobileVimeoFallback();
           });
         }
 
@@ -1679,6 +1731,7 @@
         function markVideoReady() {
           if (hasFirstFrameReady) return;
           hasFirstFrameReady = true;
+          mobileReadyFallbackAttempts = 0;
           clearPosterHideTimer();
           var posterHoldMs = isMobileViewport() ? mobileMinPosterHoldMs : minPosterHoldMs;
           var elapsed = posterShownAt ? Date.now() - posterShownAt : posterHoldMs;
@@ -1696,6 +1749,7 @@
           clearAttachRetryTimer();
           clearMobileReadyFallbackTimer();
           mobileBootstrapSeekAttempts = 0;
+          mobileReadyFallbackAttempts = 0;
           hero.classList.remove("cs-home-hero--video-ready");
         }
 
@@ -1978,13 +2032,17 @@
             bindMobileVideoEvents();
             reachedLoopWindow = false;
             vimeoPlayer = null;
+            mobileVimeoFallbackActive = false;
 
             if (frame) {
               frame.removeAttribute("src");
+              frame.style.display = "";
               frame.style.opacity = "0";
               frame.style.visibility = "hidden";
             }
             if (mobileVideo) {
+              mobileVideo.style.display = "";
+              mobileVideo.style.opacity = "";
               prepareMobileVideoForAutoplay();
               var mobileLoopWindow = getMobileLoopWindow();
               try {
@@ -2010,7 +2068,15 @@
               try {
                 mobileVideo.pause();
               } catch (e) {}
+              if (isMobileViewport()) {
+                mobileVideo.style.display = "none";
+                mobileVideo.style.opacity = "0";
+              } else {
+                mobileVideo.style.display = "";
+                mobileVideo.style.opacity = "";
+              }
             }
+            frame.style.display = "block";
             frame.style.opacity = "";
             frame.style.visibility = "";
             if (!frame.getAttribute("src") && frameSrc) {
