@@ -556,6 +556,7 @@
     gallery_card_subtitle: { en: 'View Large', ar: 'عرض بالحجم الكبير' },
     nav_portfolio_details: { en: 'Portfolio Details', ar: 'تفاصيل الأعمال' },
     side_header_contact_title: { en: 'Contact Us', ar: 'تواصل معنا' },
+    side_header_login_link: { en: 'Login to Dashboard', ar: 'تسجيل الدخول للوحة التحكم' },
     side_header_heading: {
       type: 'html',
       en: 'Got a project in mind?<br>We’re ready to bring it to life.',
@@ -2182,12 +2183,6 @@
         ar: 'الأسئلة الشائعة',
       },
       {
-        selector: '.cs-side_header_box h3.cs-side_header_title',
-        type: 'text',
-        en: 'Contact Us',
-        ar: 'خلّينا ندردش',
-      },
-      {
         selector: '.cs-side_header_box h2.cs-side_header_heading',
         type: 'html',
         en: 'Got a project in mind?<br>We’re ready to bring it to life.',
@@ -2657,6 +2652,38 @@
     });
   };
 
+  const normalizeSideHeaderTranslations = () => {
+    const sideHeader = document.querySelector('.cs-side_header');
+    if (!sideHeader) return;
+
+    const heading = sideHeader.querySelector('.cs-side_header_heading');
+    if (heading && !heading.dataset.i18nKey) {
+      heading.dataset.i18nKey = 'side_header_heading';
+    }
+
+    const contactInfo = sideHeader.querySelector('.cs-contact_info');
+    if (contactInfo) {
+      const contactBox = contactInfo.closest('.cs-side_header_box');
+      const contactTitle = contactBox && contactBox.querySelector('h3.cs-side_header_title');
+      if (contactTitle) {
+        contactTitle.dataset.i18nKey = 'side_header_contact_title';
+      }
+    }
+
+    sideHeader.querySelectorAll('.cs-side_header_box .cs-login-link').forEach((link) => {
+      link.dataset.i18nKey = 'side_header_login_link';
+      link.setAttribute('href', 'https://art-ratio.com/login');
+
+      // Remove duplicate title above login link to keep sidebar copy concise.
+      const loginBox = link.closest('.cs-side_header_box');
+      if (!loginBox) return;
+      const duplicateTitle = loginBox.querySelector('h3.cs-side_header_title');
+      if (duplicateTitle) {
+        duplicateTitle.remove();
+      }
+    });
+  };
+
   const updateToggleLabel = (lang) => {
     const toggle = document.querySelector('.cs-lang_toggle');
     if (!toggle) return;
@@ -2805,6 +2832,7 @@
     document.documentElement.lang = selected;
     document.documentElement.dir = isArabic ? 'rtl' : 'ltr';
     document.body.classList.toggle('rtl', isArabic);
+    normalizeSideHeaderTranslations();
     reorderHomeTeamSlides(selected);
     applyTranslations(selected);
     localizeInternalLinks(selected);
