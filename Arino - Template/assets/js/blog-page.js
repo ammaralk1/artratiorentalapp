@@ -148,7 +148,7 @@
   };
 
   var getBlogBasePath = function () {
-    if (normalizedPath.indexOf("/ar/") === 0 || isArabic()) return "/ar/كشكولنا/";
+    if (isArabic()) return "/كشكولنا/";
     if (normalizedPath.indexOf("/en/") === 0) return "/en/blog/";
     return "/blog/";
   };

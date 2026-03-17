@@ -2503,11 +2503,24 @@
     return p || '/';
   };
 
+  const toDirectArabicPath = (rawPath) => {
+    const normalized = normalizePath(rawPath);
+    if (normalized === '/ar' || normalized === '/ar/') return '/';
+    if (normalized.startsWith('/ar/')) {
+      const direct = normalized.slice(3);
+      return direct || '/';
+    }
+    return normalized;
+  };
+
   const enPathToFile = Object.fromEntries(
     Object.entries(localizedRouteMap).map(([file, paths]) => [normalizePath(paths.en), file]),
   );
   const arPathToFile = Object.fromEntries(
     Object.entries(localizedRouteMap).map(([file, paths]) => [normalizePath(paths.ar), file]),
+  );
+  const arDirectPathToFile = Object.fromEntries(
+    Object.entries(localizedRouteMap).map(([file, paths]) => [toDirectArabicPath(paths.ar), file]),
   );
 
   const resolveFileFromPath = (rawPath) => {
@@ -2515,26 +2528,86 @@
     if (normalized === '/' || normalized === '/index.html') return 'index.html';
     if (enPathToFile[normalized]) return enPathToFile[normalized];
     if (arPathToFile[normalized]) return arPathToFile[normalized];
+    if (arDirectPathToFile[normalized]) return arDirectPathToFile[normalized];
 
     const htmlMatch = normalized.match(/^\/([^/]+\.html)$/i);
     if (htmlMatch) return htmlMatch[1].toLowerCase();
+
+    const directMatch = normalized.match(/^\/([a-z0-9-]+)$/i);
+    if (directMatch) {
+      const candidate = `${directMatch[1].toLowerCase()}.html`;
+      if (Object.prototype.hasOwnProperty.call(localizedRouteMap, candidate)) {
+        return candidate;
+      }
+    }
     return null;
+  };
+
+  const normalizeSlug = (value) => String(value || '').replace(/^\/+|\/+$/g, '');
+
+  const resolveBlogPath = (rawPath) => {
+    const normalized = normalizePath(rawPath);
+    if (
+      normalized === '/blog'
+      || normalized === '/en/blog'
+      || normalized === '/كشكولنا'
+      || normalized === '/المدونة'
+      || normalized === '/ar/كشكولنا'
+      || normalized === '/ar/المدونة'
+    ) return { slug: '' };
+
+    if (normalized.startsWith('/blog/')) {
+      return { slug: normalizeSlug(normalized.slice('/blog/'.length)) };
+    }
+    if (normalized.startsWith('/en/blog/')) {
+      return { slug: normalizeSlug(normalized.slice('/en/blog/'.length)) };
+    }
+    if (normalized.startsWith('/كشكولنا/')) {
+      return { slug: normalizeSlug(normalized.slice('/كشكولنا/'.length)) };
+    }
+    if (normalized.startsWith('/المدونة/')) {
+      return { slug: normalizeSlug(normalized.slice('/المدونة/'.length)) };
+    }
+    if (normalized.startsWith('/ar/كشكولنا/')) {
+      return { slug: normalizeSlug(normalized.slice('/ar/كشكولنا/'.length)) };
+    }
+    if (normalized.startsWith('/ar/المدونة/')) {
+      return { slug: normalizeSlug(normalized.slice('/ar/المدونة/'.length)) };
+    }
+
+    return null;
+  };
+
+  const formatBlogPath = (slug, lang) => {
+    const base = lang === 'ar' ? '/كشكولنا' : '/en/blog';
+    const normalizedSlug = normalizeSlug(slug);
+    return normalizedSlug ? `${base}/${normalizedSlug}/` : `${base}/`;
+  };
+
+  const localizeSpecialPath = (rawPath, lang) => {
+    const blog = resolveBlogPath(rawPath);
+    if (blog) {
+      return formatBlogPath(blog.slug, lang);
+    }
+    return '';
   };
 
   const pathForLanguage = (file, lang) => {
     const route = localizedRouteMap[file] || localizedRouteMap['index.html'];
-    return lang === 'ar' ? route.ar : route.en;
+    if (lang === 'en') return route.en;
+    return toDirectArabicPath(route.ar);
   };
 
   const getLocalizedUrlForCurrentPage = (lang) => {
-    const file = resolveFileFromPath(window.location.pathname || '/');
-    if (!file) return '';
+    const currentPath = window.location.pathname || '/';
+    const file = resolveFileFromPath(currentPath);
+    const targetPath = file ? pathForLanguage(file, lang) : localizeSpecialPath(currentPath, lang);
+    if (!targetPath) return '';
 
-    const current = normalizePath(window.location.pathname || '/');
-    const target = normalizePath(pathForLanguage(file, lang));
-    if (!target) return '';
+    const current = normalizePath(currentPath);
+    const target = normalizePath(targetPath);
     if (target === current) return '';
-    return target + (window.location.search || '') + (window.location.hash || '');
+    return targetPath + (window.location.search || '') + (window.location.hash || '');
   };
 
   const syncCurrentPathWithLanguage = (lang) => {
@@ -2563,9 +2636,8 @@
       if (parsed.origin !== window.location.origin) return;
 
       const file = resolveFileFromPath(parsed.pathname);
-      if (!file) return;
-
-      const targetPath = pathForLanguage(file, lang);
+      const targetPath = file ? pathForLanguage(file, lang) : localizeSpecialPath(parsed.pathname, lang);
+      if (!targetPath) return;
       const nextHref = targetPath + (parsed.search || '') + (parsed.hash || '');
       anchor.setAttribute('href', nextHref);
     });
@@ -2582,10 +2654,13 @@
     if (canonical) canonical.setAttribute('href', absoluteUrl);
     document.querySelectorAll('meta[property="og:url"]').forEach((meta) => meta.setAttribute('content', absoluteUrl));
 
-    const currentFile = resolveFileFromPath(window.location.pathname || '/');
-    if (!currentFile) return;
-    const enHref = window.location.origin + pathForLanguage(currentFile, 'en');
-    const arHref = window.location.origin + pathForLanguage(currentFile, 'ar');
+    const currentPath = window.location.pathname || '/';
+    const currentFile = resolveFileFromPath(currentPath);
+    const enPath = currentFile ? pathForLanguage(currentFile, 'en') : localizeSpecialPath(currentPath, 'en');
+    const arPath = currentFile ? pathForLanguage(currentFile, 'ar') : localizeSpecialPath(currentPath, 'ar');
+    if (!enPath || !arPath) return;
+    const enHref = window.location.origin + enPath;
+    const arHref = window.location.origin + arPath;
 
     let enAlt = document.querySelector('link[rel="alternate"][hreflang="en"]');
     if (!enAlt) {
@@ -2943,13 +3018,23 @@
   });
 
   const normalizedInitialPath = normalizePath(window.location.pathname || '/');
-  if (normalizedInitialPath === '/' || normalizedInitialPath === '/index.html') {
-    if (window.location.pathname !== '/ar/' && window.location.pathname !== '/ar') {
-      window.location.replace('/ar/');
+  const initialSuffix = (window.location.search || '') + (window.location.hash || '');
+
+  if (normalizedInitialPath === '/index.html') {
+    window.location.replace('/' + initialSuffix);
+    return;
+  }
+
+  if (normalizedInitialPath === '/ar' || normalizedInitialPath.startsWith('/ar/')) {
+    const file = resolveFileFromPath(normalizedInitialPath);
+    const targetPath = file ? pathForLanguage(file, 'ar') : localizeSpecialPath(normalizedInitialPath, 'ar');
+    if (targetPath && normalizePath(targetPath) !== normalizedInitialPath) {
+      window.location.replace(targetPath + initialSuffix);
       return;
     }
   }
-  const pathLang = normalizedInitialPath.startsWith('/ar') ? 'ar' : normalizedInitialPath.startsWith('/en') ? 'en' : '';
+
+  const pathLang = normalizedInitialPath.startsWith('/en') ? 'en' : 'ar';
   let currentLang =
     pathLang ||
     localStorage.getItem(STORAGE_KEY) ||

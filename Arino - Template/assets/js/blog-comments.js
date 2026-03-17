@@ -127,6 +127,8 @@
     var start = 0;
     if (segments[0] === "blog") {
       start = 1;
+    } else if (segments[0] === "المدونة" || segments[0] === "كشكولنا") {
+      start = 1;
     } else if (segments[0] === "en" && segments[1] === "blog") {
       start = 2;
     } else if (segments[0] === "ar" && (segments[1] === "المدونة" || segments[1] === "كشكولنا")) {
