@@ -16,6 +16,36 @@
   var isArabic = function () {
     return (document.documentElement.lang || "en").toLowerCase().startsWith("ar");
   };
+  var blogRoutes =
+    typeof window !== "undefined" && window.ArinoBlogRoutes
+      ? window.ArinoBlogRoutes
+      : null;
+  var normalizeBlogSlug = function (value) {
+    return String(value || "")
+      .replace(/^\/+|\/+$/g, "")
+      .toLowerCase();
+  };
+  var toCanonicalBlogSlug = function (value) {
+    var normalized = normalizeBlogSlug(value);
+    if (!normalized) return "";
+    if (blogRoutes && typeof blogRoutes.toCanonicalSlug === "function") {
+      var resolved = blogRoutes.toCanonicalSlug(normalized);
+      if (resolved) return normalizeBlogSlug(resolved);
+    }
+    return normalized;
+  };
+  var toCanonicalCategory = function (value) {
+    var normalized = normalizeBlogSlug(value);
+    if (!normalized) return "";
+    var resolved = toCanonicalBlogSlug("category/" + normalized);
+    return resolved.indexOf("category/") === 0 ? resolved.slice("category/".length) : normalized;
+  };
+  var toCanonicalTag = function (value) {
+    var normalized = normalizeBlogSlug(value);
+    if (!normalized) return "";
+    var resolved = toCanonicalBlogSlug("tag/" + normalized);
+    return resolved.indexOf("tag/") === 0 ? resolved.slice("tag/".length) : normalized;
+  };
 
   var posts = Array.prototype.slice.call(
     container.querySelectorAll(":scope > .cs-post.cs-style2")
@@ -55,9 +85,15 @@
         var parsed = new URL(mainLink.getAttribute("href") || "", window.location.origin);
         var pathParts = (parsed.pathname || "").split("/").filter(Boolean);
         var blogStart = pathParts.indexOf("blog");
+        if (blogStart < 0) blogStart = pathParts.indexOf("كشكولنا");
+        if (blogStart < 0) blogStart = pathParts.indexOf("المدونة");
         if (blogStart >= 0 && pathParts.length >= blogStart + 3) {
-          categorySlug = (pathParts[blogStart + 1] || "").toLowerCase();
-          postSlug = (pathParts[blogStart + 2] || "").toLowerCase();
+          var parsedPostSlug = toCanonicalBlogSlug(
+            (pathParts[blogStart + 1] || "") + "/" + (pathParts[blogStart + 2] || "")
+          );
+          var parsedParts = parsedPostSlug.split("/");
+          categorySlug = parsedParts[0] || "";
+          postSlug = parsedParts[1] || "";
         }
       } catch (e) {}
     }
@@ -116,16 +152,17 @@
     var second = (rest[1] || "").toLowerCase();
     var third = (rest[2] || "").toLowerCase();
     if (second === "category" || second === "التصنيف") {
-      return { mode: "list", category: third };
+      return { mode: "list", category: toCanonicalCategory(third) };
     }
     if (second === "tag" || second === "وسم") {
-      return { mode: "list", tag: third };
+      return { mode: "list", tag: toCanonicalTag(third) };
     }
     if (rest.length >= 3) {
+      var canonicalPost = toCanonicalBlogSlug(rest.slice(1).join("/")).split("/");
       return {
         mode: "post",
-        categorySlug: second,
-        postSlug: third,
+        categorySlug: canonicalPost[0] || second,
+        postSlug: canonicalPost[1] || third,
       };
     }
 
@@ -180,9 +217,9 @@
     var categoryFromPath = pathState.category || "";
     var tagFromPath = pathState.tag || "";
     return {
-      category: (params.get("category") || categoryFromPath || "").toLowerCase(),
+      category: toCanonicalCategory(params.get("category") || categoryFromPath || ""),
       month: (params.get("month") || "").toLowerCase(),
-      tag: (params.get("tag") || tagFromPath || "").toLowerCase(),
+      tag: toCanonicalTag(params.get("tag") || tagFromPath || ""),
       page: page,
     };
   };

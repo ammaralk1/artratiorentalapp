@@ -2545,6 +2545,112 @@
 
   const normalizeSlug = (value) => String(value || '').replace(/^\/+|\/+$/g, '');
 
+  const normalizeBlogSlug = (value) =>
+    normalizeSlug(value)
+      .split('/')
+      .filter(Boolean)
+      .map((segment) => segment.toLowerCase())
+      .join('/');
+
+  const blogCategorySlugMap = Object.freeze({
+    'event-coverage': 'تغطية-الفعاليات',
+    'filmmaking-lighting': 'تقنيات-التصوير-والاضاءة',
+    'filmmaking-techniques': 'تقنيات-صناعة-الافلام',
+    'product-photography': 'تصوير-المنتجات',
+    'video-production': 'انتاج-الفيديو',
+  });
+
+  const blogTagSlugMap = Object.freeze({
+    'behind-the-scenes': 'خلف-الكواليس',
+    'cinematic-lighting': 'الاضاءة-السينمائية',
+    'color-grading': 'تصحيح-الالوان',
+    'commercial-ads': 'الاعلانات-التجارية',
+    'event-coverage': 'تغطية-الفعاليات',
+    interviews: 'المقابلات',
+    'product-photography': 'تصوير-المنتجات',
+    'video-production': 'انتاج-الفيديو',
+  });
+
+  const blogPostSlugMap = Object.freeze({
+    'event-coverage/professional-event-coverage-guide':
+      'تغطية-الفعاليات/دليل-تغطية-الفعاليات-الاحترافية',
+    'filmmaking-techniques/cinematic-lighting-basics':
+      'تقنيات-صناعة-الافلام/اساسيات-الاضاءة-السينمائية',
+    'product-photography/professional-product-photography-ecommerce':
+      'تصوير-المنتجات/دليل-تصوير-المنتجات-الاحترافي-للمتاجر-الالكترونية',
+    'video-production/how-to-choose-professional-video-production-company':
+      'انتاج-الفيديو/كيف-تختار-شركة-انتاج-فيديو-احترافية',
+  });
+
+  const invertSlugMap = (map) =>
+    Object.fromEntries(
+      Object.entries(map).map(([enSlug, arSlug]) => [normalizeBlogSlug(arSlug), normalizeBlogSlug(enSlug)]),
+    );
+
+  const blogCategorySlugArToEn = invertSlugMap(blogCategorySlugMap);
+  const blogTagSlugArToEn = invertSlugMap(blogTagSlugMap);
+  const blogPostSlugArToEn = invertSlugMap(blogPostSlugMap);
+
+  const canonicalizeBlogSlug = (rawSlug) => {
+    const normalized = normalizeBlogSlug(rawSlug);
+    if (!normalized) return '';
+
+    const parts = normalized.split('/');
+    const first = parts[0];
+    const rest = parts.slice(1).join('/');
+
+    if (first === 'category' || first === 'التصنيف') {
+      const canonicalCategory = first === 'التصنيف'
+        ? (blogCategorySlugArToEn[rest] || rest)
+        : rest;
+      return canonicalCategory ? `category/${canonicalCategory}` : 'category';
+    }
+
+    if (first === 'tag' || first === 'وسم') {
+      const canonicalTag = first === 'وسم'
+        ? (blogTagSlugArToEn[rest] || rest)
+        : rest;
+      return canonicalTag ? `tag/${canonicalTag}` : 'tag';
+    }
+
+    return blogPostSlugArToEn[normalized] || normalized;
+  };
+
+  const localizeBlogSlug = (canonicalSlug, lang) => {
+    const normalized = canonicalizeBlogSlug(canonicalSlug);
+    if (!normalized) return '';
+
+    const parts = normalized.split('/');
+    const first = parts[0];
+    const rest = parts.slice(1).join('/');
+
+    if (first === 'category') {
+      if (lang === 'ar') {
+        const localizedCategory = blogCategorySlugMap[rest] || rest;
+        return `التصنيف/${localizedCategory}`;
+      }
+      return `category/${rest}`;
+    }
+
+    if (first === 'tag') {
+      if (lang === 'ar') {
+        const localizedTag = blogTagSlugMap[rest] || rest;
+        return `وسم/${localizedTag}`;
+      }
+      return `tag/${rest}`;
+    }
+
+    if (lang === 'ar') {
+      if (blogPostSlugMap[normalized]) return blogPostSlugMap[normalized];
+      if (parts.length >= 2) {
+        const localizedCategory = blogCategorySlugMap[parts[0]] || parts[0];
+        return `${localizedCategory}/${parts.slice(1).join('/')}`;
+      }
+    }
+
+    return normalized;
+  };
+
   const resolveBlogPath = (rawPath) => {
     const normalized = normalizePath(rawPath);
     if (
@@ -2557,22 +2663,22 @@
     ) return { slug: '' };
 
     if (normalized.startsWith('/blog/')) {
-      return { slug: normalizeSlug(normalized.slice('/blog/'.length)) };
+      return { slug: canonicalizeBlogSlug(normalized.slice('/blog/'.length)) };
     }
     if (normalized.startsWith('/en/blog/')) {
-      return { slug: normalizeSlug(normalized.slice('/en/blog/'.length)) };
+      return { slug: canonicalizeBlogSlug(normalized.slice('/en/blog/'.length)) };
     }
     if (normalized.startsWith('/كشكولنا/')) {
-      return { slug: normalizeSlug(normalized.slice('/كشكولنا/'.length)) };
+      return { slug: canonicalizeBlogSlug(normalized.slice('/كشكولنا/'.length)) };
     }
     if (normalized.startsWith('/المدونة/')) {
-      return { slug: normalizeSlug(normalized.slice('/المدونة/'.length)) };
+      return { slug: canonicalizeBlogSlug(normalized.slice('/المدونة/'.length)) };
     }
     if (normalized.startsWith('/ar/كشكولنا/')) {
-      return { slug: normalizeSlug(normalized.slice('/ar/كشكولنا/'.length)) };
+      return { slug: canonicalizeBlogSlug(normalized.slice('/ar/كشكولنا/'.length)) };
     }
     if (normalized.startsWith('/ar/المدونة/')) {
-      return { slug: normalizeSlug(normalized.slice('/ar/المدونة/'.length)) };
+      return { slug: canonicalizeBlogSlug(normalized.slice('/ar/المدونة/'.length)) };
     }
 
     return null;
@@ -2580,8 +2686,13 @@
 
   const formatBlogPath = (slug, lang) => {
     const base = lang === 'ar' ? '/كشكولنا' : '/en/blog';
-    const normalizedSlug = normalizeSlug(slug);
+    const normalizedSlug = localizeBlogSlug(slug, lang);
     return normalizedSlug ? `${base}/${normalizedSlug}/` : `${base}/`;
+  };
+
+  window.ArinoBlogRoutes = {
+    toCanonicalSlug: canonicalizeBlogSlug,
+    toLocalizedSlug: localizeBlogSlug,
   };
 
   const localizeSpecialPath = (rawPath, lang) => {

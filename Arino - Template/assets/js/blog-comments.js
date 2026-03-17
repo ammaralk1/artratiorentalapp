@@ -142,7 +142,21 @@
     if (!slugSegments.length) return "";
     if (slugSegments[0] === "category" || slugSegments[0] === "tag") return "";
 
-    return slugSegments.join("/");
+    var slug = slugSegments.join("/");
+    if (!slug) return "";
+
+    if (
+      typeof window !== "undefined" &&
+      window.ArinoBlogRoutes &&
+      typeof window.ArinoBlogRoutes.toCanonicalSlug === "function"
+    ) {
+      var canonical = String(window.ArinoBlogRoutes.toCanonicalSlug(slug) || "").toLowerCase();
+      if (!canonical) return "";
+      if (canonical.indexOf("category/") === 0 || canonical.indexOf("tag/") === 0) return "";
+      return canonical;
+    }
+
+    return slug;
   }
 
   function resolveFormFields(targetForm) {
