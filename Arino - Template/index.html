@@ -79,7 +79,7 @@
     <link rel="stylesheet" href="assets/css/plugins/lightgallery.min.css">
     <link rel="stylesheet" href="assets/css/plugins/animate.css">
     <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="stylesheet" href="assets/css/custom-overrides.css?v=20260318-video-mobile-fix4">
+    <link rel="stylesheet" href="assets/css/custom-overrides.css?v=20260318-video-mobile-fix17">
     <link rel="stylesheet" href="assets/css/pattern-bg.css">
   </head>
   <body data-page="home">
@@ -1585,14 +1585,27 @@
         function applyMobileHeroFraming() {
           var mobile = isMobileViewport();
           var isSmallMobile = window.matchMedia("(max-width: 575px)").matches;
-          var scale = isSmallMobile ? 1.45 : 1.32;
-          var translateY = isSmallMobile ? "-5%" : "-4%";
+          var mobileFrameHeight = "91.40625vw";
+          var mobileVideoHeight = isSmallMobile ? "126.75vw" : "120.25vw";
+          var mobileTop = "50%";
+          var mobileDownOffsetPx = isSmallMobile ? 300 : 240;
+          var mobileZoom = isSmallMobile ? 1.45 : 1.45;
 
           if (frame) {
             if (mobile) {
-              frame.style.transform = "scale(" + scale + ") translateY(" + translateY + ")";
+              frame.style.left = "0";
+              frame.style.top = mobileTop;
+              frame.style.width = "100%";
+              frame.style.height = mobileFrameHeight;
+              frame.style.inset = "auto 0 auto 0";
+              frame.style.transform = "translateY(calc(-50% + " + mobileDownOffsetPx + "px)) scale(" + mobileZoom + ")";
               frame.style.transformOrigin = "center center";
             } else {
+              frame.style.left = "";
+              frame.style.top = "";
+              frame.style.width = "";
+              frame.style.height = "";
+              frame.style.inset = "";
               frame.style.transform = "";
               frame.style.transformOrigin = "";
             }
@@ -1600,11 +1613,21 @@
 
           if (mobileVideo) {
             if (mobile) {
-              mobileVideo.style.objectFit = "cover";
-              mobileVideo.style.transform = "scale(" + scale + ") translateY(" + translateY + ")";
+              mobileVideo.style.objectFit = "contain";
+              mobileVideo.style.left = "0";
+              mobileVideo.style.top = mobileTop;
+              mobileVideo.style.width = "100%";
+              mobileVideo.style.height = mobileVideoHeight;
+              mobileVideo.style.inset = "auto 0 auto 0";
+              mobileVideo.style.transform = "translateY(calc(-50% + " + mobileDownOffsetPx + "px)) scale(" + mobileZoom + ")";
               mobileVideo.style.transformOrigin = "center center";
             } else {
               mobileVideo.style.objectFit = "";
+              mobileVideo.style.left = "";
+              mobileVideo.style.top = "";
+              mobileVideo.style.width = "";
+              mobileVideo.style.height = "";
+              mobileVideo.style.inset = "";
               mobileVideo.style.transform = "";
               mobileVideo.style.transformOrigin = "";
             }
@@ -2145,6 +2168,6 @@
     <script src="assets/js/plugins/wow.min.js"></script>
     <script src="assets/js/plugins/gsap.min.js"></script>
     <script src="assets/js/lang-toggle.js?v=20260317-i18n-routing-fix5"></script>
-    <script src="assets/js/main.js?v=20260318-video-mobile-fix4"></script>
+    <script src="assets/js/main.js?v=20260318-video-mobile-fix17"></script>
   </body>
 </html>
