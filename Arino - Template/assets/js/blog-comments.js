@@ -2,6 +2,7 @@
   "use strict";
 
   var API_ENDPOINT = "/backend/api/blog-comments/";
+  var COMMENTS_PAGE_SIZE = 10;
   var postSlug = resolvePostSlug();
   if (!postSlug) return;
 
@@ -29,19 +30,26 @@
   loadComments();
   form.addEventListener("submit", onSubmit);
   window.addEventListener("arino:language-changed", onLanguageChanged);
+  if (ui.loadMoreButton) {
+    ui.loadMoreButton.addEventListener("click", onLoadMoreClick);
+  }
 
   async function loadComments() {
     setStatus(ui, "");
     setLoading(ui, true, i18n.loadingComments);
     try {
-      var payload = await requestJson(API_ENDPOINT + "?post_slug=" + encodeURIComponent(postSlug) + "&limit=100", {
+      var payload = await requestJson(API_ENDPOINT + "?post_slug=" + encodeURIComponent(postSlug) + "&limit=" + COMMENTS_PAGE_SIZE + "&offset=0", {
         method: "GET"
       });
       var comments = Array.isArray(payload && payload.data) ? payload.data : [];
+      ui.total = Number(payload && payload.meta && payload.meta.total) || comments.length;
       renderComments(ui, comments, i18n);
+      updateLoadMoreControl(ui, i18n);
     } catch (error) {
+      ui.total = 0;
       renderComments(ui, [], i18n);
       setStatus(ui, normalizeError(error) || i18n.loadFailed, "error");
+      updateLoadMoreControl(ui, i18n);
     } finally {
       setLoading(ui, false);
     }
@@ -89,6 +97,8 @@
       form.reset();
       if (approved && comment) {
         prependComment(ui, comment, i18n);
+        ui.total = Math.max(Number(ui.total) || 0, (ui.comments || []).length);
+        updateLoadMoreControl(ui, i18n);
         setStatus(ui, i18n.submitSuccess, "success");
       } else {
         setStatus(ui, i18n.submitPending, "success");
@@ -159,6 +169,16 @@
     list.className = "blog-comments-list";
     section.appendChild(list);
 
+    var actions = document.createElement("div");
+    actions.className = "blog-comments-actions";
+    var loadMoreButton = document.createElement("button");
+    loadMoreButton.type = "button";
+    loadMoreButton.className = "blog-comments-load-more";
+    loadMoreButton.textContent = strings.loadMore;
+    loadMoreButton.hidden = true;
+    actions.appendChild(loadMoreButton);
+    section.appendChild(actions);
+
     var host = targetForm.parentElement;
     var replyHeading = host ? host.querySelector("h2.cs-font_50") : null;
     if (host && replyHeading) {
@@ -182,15 +202,20 @@
       root: section,
       heading: heading,
       list: list,
+      actions: actions,
+      loadMoreButton: loadMoreButton,
       status: status,
-      comments: []
+      comments: [],
+      total: 0,
+      loadingMore: false
     };
   }
 
   function renderComments(uiState, comments, strings) {
     uiState.comments = Array.isArray(comments) ? comments.slice() : [];
     uiState.list.innerHTML = "";
-    uiState.heading.textContent = buildCommentsTitle(strings, uiState.comments.length);
+    var headingCount = Math.max(Number(uiState.total) || 0, uiState.comments.length);
+    uiState.heading.textContent = buildCommentsTitle(strings, headingCount);
 
     if (!uiState.comments.length) {
       var empty = document.createElement("p");
@@ -217,11 +242,38 @@
     uiState.comments = Array.isArray(uiState.comments) ? uiState.comments : [];
     uiState.comments.unshift(comment);
     renderComments(uiState, uiState.comments, strings);
+    updateLoadMoreControl(uiState, strings);
   }
 
   function onLanguageChanged() {
     i18n = getLocaleStrings();
     renderComments(ui, ui.comments || [], i18n);
+    updateLoadMoreControl(ui, i18n);
+  }
+
+  async function onLoadMoreClick() {
+    if (ui.loadingMore) return;
+    ui.loadingMore = true;
+    updateLoadMoreControl(ui, i18n);
+    setStatus(ui, "");
+    try {
+      var offset = Array.isArray(ui.comments) ? ui.comments.length : 0;
+      var payload = await requestJson(
+        API_ENDPOINT + "?post_slug=" + encodeURIComponent(postSlug) + "&limit=" + COMMENTS_PAGE_SIZE + "&offset=" + offset,
+        { method: "GET" }
+      );
+      var nextItems = Array.isArray(payload && payload.data) ? payload.data : [];
+      if (!Array.isArray(ui.comments)) ui.comments = [];
+      ui.comments = ui.comments.concat(nextItems);
+      ui.total = Number(payload && payload.meta && payload.meta.total) || ui.comments.length;
+      renderComments(ui, ui.comments, i18n);
+      updateLoadMoreControl(ui, i18n);
+    } catch (error) {
+      setStatus(ui, normalizeError(error) || i18n.loadFailed, "error");
+    } finally {
+      ui.loadingMore = false;
+      updateLoadMoreControl(ui, i18n);
+    }
   }
 
   function buildCommentCard(comment, strings) {
@@ -258,6 +310,18 @@
     loading.className = "blog-comments-empty";
     loading.textContent = label;
     uiState.list.appendChild(loading);
+    if (uiState.loadMoreButton) uiState.loadMoreButton.hidden = true;
+  }
+
+  function updateLoadMoreControl(uiState, strings) {
+    if (!uiState.loadMoreButton) return;
+    var loadedCount = Array.isArray(uiState.comments) ? uiState.comments.length : 0;
+    var totalCount = Math.max(Number(uiState.total) || 0, loadedCount);
+    var hasMore = totalCount > loadedCount;
+
+    uiState.loadMoreButton.hidden = !hasMore;
+    uiState.loadMoreButton.disabled = !!uiState.loadingMore;
+    uiState.loadMoreButton.textContent = uiState.loadingMore ? strings.loadingMore : strings.loadMore;
   }
 
   function setStatus(uiState, message, tone) {
@@ -299,8 +363,9 @@
     var date = parseDateValue(rawValue);
     if (!date) return strings.unknownDate;
     try {
-      var locale = isArabicPage() ? "ar-SA" : "en-US";
+      var locale = isArabicPage() ? "ar-SA-u-ca-gregory" : "en-US";
       return new Intl.DateTimeFormat(locale, {
+        calendar: "gregory",
         year: "numeric",
         month: "short",
         day: "numeric"
@@ -391,7 +456,9 @@
       invalidEmail: t("blog_comments_invalid_email", ar ? "البريد الإلكتروني غير صحيح." : "Please enter a valid email."),
       invalidComment: t("blog_comments_invalid_comment", ar ? "التعليق مطلوب (3 أحرف على الأقل)." : "Comment is required (at least 3 characters)."),
       anonymous: t("blog_comments_anonymous", ar ? "زائر" : "Visitor"),
-      unknownDate: t("blog_comments_unknown_date", ar ? "تاريخ غير معروف" : "Unknown date")
+      unknownDate: t("blog_comments_unknown_date", ar ? "تاريخ غير معروف" : "Unknown date"),
+      loadMore: t("blog_comments_load_more", ar ? "تحميل المزيد" : "Load More"),
+      loadingMore: t("blog_comments_loading_more", ar ? "جاري التحميل..." : "Loading...")
     };
   }
 })();
