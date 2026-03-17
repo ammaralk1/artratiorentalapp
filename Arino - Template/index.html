@@ -1458,6 +1458,10 @@
         var desktopLoopPosterTimer = null;
         var desktopLoopTransitioning = false;
         var desktopLoopPosterPauseMs = 2000;
+        var mobileInitialReadyPending = false;
+        var mobilePageSettled = false;
+        var mobilePageSettleTimer = null;
+        var mobilePageSettleDelayMs = 350;
         var lastViewportMobile = isMobileViewport();
 
         function isMobileViewport() {
@@ -1494,6 +1498,43 @@
           if (!desktopLoopPosterTimer) return;
           clearTimeout(desktopLoopPosterTimer);
           desktopLoopPosterTimer = null;
+        }
+
+        function clearMobilePageSettleTimer() {
+          if (!mobilePageSettleTimer) return;
+          clearTimeout(mobilePageSettleTimer);
+          mobilePageSettleTimer = null;
+        }
+
+        function scheduleVideoReadyFinalize(startFreshHold) {
+          clearPosterHideTimer();
+          var posterHoldMs = isMobileViewport() ? mobileMinPosterHoldMs : minPosterHoldMs;
+          var elapsed = startFreshHold ? 0 : (posterShownAt ? Date.now() - posterShownAt : posterHoldMs);
+          var remaining = Math.max(0, posterHoldMs - elapsed);
+          posterHideTimer = setTimeout(function () {
+            posterHideTimer = null;
+            finalizeVideoReady();
+          }, remaining);
+        }
+
+        function markMobilePageSettled() {
+          if (mobilePageSettled) return;
+          mobilePageSettled = true;
+          clearMobilePageSettleTimer();
+          if (!mobileInitialReadyPending) return;
+          if (!isMobileViewport()) return;
+          if (!hero.classList.contains("cs-home-hero--video-active")) return;
+          mobileInitialReadyPending = false;
+          scheduleVideoReadyFinalize(true);
+        }
+
+        function scheduleMobilePageSettled() {
+          if (mobilePageSettled) return;
+          clearMobilePageSettleTimer();
+          mobilePageSettleTimer = setTimeout(function () {
+            mobilePageSettleTimer = null;
+            markMobilePageSettled();
+          }, mobilePageSettleDelayMs);
         }
 
         function restartMobileLoopWithPosterPause(options) {
@@ -1907,18 +1948,18 @@
           if (hasFirstFrameReady) return;
           hasFirstFrameReady = true;
           mobileReadyFallbackAttempts = 0;
-          clearPosterHideTimer();
-          var posterHoldMs = isMobileViewport() ? mobileMinPosterHoldMs : minPosterHoldMs;
-          var elapsed = posterShownAt ? Date.now() - posterShownAt : posterHoldMs;
-          var remaining = Math.max(0, posterHoldMs - elapsed);
-          posterHideTimer = setTimeout(function () {
-            posterHideTimer = null;
-            finalizeVideoReady();
-          }, remaining);
+          if (isMobileViewport() && !hasInitialVideoReady && !mobilePageSettled) {
+            mobileInitialReadyPending = true;
+            clearPosterHideTimer();
+            return;
+          }
+          mobileInitialReadyPending = false;
+          scheduleVideoReadyFinalize(false);
         }
 
         function clearVideoReady() {
           hasFirstFrameReady = false;
+          mobileInitialReadyPending = false;
           mobileLoopTransitioning = false;
           clearMobileLoopPosterTimer();
           desktopLoopTransitioning = false;
@@ -2297,6 +2338,11 @@
 
         window.addEventListener("scroll", ensurePlaybackWhenVisible, { passive: true });
         window.addEventListener("focus", ensurePlaybackWhenVisible);
+        if (document.readyState === "complete") {
+          scheduleMobilePageSettled();
+        } else {
+          window.addEventListener("load", scheduleMobilePageSettled, { once: true });
+        }
         window.addEventListener("resize", function () {
           applyMobileHeroFraming();
           var isMobileNow = isMobileViewport();
