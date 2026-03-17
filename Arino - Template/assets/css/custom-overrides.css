@@ -1818,3 +1818,119 @@ body[data-page="terms"] .cs-page_heading.cs-style1.cs-bg {
     color: #fff;
   }
 }
+
+.blog-comments-section {
+  margin: 0 0 32px;
+}
+
+.blog-comments-list {
+  display: grid;
+  gap: 16px;
+}
+
+.blog-comment-card {
+  padding: 18px 20px;
+  border: 1px solid rgba(154, 177, 142, 0.26);
+  border-radius: 14px;
+  background: rgba(8, 21, 28, 0.28);
+}
+
+.blog-comment-head {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.blog-comment-author {
+  color: #f2f6f8;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.blog-comment-date {
+  color: rgba(242, 246, 248, 0.68);
+  font-size: 13px;
+}
+
+.blog-comment-body {
+  margin: 0;
+  color: rgba(242, 246, 248, 0.92);
+  white-space: pre-line;
+  line-height: 1.7;
+}
+
+.blog-comments-empty {
+  margin: 0;
+  color: rgba(242, 246, 248, 0.72);
+}
+
+.blog-comments-status {
+  margin: 0 0 12px;
+  min-height: 20px;
+  color: rgba(242, 246, 248, 0.78);
+  font-size: 13px;
+}
+
+.blog-comments-status.is-error {
+  color: #ffb4b4;
+}
+
+.blog-comments-status.is-success {
+  color: #b9ffd2;
+}
+
+button.cs-btn.is-disabled {
+  pointer-events: none;
+  opacity: 0.65;
+}
+
+.blog-comment-form label,
+.col-lg-8 > form.row label,
+.blog-comment-form + .col-lg-12,
+.blog-comment-form ~ p.cs-m0,
+.col-lg-8 > p.cs-m0 {
+  color: #ffffff !important;
+}
+
+.blog-comment-form .cs-form_field,
+.col-lg-8 > form.row .cs-form_field {
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.88) !important;
+  caret-color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+.blog-comment-form .cs-form_field::placeholder,
+.col-lg-8 > form.row .cs-form_field::placeholder {
+  color: rgba(255, 255, 255, 0.82) !important;
+}
+
+.blog-comment-form .cs-form_field::-webkit-input-placeholder,
+.col-lg-8 > form.row .cs-form_field::-webkit-input-placeholder {
+  color: rgba(255, 255, 255, 0.82) !important;
+}
+
+.blog-comment-form .cs-form_field::-moz-placeholder,
+.col-lg-8 > form.row .cs-form_field::-moz-placeholder {
+  color: rgba(255, 255, 255, 0.82) !important;
+  opacity: 1;
+}
+
+.blog-comment-form .cs-form_field:focus,
+.col-lg-8 > form.row .cs-form_field:focus {
+  border-color: #ffffff !important;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.45);
+}
+
+@media (max-width: 767px) {
+  .blog-comment-card {
+    padding: 14px 16px;
+  }
+  .blog-comment-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+}

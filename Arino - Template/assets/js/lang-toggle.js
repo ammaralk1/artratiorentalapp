@@ -1702,7 +1702,7 @@
     blog1_reply_title: { en: 'Leave A Reply', ar: 'اترك تعليقك' },
     blog1_reply_note: { en: 'Your email address will not be published. Required fields are marked *', ar: 'لن يتم نشر بريدك الإلكتروني. الحقول المطلوبة مميزة بعلامة *' },
     blog1_form_name: { en: 'Full Name*', ar: 'الاسم الكامل*' },
-    blog1_form_email: { en: 'Email*', ar: 'البريد الإلكتروني*' },
+    blog1_form_email: { en: 'Email', ar: 'البريد الإلكتروني' },
     blog1_form_website: { en: 'Website*', ar: 'الموقع الإلكتروني*' },
     blog1_form_comment: { en: 'Write Your Comment*', ar: 'اكتب تعليقك*' },
     blog1_form_send: { en: 'Send Message', ar: 'إرسال التعليق' },
