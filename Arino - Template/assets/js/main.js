@@ -87,6 +87,7 @@
     requestPreloaderRelease();
     isotopInit();
     autoSkipHeroForPortfolio();
+    initVimeoTapControls();
   });
 
   $(function () {
@@ -113,6 +114,7 @@
     ecommerce();
     relocateFooterSocial();
     applyPortfolioBreadcrumbReturn();
+    initVimeoTapControls();
     if ($.exists('.wow')) {
       new WOW().init();
     }
@@ -175,6 +177,158 @@
     var targetPage = pageParam > 0 ? pageParam : storedPage;
     var hasExplicitPage = Number.isFinite(targetPage) && targetPage > 1;
     breadcrumbLink.setAttribute('href', hasExplicitPage ? targetPath + '?page=' + targetPage : targetPath);
+  }
+
+  function initVimeoTapControls() {
+    var retries = 0;
+    var maxRetries = 20;
+    var retryDelayMs = 250;
+    var retryTimer = null;
+
+    function isMobileViewport() {
+      return window.matchMedia('(max-width: 991px)').matches;
+    }
+
+    function setOverlayVisible(overlay, isVisible) {
+      if (!overlay) return;
+      overlay.style.display = 'flex';
+      overlay.classList.toggle('cs-play-overlay-visible', !!isVisible);
+      overlay.classList.toggle('cs-play-overlay-hidden', !isVisible);
+    }
+
+    function bindWrap(wrap) {
+      if (!wrap || wrap.dataset.arinoVimeoTapBound === '1') return;
+
+      var iframe = wrap.querySelector('iframe');
+      var overlay = wrap.querySelector('.cs-play_over_embed');
+      if (!iframe || !overlay) return;
+      if (!window.Vimeo || typeof window.Vimeo.Player !== 'function') return;
+
+      wrap.dataset.arinoVimeoTapBound = '1';
+      setOverlayVisible(overlay, true);
+
+      var player;
+      try {
+        player = new window.Vimeo.Player(iframe);
+      } catch (e) {
+        return;
+      }
+
+      var isPlaying = false;
+      var autoplayAttempted = false;
+      var isPortfolioDetails =
+        document.body &&
+        document.body.dataset &&
+        document.body.dataset.page === 'portfolio-video-details';
+
+      function setPlayingState(nextPlaying) {
+        isPlaying = !!nextPlaying;
+        wrap.classList.toggle('cs-video-embed-is-playing', isPlaying);
+        setOverlayVisible(overlay, !isPlaying);
+      }
+
+      function playFromUserTap() {
+        var resume = function () {
+          player
+            .play()
+            .then(function () {
+              setPlayingState(true);
+            })
+            .catch(function () {
+              setPlayingState(false);
+            });
+        };
+
+        if (wrap.dataset.arinoVimeoAutoMuted === '1' && typeof player.setMuted === 'function') {
+          player
+            .setMuted(false)
+            .catch(function () {})
+            .then(resume);
+          return;
+        }
+
+        resume();
+      }
+
+      function pauseFromUserTap() {
+        player
+          .pause()
+          .then(function () {
+            setPlayingState(false);
+          })
+          .catch(function () {
+            setPlayingState(false);
+          });
+      }
+
+      overlay.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (isPlaying) {
+          pauseFromUserTap();
+        } else {
+          playFromUserTap();
+        }
+      });
+
+      player.on('play', function () {
+        setPlayingState(true);
+      });
+      player.on('pause', function () {
+        setPlayingState(false);
+      });
+      player.on('ended', function () {
+        setPlayingState(false);
+      });
+
+      function tryPortfolioMobileAutoplay() {
+        if (!isPortfolioDetails || autoplayAttempted || !isMobileViewport()) return;
+        autoplayAttempted = true;
+
+        player
+          .play()
+          .then(function () {
+            setPlayingState(true);
+          })
+          .catch(function () {
+            if (typeof player.setMuted !== 'function') {
+              setPlayingState(false);
+              return;
+            }
+            player
+              .setMuted(true)
+              .then(function () {
+                wrap.dataset.arinoVimeoAutoMuted = '1';
+                return player.play();
+              })
+              .then(function () {
+                setPlayingState(true);
+              })
+              .catch(function () {
+                setPlayingState(false);
+              });
+          });
+      }
+
+      tryPortfolioMobileAutoplay();
+      window.addEventListener('resize', tryPortfolioMobileAutoplay);
+    }
+
+    function bindAllWhenReady() {
+      if (!window.Vimeo || typeof window.Vimeo.Player !== 'function') {
+        if (retries >= maxRetries) return;
+        retries += 1;
+        retryTimer = setTimeout(bindAllWhenReady, retryDelayMs);
+        return;
+      }
+      if (retryTimer) {
+        clearTimeout(retryTimer);
+        retryTimer = null;
+      }
+      document.querySelectorAll('.cs-video_embed_wrap').forEach(bindWrap);
+    }
+
+    bindAllWhenReady();
   }
 
   /*--------------------------------------------------------------
