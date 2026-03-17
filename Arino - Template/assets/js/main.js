@@ -231,8 +231,19 @@
         renderOverlayState();
       }
 
+      function forceSoundOn() {
+        var ops = [];
+        if (typeof player.setVolume === 'function') {
+          ops.push(player.setVolume(1).catch(function () {}));
+        }
+        if (typeof player.setMuted === 'function') {
+          ops.push(player.setMuted(false).catch(function () {}));
+        }
+        return Promise.all(ops).catch(function () {});
+      }
+
       function playFromUserTap() {
-        var resume = function () {
+        forceSoundOn().then(function () {
           player
             .play()
             .then(function () {
@@ -241,17 +252,7 @@
             .catch(function () {
               setPlayingState(false);
             });
-        };
-
-        if (wrap.dataset.arinoVimeoAutoMuted === '1' && typeof player.setMuted === 'function') {
-          player
-            .setMuted(false)
-            .catch(function () {})
-            .then(resume);
-          return;
-        }
-
-        resume();
+        });
       }
 
       function pauseFromUserTap() {
@@ -294,6 +295,7 @@
 
       player.on('play', function () {
         setPlayingState(true);
+        forceSoundOn();
       });
       player.on('pause', function () {
         setPlayingState(false);
@@ -303,6 +305,9 @@
       });
 
       renderOverlayState();
+      // Keep player defaults audible whenever the browser allows it.
+      forceSoundOn();
+      player.ready().then(forceSoundOn).catch(function () {});
 
       function tryPortfolioMobileAutoplay() {
         if (!isPortfolioDetails || autoplayAttempted || !isMobileViewport()) return;
@@ -312,24 +317,11 @@
           .play()
           .then(function () {
             setPlayingState(true);
+            forceSoundOn();
           })
           .catch(function () {
-            if (typeof player.setMuted !== 'function') {
-              setPlayingState(false);
-              return;
-            }
-            player
-              .setMuted(true)
-              .then(function () {
-                wrap.dataset.arinoVimeoAutoMuted = '1';
-                return player.play();
-              })
-              .then(function () {
-                setPlayingState(true);
-              })
-              .catch(function () {
-                setPlayingState(false);
-              });
+            // Do not fallback to muted autoplay; keep default behavior as sound-on.
+            setPlayingState(false);
           });
       }
 

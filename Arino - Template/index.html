@@ -79,7 +79,7 @@
     <link rel="stylesheet" href="assets/css/plugins/lightgallery.min.css">
     <link rel="stylesheet" href="assets/css/plugins/animate.css">
     <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="stylesheet" href="assets/css/custom-overrides.css?v=20260318-video-mobile-fix2">
+    <link rel="stylesheet" href="assets/css/custom-overrides.css?v=20260318-video-mobile-fix4">
     <link rel="stylesheet" href="assets/css/pattern-bg.css">
   </head>
   <body data-page="home">
@@ -380,6 +380,12 @@
           overlay.addEventListener("click", function (e) {
             e.preventDefault();
             overlay.style.display = "none";
+            if (typeof player.setMuted === "function") {
+              player.setMuted(false).catch(function () {});
+            }
+            if (typeof player.setVolume === "function") {
+              player.setVolume(1).catch(function () {});
+            }
             player.play();
           });
 
@@ -1996,7 +2002,13 @@
           vimeoPlayer
             .ready()
             .then(function () {
-              return vimeoPlayer.setVolume(0);
+              if (typeof vimeoPlayer.setMuted === "function") {
+                return vimeoPlayer.setMuted(false).catch(function () {});
+              }
+              return null;
+            })
+            .then(function () {
+              return vimeoPlayer.setVolume(1).catch(function () {});
             })
             .then(function () {
               return vimeoPlayer.setLoop(false);
@@ -2133,6 +2145,6 @@
     <script src="assets/js/plugins/wow.min.js"></script>
     <script src="assets/js/plugins/gsap.min.js"></script>
     <script src="assets/js/lang-toggle.js?v=20260317-i18n-routing-fix5"></script>
-    <script src="assets/js/main.js?v=20260318-video-mobile-fix2"></script>
+    <script src="assets/js/main.js?v=20260318-video-mobile-fix4"></script>
   </body>
 </html>
