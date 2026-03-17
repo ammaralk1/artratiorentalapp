@@ -189,13 +189,6 @@
       return window.matchMedia('(max-width: 991px)').matches;
     }
 
-    function setOverlayVisible(overlay, isVisible) {
-      if (!overlay) return;
-      overlay.style.display = 'flex';
-      overlay.classList.toggle('cs-play-overlay-visible', !!isVisible);
-      overlay.classList.toggle('cs-play-overlay-hidden', !isVisible);
-    }
-
     function bindWrap(wrap) {
       if (!wrap || wrap.dataset.arinoVimeoTapBound === '1') return;
 
@@ -205,7 +198,6 @@
       if (!window.Vimeo || typeof window.Vimeo.Player !== 'function') return;
 
       wrap.dataset.arinoVimeoTapBound = '1';
-      setOverlayVisible(overlay, true);
 
       var player;
       try {
@@ -215,16 +207,28 @@
       }
 
       var isPlaying = false;
+      var overlayShouldShow = true;
+      var syncingOverlay = false;
       var autoplayAttempted = false;
       var isPortfolioDetails =
         document.body &&
         document.body.dataset &&
         document.body.dataset.page === 'portfolio-video-details';
 
+      function renderOverlayState() {
+        if (syncingOverlay) return;
+        syncingOverlay = true;
+        overlay.style.display = 'flex';
+        overlay.classList.toggle('cs-play-overlay-visible', overlayShouldShow);
+        overlay.classList.toggle('cs-play-overlay-hidden', !overlayShouldShow);
+        wrap.classList.toggle('cs-video-embed-is-playing', !overlayShouldShow);
+        syncingOverlay = false;
+      }
+
       function setPlayingState(nextPlaying) {
         isPlaying = !!nextPlaying;
-        wrap.classList.toggle('cs-video-embed-is-playing', isPlaying);
-        setOverlayVisible(overlay, !isPlaying);
+        overlayShouldShow = !isPlaying;
+        renderOverlayState();
       }
 
       function playFromUserTap() {
@@ -261,14 +265,31 @@
           });
       }
 
-      overlay.addEventListener('click', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (isPlaying) {
-          pauseFromUserTap();
-        } else {
-          playFromUserTap();
-        }
+      // Capture-phase handler blocks legacy inline click listeners that force "play only".
+      overlay.addEventListener(
+        'click',
+        function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (typeof e.stopImmediatePropagation === 'function') {
+            e.stopImmediatePropagation();
+          }
+          if (isPlaying) {
+            pauseFromUserTap();
+          } else {
+            playFromUserTap();
+          }
+        },
+        true,
+      );
+
+      var overlayObserver = new MutationObserver(function () {
+        if (syncingOverlay) return;
+        renderOverlayState();
+      });
+      overlayObserver.observe(overlay, {
+        attributes: true,
+        attributeFilter: ['style', 'class'],
       });
 
       player.on('play', function () {
@@ -280,6 +301,8 @@
       player.on('ended', function () {
         setPlayingState(false);
       });
+
+      renderOverlayState();
 
       function tryPortfolioMobileAutoplay() {
         if (!isPortfolioDetails || autoplayAttempted || !isMobileViewport()) return;

@@ -537,19 +537,33 @@ body[data-page="home"] .cs-home-hero .cs-home-shape-3 {
 .cs-video_custom,
 .cs-video_thumb { background: #1f3022 !important; }
 .cs-video_block_1_wrap::before { background-color: #1f3022 !important; }
-.cs-video_embed_wrap.cs-video-embed-is-playing .cs-play_over_embed {
-  display: flex !important;
+.cs-video_embed_wrap .cs-play_over_embed {
+  display: flex;
+  inset: 0;
+  pointer-events: auto;
 }
-.cs-video_embed_wrap.cs-video-embed-is-playing .cs-play_over_embed .cs-player_btn {
+.cs-video_embed_wrap .cs-play_over_embed .cs-player_btn {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.cs-video_embed_wrap .cs-play_over_embed.cs-play-overlay-visible .cs-player_btn {
+  opacity: 1;
+  transform: scale(1);
+}
+/* Keep tap-to-pause on video surface but leave Vimeo bottom controls clickable. */
+.cs-video_embed_wrap.cs-video-embed-is-playing .cs-play_over_embed.cs-play-overlay-hidden {
+  display: flex !important;
+  inset: 0 0 62px 0;
+  pointer-events: auto;
+}
+.cs-video_embed_wrap.cs-video-embed-is-playing .cs-play_over_embed.cs-play-overlay-hidden .cs-player_btn {
   opacity: 0;
   transform: scale(0.86);
   pointer-events: none;
-  transition: opacity 0.2s ease, transform 0.2s ease;
 }
-.cs-video_embed_wrap:not(.cs-video-embed-is-playing) .cs-play_over_embed .cs-player_btn {
-  opacity: 1;
-  transform: scale(1);
-  transition: opacity 0.2s ease, transform 0.2s ease;
+@media (max-width: 991px) {
+  .cs-video_embed_wrap.cs-video-embed-is-playing .cs-play_over_embed.cs-play-overlay-hidden {
+    inset: 0 0 68px 0;
+  }
 }
 body[data-page="portfolio-video-details"] .cs-video_embed_wrap {
   background: transparent !important;
