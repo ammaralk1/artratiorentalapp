@@ -79,7 +79,7 @@
     <link rel="stylesheet" href="assets/css/plugins/lightgallery.min.css">
     <link rel="stylesheet" href="assets/css/plugins/animate.css">
     <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="stylesheet" href="assets/css/custom-overrides.css?v=20260318-video-mobile-fix17">
+    <link rel="stylesheet" href="assets/css/custom-overrides.css?v=20260318-video-mobile-fix21">
     <link rel="stylesheet" href="assets/css/pattern-bg.css">
   </head>
   <body data-page="home">
@@ -1408,6 +1408,20 @@
         var frame = hero.querySelector(".cs-home-hero_video_frame");
         var mobileVideo = hero.querySelector(".cs-home-hero_mobile_video");
         var frameSrc = frame ? frame.getAttribute("data-vimeo-src") : "";
+        function removeQueryParam(rawUrl, key) {
+          if (!rawUrl || rawUrl.indexOf("?") === -1) return rawUrl;
+          var hashIndex = rawUrl.indexOf("#");
+          var hash = hashIndex > -1 ? rawUrl.slice(hashIndex) : "";
+          var baseWithQuery = hashIndex > -1 ? rawUrl.slice(0, hashIndex) : rawUrl;
+          var qIndex = baseWithQuery.indexOf("?");
+          if (qIndex < 0) return rawUrl;
+          var base = baseWithQuery.slice(0, qIndex);
+          var params = new URLSearchParams(baseWithQuery.slice(qIndex + 1));
+          params.delete(key);
+          var nextQuery = params.toString();
+          return base + (nextQuery ? "?" + nextQuery : "") + hash;
+        }
+        var desktopFrameSrc = removeQueryParam(frameSrc, "quality");
         var loopStartSeconds = 43;
         var loopEndSeconds = 61;
         var loopGuardSeconds = 0.06;
@@ -1430,7 +1444,7 @@
         var playbackProbeTickMs = 220;
         var playbackProbeRequiredTicks = 5;
         var isSegmentRestarting = false;
-        var mobileMinPosterHoldMs = 1000;
+        var mobileMinPosterHoldMs = 2000;
         var attachRetryTimer = null;
         var mobileBootstrapSeekAttempts = 0;
         var mobileReadyFallbackTimer = null;
@@ -1438,6 +1452,12 @@
         var mobileReadyFallbackMaxAttempts = 3;
         var mobileVimeoFallbackActive = false;
         var mobileUnlockHandlersBound = false;
+        var mobileLoopPosterTimer = null;
+        var mobileLoopTransitioning = false;
+        var mobileLoopPosterPauseMs = 2000;
+        var desktopLoopPosterTimer = null;
+        var desktopLoopTransitioning = false;
+        var desktopLoopPosterPauseMs = 2000;
         var lastViewportMobile = isMobileViewport();
 
         function isMobileViewport() {
@@ -1464,6 +1484,127 @@
           mobileReadyFallbackTimer = null;
         }
 
+        function clearMobileLoopPosterTimer() {
+          if (!mobileLoopPosterTimer) return;
+          clearTimeout(mobileLoopPosterTimer);
+          mobileLoopPosterTimer = null;
+        }
+
+        function clearDesktopLoopPosterTimer() {
+          if (!desktopLoopPosterTimer) return;
+          clearTimeout(desktopLoopPosterTimer);
+          desktopLoopPosterTimer = null;
+        }
+
+        function restartMobileLoopWithPosterPause(options) {
+          options = options || {};
+          var shouldPauseCurrent = options.pauseCurrent !== false;
+          if (!isMobileLocalVideoMode()) return;
+          if (!mobileVideo) return;
+          if (!hero.classList.contains("cs-home-hero--video-active")) return;
+          if (mobileLoopTransitioning) return;
+
+          mobileLoopTransitioning = true;
+          clearMobileLoopPosterTimer();
+          showPosterForLoading();
+          if (shouldPauseCurrent) {
+            try {
+              mobileVideo.pause();
+            } catch (e) {}
+          }
+
+          mobileLoopPosterTimer = setTimeout(function () {
+            mobileLoopPosterTimer = null;
+            if (!isMobileLocalVideoMode() || !hero.classList.contains("cs-home-hero--video-active")) {
+              mobileLoopTransitioning = false;
+              return;
+            }
+
+            var mobileLoopWindow = getMobileLoopWindow();
+            try {
+              mobileVideo.currentTime = mobileLoopWindow.start;
+            } catch (e) {}
+            prepareMobileVideoForAutoplay();
+            mobileVideo
+              .play()
+              .then(function () {
+                hidePosterForLoading();
+                unbindMobileUnlockHandlers();
+              })
+              .catch(function () {
+                bindMobileUnlockHandlers();
+              })
+              .finally(function () {
+                mobileLoopTransitioning = false;
+              });
+          }, mobileLoopPosterPauseMs);
+        }
+
+        function restartDesktopLoopWithPosterPause(options) {
+          options = options || {};
+          var seekToStart = options.seekToStart !== false;
+          var pauseCurrent = options.pauseCurrent !== false;
+          if (isMobileViewport()) return;
+          if (!hero.classList.contains("cs-home-hero--video-active")) return;
+          if (desktopLoopTransitioning) return;
+
+          desktopLoopTransitioning = true;
+          clearDesktopLoopPosterTimer();
+          showPosterForLoading();
+          if (pauseCurrent && vimeoPlayer && typeof vimeoPlayer.pause === "function") {
+            vimeoPlayer.pause().catch(function () {});
+          }
+
+          desktopLoopPosterTimer = setTimeout(function () {
+            desktopLoopPosterTimer = null;
+            if (isMobileViewport() || !hero.classList.contains("cs-home-hero--video-active")) {
+              desktopLoopTransitioning = false;
+              return;
+            }
+
+            if (!vimeoPlayer && frame && window.Vimeo && window.Vimeo.Player) {
+              try {
+                vimeoPlayer = new window.Vimeo.Player(frame);
+              } catch (e) {}
+            }
+
+            if (!vimeoPlayer) {
+              desktopLoopTransitioning = false;
+              if (frame) {
+                frame.setAttribute("src", buildSegmentSrc());
+                reachedLoopWindow = false;
+                setTimeout(function () {
+                  attachVimeoLoop();
+                  scheduleHardSegmentRestart();
+                }, 140);
+              }
+              return;
+            }
+
+            vimeoPlayer
+              .ready()
+              .then(function () {
+                if (!seekToStart) return null;
+                return vimeoPlayer.setCurrentTime(loopStartSeconds).catch(function () {});
+              })
+              .then(function () {
+                return vimeoPlayer.play();
+              })
+              .then(function () {
+                hidePosterForLoading();
+                if (!hasFirstFrameReady) {
+                  markVideoReady();
+                }
+              })
+              .catch(function () {})
+              .finally(function () {
+                desktopLoopTransitioning = false;
+                startLoopWatchdog();
+                scheduleHardSegmentRestart();
+              });
+          }, desktopLoopPosterPauseMs);
+        }
+
         function scheduleMobileReadyFallback() {
           clearMobileReadyFallbackTimer();
           mobileReadyFallbackTimer = setTimeout(function () {
@@ -1475,16 +1616,7 @@
                 bindMobileUnlockHandlers();
                 prepareMobileVideoForAutoplay();
                 if (mobileVideo && mobileVideo.readyState >= 2) {
-                  mobileVideo.play().then(function () {
-                    markVideoReady();
-                    unbindMobileUnlockHandlers();
-                  }).catch(function () {
-                    if (mobileReadyFallbackAttempts >= mobileReadyFallbackMaxAttempts) {
-                      activateMobileVimeoFallback();
-                      return;
-                    }
-                    scheduleMobileReadyFallback();
-                  });
+                  restartMobileLoopWithPosterPause({ pauseCurrent: false });
                 } else {
                   if (mobileReadyFallbackAttempts >= mobileReadyFallbackMaxAttempts) {
                     activateMobileVimeoFallback();
@@ -1509,6 +1641,10 @@
           if (!frame || !frameSrc) return;
 
           mobileVimeoFallbackActive = true;
+          mobileLoopTransitioning = false;
+          clearMobileLoopPosterTimer();
+          desktopLoopTransitioning = false;
+          clearDesktopLoopPosterTimer();
           clearMobileReadyFallbackTimer();
           clearPlaybackProbe();
           clearLoopWatchdog();
@@ -1544,6 +1680,8 @@
           if (!mobileVideo) return;
           mobileVideo.muted = true;
           mobileVideo.defaultMuted = true;
+          mobileVideo.loop = false;
+          mobileVideo.removeAttribute("loop");
           mobileVideo.playsInline = true;
           mobileVideo.setAttribute("playsinline", "");
           mobileVideo.setAttribute("webkit-playsinline", "");
@@ -1559,11 +1697,7 @@
           if (!isMobileLocalVideoMode()) return;
           if (!hero.classList.contains("cs-home-hero--video-active")) return;
           if (!mobileVideo) return;
-          prepareMobileVideoForAutoplay();
-          mobileVideo.play().then(function () {
-            markVideoReady();
-            unbindMobileUnlockHandlers();
-          }).catch(function () {});
+          restartMobileLoopWithPosterPause({ pauseCurrent: false });
         }
 
         function bindMobileUnlockHandlers() {
@@ -1634,6 +1768,14 @@
           }
         }
 
+        function applyDesktopHeroQualityPreference() {
+          if (!frame) return;
+          if (isMobileViewport()) return;
+          if (!desktopFrameSrc) return;
+          frame.setAttribute("data-vimeo-src", desktopFrameSrc);
+          frame.setAttribute("src", desktopFrameSrc);
+        }
+
         function getMobileLoopWindow() {
           if (!mobileVideo) {
             return { start: 0, end: Math.max(1, loopEndSeconds) };
@@ -1676,19 +1818,23 @@
 
           mobileVideo.addEventListener("playing", function () {
             if (!hero.classList.contains("cs-home-hero--video-active")) return;
+            hidePosterForLoading();
             markVideoReady();
             unbindMobileUnlockHandlers();
           });
 
           mobileVideo.addEventListener("timeupdate", function () {
             if (!hero.classList.contains("cs-home-hero--video-active")) return;
+            if (mobileLoopTransitioning) return;
             var mobileLoopWindow = getMobileLoopWindow();
             if (mobileVideo.currentTime >= mobileLoopWindow.end - 0.08) {
-              mobileVideo.currentTime = mobileLoopWindow.start;
-              mobileVideo.play().catch(function () {
-                bindMobileUnlockHandlers();
-              });
+              restartMobileLoopWithPosterPause();
             }
+          });
+
+          mobileVideo.addEventListener("ended", function () {
+            if (!hero.classList.contains("cs-home-hero--video-active")) return;
+            restartMobileLoopWithPosterPause();
           });
 
           mobileVideo.addEventListener("stalled", function () {
@@ -1773,6 +1919,10 @@
 
         function clearVideoReady() {
           hasFirstFrameReady = false;
+          mobileLoopTransitioning = false;
+          clearMobileLoopPosterTimer();
+          desktopLoopTransitioning = false;
+          clearDesktopLoopPosterTimer();
           clearPosterHideTimer();
           clearPlaybackProbe();
           clearAttachRetryTimer();
@@ -1832,8 +1982,9 @@
         }
 
         function buildSegmentSrc() {
-          var sep = frameSrc.indexOf("?") > -1 ? "&" : "?";
-          return frameSrc + sep + "_ts=" + Date.now() + "#t=" + loopStartSeconds + "s";
+          var activeFrameSrc = isMobileViewport() ? frameSrc : desktopFrameSrc || frameSrc;
+          var sep = activeFrameSrc.indexOf("?") > -1 ? "&" : "?";
+          return activeFrameSrc + sep + "_ts=" + Date.now() + "#t=" + loopStartSeconds + "s";
         }
 
         function clearSegmentRestartTimer() {
@@ -1859,21 +2010,25 @@
             scheduleMobileReadyFallback();
             return;
           }
-          isSegmentRestarting = true;
-          clearVideoReady();
-          showPosterForLoading();
-          clearLoopWatchdog();
-          clearSegmentRestartTimer();
-          if (frame) {
-            frame.setAttribute("src", buildSegmentSrc());
+          if (isMobileViewport()) {
+            isSegmentRestarting = true;
+            clearVideoReady();
+            showPosterForLoading();
+            clearLoopWatchdog();
+            clearSegmentRestartTimer();
+            if (frame) {
+              frame.setAttribute("src", buildSegmentSrc());
+            }
+            vimeoPlayer = null;
+            reachedLoopWindow = false;
+            setTimeout(function () {
+              isSegmentRestarting = false;
+              attachVimeoLoop();
+              scheduleHardSegmentRestart();
+            }, 140);
+            return;
           }
-          vimeoPlayer = null;
-          reachedLoopWindow = false;
-          setTimeout(function () {
-            isSegmentRestarting = false;
-            attachVimeoLoop();
-            scheduleHardSegmentRestart();
-          }, 140);
+          restartDesktopLoopWithPosterPause();
         }
 
         function scheduleHardSegmentRestart() {
@@ -1934,6 +2089,7 @@
           var visible = rect.bottom > 0 && rect.top < viewportH;
           if (!visible) return;
           if (isMobileLocalVideoMode()) {
+            if (mobileLoopTransitioning || mobileLoopPosterTimer) return;
             if (mobileVideo) {
               prepareMobileVideoForAutoplay();
               mobileVideo.play().then(function () {
@@ -1946,6 +2102,7 @@
             }
             return;
           }
+          if (desktopLoopTransitioning || desktopLoopPosterTimer) return;
           if (!vimeoPlayer) return;
           vimeoPlayer.play().catch(function () {});
         }
@@ -2038,9 +2195,13 @@
             })
             .then(function () {
               if (isMobileViewport()) return null;
+              if (desktopLoopTransitioning || desktopLoopPosterTimer) return null;
               return vimeoPlayer.setCurrentTime(loopStartSeconds);
             })
             .then(function () {
+              if (!isMobileViewport() && (desktopLoopTransitioning || desktopLoopPosterTimer)) {
+                return null;
+              }
               return vimeoPlayer.play();
             })
             .then(function () {
@@ -2057,6 +2218,7 @@
 
         function setHeroMedia() {
           applyMobileHeroFraming();
+          applyDesktopHeroQualityPreference();
           hero.classList.add("cs-home-hero--video-active");
           clearVideoReady();
           showPosterForLoading();
@@ -2089,13 +2251,7 @@
                 }
               } catch (e) {}
               scheduleMobileReadyFallback();
-              mobileVideo.play().then(function () {
-                markVideoReady();
-                unbindMobileUnlockHandlers();
-              }).catch(function () {
-                bindMobileUnlockHandlers();
-                scheduleMobileReadyFallback();
-              });
+              restartMobileLoopWithPosterPause({ pauseCurrent: false });
             }
           } else if (frame) {
             unbindMobileUnlockHandlers();
@@ -2121,7 +2277,7 @@
               setTimeout(attachVimeoLoop, 120);
             }
             attachVimeoLoop();
-            scheduleHardSegmentRestart();
+            restartDesktopLoopWithPosterPause({ pauseCurrent: false, seekToStart: true });
           }
 
           try {
@@ -2168,6 +2324,6 @@
     <script src="assets/js/plugins/wow.min.js"></script>
     <script src="assets/js/plugins/gsap.min.js"></script>
     <script src="assets/js/lang-toggle.js?v=20260317-i18n-routing-fix5"></script>
-    <script src="assets/js/main.js?v=20260318-video-mobile-fix17"></script>
+    <script src="assets/js/main.js?v=20260318-video-mobile-fix21"></script>
   </body>
 </html>
