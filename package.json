@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "site:local": "node scripts/serve-website-local.mjs",
+    "sitemap:generate": "node scripts/generate-sitemap.mjs",
     "build": "vite build",
     "preview": "vite preview",
     "build:analyze": "ANALYZE=true vite build",
