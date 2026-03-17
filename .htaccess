@@ -55,20 +55,14 @@ RewriteRule ^ar/المدونة/?$ Arino\ -\ Template/blog.html [L,NC]
 RewriteRule ^en/blog/?$ Arino\ -\ Template/blog.html [L,NC]
 RewriteRule ^ar/كشكولنا/?$ Arino\ -\ Template/blog.html [L,NC]
 
-# Arabic-localized blog category/tag/article aliases.
-RewriteRule ^(?:كشكولنا|المدونة)/التصنيف/انتاج-الفيديو/?$ Arino\ -\ Template/blog/category/video-production/index.html [L,NC,QSA]
-RewriteRule ^(?:كشكولنا|المدونة)/التصنيف/تصوير-المنتجات/?$ Arino\ -\ Template/blog/category/product-photography/index.html [L,NC,QSA]
-RewriteRule ^(?:كشكولنا|المدونة)/التصنيف/(?:تقنيات-التصوير-والاضاءة|تقنيات-التصوير-والإضاءة)/?$ Arino\ -\ Template/blog/category/filmmaking-lighting/index.html [L,NC,QSA]
-RewriteRule ^(?:كشكولنا|المدونة)/التصنيف/تغطية-الفعاليات/?$ Arino\ -\ Template/blog/category/event-coverage/index.html [L,NC,QSA]
+# Blog category/tag listing routes: keep users on the styled blog page with filters.
+RewriteRule ^blog/category/([A-Za-z0-9-]+)/?$ Arino\ -\ Template/blog.html?category=$1 [L,NC,QSA]
+RewriteRule ^en/blog/category/([A-Za-z0-9-]+)/?$ Arino\ -\ Template/blog.html?category=$1 [L,NC,QSA]
+RewriteRule ^(?:كشكولنا|المدونة)/التصنيف/([^/]+)/?$ Arino\ -\ Template/blog.html?category=$1 [L,NC,QSA]
 
-RewriteRule ^(?:كشكولنا|المدونة)/وسم/انتاج-الفيديو/?$ Arino\ -\ Template/blog/tag/video-production/index.html [L,NC,QSA]
-RewriteRule ^(?:كشكولنا|المدونة)/وسم/تصوير-المنتجات/?$ Arino\ -\ Template/blog/tag/product-photography/index.html [L,NC,QSA]
-RewriteRule ^(?:كشكولنا|المدونة)/وسم/(?:الاضاءة-السينمائية|الإضاءة-السينمائية)/?$ Arino\ -\ Template/blog/tag/cinematic-lighting/index.html [L,NC,QSA]
-RewriteRule ^(?:كشكولنا|المدونة)/وسم/(?:الاعلانات-التجارية|الإعلانات-التجارية)/?$ Arino\ -\ Template/blog/tag/commercial-ads/index.html [L,NC,QSA]
-RewriteRule ^(?:كشكولنا|المدونة)/وسم/المقابلات/?$ Arino\ -\ Template/blog/tag/interviews/index.html [L,NC,QSA]
-RewriteRule ^(?:كشكولنا|المدونة)/وسم/(?:تصحيح-الالوان|تصحيح-الألوان)/?$ Arino\ -\ Template/blog/tag/color-grading/index.html [L,NC,QSA]
-RewriteRule ^(?:كشكولنا|المدونة)/وسم/خلف-الكواليس/?$ Arino\ -\ Template/blog/tag/behind-the-scenes/index.html [L,NC,QSA]
-RewriteRule ^(?:كشكولنا|المدونة)/وسم/تغطية-الفعاليات/?$ Arino\ -\ Template/blog/tag/event-coverage/index.html [L,NC,QSA]
+RewriteRule ^blog/tag/([A-Za-z0-9-]+)/?$ Arino\ -\ Template/blog.html?tag=$1 [L,NC,QSA]
+RewriteRule ^en/blog/tag/([A-Za-z0-9-]+)/?$ Arino\ -\ Template/blog.html?tag=$1 [L,NC,QSA]
+RewriteRule ^(?:كشكولنا|المدونة)/وسم/([^/]+)/?$ Arino\ -\ Template/blog.html?tag=$1 [L,NC,QSA]
 
 RewriteRule ^(?:كشكولنا|المدونة)/انتاج-الفيديو/كيف-تختار-شركة-انتاج-فيديو-احترافية/?$ Arino\ -\ Template/blog/video-production/how-to-choose-professional-video-production-company/index.html [L,NC,QSA]
 RewriteRule ^(?:كشكولنا|المدونة)/تصوير-المنتجات/دليل-تصوير-المنتجات-الاحترافي-للمتاجر-الالكترونية/?$ Arino\ -\ Template/blog/product-photography/professional-product-photography-ecommerce/index.html [L,NC,QSA]
