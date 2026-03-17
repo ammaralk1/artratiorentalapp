@@ -28,6 +28,7 @@
 
   loadComments();
   form.addEventListener("submit", onSubmit);
+  window.addEventListener("arino:language-changed", onLanguageChanged);
 
   async function loadComments() {
     setStatus(ui, "");
@@ -207,10 +208,8 @@
   }
 
   function buildCommentsTitle(strings, count) {
-    if (isArabicPage()) {
-      return strings.commentsTitle + " (" + count + ")";
-    }
-    return strings.commentsTitle + " (" + count + ")";
+    var template = strings.commentsTitleCount || (strings.commentsTitle + " ({count})");
+    return template.replace("{count}", String(count));
   }
 
   function prependComment(uiState, comment, strings) {
@@ -218,6 +217,11 @@
     uiState.comments = Array.isArray(uiState.comments) ? uiState.comments : [];
     uiState.comments.unshift(comment);
     renderComments(uiState, uiState.comments, strings);
+  }
+
+  function onLanguageChanged() {
+    i18n = getLocaleStrings();
+    renderComments(ui, ui.comments || [], i18n);
   }
 
   function buildCommentCard(comment, strings) {
@@ -347,42 +351,47 @@
   }
 
   function isArabicPage() {
+    try {
+      var stored = localStorage.getItem("arinoLang");
+      if (stored === "ar") return true;
+      if (stored === "en") return false;
+    } catch (_) {}
+
     var htmlLang = String((document.documentElement && document.documentElement.lang) || "").toLowerCase();
     var dir = String((document.documentElement && document.documentElement.dir) || "").toLowerCase();
-    return htmlLang.indexOf("ar") === 0 || dir === "rtl";
+    if (htmlLang.indexOf("ar") === 0 || dir === "rtl") return true;
+    if (htmlLang.indexOf("en") === 0 && dir === "ltr") return false;
+
+    var probe = document.querySelector(".cs-post_title, .breadcrumb .active, h2.cs-font_50");
+    var text = probe ? String(probe.textContent || "") : "";
+    return /[\u0600-\u06FF]/.test(text);
   }
 
   function getLocaleStrings() {
-    if (isArabicPage()) {
-      return {
-        commentsTitle: "التعليقات",
-        emptyComments: "لا يوجد تعليقات حتى الآن.",
-        loadingComments: "جاري تحميل التعليقات...",
-        loadFailed: "تعذر تحميل التعليقات.",
-        submitSuccess: "تم نشر تعليقك بنجاح.",
-        submitPending: "تم استلام تعليقك وهو بانتظار المراجعة.",
-        submitFailed: "تعذر إرسال التعليق.",
-        invalidName: "الاسم مطلوب (حرفين على الأقل).",
-        invalidEmail: "البريد الإلكتروني غير صحيح.",
-        invalidComment: "التعليق مطلوب (3 أحرف على الأقل).",
-        anonymous: "زائر",
-        unknownDate: "تاريخ غير معروف"
-      };
+    var ar = isArabicPage();
+    function t(key, fallback) {
+      var getter = typeof window !== "undefined" ? window.getArinoTranslation : null;
+      if (typeof getter === "function") {
+        var translated = getter(key, fallback);
+        if (translated) return translated;
+      }
+      return fallback;
     }
 
     return {
-      commentsTitle: "Comments",
-      emptyComments: "No comments yet.",
-      loadingComments: "Loading comments...",
-      loadFailed: "Unable to load comments.",
-      submitSuccess: "Your comment was published.",
-      submitPending: "Your comment was submitted and is awaiting moderation.",
-      submitFailed: "Unable to submit your comment.",
-      invalidName: "Name is required (at least 2 characters).",
-      invalidEmail: "Please enter a valid email.",
-      invalidComment: "Comment is required (at least 3 characters).",
-      anonymous: "Visitor",
-      unknownDate: "Unknown date"
+      commentsTitle: t("blog_comments_title", ar ? "التعليقات" : "Comments"),
+      commentsTitleCount: t("blog_comments_title_count", ar ? "التعليقات ({count})" : "Comments ({count})"),
+      emptyComments: t("blog_comments_empty", ar ? "لا يوجد تعليقات حتى الآن." : "No comments yet."),
+      loadingComments: t("blog_comments_loading", ar ? "جاري تحميل التعليقات..." : "Loading comments..."),
+      loadFailed: t("blog_comments_load_failed", ar ? "تعذر تحميل التعليقات." : "Unable to load comments."),
+      submitSuccess: t("blog_comments_submit_success", ar ? "تم نشر تعليقك بنجاح." : "Your comment was published."),
+      submitPending: t("blog_comments_submit_pending", ar ? "تم استلام تعليقك وهو بانتظار المراجعة." : "Your comment was submitted and is awaiting moderation."),
+      submitFailed: t("blog_comments_submit_failed", ar ? "تعذر إرسال التعليق." : "Unable to submit your comment."),
+      invalidName: t("blog_comments_invalid_name", ar ? "الاسم مطلوب (حرفين على الأقل)." : "Name is required (at least 2 characters)."),
+      invalidEmail: t("blog_comments_invalid_email", ar ? "البريد الإلكتروني غير صحيح." : "Please enter a valid email."),
+      invalidComment: t("blog_comments_invalid_comment", ar ? "التعليق مطلوب (3 أحرف على الأقل)." : "Comment is required (at least 3 characters)."),
+      anonymous: t("blog_comments_anonymous", ar ? "زائر" : "Visitor"),
+      unknownDate: t("blog_comments_unknown_date", ar ? "تاريخ غير معروف" : "Unknown date")
     };
   }
 })();

@@ -1700,12 +1700,25 @@
     blog1_conclusion_p2: { en: 'What matters most is clear goals, solid planning, professional execution, and final delivery that reflects your project’s value.', ar: 'الأهم هو فهم عميق للهدف، تخطيط مدروس، تنفيذ احترافي، وإخراج نهائي يعكس قيمة مشروعك.' },
     blog1_conclusion_p3: { en: 'A successful video is not just content. It is a long-term investment in your brand image.', ar: 'الفيديو الناجح مو مجرد محتوى... هو استثمار طويل المدى في صورة علامتك.' },
     blog1_reply_title: { en: 'Leave A Reply', ar: 'اترك تعليقك' },
-    blog1_reply_note: { en: 'Your email address will not be published. Required fields are marked *', ar: 'لن يتم نشر بريدك الإلكتروني. الحقول المطلوبة مميزة بعلامة *' },
+    blog1_reply_note: { en: 'Required fields: Full Name and Comment. Email is optional and will not be published.', ar: 'الحقول المطلوبة: الاسم الكامل والتعليق. البريد الإلكتروني اختياري ولن يتم نشره.' },
     blog1_form_name: { en: 'Full Name*', ar: 'الاسم الكامل*' },
     blog1_form_email: { en: 'Email', ar: 'البريد الإلكتروني' },
     blog1_form_website: { en: 'Website*', ar: 'الموقع الإلكتروني*' },
     blog1_form_comment: { en: 'Write Your Comment*', ar: 'اكتب تعليقك*' },
     blog1_form_send: { en: 'Send Message', ar: 'إرسال التعليق' },
+    blog_comments_title: { en: 'Comments', ar: 'التعليقات' },
+    blog_comments_title_count: { en: 'Comments ({count})', ar: 'التعليقات ({count})' },
+    blog_comments_empty: { en: 'No comments yet.', ar: 'لا يوجد تعليقات حتى الآن.' },
+    blog_comments_loading: { en: 'Loading comments...', ar: 'جاري تحميل التعليقات...' },
+    blog_comments_load_failed: { en: 'Unable to load comments.', ar: 'تعذر تحميل التعليقات.' },
+    blog_comments_submit_success: { en: 'Your comment was published.', ar: 'تم نشر تعليقك بنجاح.' },
+    blog_comments_submit_pending: { en: 'Your comment was submitted and is awaiting moderation.', ar: 'تم استلام تعليقك وهو بانتظار المراجعة.' },
+    blog_comments_submit_failed: { en: 'Unable to submit your comment.', ar: 'تعذر إرسال التعليق.' },
+    blog_comments_invalid_name: { en: 'Name is required (at least 2 characters).', ar: 'الاسم مطلوب (حرفين على الأقل).' },
+    blog_comments_invalid_email: { en: 'Please enter a valid email.', ar: 'البريد الإلكتروني غير صحيح.' },
+    blog_comments_invalid_comment: { en: 'Comment is required (at least 3 characters).', ar: 'التعليق مطلوب (3 أحرف على الأقل).' },
+    blog_comments_anonymous: { en: 'Visitor', ar: 'زائر' },
+    blog_comments_unknown_date: { en: 'Unknown date', ar: 'تاريخ غير معروف' },
     blog1_author_name: { en: 'Art Ratio Team', ar: 'فريق آرت ريشيو' },
     blog1_sidebar_search_title: { en: 'Search', ar: 'بحث' },
     blog1_sidebar_search_placeholder: { en: 'Search...', ar: 'ابحث...' },
@@ -2692,6 +2705,20 @@
     toggle.setAttribute('aria-pressed', String(isArabic));
   };
 
+  window.getArinoTranslation = (key, fallback = '') => {
+    if (!key) return fallback;
+    const rule = keyedTranslations[key];
+    if (!rule) return fallback;
+    let activeLang = '';
+    try {
+      activeLang = localStorage.getItem(STORAGE_KEY) || '';
+    } catch (e) {}
+    if (activeLang !== 'ar' && activeLang !== 'en') {
+      activeLang = (document.documentElement.lang || '').toLowerCase().startsWith('ar') ? 'ar' : 'en';
+    }
+    return rule[activeLang] || rule.en || rule.ar || fallback;
+  };
+
   const ensureCartShortcut = () => {
     const toolbox = document.querySelector('.cs-toolbox');
     if (!toolbox) return;
@@ -2842,6 +2869,14 @@
     updateToggleLabel(selected);
     localStorage.setItem(STORAGE_KEY, selected);
     currentLang = selected;
+
+    try {
+      window.dispatchEvent(
+        new CustomEvent('arino:language-changed', {
+          detail: { lang: selected },
+        }),
+      );
+    } catch (e) {}
   };
 
   // Expose a safe hook for other scripts (e.g., dynamic portfolio rendering)

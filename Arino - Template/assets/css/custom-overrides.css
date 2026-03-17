@@ -8,7 +8,7 @@
 body::before {
   z-index: 0;
 }
-body :where(h1, h2, h3, h4, h5, h6, p, li, a, span, small, button, img, svg) {
+body :where(h1, h2, h3, h4, h5, h6, p, li, a, span, small, button, img, svg, form, label, input, textarea, select) {
   position: relative;
   z-index: 1;
 }
@@ -1897,7 +1897,8 @@ button.cs-btn.is-disabled {
 .blog-comment-form .cs-form_field,
 .col-lg-8 > form.row .cs-form_field {
   color: #ffffff !important;
-  border-color: rgba(255, 255, 255, 0.88) !important;
+  border: 2px solid #ffffff !important;
+  background-color: transparent !important;
   caret-color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
 }
@@ -1922,6 +1923,18 @@ button.cs-btn.is-disabled {
 .col-lg-8 > form.row .cs-form_field:focus {
   border-color: #ffffff !important;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.45);
+}
+
+.blog-comment-form .cs-form_field:-webkit-autofill,
+.blog-comment-form .cs-form_field:-webkit-autofill:hover,
+.blog-comment-form .cs-form_field:-webkit-autofill:focus,
+.col-lg-8 > form.row .cs-form_field:-webkit-autofill,
+.col-lg-8 > form.row .cs-form_field:-webkit-autofill:hover,
+.col-lg-8 > form.row .cs-form_field:-webkit-autofill:focus {
+  -webkit-text-fill-color: #ffffff !important;
+  box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0) inset !important;
+  border: 2px solid #ffffff !important;
+  transition: background-color 9999s ease-in-out 0s;
 }
 
 @media (max-width: 767px) {
