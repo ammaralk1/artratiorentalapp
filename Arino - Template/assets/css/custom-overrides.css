@@ -785,7 +785,7 @@ body.rtl .lg-outer .lg,
 @media (max-width:991px){
   .cs-footer_contact_col { justify-content:center; text-align:center; margin:0 auto; width:100%; flex:0 0 100%; max-width:100%; }
   .cs-footer_item_contact { margin:0 auto; width:100%; max-width:360px; }
-  .cs-footer_item_contact .cs-social_btns.cs-style1 { display:flex; flex-wrap:nowrap; justify-content:center; gap:10px; }
+  .cs-footer_item_contact .cs-social_btns.cs-style1 { display:flex; flex-wrap:nowrap; justify-content:center; gap:6px; }
   .cs-footer_mobile_social {
     width: 100%;
     display: flex;
@@ -795,7 +795,7 @@ body.rtl .lg-outer .lg,
   .cs-footer_mobile_social .cs-social_btns.cs-style1 {
     display: flex;
     justify-content: center;
-    gap: 10px;
+    gap: 6px;
     margin: 0 auto;
   }
   .rtl .cs-footer_mobile_social,
@@ -808,6 +808,42 @@ body.rtl .lg-outer .lg,
   .cs-footer_brand .cs-text_widget { max-width:360px; }
   .cs-footer_brand .cs-text_widget img { display:block; margin-inline:auto; transform:none; align-self:center; }
   body.rtl .cs-footer_brand .cs-text_widget img { margin-inline:auto; transform:none; align-self:center; }
+
+  /* Mobile: keep social icons in one row across the template and reduce size slightly. */
+  .cs-social_btns.cs-style1,
+  .cs-side_header .cs-social_btns.cs-style1,
+  .cs-footer_brand .cs-social_btns.cs-style1,
+  .cs-footer_item_contact .cs-social_btns.cs-style1,
+  .cs-footer_mobile_social .cs-social_btns.cs-style1,
+  .cs-footer_item_services > .cs-social_btns.cs-style1 {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .cs-social_btns.cs-style1 a,
+  .cs-side_header .cs-social_btns.cs-style1 a,
+  .cs-footer_brand .cs-social_btns.cs-style1 a,
+  .cs-footer_item_contact .cs-social_btns.cs-style1 a,
+  .cs-footer_mobile_social .cs-social_btns.cs-style1 a,
+  .cs-footer_item_services > .cs-social_btns.cs-style1 a {
+    width: 40px;
+    height: 40px;
+    line-height: 40px;
+    font-size: 17px;
+    border-width: 1.5px;
+  }
+
+  .cs-social_btns.cs-style1 a i,
+  .cs-social_btns.cs-style1 a svg,
+  .cs-social_btns.cs-style1 .cs-icon-x {
+    width: 17px;
+    height: 17px;
+  }
 }
 .cs-footer_item_services { margin-left:0; margin-right:0; text-align:center; }
 @media (min-width:1200px){ .cs-footer_item_services { margin-right:-180px; } }
