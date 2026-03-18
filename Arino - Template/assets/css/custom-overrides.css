@@ -1733,6 +1733,43 @@ body[data-page="home"]:not(.rtl) section.cs-shape_wrap_4 .cs-shape_4:nth-child(2
   }
 }
 
+/* Mobile only: +30% for key home section titles. */
+@media (max-width: 991px) {
+  body[data-page="home"] [data-i18n-key="home_service_title"],
+  body[data-page="home"] [data-i18n-key="home_projects_title"],
+  body[data-page="home"] .cs-section_heading.cs-style1 [data-i18n-key="home_service_title"].cs-section_title,
+  body[data-page="home"] .cs-section_heading.cs-style1 [data-i18n-key="home_projects_title"].cs-section_title {
+    font-size: clamp(52px, 14.8vw, 81px) !important;
+    line-height: 1.16 !important;
+  }
+
+  body[data-page="home"] [data-i18n-key="home_values_title"],
+  body[data-page="home"] [data-i18n-key="home_team_title"],
+  body[data-page="home"] .cs-section_heading.cs-style1 [data-i18n-key="home_values_title"].cs-section_title,
+  body[data-page="home"] .cs-section_heading.cs-style1 [data-i18n-key="home_team_title"].cs-section_title {
+    font-size: clamp(46px, 13.2vw, 73px) !important;
+    line-height: 1.16 !important;
+  }
+}
+
+@media (max-width: 575px) {
+  body[data-page="home"] [data-i18n-key="home_service_title"],
+  body[data-page="home"] [data-i18n-key="home_projects_title"],
+  body[data-page="home"] .cs-section_heading.cs-style1 [data-i18n-key="home_service_title"].cs-section_title,
+  body[data-page="home"] .cs-section_heading.cs-style1 [data-i18n-key="home_projects_title"].cs-section_title {
+    font-size: clamp(47px, 13.8vw, 65px) !important;
+    line-height: 1.14 !important;
+  }
+
+  body[data-page="home"] [data-i18n-key="home_values_title"],
+  body[data-page="home"] [data-i18n-key="home_team_title"],
+  body[data-page="home"] .cs-section_heading.cs-style1 [data-i18n-key="home_values_title"].cs-section_title,
+  body[data-page="home"] .cs-section_heading.cs-style1 [data-i18n-key="home_team_title"].cs-section_title {
+    font-size: clamp(43px, 12.8vw, 60px) !important;
+    line-height: 1.14 !important;
+  }
+}
+
 /* Preloader: unified black background with pattern overlay */
 .cs-preloader {
   background-color: #000;
