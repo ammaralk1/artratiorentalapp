@@ -4,6 +4,14 @@
   --brand-mid: #3e563e;
 }
 
+@font-face {
+  font-family: "TSKufidia-Normal";
+  src: url("../fonts/TSKufidia-Normal.otf") format("opentype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+}
+
 /* Pattern overlay above background, below content */
 body::before {
   z-index: 0;
@@ -147,6 +155,43 @@ html[dir="ltr"] body[data-page="home"] .cs-hero.cs-style1 .cs-hero_info > div:fi
   margin-left: 0;
   margin-right: 0;
   text-align: left;
+}
+
+body[data-page="home"] .cs-home-hero .cs-hero_title--home-intro {
+  opacity: 0;
+  transform: translate3d(28px, 0, 0);
+  will-change: transform, opacity;
+}
+
+body[data-page="home"].cs-home-hero-text-animate-once .cs-home-hero .cs-hero_title--home-intro {
+  animation: cs-home-hero-title-in 0.82s cubic-bezier(0.22, 1, 0.36, 1) 0.04s both;
+}
+
+@keyframes cs-home-hero-title-in {
+  0% {
+    opacity: 0;
+    transform: translate3d(28px, 0, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-page="home"] .cs-home-hero .cs-hero_title--home-intro {
+    opacity: 1;
+    transform: none;
+    animation: none !important;
+  }
+}
+
+/* Home hero Arabic title font (desktop + mobile). */
+html[dir="rtl"] body[data-page="home"] .cs-home-hero .cs-hero_title,
+body.rtl[data-page="home"] .cs-home-hero .cs-hero_title,
+html[lang="ar"] body[data-page="home"] .cs-home-hero .cs-hero_title {
+  font-family: "TSKufidia-Normal", "Tajawal", sans-serif !important;
+  font-weight: 400 !important;
 }
 
 /* Home hero media toggle: video by default with image fallback option */
@@ -391,6 +436,8 @@ body[data-page="home"] .cs-home-hero .cs-home-shape-3 {
   }
   html[dir="rtl"] body[data-page="home"] .cs-home-hero .cs-hero_title,
   body.rtl[data-page="home"] .cs-home-hero .cs-hero_title {
+    font-family: "TSKufidia-Normal", "Tajawal", sans-serif;
+    font-weight: 400;
     margin-right: 0;
     margin-left: auto;
   }

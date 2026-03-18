@@ -73,13 +73,14 @@
     <link rel="preconnect" href="https://i.vimeocdn.com" crossorigin>
     <link rel="dns-prefetch" href="//player.vimeo.com">
     <link rel="dns-prefetch" href="//i.vimeocdn.com">
+    <link rel="preload" href="assets/fonts/TSKufidia-Normal.otf" as="font" type="font/otf" crossorigin>
     <link rel="stylesheet" href="assets/css/plugins/bootstrap.min.css">
     <link rel="stylesheet" href="assets/css/plugins/fontawesome.min.css">
     <link rel="stylesheet" href="assets/css/plugins/slick.css">
     <link rel="stylesheet" href="assets/css/plugins/lightgallery.min.css">
     <link rel="stylesheet" href="assets/css/plugins/animate.css">
     <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="stylesheet" href="assets/css/custom-overrides.css?v=20260318-social-mobile-row2">
+    <link rel="stylesheet" href="assets/css/custom-overrides.css?v=20260318-social-mobile-row8">
     <link rel="stylesheet" href="assets/css/pattern-bg.css">
   </head>
   <body data-page="home">
@@ -200,8 +201,8 @@
         <div class="cs-home-hero_poster" aria-hidden="true"></div>
         <iframe
           class="cs-home-hero_video_frame"
-          data-vimeo-src="https://player.vimeo.com/video/1132903455?autoplay=1&muted=1&loop=0&autopause=0&controls=0&title=0&byline=0&portrait=0&dnt=1&playsinline=1&background=1&quality=360p"
-          src="https://player.vimeo.com/video/1132903455?autoplay=1&muted=1&loop=0&autopause=0&controls=0&title=0&byline=0&portrait=0&dnt=1&playsinline=1&background=1&quality=360p"
+          data-vimeo-src="https://player.vimeo.com/video/1132903455?autoplay=1&muted=1&loop=0&autopause=0&controls=0&title=0&byline=0&portrait=0&dnt=1&playsinline=1&background=1&quality=1080p"
+          src="https://player.vimeo.com/video/1132903455?autoplay=1&muted=1&loop=0&autopause=0&controls=0&title=0&byline=0&portrait=0&dnt=1&playsinline=1&background=1&quality=1080p"
           loading="eager"
           frameborder="0"
           allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
@@ -227,7 +228,7 @@
       <div class="cs-shape_1 cs-home-shape-3"></div>
       <div class="container">
         <div class="cs-hero_text">
-          <h1 class="cs-hero_title wow fadeInRight" data-wow-duration="0.8s" data-wow-delay="0.2s"> Creativity In <br>Our Blood Line </h1>
+          <h1 class="cs-hero_title cs-hero_title--home-intro"> Creativity In <br>Our Blood Line </h1>
           <div class="cs-hero_info">
             <div>
               <a href="contact.html" class="cs-text_btn">
@@ -1421,7 +1422,19 @@
           var nextQuery = params.toString();
           return base + (nextQuery ? "?" + nextQuery : "") + hash;
         }
-        var desktopFrameSrc = removeQueryParam(frameSrc, "quality");
+        function setQueryParam(rawUrl, key, value) {
+          if (!rawUrl) return rawUrl;
+          var hashIndex = rawUrl.indexOf("#");
+          var hash = hashIndex > -1 ? rawUrl.slice(hashIndex) : "";
+          var baseWithQuery = hashIndex > -1 ? rawUrl.slice(0, hashIndex) : rawUrl;
+          var qIndex = baseWithQuery.indexOf("?");
+          var base = qIndex > -1 ? baseWithQuery.slice(0, qIndex) : baseWithQuery;
+          var params = new URLSearchParams(qIndex > -1 ? baseWithQuery.slice(qIndex + 1) : "");
+          params.set(key, value);
+          var nextQuery = params.toString();
+          return base + (nextQuery ? "?" + nextQuery : "") + hash;
+        }
+        var desktopFrameSrc = setQueryParam(removeQueryParam(frameSrc, "quality"), "quality", "1080p");
         var loopStartSeconds = 43;
         var loopEndSeconds = 61;
         var loopGuardSeconds = 0.06;
@@ -2359,6 +2372,27 @@
         hidePosterForLoading();
         applyMobileHeroFraming();
         setHeroMedia();
+      })();
+    </script>
+    <script>
+      (function () {
+        var body = document.body;
+        if (!body || body.getAttribute("data-page") !== "home") return;
+        if (body.classList.contains("cs-home-hero-text-animate-once")) return;
+
+        function startOnce() {
+          if (body.classList.contains("cs-home-hero-text-animate-once")) return;
+          body.classList.add("cs-home-hero-text-animate-once");
+        }
+
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", function () {
+            requestAnimationFrame(startOnce);
+          }, { once: true });
+          return;
+        }
+
+        requestAnimationFrame(startOnce);
       })();
     </script>
     <!-- Script -->
