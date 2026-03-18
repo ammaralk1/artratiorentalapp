@@ -3144,8 +3144,12 @@
     }
   }
 
+  const searchParams = new URLSearchParams(window.location.search || '');
+  const queryLang = (searchParams.get('lang') || '').toLowerCase();
+  const forcedLang = queryLang === 'en' || queryLang === 'ar' ? queryLang : '';
   const pathLang = normalizedInitialPath.startsWith('/en') ? 'en' : 'ar';
   let currentLang =
+    forcedLang ||
     pathLang ||
     localStorage.getItem(STORAGE_KEY) ||
     (document.documentElement.lang || '').slice(0, 2).toLowerCase() ||

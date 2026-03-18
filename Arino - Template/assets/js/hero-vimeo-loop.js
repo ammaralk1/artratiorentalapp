@@ -229,11 +229,11 @@
       .ready()
       .then(function () {
         if (typeof vimeoPlayer.setMuted === 'function') {
-          return vimeoPlayer.setMuted(false).catch(function () {});
+          return vimeoPlayer.setMuted(true).catch(function () {});
         }
         return null;
       })
-      .then(function () { return vimeoPlayer.setVolume(1).catch(function () {}); })
+      .then(function () { return vimeoPlayer.setVolume(0).catch(function () {}); })
       .then(function () { return vimeoPlayer.setLoop(false); })
       .then(function () { return vimeoPlayer.setCurrentTime(loopStartSeconds); })
       .then(function () { return vimeoPlayer.play(); })
