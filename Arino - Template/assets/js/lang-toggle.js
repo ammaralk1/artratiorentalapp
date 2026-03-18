@@ -574,7 +574,7 @@
     home_values_subtitle: { en: 'Our Values', ar: 'قيمنا' },
     home_values_title: { en: 'What we stand for', ar: 'مبادئنا وفلسفتنا' },
     home_process_subtitle: { en: 'Production Creative Process', ar: 'عملية الإنتاج الإبداعي' },
-    home_process_title: { en: 'How we build your final video', ar: 'من الفكرة إلى النسخة النهائية' },
+    home_process_title: { en: 'From Idea to Final Version', ar: 'من الفكرة إلى النسخة النهائية' },
     home_team_subtitle: { en: ' Our Team ', ar: 'فريقنا' },
     home_team_title: { type: 'html', en: 'Awesome team <br>members', ar: 'أعضاء فريقنا المتميز' },
     home_partners_marquee: { en: 'Our trusted and successful partners', ar: 'شركاء النجاح • شركاء النجاح   •' },
@@ -3032,6 +3032,25 @@
     });
   };
 
+  const applyResponsiveTextOverrides = (lang) => {
+    const pageKey = (document.body && document.body.dataset.page) || '';
+    if (pageKey !== 'home') return;
+
+    const marqueeNodes = document.querySelectorAll('[data-i18n-key="home_partners_marquee"]');
+    if (!marqueeNodes.length) return;
+
+    const isMobile = window.matchMedia('(max-width: 991px)').matches;
+    const mobileEnText = 'Our trusted partners';
+    const defaultRule = keyedTranslations.home_partners_marquee || {};
+    const defaultText = lang === 'ar' ? (defaultRule.ar || '') : (defaultRule.en || '');
+    const nextText = lang === 'en' && isMobile ? mobileEnText : defaultText;
+    if (!nextText) return;
+
+    marqueeNodes.forEach((el) => {
+      el.textContent = nextText;
+    });
+  };
+
   const setLanguage = (lang, options = {}) => {
     const { navigate = false } = options;
     const selected = lang === 'ar' ? 'ar' : 'en';
@@ -3052,6 +3071,7 @@
     localizeInternalLinks(selected);
     syncSeoHead();
     applyTestimonialImageSwap(selected);
+    applyResponsiveTextOverrides(selected);
 
     updateToggleLabel(selected);
     localStorage.setItem(STORAGE_KEY, selected);
@@ -3170,6 +3190,11 @@
     setTimeout(injectToggle, 200);
     updateCartBadge();
     startHeaderObserver();
+  });
+
+  window.addEventListener('resize', () => {
+    if (!currentLang) return;
+    applyResponsiveTextOverrides(currentLang);
   });
 
   window.addEventListener('storage', (e) => {
