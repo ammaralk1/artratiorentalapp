@@ -53,7 +53,7 @@
     home_general_text_1: {
       type: 'html',
       en: 'A visual journey of creativity and precision… <br>this is how we see the world of advertising',
-      ar: 'رحلة بصرية تنسج الإبداع بالدقة، وبكده نصنع عالم الإعلان بطريقتنا',
+      ar: 'رحلة بصرية تنسج الإبداع بالدقة، وبكذا نصنع عالم الإعلان بطريقتنا',
     },
     home_general_text_2: {
       en: 'Moments captured with passion… turning every event into a story worth telling',
