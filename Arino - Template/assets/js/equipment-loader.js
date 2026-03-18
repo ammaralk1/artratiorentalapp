@@ -20,6 +20,7 @@
   let items = [];
   let itemsLoaded = false;
   let cart = loadCart();
+  let activeToastHideTimer = null;
   const isReloadNavigation = () => {
     try {
       const navEntries = performance.getEntriesByType
@@ -62,6 +63,49 @@
   const isArabic = () =>
     (document.documentElement.lang || '').toLowerCase().startsWith('ar') ||
     (document.body && document.body.dir === 'rtl');
+
+  const t = (key, arFallback, enFallback) => {
+    const fallback = isArabic() ? arFallback : enFallback;
+    if (typeof window.getArinoTranslation === 'function') {
+      return window.getArinoTranslation(key, fallback);
+    }
+    return fallback;
+  };
+
+  function getToastHost() {
+    let host = document.getElementById('cs-shop-toast-host');
+    if (host) return host;
+    host = document.createElement('div');
+    host.id = 'cs-shop-toast-host';
+    host.className = 'cs-shop-toast-host';
+    document.body.appendChild(host);
+    return host;
+  }
+
+  function showToast(message, type = 'success') {
+    const host = getToastHost();
+    if (activeToastHideTimer) {
+      clearTimeout(activeToastHideTimer);
+      activeToastHideTimer = null;
+    }
+    host.innerHTML = '';
+    const toast = document.createElement('div');
+    toast.className = `cs-shop-toast cs-shop-toast--${type}`;
+    toast.setAttribute('role', 'status');
+    toast.setAttribute('aria-live', 'polite');
+    toast.textContent = message;
+    host.appendChild(toast);
+    requestAnimationFrame(() => {
+      toast.classList.add('is-visible');
+    });
+    activeToastHideTimer = setTimeout(() => {
+      toast.classList.remove('is-visible');
+      setTimeout(() => {
+        if (toast.parentNode) toast.parentNode.removeChild(toast);
+      }, 180);
+      activeToastHideTimer = null;
+    }, 2200);
+  }
 
   const keyGroups = {
     image: ['Image', 'Image Link', 'الصورة', 'لينك الصورة', 'رابط الصورة'],
@@ -308,6 +352,12 @@
       const col = document.createElement('div');
       col.className = 'col-lg-4 col-sm-6';
       const inCart = cart.some((c) => c.name === item.name && c.image === item.image);
+      const qtyLabel = t('shop_qty_label', 'الكمية', 'Qty');
+      const qtyControlsAria = t('shop_qty_controls_aria', 'التحكم في الكمية', 'Quantity controls');
+      const qtyDecreaseAria = t('shop_qty_decrease_aria', 'تقليل الكمية', 'Decrease quantity');
+      const qtyIncreaseAria = t('shop_qty_increase_aria', 'زيادة الكمية', 'Increase quantity');
+      const addToRequestText = t('shop_add_to_request', 'أضف إلى قائمة الطلب', 'Add to request list');
+      const addedText = t('shop_added', 'تمت الإضافة', 'Added');
       col.innerHTML = `
         <div class="cs-product_card cs_style_1">
           <div class="cs-product_thumb">
@@ -317,13 +367,17 @@
             <h2 class="cs-product_title"><span>${item.name}</span></h2>
             <div class="cs-product_meta d-flex align-items-center justify-content-between gap-2 mb-2">
               <p class="cs-product_category m-0">${item.category || ''}${item.subcategory ? ' • ' + item.subcategory : ''}</p>
-              <div class="d-flex align-items-center gap-2">
-                <label class="m-0 cs-qty-label">${isArabic() ? 'الكمية' : 'Qty'}</label>
-                <input type="number" class="cs-qty-input form-control" value="${getCartQty(item)}" min="1">
+              <div class="d-flex align-items-center gap-2 cs-qty-wrap">
+                <label class="m-0 cs-qty-label">${qtyLabel}</label>
+                <div class="cs-qty-stepper" role="group" aria-label="${qtyControlsAria}">
+                  <button type="button" class="cs-qty-step cs-qty-step--minus" aria-label="${qtyDecreaseAria}">-</button>
+                  <input type="number" class="cs-qty-input form-control" value="${getCartQty(item)}" min="1" step="1" inputmode="numeric" pattern="[0-9]*">
+                  <button type="button" class="cs-qty-step cs-qty-step--plus" aria-label="${qtyIncreaseAria}">+</button>
+                </div>
               </div>
             </div>
-            <button class="cs-btn cs-style1 cs-add-to-list cs-add-compact" type="button" aria-label="Add ${item.name} to request list">
-              ${inCart ? (isArabic() ? 'تمت الإضافة' : 'Added') : isArabic() ? 'أضف إلى قائمة الطلب' : 'Add to request list'}
+            <button class="cs-btn cs-style1 cs-add-to-list cs-add-compact" type="button" aria-label="${addToRequestText}: ${item.name}">
+              ${inCart ? addedText : addToRequestText}
             </button>
           </div>
         </div>
@@ -331,7 +385,38 @@
       `;
       const btn = col.querySelector('.cs-add-to-list');
       const qtyInput = col.querySelector('.cs-qty-input');
+      const qtyMinusBtn = col.querySelector('.cs-qty-step--minus');
+      const qtyPlusBtn = col.querySelector('.cs-qty-step--plus');
       const img = col.querySelector('img[data-fallback-src]');
+      const normalizeQty = () => {
+        const qty = Math.max(1, parseInt(qtyInput.value, 10) || 1);
+        qtyInput.value = qty;
+        return qty;
+      };
+      if (qtyMinusBtn) {
+        qtyMinusBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const current = normalizeQty();
+          qtyInput.value = Math.max(1, current - 1);
+        });
+      }
+      if (qtyPlusBtn) {
+        qtyPlusBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const current = normalizeQty();
+          qtyInput.value = current + 1;
+        });
+      }
+      qtyInput.addEventListener('change', normalizeQty);
+      qtyInput.addEventListener('blur', normalizeQty);
+      if (window.matchMedia && window.matchMedia('(max-width: 991px)').matches) {
+        qtyInput.readOnly = true;
+        qtyInput.setAttribute('readonly', 'readonly');
+        qtyInput.addEventListener('keydown', (e) => e.preventDefault());
+        qtyInput.addEventListener('input', () => {
+          normalizeQty();
+        });
+      }
       if (img) {
         img.addEventListener('error', () => {
           let remaining = [];
@@ -348,10 +433,14 @@
       }
       btn.addEventListener('click', (e) => {
         e.preventDefault();
-        const qty = Math.max(1, parseInt(qtyInput.value, 10) || 1);
-        qtyInput.value = qty;
-        if (addToCart(item, qty)) {
-          btn.textContent = 'Added';
+        const qty = normalizeQty();
+        const isNewItem = addToCart(item, qty);
+        if (isNewItem) {
+          btn.textContent = t('shop_added', 'تمت الإضافة', 'Added');
+          showToast(t('shop_toast_added', 'تمت إضافة المعدة إلى السلة', 'Equipment added to cart'), 'success');
+        } else {
+          btn.textContent = t('shop_updated', 'تم التحديث', 'Updated');
+          showToast(t('shop_toast_updated', 'تم تحديث الكمية في السلة', 'Cart quantity updated'), 'info');
         }
       });
       grid.appendChild(col);
