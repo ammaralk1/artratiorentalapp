@@ -1872,7 +1872,9 @@
 
           mobileVideo.addEventListener("playing", function () {
             if (!hero.classList.contains("cs-home-hero--video-active")) return;
-            hidePosterForLoading();
+            // Keep poster timing controlled by markVideoReady so mobile first-load
+            // always respects the configured hold duration.
+            if (mobileLoopTransitioning) return;
             markVideoReady();
             unbindMobileUnlockHandlers();
           });
