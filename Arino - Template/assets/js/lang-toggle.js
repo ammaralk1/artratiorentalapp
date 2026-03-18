@@ -1137,8 +1137,9 @@
     feedback_breadcrumb: { en: 'Feedback', ar: 'آراء العملاء' },
     feedback_intro_subtitle: { en: 'Client Feedback', ar: 'تقييم العميل' },
     feedback_intro_title: {
+      type: 'html',
       en: 'Your feedback helps us improve every project.',
-      ar: 'رأيك يهمنا ويساعدنا نطور كل مشروع.',
+      ar: 'رأيك يهمنا<br>ويساعدنا نطور كل مشروع.',
     },
     feedback_form_name: { en: 'Full Name*', ar: 'الاسم الكامل*' },
     feedback_form_email: { en: 'Email*', ar: 'البريد الإلكتروني*' },

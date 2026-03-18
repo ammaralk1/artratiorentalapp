@@ -12,6 +12,14 @@
   font-display: block;
 }
 
+@font-face {
+  font-family: "DINNextLTArabic-Medium";
+  src: url("../fonts/DINNextLTArabic-Medium-4.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
+
 /* Pattern overlay above background, below content */
 body::before {
   z-index: 0;
@@ -201,6 +209,42 @@ body[data-page="home"] .cs-funfact_heading h2 {
   font-weight: 400;
 }
 
+html[lang="ar"] body[data-page="home"] [data-i18n-key="home_general_text_1"],
+html[dir="rtl"] body[data-page="home"] [data-i18n-key="home_general_text_1"],
+body.rtl[data-page="home"] [data-i18n-key="home_general_text_1"],
+html[lang="ar"] body[data-page="home"] [data-i18n-key="home_general_text_2"],
+html[dir="rtl"] body[data-page="home"] [data-i18n-key="home_general_text_2"],
+body.rtl[data-page="home"] [data-i18n-key="home_general_text_2"],
+html[lang="ar"] body[data-page="home"] [data-i18n-key="home_general_text_3"],
+html[dir="rtl"] body[data-page="home"] [data-i18n-key="home_general_text_3"],
+body.rtl[data-page="home"] [data-i18n-key="home_general_text_3"],
+html[lang="ar"] [data-i18n-key="home_cta_title"],
+html[dir="rtl"] [data-i18n-key="home_cta_title"],
+body.rtl [data-i18n-key="home_cta_title"] {
+  font-family: "DINNextLTArabic-Medium", "TSKufidia-Normal", "Tajawal", sans-serif !important;
+  font-weight: 500;
+}
+
+/* Footer Arabic-only typography (services + contact block). */
+html[lang="ar"] .cs-fooer .cs-footer_item_services .cs-widget_title,
+html[dir="rtl"] .cs-fooer .cs-footer_item_services .cs-widget_title,
+body.rtl .cs-fooer .cs-footer_item_services .cs-widget_title,
+html[lang="ar"] .cs-fooer .cs-footer_services a,
+html[dir="rtl"] .cs-fooer .cs-footer_services a,
+body.rtl .cs-fooer .cs-footer_services a,
+html[lang="ar"] .cs-fooer .cs-footer_item_contact .cs-widget_title,
+html[dir="rtl"] .cs-fooer .cs-footer_item_contact .cs-widget_title,
+body.rtl .cs-fooer .cs-footer_item_contact .cs-widget_title,
+html[lang="ar"] .cs-fooer .cs-footer_item_contact .cs-menu_widget,
+html[dir="rtl"] .cs-fooer .cs-footer_item_contact .cs-menu_widget,
+body.rtl .cs-fooer .cs-footer_item_contact .cs-menu_widget,
+html[lang="ar"] .cs-fooer .cs-footer_item_contact .cs-menu_widget a,
+html[dir="rtl"] .cs-fooer .cs-footer_item_contact .cs-menu_widget a,
+body.rtl .cs-fooer .cs-footer_item_contact .cs-menu_widget a {
+  font-family: "DINNextLTArabic-Medium", "TSKufidia-Normal", "Tajawal", sans-serif !important;
+  font-weight: 500;
+}
+
 body[data-page="home"] [data-i18n-key="home_service_title"] {
   font-family: "TSKufidia-Normal", "Tajawal", sans-serif;
   font-weight: 400;
@@ -213,6 +257,7 @@ body[data-page="home"] [data-i18n-key="home_projects_title"] {
 
 body[data-page="home"] [data-i18n-key="home_values_title"],
 body[data-page="home"] [data-i18n-key="home_team_title"],
+body[data-page="home"] [data-i18n-key="home_process_title"],
 body[data-page="home"] [data-i18n-key="home_blog_title"],
 body[data-page="home"] [data-i18n-key="home_partners_marquee"] {
   font-family: "TSKufidia-Normal", "Tajawal", sans-serif;
@@ -222,7 +267,6 @@ body[data-page="home"] [data-i18n-key="home_partners_marquee"] {
 /* About page section typography (AR/EN) */
 body[data-page="about"] [data-i18n-key="about_intro_title"],
 body[data-page="about"] [data-i18n-key="funfacts_title"],
-body[data-page="about"] [data-i18n-key="funfacts_body"],
 body[data-page="about"] [data-i18n-key="about_why_title"],
 body[data-page="about"] [data-i18n-key="home_team_title"] {
   font-family: "TSKufidia-Normal", "Tajawal", sans-serif;
