@@ -432,15 +432,22 @@ function resolveEquipmentRequestBrandBaseUrl(): string
     return 'https://art-ratio.com';
 }
 
-function resolveEquipmentRequestBrandLogoUrl(): string
+function resolveEquipmentRequestBrandAssetUrl(string $relativePath): string
 {
+    $trimmedPath = ltrim($relativePath, '/');
     $host = trim((string) ($_SERVER['HTTP_HOST'] ?? ''));
     if ($host !== '' && (stripos($host, '127.0.0.1') !== false || stripos($host, 'localhost') !== false)) {
         $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-        return $scheme . '://' . $host . '/Arino%20-%20Template/assets/img/email-art-ratio-logo.png';
+        $localPath = 'Arino - Template/' . $trimmedPath;
+        return $scheme . '://' . $host . '/' . str_replace('%2F', '/', rawurlencode($localPath));
     }
 
-    return resolveEquipmentRequestBrandBaseUrl() . '/assets/img/email-art-ratio-logo.png';
+    return resolveEquipmentRequestBrandBaseUrl() . '/' . $trimmedPath;
+}
+
+function resolveEquipmentRequestBrandLogoUrl(): string
+{
+    return resolveEquipmentRequestBrandAssetUrl('assets/img/email-art-ratio-logo.png');
 }
 
 function resolveEquipmentRequestBrandPalette(): array
@@ -453,9 +460,10 @@ function resolveEquipmentRequestBrandPalette(): array
         'near_black' => '#030B03',
         'olive' => '#4E654A',
         'sage' => '#9AAA91',
-        'surface' => '#F6F7F2',
+        'surface' => '#FFFFFF',
         'surface_border' => 'rgba(80,80,80,0.14)',
         'body_text' => '#1f2937',
+        'email_background' => '#FFFFFF',
     ];
 }
 
@@ -464,37 +472,37 @@ function resolveEquipmentRequestSocialLinks(): array
     return [
         [
             'label' => 'Instagram',
-            'icon_class' => 'fab fa-instagram',
+            'icon_url' => resolveEquipmentRequestBrandAssetUrl('assets/img/email-social/instagram.svg'),
             'url' => 'https://www.instagram.com/art_ratio',
         ],
         [
             'label' => 'WhatsApp',
-            'icon_class' => 'fab fa-whatsapp',
+            'icon_url' => resolveEquipmentRequestBrandAssetUrl('assets/img/email-social/whatsapp.svg'),
             'url' => 'https://wa.me/966567680152',
         ],
         [
             'label' => 'TikTok',
-            'icon_class' => 'fab fa-tiktok',
+            'icon_url' => resolveEquipmentRequestBrandAssetUrl('assets/img/email-social/tiktok.svg'),
             'url' => 'https://www.tiktok.com/@art_ratio',
         ],
         [
             'label' => 'YouTube',
-            'icon_class' => 'fab fa-youtube',
+            'icon_url' => resolveEquipmentRequestBrandAssetUrl('assets/img/email-social/youtube.svg'),
             'url' => 'https://www.youtube.com/@ArtRatio',
         ],
         [
             'label' => 'Snapchat',
-            'icon_class' => 'fab fa-snapchat-ghost',
+            'icon_url' => resolveEquipmentRequestBrandAssetUrl('assets/img/email-social/snapchat.svg'),
             'url' => 'https://www.snapchat.com/add/art_ratio',
         ],
         [
             'label' => 'LinkedIn',
-            'icon_class' => 'fab fa-linkedin-in',
+            'icon_url' => resolveEquipmentRequestBrandAssetUrl('assets/img/email-social/linkedin.svg'),
             'url' => 'https://www.linkedin.com/company/art-ratio/',
         ],
         [
             'label' => 'Vimeo',
-            'icon_class' => 'fab fa-vimeo-v',
+            'icon_url' => resolveEquipmentRequestBrandAssetUrl('assets/img/email-social/vimeo.svg'),
             'url' => 'https://vimeo.com/user249863389?fl=pp&fe=sh',
         ],
     ];
@@ -504,11 +512,12 @@ function buildEquipmentRequestSocialLinksHtml(): string
 {
     $links = [];
     foreach (resolveEquipmentRequestSocialLinks() as $social) {
-        $iconClass = htmlspecialchars((string) ($social['icon_class'] ?? ''), ENT_QUOTES, 'UTF-8');
         $url = htmlspecialchars((string) ($social['url'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $iconUrl = htmlspecialchars((string) ($social['icon_url'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $label = htmlspecialchars((string) ($social['label'] ?? ''), ENT_QUOTES, 'UTF-8');
 
-        $links[] = '<a href="' . $url . '" style="display:inline-block;width:38px;height:38px;line-height:38px;margin:0 4px;border:1px solid rgba(255,255,255,0.72);border-radius:999px;background:transparent;color:#ffffff;text-decoration:none;text-align:center;font-size:16px;vertical-align:middle;" target="_blank" rel="noopener noreferrer" aria-label="' . htmlspecialchars((string) ($social['label'] ?? ''), ENT_QUOTES, 'UTF-8') . '">'
-            . '<i class="' . $iconClass . '" style="color:inherit;line-height:38px;font-size:16px;"></i>'
+        $links[] = '<a href="' . $url . '" style="display:inline-block;width:38px;height:38px;line-height:38px;margin:0 4px;border:1px solid rgba(255,255,255,0.72);border-radius:999px;background:transparent;color:#ffffff;text-decoration:none;text-align:center;vertical-align:middle;" target="_blank" rel="noopener noreferrer" aria-label="' . $label . '">'
+            . '<img src="' . $iconUrl . '" alt="' . $label . '" width="16" height="16" style="display:inline-block;width:16px;height:16px;vertical-align:middle;border:0;outline:none;text-decoration:none;">'
             . '</a>';
     }
 
@@ -549,6 +558,20 @@ function buildEquipmentRequestClosingText(bool $isArabic): string
     return "Best regards,\nArt Ratio Team";
 }
 
+function buildEquipmentRequestTableHeaderCell(string $label, string $align = 'left'): string
+{
+    $safeLabel = htmlspecialchars($label, ENT_QUOTES, 'UTF-8');
+    $safeAlign = htmlspecialchars($align, ENT_QUOTES, 'UTF-8');
+
+    return '<th style="padding:8px;border:1px solid #ddd;text-align:' . $safeAlign . ';background:#93a889;color:#ffffff;font-weight:700;">' . $safeLabel . '</th>';
+}
+
+function buildEquipmentRequestPhoneHtml(string $phone): string
+{
+    $safePhone = htmlspecialchars(trim($phone), ENT_QUOTES, 'UTF-8');
+    return '<span dir="ltr" style="display:inline-block;direction:ltr;unicode-bidi:bidi-override;white-space:nowrap;">' . $safePhone . '</span>';
+}
+
 function buildEquipmentRequestEmailFooterHtml(bool $isArabic): string
 {
     $palette = resolveEquipmentRequestBrandPalette();
@@ -556,12 +579,13 @@ function buildEquipmentRequestEmailFooterHtml(bool $isArabic): string
     $siteUrl = resolveEquipmentRequestBrandBaseUrl();
     $safeSiteUrl = htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8');
     $socialLinks = buildEquipmentRequestSocialLinksHtml();
+    $contactPhone = buildEquipmentRequestPhoneHtml('+966 56 768 0152');
 
     if ($isArabic) {
         return '<div style="margin-top:22px;padding:16px 20px 18px;border-radius:18px;background:' . $palette['panel'] . ';border:1px solid ' . $palette['slate'] . ';color:#fefefe;text-align:center;">'
             . '<img src="' . $logoUrl . '" alt="Art Ratio" style="display:block;margin:0 auto 12px;max-width:132px;height:auto;">'
             . '<p style="margin:0;color:rgba(255,255,255,0.82);font-size:12px;line-height:1.8;white-space:nowrap;">'
-            . 'الهاتف: +966 56 768 0152'
+            . 'الهاتف: ' . $contactPhone
             . '<span style="display:inline-block;margin:0 8px;color:' . $palette['slate'] . ';">|</span>'
             . 'الموقع الإلكتروني: <a href="' . $safeSiteUrl . '" style="color:' . $palette['sage'] . ';text-decoration:none;font-weight:700;">art-ratio.com</a>'
             . '<span style="display:inline-block;margin:0 8px;color:' . $palette['slate'] . ';">|</span>'
@@ -574,7 +598,7 @@ function buildEquipmentRequestEmailFooterHtml(bool $isArabic): string
     return '<div style="margin-top:22px;padding:16px 20px 18px;border-radius:18px;background:' . $palette['panel'] . ';border:1px solid ' . $palette['slate'] . ';color:#fefefe;text-align:center;">'
         . '<img src="' . $logoUrl . '" alt="Art Ratio" style="display:block;margin:0 auto 12px;max-width:132px;height:auto;">'
         . '<p style="margin:0;color:rgba(255,255,255,0.82);font-size:12px;line-height:1.8;white-space:nowrap;">'
-        . 'Phone: +966 56 768 0152'
+        . 'Phone: ' . $contactPhone
         . '<span style="display:inline-block;margin:0 8px;color:' . $palette['slate'] . ';">|</span>'
         . 'Website: <a href="' . $safeSiteUrl . '" style="color:' . $palette['sage'] . ';text-decoration:none;font-weight:700;">art-ratio.com</a>'
         . '<span style="display:inline-block;margin:0 8px;color:' . $palette['slate'] . ';">|</span>'
@@ -605,7 +629,7 @@ function buildEquipmentRequestEmailShellHtml(string $contentHtml, bool $isArabic
     $dir = $isArabic ? 'rtl' : 'ltr';
     $fontFamily = $isArabic ? 'Tahoma,Arial,sans-serif' : 'Arial,sans-serif';
 
-    return '<div dir="' . $dir . '" style="margin:0;padding:24px;background:' . $palette['charcoal'] . ';font-family:' . $fontFamily . ';">'
+    return '<div dir="' . $dir . '" style="margin:0;padding:24px;background:' . $palette['email_background'] . ';font-family:' . $fontFamily . ';">'
         . '<div style="max-width:760px;margin:0 auto;background:' . $palette['surface'] . ';border:1px solid ' . $palette['surface_border'] . ';border-radius:24px;overflow:hidden;box-shadow:0 18px 40px rgba(3,11,3,0.22);">'
         . '<div style="padding:22px 20px 20px;background:' . $palette['panel'] . ';border-bottom:3px solid ' . $palette['slate'] . ';text-align:center;">'
         . '<p style="margin:0 0 12px;color:' . $palette['sage'] . ';font-size:10px;font-weight:700;letter-spacing:0.24em;text-transform:uppercase;">art-ratio.com</p>'
@@ -649,7 +673,7 @@ function buildEquipmentRequestCustomerReceivedEmailHtml(
 
     $safeName = htmlspecialchars($customerName, ENT_QUOTES, 'UTF-8');
     $safeCode = htmlspecialchars($requestCode, ENT_QUOTES, 'UTF-8');
-    $safePhone = htmlspecialchars($customerPhone, ENT_QUOTES, 'UTF-8');
+    $safePhone = buildEquipmentRequestPhoneHtml($customerPhone);
     $safeNotes = $notes !== '' ? nl2br(htmlspecialchars($notes, ENT_QUOTES, 'UTF-8')) : '-';
 
     if ($isArabic) {
@@ -663,9 +687,9 @@ function buildEquipmentRequestCustomerReceivedEmailHtml(
             . '<p><strong>ملاحظاتك:</strong><br>' . $safeNotes . '</p>'
             . '<table style="border-collapse:collapse;width:100%;margin-top:16px;">'
             . '<thead><tr>'
-            . '<th style="padding:8px;border:1px solid #ddd;text-align:right;">العنصر</th>'
-            . '<th style="padding:8px;border:1px solid #ddd;text-align:right;">التصنيف</th>'
-            . '<th style="padding:8px;border:1px solid #ddd;text-align:center;">الكمية</th>'
+            . buildEquipmentRequestTableHeaderCell('العنصر', 'right')
+            . buildEquipmentRequestTableHeaderCell('التصنيف', 'right')
+            . buildEquipmentRequestTableHeaderCell('الكمية', 'center')
             . '</tr></thead>'
             . '<tbody>' . $rows . '</tbody>'
             . '</table>'
@@ -685,9 +709,9 @@ function buildEquipmentRequestCustomerReceivedEmailHtml(
         . '<p><strong>Your notes:</strong><br>' . $safeNotes . '</p>'
         . '<table style="border-collapse:collapse;width:100%;margin-top:16px;">'
         . '<thead><tr>'
-        . '<th style="padding:8px;border:1px solid #ddd;text-align:left;">Item</th>'
-        . '<th style="padding:8px;border:1px solid #ddd;text-align:left;">Category</th>'
-        . '<th style="padding:8px;border:1px solid #ddd;text-align:center;">Qty</th>'
+        . buildEquipmentRequestTableHeaderCell('Item', 'left')
+        . buildEquipmentRequestTableHeaderCell('Category', 'left')
+        . buildEquipmentRequestTableHeaderCell('Qty', 'center')
         . '</tr></thead>'
         . '<tbody>' . $rows . '</tbody>'
         . '</table>'
@@ -837,14 +861,14 @@ function buildEquipmentRequestEmailHtml(
         . '<p><strong>Request Code:</strong> ' . htmlspecialchars($requestCode, ENT_QUOTES, 'UTF-8') . '</p>'
         . '<p><strong>Name:</strong> ' . htmlspecialchars($customerName, ENT_QUOTES, 'UTF-8') . '</p>'
         . '<p><strong>Email:</strong> ' . htmlspecialchars($customerEmail, ENT_QUOTES, 'UTF-8') . '</p>'
-        . '<p><strong>Phone:</strong> ' . htmlspecialchars($customerPhone, ENT_QUOTES, 'UTF-8') . '</p>'
+        . '<p><strong>Phone:</strong> ' . buildEquipmentRequestPhoneHtml($customerPhone) . '</p>'
         . '<p><strong>Total Items:</strong> ' . $totalItems . '</p>'
         . '<p><strong>Notes:</strong><br>' . $safeNotes . '</p>'
         . '<table style="border-collapse:collapse;width:100%;margin-top:16px;">'
         . '<thead><tr>'
-        . '<th style="padding:8px;border:1px solid #ddd;text-align:left;">Item</th>'
-        . '<th style="padding:8px;border:1px solid #ddd;text-align:left;">Category</th>'
-        . '<th style="padding:8px;border:1px solid #ddd;text-align:center;">Qty</th>'
+        . buildEquipmentRequestTableHeaderCell('Item', 'left')
+        . buildEquipmentRequestTableHeaderCell('Category', 'left')
+        . buildEquipmentRequestTableHeaderCell('Qty', 'center')
         . '</tr></thead>'
         . '<tbody>' . $rows . '</tbody>'
         . '</table>'

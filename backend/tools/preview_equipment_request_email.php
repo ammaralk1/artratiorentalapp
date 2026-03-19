@@ -84,7 +84,7 @@ function previewBuildStatusEmailHtml(
 ): string {
     $safeName = htmlspecialchars($customerName, ENT_QUOTES, 'UTF-8');
     $safeCode = htmlspecialchars($requestCode, ENT_QUOTES, 'UTF-8');
-    $safePhone = htmlspecialchars($customerPhone, ENT_QUOTES, 'UTF-8');
+    $safePhone = buildEquipmentRequestPhoneHtml($customerPhone);
     $safeNote = $statusNote !== '' ? nl2br(htmlspecialchars($statusNote, ENT_QUOTES, 'UTF-8')) : '';
     $rows = previewBuildStatusRows($items, $isArabic);
 
@@ -99,11 +99,11 @@ function previewBuildStatusEmailHtml(
             . ($safeNote !== '' ? '<p><strong>ملاحظة التحديث:</strong><br>' . $safeNote . '</p>' : '')
             . '<table style="border-collapse:collapse;width:100%;margin-top:16px;">'
             . '<thead><tr>'
-            . '<th style="padding:8px;border:1px solid #ddd;text-align:right;">العنصر</th>'
-            . '<th style="padding:8px;border:1px solid #ddd;text-align:right;">التصنيف</th>'
-            . '<th style="padding:8px;border:1px solid #ddd;text-align:center;">الكمية</th>'
-            . '<th style="padding:8px;border:1px solid #ddd;text-align:center;">حالة العنصر</th>'
-            . '<th style="padding:8px;border:1px solid #ddd;text-align:right;">ملاحظة</th>'
+            . buildEquipmentRequestTableHeaderCell('العنصر', 'right')
+            . buildEquipmentRequestTableHeaderCell('التصنيف', 'right')
+            . buildEquipmentRequestTableHeaderCell('الكمية', 'center')
+            . buildEquipmentRequestTableHeaderCell('حالة العنصر', 'center')
+            . buildEquipmentRequestTableHeaderCell('ملاحظة', 'right')
             . '</tr></thead>'
             . '<tbody>' . $rows . '</tbody>'
             . '</table>'
@@ -122,11 +122,11 @@ function previewBuildStatusEmailHtml(
         . ($safeNote !== '' ? '<p><strong>Update note:</strong><br>' . $safeNote . '</p>' : '')
         . '<table style="border-collapse:collapse;width:100%;margin-top:16px;">'
         . '<thead><tr>'
-        . '<th style="padding:8px;border:1px solid #ddd;text-align:left;">Item</th>'
-        . '<th style="padding:8px;border:1px solid #ddd;text-align:left;">Category</th>'
-        . '<th style="padding:8px;border:1px solid #ddd;text-align:center;">Qty</th>'
-        . '<th style="padding:8px;border:1px solid #ddd;text-align:center;">Item status</th>'
-        . '<th style="padding:8px;border:1px solid #ddd;text-align:left;">Note</th>'
+        . buildEquipmentRequestTableHeaderCell('Item', 'left')
+        . buildEquipmentRequestTableHeaderCell('Category', 'left')
+        . buildEquipmentRequestTableHeaderCell('Qty', 'center')
+        . buildEquipmentRequestTableHeaderCell('Item status', 'center')
+        . buildEquipmentRequestTableHeaderCell('Note', 'left')
         . '</tr></thead>'
         . '<tbody>' . $rows . '</tbody>'
         . '</table>'

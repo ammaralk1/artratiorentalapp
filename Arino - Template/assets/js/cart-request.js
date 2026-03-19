@@ -19,6 +19,7 @@
 
   let cart = [];
   let isSending = false;
+  let toastTimer = null;
   const cloudflareBase = 'https://assets.art-ratio.com/';
   const cloudflarePngFolderPrimary = 'png2';
   const cloudflarePngFolderSecondary = 'png';
@@ -255,14 +256,62 @@
     resultEl.className = 'cs-cart-request-result';
     resultEl.setAttribute('role', 'status');
     resultEl.setAttribute('aria-live', 'polite');
+    resultEl.hidden = true;
     formEl.appendChild(resultEl);
     return resultEl;
+  }
+
+  function getToastEl() {
+    let hostEl = document.getElementById('cs-shop-toast-host');
+    if (!hostEl) {
+      hostEl = document.createElement('div');
+      hostEl.id = 'cs-shop-toast-host';
+      hostEl.className = 'cs-shop-toast-host';
+      document.body.appendChild(hostEl);
+    }
+
+    let toastEl = document.getElementById('cs-shop-toast');
+    if (toastEl) return toastEl;
+
+    toastEl = document.createElement('div');
+    toastEl.id = 'cs-shop-toast';
+    toastEl.className = 'cs-shop-toast';
+    toastEl.setAttribute('role', 'status');
+    toastEl.setAttribute('aria-live', 'polite');
+    hostEl.appendChild(toastEl);
+    return toastEl;
+  }
+
+  function showToast(message, type) {
+    const normalizedMessage = String(message || '').trim();
+    if (!normalizedMessage) return;
+
+    const toastEl = getToastEl();
+    if (toastTimer) {
+      window.clearTimeout(toastTimer);
+      toastTimer = null;
+    }
+
+    toastEl.className = `cs-shop-toast cs-shop-toast--${type || 'info'}`;
+    toastEl.textContent = normalizedMessage;
+
+    window.requestAnimationFrame(function () {
+      toastEl.classList.add('is-visible');
+    });
+
+    toastTimer = window.setTimeout(function () {
+      toastEl.classList.remove('is-visible');
+    }, 4200);
   }
 
   function showResult(message, type) {
     const resultEl = getResultEl();
     resultEl.className = `cs-cart-request-result is-${type || 'info'}`;
     resultEl.textContent = message;
+    resultEl.hidden = !String(message || '').trim();
+    if (message) {
+      showToast(message, type || 'info');
+    }
   }
 
   function forceWhiteCartLabels() {
@@ -292,6 +341,7 @@
     if (!resultEl) return;
     resultEl.textContent = '';
     resultEl.className = 'cs-cart-request-result';
+    resultEl.hidden = true;
   }
 
   function bindNotesPlaceholderBehavior() {
