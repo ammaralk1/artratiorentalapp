@@ -1448,7 +1448,7 @@
         var hasBroadcastedVideoReady = false;
         var hasInitialVideoReady = false;
         var hasFirstFrameReady = false;
-        var minPosterHoldMs = 1800;
+        var minPosterHoldMs = 2000;
         var posterShownAt = 0;
         var posterHideTimer = null;
         var playbackProbeTimer = null;
@@ -1718,6 +1718,7 @@
                 }
               })
               .catch(function () {
+                showPosterForLoading();
                 // Keep poster visible and hard-reload Vimeo segment instead of ending up on a black frame.
                 reloadDesktopSegmentAndReattach();
               })
@@ -2289,16 +2290,6 @@
             probeStablePlayback();
           });
           vimeoPlayer.on("play", function () {
-            if (!isMobileViewport() && hero.classList.contains("cs-home-hero--show-poster")) {
-              vimeoPlayer
-                .getCurrentTime()
-                .then(function (seconds) {
-                  if (typeof seconds === "number" && seconds >= loopStartSeconds - 0.5) {
-                    hidePosterForLoading();
-                  }
-                })
-                .catch(function () {});
-            }
             if (hasFirstFrameReady) return;
             if (isMobileViewport()) {
               markVideoReady();
@@ -2332,13 +2323,9 @@
             })
             .then(function () {
               if (isMobileViewport()) return null;
-              if (desktopLoopTransitioning || desktopLoopPosterTimer) return null;
               return vimeoPlayer.setCurrentTime(loopStartSeconds);
             })
             .then(function () {
-              if (!isMobileViewport() && (desktopLoopTransitioning || desktopLoopPosterTimer)) {
-                return null;
-              }
               return vimeoPlayer.play();
             })
             .then(function () {
@@ -2452,7 +2439,7 @@
           }
         });
 
-        hidePosterForLoading();
+        showPosterForLoading();
         applyMobileHeroFraming();
         setHeroMedia();
       })();
