@@ -87,7 +87,6 @@
 
     const payload = await response.json().catch(() => ({}));
     if (response.status === 401) {
-      redirectToLogin();
       const unauthorizedError = new Error('Unauthorized');
       unauthorizedError.code = 401;
       throw unauthorizedError;
@@ -119,9 +118,21 @@
         return;
       }
       showApp();
-      await loadRequests();
+      try {
+        await loadRequests();
+      } catch (error) {
+        if (error && error.code === 401) {
+          redirectToLogin();
+          return;
+        }
+        showToast(error.message || 'تعذر تحميل الطلبات حالياً', 'error');
+      }
     } catch (error) {
-      redirectToLogin();
+      if (error && error.code === 401) {
+        redirectToLogin();
+        return;
+      }
+      showToast(error.message || 'تعذر التحقق من الجلسة حالياً', 'error');
     }
   }
 

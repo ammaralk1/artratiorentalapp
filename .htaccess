@@ -29,6 +29,7 @@ RewriteRule ^favicon_io/(.*)$ dist/favicon_io/$1 [L,NC]
 RewriteRule ^site\.webmanifest$ dist/favicon_io/site.webmanifest [L,NC]
 
 RewriteRule ^(dashboard|home|login|customer|technician|projects|projects-reports|projects-expenses|users|notifications)(?:\.html)?/?$ dist/src/pages/$1.html [L,NC]
+RewriteRule ^equipment-requests-portal(?:\.html)?/?$ Arino\ -\ Template/equipment-requests-portal.html [L,NC]
 # Redirect any legacy /src/pages/* paths to the built pages
 RewriteRule ^src/pages/(.*)$ dist/src/pages/$1 [L,NC]
 
