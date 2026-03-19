@@ -125,6 +125,16 @@ body {
   background: rgba(79, 140, 255, 0.17);
 }
 
+/* Keep requests-list table header pure white and bright. */
+table.erp-table--requests-head-white thead,
+table.erp-table--requests-head-white thead th,
+table.erp-table--requests-head-white thead th * {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  filter: brightness(150%) !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
 .erp-details-panel {
   padding: 12px;
 }

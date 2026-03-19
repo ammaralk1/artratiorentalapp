@@ -24,6 +24,15 @@
   const REQUESTS_API = `${API_BASE}/equipment-requests/admin.php`;
   const LOGIN_PAGE_URL = 'login.html';
   const HOME_PAGE_URL = 'home.html';
+  const PREVIEW_MODE = (function () {
+    try {
+      const params = new URLSearchParams(window.location.search || '');
+      const value = String(params.get('preview') || '').trim().toLowerCase();
+      return value === '1' || value === 'true' || value === 'yes';
+    } catch (error) {
+      return false;
+    }
+  })();
 
   const state = {
     user: null,
@@ -129,6 +138,12 @@
   }
 
   async function ensureAuthenticatedSession() {
+    if (PREVIEW_MODE) {
+      showApp();
+      showToast('وضع معاينة مفعل', 'info');
+      return;
+    }
+
     try {
       const response = await apiRequest(AUTH_API, { method: 'GET' });
       state.user = response && response.data ? response.data : null;

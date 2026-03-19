@@ -25,8 +25,42 @@
   <link rel="stylesheet" href="assets/css/plugins/lightgallery.min.css">
   <link rel="stylesheet" href="assets/css/plugins/animate.css">
   <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="stylesheet" href="assets/css/custom-overrides.css?v=20260319-cart-db1">
+    <link rel="stylesheet" href="assets/css/custom-overrides.css?v=20260319-cart-db10">
       <link rel="stylesheet" href="assets/css/pattern-bg.css">
+      <style id="shop-cart-color-lock">
+        body[data-page="shop-cart"] .cart-force-white,
+        body[data-page="shop-cart"] .cart-force-white * {
+          color: #fff !important;
+          -webkit-text-fill-color: #fff !important;
+          opacity: 1 !important;
+        }
+
+        body[data-page="shop-cart"] #cart-table-wrap thead th,
+        body[data-page="shop-cart"] #cart-table-wrap thead th *,
+        body[data-page="shop-cart"] #cart-table-wrap tbody td:nth-child(2),
+        body[data-page="shop-cart"] #cart-table-wrap tbody td:nth-child(2) * {
+          color: #fff !important;
+          -webkit-text-fill-color: #fff !important;
+          opacity: 1 !important;
+        }
+
+        body[data-page="shop-cart"] #cart-table-wrap .cs-cart_table thead,
+        body[data-page="shop-cart"] #cart-table-wrap .cs-cart_table thead tr,
+        body[data-page="shop-cart"] #cart-table-wrap .cs-cart_table thead th,
+        body[data-page="shop-cart"] #cart-table-wrap .cs-cart_table thead th * {
+          color: #ffffff !important;
+          opacity: 1 !important;
+          filter: brightness(105%) !important;
+          -webkit-text-fill-color: #ffffff !important;
+        }
+
+        body[data-page="shop-cart"] [data-i18n-key="cart_total_items"],
+        body[data-page="shop-cart"] #cart-total-count {
+          color: #fff !important;
+          -webkit-text-fill-color: #fff !important;
+          opacity: 1 !important;
+        }
+      </style>
   </head>
 
 <body data-page="shop-cart">
@@ -306,9 +340,9 @@
           <table class="cs-cart_table">
             <thead>
               <tr>
-                <th data-i18n-key="cart_table_item">Item</th>
-                <th data-i18n-key="cart_table_category">Category</th>
-                <th data-i18n-key="cart_table_qty">Qty</th>
+                <th class="cart-force-white" data-i18n-key="cart_table_item" style="color:#fff !important;-webkit-text-fill-color:#fff !important;opacity:1 !important;">Item</th>
+                <th class="cart-force-white" data-i18n-key="cart_table_category" style="color:#fff !important;-webkit-text-fill-color:#fff !important;opacity:1 !important;">Category</th>
+                <th class="cart-force-white" data-i18n-key="cart_table_qty" style="color:#fff !important;-webkit-text-fill-color:#fff !important;opacity:1 !important;">Qty</th>
                 <th></th>
               </tr>
             </thead>
@@ -324,8 +358,8 @@
             <table class="cs-white_color">
               <tbody>
                 <tr>
-                  <td class="cs-semi_bold" data-i18n-key="cart_total_items">Total Items</td>
-                  <td class="text-end" id="cart-total-count">0</td>
+                  <td class="cs-semi_bold cart-force-white" data-i18n-key="cart_total_items" style="color:#fff !important;-webkit-text-fill-color:#fff !important;opacity:1 !important;">Total Items</td>
+                  <td class="text-end cart-force-white" id="cart-total-count" style="color:#fff !important;-webkit-text-fill-color:#fff !important;opacity:1 !important;">0</td>
                 </tr>
               </tbody>
             </table>
@@ -455,7 +489,7 @@
   <script src="assets/js/plugins/lightgallery.min.js"></script>
   <script src="assets/js/plugins/wow.min.js"></script>
   <script src="assets/js/plugins/gsap.min.js"></script>
-  <script src="assets/js/cart-request.js?v=20260319-cart-db2"></script>
+  <script src="assets/js/cart-request.js?v=20260319-cart-db7"></script>
   <script src="assets/js/lang-toggle.js?v=20260319-cart-db1"></script>
     <script src="assets/js/main.js?v=20260318-video-mobile-fix4"></script>
 </body>

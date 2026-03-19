@@ -2689,7 +2689,7 @@ body.rtl .cs-shop-toast-host {
 }
 
 .cs-cart-request-result.is-info {
-  color: #d6dce2;
+  color: #fff;
 }
 
 /* Cart qty controls use dedicated classes to avoid legacy handlers. */
@@ -2699,4 +2699,156 @@ body[data-page="shop-cart"] #cart-table-body .cs-quantity_button.cs-cart-inc {
 
 body[data-page="shop-cart"] #cart-table-body .cs-quantity_button.cs-cart-dec {
   bottom: 7px;
+}
+
+/* Shop cart page: keep all visible text white as requested. */
+body[data-page="shop-cart"] {
+  color: #fff;
+}
+
+body[data-page="shop-cart"] :where(
+  h1, h2, h3, h4, h5, h6,
+  p, li, a, span, small, strong,
+  label, th, td, .breadcrumb-item,
+  .cs-section_subtitle, .cs-alert, .cs-login-link,
+  .cs-cart-request-result, .cs-contact_info li, .cs-contact_info a
+) {
+  color: #fff !important;
+  opacity: 1 !important;
+}
+
+body[data-page="shop-cart"] #cart-request-form :where(input, textarea) {
+  color: #fff !important;
+  caret-color: #fff;
+}
+
+body[data-page="shop-cart"] #cart-request-form :where(input, textarea)::placeholder {
+  color: #fff !important;
+  opacity: 1 !important;
+}
+
+/* Shop cart visual theme alignment */
+body[data-page="shop-cart"] .cs-shop-card {
+  background: linear-gradient(180deg, rgba(40, 58, 43, 0.95) 0%, rgba(27, 40, 30, 0.96) 100%);
+  border: 1px solid rgba(147, 168, 137, 0.35);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35);
+}
+
+body[data-page="shop-cart"] .cs-section_heading .cs-section_title {
+  color: #fff !important;
+}
+
+body[data-page="shop-cart"] #cart-table-wrap .cs-cart_table {
+  border: 1px solid rgba(147, 168, 137, 0.35);
+}
+
+body[data-page="shop-cart"] #cart-table-wrap .cs-cart_table th {
+  background: rgba(34, 52, 37, 0.95);
+  color: #fff !important;
+  border-bottom: 1px solid rgba(147, 168, 137, 0.55);
+}
+
+body[data-page="shop-cart"] #cart-table-wrap .cs-cart_table td {
+  background: rgba(20, 30, 23, 0.78);
+  border-bottom: 1px solid rgba(147, 168, 137, 0.22);
+}
+
+body[data-page="shop-cart"] #cart-empty.cs-alert {
+  background: rgba(62, 86, 62, 0.32);
+  border: 1px solid rgba(147, 168, 137, 0.45);
+}
+
+body[data-page="shop-cart"] #cart-request-form :where(input, textarea) {
+  background: rgba(31, 46, 35, 0.9) !important;
+  border: 1px solid rgba(147, 168, 137, 0.45) !important;
+}
+
+body[data-page="shop-cart"] #cart-request-form :where(input, textarea):focus {
+  border-color: #93a889 !important;
+  box-shadow: 0 0 0 3px rgba(147, 168, 137, 0.24) !important;
+}
+
+body[data-page="shop-cart"] #cart-table-body .cs-quantity {
+  border: 1px solid rgba(147, 168, 137, 0.45);
+  background: rgba(27, 40, 30, 0.9);
+}
+
+body[data-page="shop-cart"] #cart-table-body .cs-quantity_input {
+  color: #fff !important;
+}
+
+body[data-page="shop-cart"] #cart-table-body .cs-quantity_button {
+  color: #fff !important;
+}
+
+body[data-page="shop-cart"] #cart-table-body .cs-quantity_button:hover {
+  color: #fff !important;
+}
+
+body[data-page="shop-cart"] #cart-table-body .js-cart-remove {
+  color: #fff !important;
+}
+
+body[data-page="shop-cart"] #cart-table-body .js-cart-remove:hover {
+  color: #fff !important;
+}
+
+body[data-page="shop-cart"] :where(
+  .cs-cart_table,
+  .cs-cart_table *,
+  #cart-request-form .cs-input label,
+  #cart-total-count,
+  #cart-table-body .cs-cart_table_media h3
+) {
+  color: #fff !important;
+  opacity: 1 !important;
+}
+
+body[data-page="shop-cart"] #cart-send-btn.cs-product_btn {
+  background: #3e563e !important;
+  border: 1px solid #3e563e !important;
+  color: #fff !important;
+}
+
+body[data-page="shop-cart"] #cart-send-btn.cs-product_btn:hover,
+body[data-page="shop-cart"] #cart-send-btn.cs-product_btn:focus-visible {
+  background: #93a889 !important;
+  border-color: #93a889 !important;
+  color: #122014 !important;
+}
+
+/* Force specific cart labels/values to pure white (requested). */
+body[data-page="shop-cart"] #cart-table-wrap thead th,
+body[data-page="shop-cart"] #cart-table-wrap thead th *,
+body[data-page="shop-cart"] #cart-table-wrap tbody td,
+body[data-page="shop-cart"] #cart-table-wrap tbody td *,
+body[data-page="shop-cart"] #cart-table-body td:nth-child(2),
+body[data-page="shop-cart"] #cart-table-body td:nth-child(2) *,
+body[data-page="shop-cart"] .cs-shop-card table td,
+body[data-page="shop-cart"] .cs-shop-card table td *,
+body[data-page="shop-cart"] [data-i18n-key="cart_total_items"],
+body[data-page="shop-cart"] #cart-total-count {
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+  opacity: 1 !important;
+}
+
+table.cs-white_color,
+table.cs-white_color td,
+table.cs-white_color th {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  filter: brightness(150%) !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Shop cart request-list header: force pure white like requested. */
+body[data-page="shop-cart"] #cart-table-wrap .cs-cart_table thead,
+body[data-page="shop-cart"] #cart-table-wrap .cs-cart_table thead tr,
+body[data-page="shop-cart"] #cart-table-wrap .cs-cart_table thead th,
+body[data-page="shop-cart"] #cart-table-wrap .cs-cart_table thead th * {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  filter: brightness(105%) !important;
+  -webkit-text-fill-color: #ffffff !important;
 }

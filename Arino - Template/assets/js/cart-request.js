@@ -23,6 +23,7 @@
   const cloudflarePngFolderPrimary = 'png2';
   const cloudflarePngFolderSecondary = 'png';
   const cloudflareOutsourceFolder = 'outsource';
+  const DEMO_SEED_QUERY_KEYS = ['seedDemoCart', 'demoCart', 'previewCart'];
 
   function isArabic() {
     const lang = (document.documentElement.lang || '').toLowerCase();
@@ -121,6 +122,57 @@
     };
   }
 
+  function shouldSeedDemoCartFromQuery() {
+    try {
+      const params = new URLSearchParams(window.location.search || '');
+      return DEMO_SEED_QUERY_KEYS.some((key) => {
+        const value = String(params.get(key) || '').trim().toLowerCase();
+        return value === '1' || value === 'true' || value === 'yes';
+      });
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function getDemoCartItems() {
+    return [
+      {
+        name: 'Sony FX6 Camera',
+        image: 'assets/img/shop/cart-product-1.jpeg',
+        category: 'Camera',
+        subcategory: 'Cinema',
+        qty: 1,
+      },
+      {
+        name: 'DJI Ronin RS 3 Pro',
+        image: 'assets/img/shop/cart-product-2.jpeg',
+        category: 'Stabilizer',
+        subcategory: 'Gimbal',
+        qty: 1,
+      },
+      {
+        name: 'Aputure 600D Pro',
+        image: 'assets/img/shop/cart-product-3.jpeg',
+        category: 'Lighting',
+        subcategory: 'LED',
+        qty: 2,
+      },
+    ];
+  }
+
+  function applyDemoCartLocally() {
+    cart = getDemoCartItems().map(sanitizeItem).filter(Boolean);
+    renderCart();
+    showResult(
+      t(
+        'cart_demo_seeded_local',
+        'تم عرض معدات افتراضية محليًا للمعاينة.',
+        'Local demo equipment is shown for preview.',
+      ),
+      'info',
+    );
+  }
+
   async function requestJson(url, method, body) {
     const options = {
       method,
@@ -148,6 +200,27 @@
     const list = Array.isArray(payload.data) ? payload.data : [];
     cart = list.map(sanitizeItem).filter(Boolean);
     updateHeaderBadge();
+  }
+
+  async function seedDemoCartIfNeeded() {
+    if (!shouldSeedDemoCartFromQuery()) return false;
+    if (cart.length > 0) return false;
+
+    const demoItems = getDemoCartItems();
+    for (const item of demoItems) {
+      await requestJson(CART_API_URL, 'POST', item);
+    }
+
+    await loadCartFromApi();
+    showResult(
+      t(
+        'cart_demo_seeded',
+        'تمت إضافة معدات افتراضية للمعاينة.',
+        'Demo equipment has been added for preview.',
+      ),
+      'info',
+    );
+    return true;
   }
 
   function getTotalItems() {
@@ -190,6 +263,28 @@
     const resultEl = getResultEl();
     resultEl.className = `cs-cart-request-result is-${type || 'info'}`;
     resultEl.textContent = message;
+  }
+
+  function forceWhiteCartLabels() {
+    const selectors = [
+      '.cart-force-white',
+      '.cart-force-white *',
+      '#cart-table-wrap thead th',
+      '#cart-table-wrap thead th *',
+      '#cart-table-body td:nth-child(2)',
+      '#cart-table-body td:nth-child(2) *',
+      '[data-i18n-key="cart_total_items"]',
+      '#cart-total-count',
+    ];
+
+    selectors.forEach((selector) => {
+      document.querySelectorAll(selector).forEach((node) => {
+        if (!(node instanceof HTMLElement)) return;
+        node.style.setProperty('color', '#fff', 'important');
+        node.style.setProperty('-webkit-text-fill-color', '#fff', 'important');
+        node.style.setProperty('opacity', '1', 'important');
+      });
+    });
   }
 
   function clearResult() {
@@ -237,7 +332,7 @@
               <h3>${safeName}</h3>
             </div>
           </td>
-          <td>${safeCategory}</td>
+          <td class="cart-force-white" style="color:#fff !important;-webkit-text-fill-color:#fff !important;opacity:1 !important;"><span class="cart-force-white" style="color:#fff !important;-webkit-text-fill-color:#fff !important;opacity:1 !important;">${safeCategory}</span></td>
           <td>
             <div class="cs-quantity">
               <input type="number" class="cs-quantity_input js-cart-qty" min="1" step="1" value="${safeQty}" inputmode="numeric" pattern="[0-9]*">
@@ -282,6 +377,7 @@
 
     updateHeaderBadge();
     setSendButtonState();
+    forceWhiteCartLabels();
   }
 
   async function updateQtyByIndex(index, qty) {
@@ -498,6 +594,7 @@
 
   const langObserver = new MutationObserver(() => {
     renderCart();
+    forceWhiteCartLabels();
   });
   langObserver.observe(document.documentElement, {
     attributes: true,
@@ -505,9 +602,18 @@
   });
 
   loadCartFromApi()
-    .then(() => renderCart())
+    .then(async () => {
+      await seedDemoCartIfNeeded();
+      renderCart();
+      forceWhiteCartLabels();
+    })
     .catch((error) => {
       console.error('Cart preload failed', error);
+      if (shouldSeedDemoCartFromQuery()) {
+        applyDemoCartLocally();
+        forceWhiteCartLabels();
+        return;
+      }
       showResult(
         t(
           'cart_load_error',
@@ -518,5 +624,11 @@
       );
       cart = [];
       renderCart();
+      forceWhiteCartLabels();
     });
+
+  // Re-apply color lock briefly after page load to guard against late overrides.
+  [120, 280, 600, 1000, 1600].forEach((delay) => {
+    window.setTimeout(forceWhiteCartLabels, delay);
+  });
 })();
