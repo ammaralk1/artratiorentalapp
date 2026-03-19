@@ -1472,6 +1472,8 @@
         var desktopLoopTransitioning = false;
         var desktopLoopPosterPauseMs = 2000;
         var desktopSegmentTimer = null;
+        var desktopSimpleCycleTimer = null;
+        var desktopSimplePlayTimer = null;
         var mobileInitialReadyPending = false;
         var mobilePageSettled = false;
         var mobilePageSettleTimer = null;
@@ -1518,6 +1520,44 @@
           if (!desktopSegmentTimer) return;
           clearTimeout(desktopSegmentTimer);
           desktopSegmentTimer = null;
+        }
+
+        function clearDesktopSimpleCycleTimers() {
+          if (desktopSimpleCycleTimer) {
+            clearInterval(desktopSimpleCycleTimer);
+            desktopSimpleCycleTimer = null;
+          }
+          if (desktopSimplePlayTimer) {
+            clearTimeout(desktopSimplePlayTimer);
+            desktopSimplePlayTimer = null;
+          }
+        }
+
+        function runDesktopSimpleCycleStep() {
+          if (isMobileViewport()) return;
+          if (!hero.classList.contains("cs-home-hero--video-active")) return;
+          if (!frame) return;
+
+          showPosterForLoading();
+          desktopSimplePlayTimer = setTimeout(function () {
+            desktopSimplePlayTimer = null;
+            if (isMobileViewport()) return;
+            if (!hero.classList.contains("cs-home-hero--video-active")) return;
+            frame.setAttribute("src", buildSegmentSrc());
+            hidePosterForLoading();
+            if (!hasFirstFrameReady) {
+              markVideoReady();
+            }
+          }, desktopLoopPosterPauseMs);
+        }
+
+        function startDesktopSimpleCycle() {
+          if (isMobileViewport()) return;
+          clearDesktopSimpleCycleTimers();
+          runDesktopSimpleCycleStep();
+          desktopSimpleCycleTimer = setInterval(function () {
+            runDesktopSimpleCycleStep();
+          }, desktopLoopPosterPauseMs + segmentDurationMs);
         }
 
         function clearMobilePageSettleTimer() {
@@ -1747,6 +1787,7 @@
           clearLoopWatchdog();
           clearSegmentRestartTimer();
           clearDesktopSegmentTimer();
+          clearDesktopSimpleCycleTimers();
           clearAttachRetryTimer();
           clearPosterHideTimer();
           hasFirstFrameReady = false;
@@ -2029,6 +2070,7 @@
           clearAttachRetryTimer();
           clearMobileReadyFallbackTimer();
           clearDesktopSegmentTimer();
+          clearDesktopSimpleCycleTimers();
           mobileBootstrapSeekAttempts = 0;
           mobileReadyFallbackAttempts = 0;
           hero.classList.remove("cs-home-hero--video-ready");
@@ -2192,6 +2234,7 @@
           var viewportH = window.innerHeight || document.documentElement.clientHeight;
           var visible = rect.bottom > 0 && rect.top < viewportH;
           if (!visible) return;
+          if (!isMobileViewport()) return;
           if (isMobileLocalVideoMode()) {
             if (mobileLoopTransitioning || mobileLoopPosterTimer) return;
             if (mobileVideo) {
@@ -2344,6 +2387,7 @@
           showPosterForLoading();
 
           if (isMobileLocalVideoMode()) {
+            clearDesktopSimpleCycleTimers();
             clearLoopWatchdog();
             clearSegmentRestartTimer();
             bindMobileVideoEvents();
@@ -2395,7 +2439,7 @@
               vimeoPlayer = null;
               reachedLoopWindow = false;
             }
-            restartDesktopLoopWithPosterPause({ pauseCurrent: false, seekToStart: true });
+            startDesktopSimpleCycle();
           }
 
           try {
