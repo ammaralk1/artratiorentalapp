@@ -196,7 +196,7 @@
     </div>
     <!-- End Header Section -->
     <!-- Start Hero -->
-    <div class="cs-hero cs-style1 cs-bg cs-fixed_bg cs-shape_wrap_1 cs-home-hero cs-home-hero--video-active" data-src="assets/img/hero_bg.jpeg" id="home">
+    <div class="cs-hero cs-style1 cs-bg cs-fixed_bg cs-shape_wrap_1 cs-home-hero cs-home-hero--video-active cs-home-hero--show-poster" data-src="assets/img/hero_bg.jpeg" id="home">
       <div class="cs-home-hero_media" aria-hidden="true">
         <div class="cs-home-hero_poster" aria-hidden="true"></div>
         <iframe
@@ -1435,7 +1435,7 @@
           return base + (nextQuery ? "?" + nextQuery : "") + hash;
         }
         var desktopFrameSrc = setQueryParam(removeQueryParam(frameSrc, "quality"), "quality", "1080p");
-        var loopStartSeconds = 43;
+        var loopStartSeconds = 0;
         var loopEndSeconds = 61;
         var loopGuardSeconds = 0.06;
         var loopResetGuardSeconds = 1.5;
@@ -2161,6 +2161,7 @@
 
         function scheduleHardSegmentRestart() {
           clearSegmentRestartTimer();
+          if (!isMobileViewport()) return;
           if (isMobileLocalVideoMode()) return;
           if (!hero.classList.contains("cs-home-hero--video-active")) return;
           if (!frame || !frame.getAttribute("src")) return;
@@ -2188,6 +2189,7 @@
         function startLoopWatchdog() {
           clearLoopWatchdog();
           if (!vimeoPlayer) return;
+          if (!isMobileViewport()) return;
           loopWatchdog = setInterval(function () {
                 vimeoPlayer
                   .getCurrentTime()
@@ -2255,6 +2257,7 @@
           vimeoPlayer.off("seeked");
           vimeoPlayer.on("timeupdate", function (data) {
             if (!data || typeof data.seconds !== "number") return;
+            if (!isMobileViewport()) return;
             if (!hasFirstFrameReady && data.seconds >= loopStartSeconds - 0.05) {
               reachedLoopWindow = true;
               probeStablePlayback();
@@ -2271,6 +2274,7 @@
             restartSegmentWithPoster();
           });
           vimeoPlayer.on("pause", function () {
+            if (!isMobileViewport()) return;
             vimeoPlayer
               .getCurrentTime()
               .then(function (seconds) {
