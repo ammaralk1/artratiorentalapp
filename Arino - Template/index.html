@@ -1625,6 +1625,20 @@
               return;
             }
 
+            if (!frame || !window.Vimeo || !window.Vimeo.Player) {
+              desktopLoopTransitioning = false;
+              setTimeout(function () {
+                if (isMobileViewport() || !hero.classList.contains("cs-home-hero--video-active")) return;
+                restartDesktopLoopWithPosterPause({ pauseCurrent: false, seekToStart: true });
+              }, 350);
+              return;
+            }
+
+            // Deterministic desktop cycle: reload iframe every loop from segment start.
+            frame.setAttribute("src", buildSegmentSrc());
+            vimeoPlayer = null;
+            reachedLoopWindow = false;
+
             if (!vimeoPlayer && frame && window.Vimeo && window.Vimeo.Player) {
               try {
                 vimeoPlayer = new window.Vimeo.Player(frame);
@@ -1642,6 +1656,18 @@
 
             vimeoPlayer
               .ready()
+              .then(function () {
+                if (typeof vimeoPlayer.setMuted === "function") {
+                  return vimeoPlayer.setMuted(true).catch(function () {});
+                }
+                return null;
+              })
+              .then(function () {
+                return vimeoPlayer.setVolume(0).catch(function () {});
+              })
+              .then(function () {
+                return vimeoPlayer.setLoop(false).catch(function () {});
+              })
               .then(function () {
                 if (!seekToStart) return null;
                 return vimeoPlayer.setCurrentTime(loopStartSeconds).catch(function () {});
@@ -2192,6 +2218,7 @@
         }
 
         function attachVimeoLoop() {
+          if (!isMobileViewport()) return;
           if (isMobileLocalVideoMode()) return;
           if (!frame || !frame.getAttribute("src")) return;
           if (!window.Vimeo || !window.Vimeo.Player) {
@@ -2367,9 +2394,7 @@
               frame.setAttribute("src", buildSegmentSrc());
               vimeoPlayer = null;
               reachedLoopWindow = false;
-              setTimeout(attachVimeoLoop, 120);
             }
-            attachVimeoLoop();
             restartDesktopLoopWithPosterPause({ pauseCurrent: false, seekToStart: true });
           }
 
