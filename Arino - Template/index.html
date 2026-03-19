@@ -201,8 +201,8 @@
         <div class="cs-home-hero_poster" aria-hidden="true"></div>
         <iframe
           class="cs-home-hero_video_frame"
-          data-vimeo-src="https://player.vimeo.com/video/1132903455?autoplay=1&muted=1&loop=0&autopause=0&controls=0&title=0&byline=0&portrait=0&dnt=1&playsinline=1&background=1&quality=1080p"
-          src="https://player.vimeo.com/video/1132903455?autoplay=1&muted=1&loop=0&autopause=0&controls=0&title=0&byline=0&portrait=0&dnt=1&playsinline=1&background=1&quality=1080p"
+          data-vimeo-src="https://player.vimeo.com/video/1132903455?autoplay=1&muted=1&loop=0&autopause=0&controls=0&title=0&byline=0&portrait=0&dnt=1&playsinline=1&quality=1080p"
+          src="https://player.vimeo.com/video/1132903455?autoplay=1&muted=1&loop=0&autopause=0&controls=0&title=0&byline=0&portrait=0&dnt=1&playsinline=1&quality=1080p"
           loading="eager"
           frameborder="0"
           allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
@@ -1435,7 +1435,7 @@
           return base + (nextQuery ? "?" + nextQuery : "") + hash;
         }
         var desktopFrameSrc = setQueryParam(removeQueryParam(frameSrc, "quality"), "quality", "1080p");
-        var loopStartSeconds = 0;
+        var loopStartSeconds = 42;
         var loopEndSeconds = 61;
         var loopGuardSeconds = 0.06;
         var loopResetGuardSeconds = 1.5;
@@ -1597,7 +1597,7 @@
         function restartDesktopLoopWithPosterPause(options) {
           options = options || {};
           var seekToStart = options.seekToStart !== false;
-          var pauseCurrent = options.pauseCurrent !== false;
+          var pauseCurrent = options.pauseCurrent === true;
           if (isMobileViewport()) return;
           if (!hero.classList.contains("cs-home-hero--video-active")) return;
           if (desktopLoopTransitioning) return;
@@ -1605,79 +1605,9 @@
           desktopLoopTransitioning = true;
           clearDesktopLoopPosterTimer();
           showPosterForLoading();
+
           if (pauseCurrent && vimeoPlayer && typeof vimeoPlayer.pause === "function") {
             vimeoPlayer.pause().catch(function () {});
-          }
-
-          function waitForDesktopPlaybackProgress() {
-            return new Promise(function (resolve, reject) {
-              var checks = 0;
-              var maxChecks = 12;
-              var lastSecond = null;
-
-              function tick() {
-                if (!vimeoPlayer || isMobileViewport() || !hero.classList.contains("cs-home-hero--video-active")) {
-                  reject(new Error("Desktop playback probe aborted"));
-                  return;
-                }
-                vimeoPlayer
-                  .getCurrentTime()
-                  .then(function (seconds) {
-                    if (typeof seconds !== "number") {
-                      checks += 1;
-                      if (checks >= maxChecks) {
-                        reject(new Error("Desktop playback probe failed"));
-                        return;
-                      }
-                      setTimeout(tick, 120);
-                      return;
-                    }
-
-                    if (lastSecond === null) {
-                      lastSecond = seconds;
-                      checks += 1;
-                      setTimeout(tick, 120);
-                      return;
-                    }
-
-                    if (seconds > lastSecond + 0.02) {
-                      resolve();
-                      return;
-                    }
-
-                    lastSecond = seconds;
-                    checks += 1;
-                    if (checks >= maxChecks) {
-                      reject(new Error("Desktop playback not advancing"));
-                      return;
-                    }
-                    setTimeout(tick, 120);
-                  })
-                  .catch(function () {
-                    checks += 1;
-                    if (checks >= maxChecks) {
-                      reject(new Error("Desktop playback probe error"));
-                      return;
-                    }
-                    setTimeout(tick, 120);
-                  });
-              }
-
-              tick();
-            });
-          }
-
-          function reloadDesktopSegmentAndReattach() {
-            if (!frame) return;
-            clearLoopWatchdog();
-            clearSegmentRestartTimer();
-            frame.setAttribute("src", buildSegmentSrc());
-            vimeoPlayer = null;
-            reachedLoopWindow = false;
-            setTimeout(function () {
-              attachVimeoLoop();
-              scheduleHardSegmentRestart();
-            }, 140);
           }
 
           desktopLoopPosterTimer = setTimeout(function () {
@@ -1695,7 +1625,10 @@
 
             if (!vimeoPlayer) {
               desktopLoopTransitioning = false;
-              reloadDesktopSegmentAndReattach();
+              setTimeout(function () {
+                if (isMobileViewport() || !hero.classList.contains("cs-home-hero--video-active")) return;
+                restartDesktopLoopWithPosterPause({ pauseCurrent: false, seekToStart: true });
+              }, 350);
               return;
             }
 
@@ -1709,9 +1642,6 @@
                 return vimeoPlayer.play();
               })
               .then(function () {
-                return waitForDesktopPlaybackProgress();
-              })
-              .then(function () {
                 hidePosterForLoading();
                 if (!hasFirstFrameReady) {
                   markVideoReady();
@@ -1719,13 +1649,14 @@
               })
               .catch(function () {
                 showPosterForLoading();
-                // Keep poster visible and hard-reload Vimeo segment instead of ending up on a black frame.
-                reloadDesktopSegmentAndReattach();
+                setTimeout(function () {
+                  if (desktopLoopTransitioning || desktopLoopPosterTimer) return;
+                  if (isMobileViewport() || !hero.classList.contains("cs-home-hero--video-active")) return;
+                  restartDesktopLoopWithPosterPause({ pauseCurrent: false, seekToStart: true });
+                }, 450);
               })
               .finally(function () {
                 desktopLoopTransitioning = false;
-                startLoopWatchdog();
-                scheduleHardSegmentRestart();
               });
           }, desktopLoopPosterPauseMs);
         }
@@ -2232,6 +2163,12 @@
             }
             return;
           }
+          if (!isMobileViewport() && hero.classList.contains("cs-home-hero--show-poster")) {
+            if (!desktopLoopTransitioning && !desktopLoopPosterTimer) {
+              restartDesktopLoopWithPosterPause({ pauseCurrent: false, seekToStart: true });
+            }
+            return;
+          }
           if (desktopLoopTransitioning || desktopLoopPosterTimer) return;
           if (!vimeoPlayer) return;
           vimeoPlayer.play().catch(function () {});
@@ -2257,7 +2194,6 @@
           vimeoPlayer.off("seeked");
           vimeoPlayer.on("timeupdate", function (data) {
             if (!data || typeof data.seconds !== "number") return;
-            if (!isMobileViewport()) return;
             if (!hasFirstFrameReady && data.seconds >= loopStartSeconds - 0.05) {
               reachedLoopWindow = true;
               probeStablePlayback();
@@ -2267,14 +2203,19 @@
               restartSegmentWithPoster();
               return;
             }
-            if (data.seconds < loopEndSeconds - loopGuardSeconds) return;
+            if (isMobileViewport()) {
+              if (data.seconds < loopEndSeconds - loopGuardSeconds) return;
+              restartSegmentWithPoster();
+              return;
+            }
+            // Desktop: switch to poster right at the segment end to keep timing at ~1:01.
+            if (data.seconds < loopEndSeconds - 0.05) return;
             restartSegmentWithPoster();
           });
           vimeoPlayer.on("ended", function () {
             restartSegmentWithPoster();
           });
           vimeoPlayer.on("pause", function () {
-            if (!isMobileViewport()) return;
             vimeoPlayer
               .getCurrentTime()
               .then(function (seconds) {
@@ -2294,6 +2235,12 @@
             probeStablePlayback();
           });
           vimeoPlayer.on("play", function () {
+            if (!isMobileViewport() && hero.classList.contains("cs-home-hero--show-poster")) {
+              var posterElapsedMs = posterShownAt ? (Date.now() - posterShownAt) : desktopLoopPosterPauseMs;
+              if (posterElapsedMs >= desktopLoopPosterPauseMs - 60) {
+                hidePosterForLoading();
+              }
+            }
             if (hasFirstFrameReady) return;
             if (isMobileViewport()) {
               markVideoReady();
@@ -2326,10 +2273,11 @@
               return vimeoPlayer.setLoop(false);
             })
             .then(function () {
-              if (isMobileViewport()) return null;
+              if (!isMobileViewport()) return null;
               return vimeoPlayer.setCurrentTime(loopStartSeconds);
             })
             .then(function () {
+              if (!isMobileViewport()) return null;
               return vimeoPlayer.play();
             })
             .then(function () {
