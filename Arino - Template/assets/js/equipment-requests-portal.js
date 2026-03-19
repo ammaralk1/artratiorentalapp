@@ -1,8 +1,29 @@
 (function () {
-  const AUTH_API = '/backend/api/auth/';
-  const REQUESTS_API = '/backend/api/equipment-requests/admin.php';
-  const LOGIN_PAGE_URL = '/login.html';
-  const HOME_PAGE_URL = '/home.html';
+  function resolveApiBase() {
+    try {
+      const globalBase = typeof window !== 'undefined' ? String(window.APP_API_BASE || '').trim() : '';
+      if (globalBase) {
+        return globalBase.replace(/\/+$/, '');
+      }
+
+      const host = String((window && window.location && window.location.hostname) || '').toLowerCase();
+      if (host === 'localhost' || host === '127.0.0.1' || host === '::1' || host === '') {
+        return '/backend/api';
+      }
+
+      if (host === 'art-ratio.com' || host === 'www.art-ratio.com' || host.endsWith('.art-ratio.com')) {
+        return 'https://api.art-ratio.com/backend/api';
+      }
+    } catch (error) {}
+
+    return '/backend/api';
+  }
+
+  const API_BASE = resolveApiBase();
+  const AUTH_API = `${API_BASE}/auth/`;
+  const REQUESTS_API = `${API_BASE}/equipment-requests/admin.php`;
+  const LOGIN_PAGE_URL = 'login.html';
+  const HOME_PAGE_URL = 'home.html';
 
   const state = {
     user: null,
