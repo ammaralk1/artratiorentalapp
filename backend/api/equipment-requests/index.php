@@ -363,6 +363,28 @@ function notifyEquipmentRequestCustomerReceivedByEmail(
         $htmlBody,
         $textBody
     );
+    $sent = !empty($result['sent']);
+    $provider = (string) ($result['provider'] ?? 'none');
+    $error = $sent ? null : (string) ($result['error'] ?? 'Failed to send customer confirmation email');
+
+    if (!$sent) {
+        $fallbackSent = sendEquipmentRequestViaWeb3Forms(
+            $subject,
+            $customerName,
+            $customerEmail,
+            $customerPhone,
+            $textBody
+        );
+        if ($fallbackSent) {
+            $sent = true;
+            $provider = 'web3forms';
+            $error = null;
+        }
+    }
+
+    $result['sent'] = $sent;
+    $result['provider'] = $provider;
+    $result['error'] = $error;
     $result['attempted'] = true;
     $result['recipient'] = $customerEmail;
     $result['subject'] = $subject;
@@ -389,8 +411,14 @@ function sendEquipmentRequestEmailWithRetry(
     $firstError = emailGetLastError() ?? 'First SMTP attempt failed';
 
     // Retry once to mitigate temporary provider throttling on immediate sequential sends.
+    // Use a sanitized ASCII recipient display name on retry to avoid header encoding issues
+    // seen with some SMTP relays.
     usleep(350000);
-    $retrySent = sendEmail($toEmail, $toName, $subject, $htmlBody, $textBody);
+    $retryName = trim((string) preg_replace('/[^\x20-\x7E]/', '', $toName));
+    if ($retryName === '') {
+        $retryName = 'Customer';
+    }
+    $retrySent = sendEmail($toEmail, $retryName, $subject, $htmlBody, $textBody);
     if ($retrySent) {
         return [
             'sent' => true,
