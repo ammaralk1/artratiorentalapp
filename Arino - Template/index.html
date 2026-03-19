@@ -80,7 +80,7 @@
     <link rel="stylesheet" href="assets/css/plugins/lightgallery.min.css">
     <link rel="stylesheet" href="assets/css/plugins/animate.css">
     <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="stylesheet" href="assets/css/custom-overrides.css?v=20260319-home-cache1">
+    <link rel="stylesheet" href="assets/css/custom-overrides.css?v=20260320-home-cache38">
     <link rel="stylesheet" href="assets/css/pattern-bg.css">
   </head>
   <body data-page="home">
@@ -199,6 +199,18 @@
     <div class="cs-hero cs-style1 cs-bg cs-fixed_bg cs-shape_wrap_1 cs-home-hero cs-home-hero--video-active cs-home-hero--show-poster" data-src="assets/img/hero_bg.jpeg" id="home">
       <div class="cs-home-hero_media" aria-hidden="true">
         <div class="cs-home-hero_poster" aria-hidden="true"></div>
+        <video
+          class="cs-home-hero_video cs-home-hero_desktop_video"
+          muted
+          playsinline
+          webkit-playsinline
+          preload="auto"
+          poster="assets/img/hero_bg.jpeg"
+          aria-hidden="true"
+        >
+          <source src="assets/video/home-hero-disktop.mp4?v=20260319-desktop1" type="video/mp4" />
+          <source src="https://assets.art-ratio.com/assets/video/home-hero-disktop.mp4?v=20260319-desktop1" type="video/mp4" />
+        </video>
         <iframe
           class="cs-home-hero_video_frame"
           data-vimeo-src="https://player.vimeo.com/video/1132903455?autoplay=1&muted=1&loop=0&autopause=0&controls=0&title=0&byline=0&portrait=0&dnt=1&playsinline=1&quality=1080p"
@@ -1407,7 +1419,9 @@
         if (!hero) return;
 
         var frame = hero.querySelector(".cs-home-hero_video_frame");
+        var desktopVideo = hero.querySelector(".cs-home-hero_desktop_video");
         var mobileVideo = hero.querySelector(".cs-home-hero_mobile_video");
+        var desktopVideoCloudflareSrc = "https://assets.art-ratio.com/assets/video/home-hero-disktop.mp4?v=20260319-desktop1";
         var frameSrc = frame ? frame.getAttribute("data-vimeo-src") : "";
         function removeQueryParam(rawUrl, key) {
           if (!rawUrl || rawUrl.indexOf("?") === -1) return rawUrl;
@@ -1474,6 +1488,7 @@
         var desktopSegmentTimer = null;
         var desktopSimpleCycleTimer = null;
         var desktopSimplePlayTimer = null;
+        var desktopSimpleWarmupTimer = null;
         var mobileInitialReadyPending = false;
         var mobilePageSettled = false;
         var mobilePageSettleTimer = null;
@@ -1531,56 +1546,227 @@
             clearTimeout(desktopSimplePlayTimer);
             desktopSimplePlayTimer = null;
           }
+          if (desktopSimpleWarmupTimer) {
+            clearTimeout(desktopSimpleWarmupTimer);
+            desktopSimpleWarmupTimer = null;
+          }
+        }
+
+        function getDesktopSegmentDurationMs() {
+          if (!desktopVideo) return segmentDurationMs;
+          var durationSeconds = Number(desktopVideo.duration);
+          if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) {
+            return segmentDurationMs;
+          }
+          return Math.max(1200, Math.round(durationSeconds * 1000));
+        }
+
+        function forceDesktopCloudflareFallback() {
+          if (!desktopVideo) return false;
+          if (desktopVideo.dataset.cloudflareFallbackForced === "1") return false;
+          desktopVideo.dataset.cloudflareFallbackForced = "1";
+          desktopVideo.setAttribute("src", desktopVideoCloudflareSrc);
+          try {
+            desktopVideo.load();
+          } catch (e) {}
+          return true;
+        }
+
+        function waitForDesktopVideoCanPlay(timeoutMs) {
+          return new Promise(function (resolve, reject) {
+            if (!desktopVideo) {
+              reject(new Error("desktop-video-missing"));
+              return;
+            }
+            if (desktopVideo.readyState >= 2) {
+              resolve(desktopVideo);
+              return;
+            }
+
+            var settled = false;
+            var timeoutId = null;
+
+            function cleanup() {
+              desktopVideo.removeEventListener("canplay", onReady);
+              desktopVideo.removeEventListener("loadeddata", onReady);
+              desktopVideo.removeEventListener("error", onError);
+              clearTimeout(timeoutId);
+            }
+
+            function settle(success, error) {
+              if (settled) return;
+              settled = true;
+              cleanup();
+              if (success) {
+                resolve(desktopVideo);
+                return;
+              }
+              reject(error || new Error("desktop-video-canplay-timeout"));
+            }
+
+            function onReady() {
+              settle(true);
+            }
+
+            function onError() {
+              settle(false, new Error("desktop-video-error"));
+            }
+
+            timeoutId = setTimeout(function () {
+              settle(false);
+            }, Math.max(800, timeoutMs || 4500));
+
+            desktopVideo.addEventListener("canplay", onReady);
+            desktopVideo.addEventListener("loadeddata", onReady);
+            desktopVideo.addEventListener("error", onError);
+          });
+        }
+
+        function prepareDesktopVideoForNextSegment() {
+          if (!desktopVideo) {
+            return Promise.reject(new Error("desktop-video-missing"));
+          }
+          desktopVideo.muted = true;
+          desktopVideo.defaultMuted = true;
+          desktopVideo.volume = 0;
+          desktopVideo.loop = false;
+          desktopVideo.removeAttribute("loop");
+          desktopVideo.preload = "auto";
+          desktopVideo.setAttribute("playsinline", "");
+          desktopVideo.setAttribute("webkit-playsinline", "");
+
+          try {
+            desktopVideo.pause();
+          } catch (e) {}
+          try {
+            desktopVideo.currentTime = 0;
+          } catch (e) {}
+          if (desktopVideo.readyState >= 2) {
+            return Promise.resolve(desktopVideo);
+          }
+          try {
+            desktopVideo.load();
+          } catch (e) {}
+          return waitForDesktopVideoCanPlay(5000);
+        }
+
+        function waitForDesktopVideoFirstFrame(timeoutMs) {
+          return new Promise(function (resolve, reject) {
+            if (!desktopVideo) {
+              reject(new Error("desktop-video-missing"));
+              return;
+            }
+            if (desktopVideo.currentTime > 0.03) {
+              resolve(desktopVideo);
+              return;
+            }
+
+            var settled = false;
+            var timeoutId = null;
+
+            function cleanup() {
+              desktopVideo.removeEventListener("timeupdate", onFrame);
+              desktopVideo.removeEventListener("playing", onFrame);
+              desktopVideo.removeEventListener("error", onError);
+              clearTimeout(timeoutId);
+            }
+
+            function settle(success, error) {
+              if (settled) return;
+              settled = true;
+              cleanup();
+              if (success) {
+                resolve(desktopVideo);
+                return;
+              }
+              reject(error || new Error("desktop-video-first-frame-timeout"));
+            }
+
+            function onFrame() {
+              if (desktopVideo.currentTime > 0.03) {
+                settle(true);
+              }
+            }
+
+            function onError() {
+              settle(false, new Error("desktop-video-error"));
+            }
+
+            timeoutId = setTimeout(function () {
+              settle(false);
+            }, Math.max(700, timeoutMs || 1800));
+
+            desktopVideo.addEventListener("timeupdate", onFrame);
+            desktopVideo.addEventListener("playing", onFrame);
+            desktopVideo.addEventListener("error", onError);
+          });
         }
 
         function runDesktopSimpleCycleStep() {
           if (isMobileViewport()) return;
           if (!hero.classList.contains("cs-home-hero--video-active")) return;
-          if (!frame) return;
+          if (!desktopVideo) return;
 
           showPosterForLoading();
+          var warmupPromise = null;
+          desktopSimpleWarmupTimer = setTimeout(function () {
+            desktopSimpleWarmupTimer = null;
+            warmupPromise = prepareDesktopVideoForNextSegment();
+          }, 460);
+
           desktopSimplePlayTimer = setTimeout(function () {
             desktopSimplePlayTimer = null;
             if (isMobileViewport()) return;
             if (!hero.classList.contains("cs-home-hero--video-active")) return;
+            if (!warmupPromise) {
+              warmupPromise = prepareDesktopVideoForNextSegment();
+            }
 
-            if (window.Vimeo && window.Vimeo.Player) {
-              if (!vimeoPlayer) {
+            warmupPromise
+              .then(function () {
+                if (isMobileViewport()) {
+                  return Promise.reject(new Error("desktop-cycle-aborted-mobile"));
+                }
+                if (!hero.classList.contains("cs-home-hero--video-active")) {
+                  return Promise.reject(new Error("desktop-cycle-aborted-inactive"));
+                }
                 try {
-                  vimeoPlayer = new window.Vimeo.Player(frame);
+                  desktopVideo.currentTime = 0;
                 } catch (e) {}
-              }
-              if (vimeoPlayer) {
-                vimeoPlayer.ready().then(function () {
-                  if (typeof vimeoPlayer.setMuted === "function") {
-                    vimeoPlayer.setMuted(true).catch(function () {});
-                  }
-                  vimeoPlayer.setVolume(0).catch(function () {});
-                  vimeoPlayer.setLoop(false).catch(function () {});
-                  vimeoPlayer.setCurrentTime(loopStartSeconds).catch(function () {});
-                  vimeoPlayer.play().catch(function () {});
-                }).catch(function () {});
-              }
-            }
+                return desktopVideo.play();
+              })
+              .then(function () {
+                return waitForDesktopVideoFirstFrame(1800);
+              })
+              .then(function () {
+                if (isMobileViewport()) return;
+                if (!hero.classList.contains("cs-home-hero--video-active")) return;
 
-            // Never keep poster stuck: hide after the 2s hold even if Vimeo API is delayed.
-            hidePosterForLoading();
-            if (!hasFirstFrameReady) {
-              markVideoReady();
-            }
+                hidePosterForLoading();
+                if (!hasFirstFrameReady) {
+                  markVideoReady();
+                }
 
-            if (isMobileViewport()) return;
-            if (!hero.classList.contains("cs-home-hero--video-active")) return;
-            clearTimeout(desktopSimpleCycleTimer);
-            desktopSimpleCycleTimer = setTimeout(
-              runDesktopSimpleCycleStep,
-              Math.max(1200, segmentDurationMs - 80)
-            );
+                clearTimeout(desktopSimpleCycleTimer);
+                desktopSimpleCycleTimer = setTimeout(
+                  runDesktopSimpleCycleStep,
+                  getDesktopSegmentDurationMs()
+                );
+              })
+              .catch(function () {
+                if (isMobileViewport()) return;
+                if (!hero.classList.contains("cs-home-hero--video-active")) return;
+                var forcedCloudflare = forceDesktopCloudflareFallback();
+                showPosterForLoading();
+                clearTimeout(desktopSimpleCycleTimer);
+                desktopSimpleCycleTimer = setTimeout(runDesktopSimpleCycleStep, forcedCloudflare ? 900 : 550);
+              });
           }, desktopLoopPosterPauseMs);
         }
 
         function startDesktopSimpleCycle() {
           if (isMobileViewport()) return;
+          if (!desktopVideo) return;
           clearDesktopSimpleCycleTimers();
           runDesktopSimpleCycleStep();
         }
@@ -1934,8 +2120,9 @@
         }
 
         function applyDesktopHeroQualityPreference() {
-          if (!frame) return;
           if (isMobileViewport()) return;
+          if (desktopVideo) return;
+          if (!frame) return;
           if (!desktopFrameSrc) return;
           frame.setAttribute("data-vimeo-src", desktopFrameSrc);
           frame.setAttribute("src", desktopFrameSrc);
@@ -2259,7 +2446,12 @@
           var viewportH = window.innerHeight || document.documentElement.clientHeight;
           var visible = rect.bottom > 0 && rect.top < viewportH;
           if (!visible) return;
-          if (!isMobileViewport()) return;
+          if (!isMobileViewport()) {
+            if (!desktopVideo) return;
+            if (hero.classList.contains("cs-home-hero--show-poster")) return;
+            desktopVideo.play().catch(function () {});
+            return;
+          }
           if (isMobileLocalVideoMode()) {
             if (mobileLoopTransitioning || mobileLoopPosterTimer) return;
             if (mobileVideo) {
@@ -2274,13 +2466,6 @@
             }
             return;
           }
-          if (!isMobileViewport() && hero.classList.contains("cs-home-hero--show-poster")) {
-            if (!desktopLoopTransitioning && !desktopLoopPosterTimer) {
-              restartDesktopLoopWithPosterPause({ pauseCurrent: false, seekToStart: true });
-            }
-            return;
-          }
-          if (desktopLoopTransitioning || desktopLoopPosterTimer) return;
           if (!vimeoPlayer) return;
           vimeoPlayer.play().catch(function () {});
         }
@@ -2419,6 +2604,13 @@
             reachedLoopWindow = false;
             vimeoPlayer = null;
             mobileVimeoFallbackActive = false;
+            if (desktopVideo) {
+              try {
+                desktopVideo.pause();
+              } catch (e) {}
+              desktopVideo.style.display = "none";
+              desktopVideo.style.opacity = "0";
+            }
 
             if (frame) {
               frame.removeAttribute("src");
@@ -2442,8 +2634,36 @@
               scheduleMobileReadyFallback();
               restartMobileLoopWithPosterPause({ pauseCurrent: false });
             }
+          } else if (!isMobileViewport() && desktopVideo) {
+            unbindMobileUnlockHandlers();
+            clearLoopWatchdog();
+            clearSegmentRestartTimer();
+            if (mobileVideo) {
+              try {
+                mobileVideo.pause();
+              } catch (e) {}
+              mobileVideo.style.display = "";
+              mobileVideo.style.opacity = "";
+            }
+            if (frame) {
+              frame.removeAttribute("src");
+              frame.style.display = "none";
+              frame.style.opacity = "0";
+              frame.style.visibility = "hidden";
+            }
+            desktopVideo.style.display = "block";
+            desktopVideo.style.opacity = "";
+            desktopVideo.style.visibility = "";
+            startDesktopSimpleCycle();
           } else if (frame) {
             unbindMobileUnlockHandlers();
+            if (desktopVideo) {
+              try {
+                desktopVideo.pause();
+              } catch (e) {}
+              desktopVideo.style.display = "none";
+              desktopVideo.style.opacity = "0";
+            }
             if (mobileVideo) {
               try {
                 mobileVideo.pause();

@@ -441,7 +441,7 @@ body[data-page="home"] .cs-home-hero .cs-home-hero_media {
   z-index: 0;
   background: #000;
   opacity: 0;
-  transition: opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: opacity 0.42s linear;
   pointer-events: none;
   will-change: opacity;
 }
@@ -451,10 +451,10 @@ body[data-page="home"] .cs-home-hero .cs-home-hero_poster {
   z-index: 1;
   background-image: url("../img/hero_bg.jpeg");
   background-size: cover;
-  background-position: 95% center;
+  background-position: center center;
   background-repeat: no-repeat;
   opacity: 0;
-  transition: opacity 0.45s ease;
+  transition: opacity 0.42s linear;
 }
 body[data-page="home"] .cs-home-hero.cs-home-hero--show-poster .cs-home-hero_poster {
   opacity: 1;
@@ -481,7 +481,13 @@ body[data-page="home"] .cs-home-hero .cs-home-hero_video_frame {
   height: 100%;
 }
 body[data-page="home"] .cs-home-hero .cs-home-hero_video {
+  display: block;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
   object-fit: cover;
+  transform: scale(1.18);
+  transform-origin: center center;
 }
 body[data-page="home"] .cs-home-hero .cs-home-hero_mobile_video {
   display: none;
@@ -525,9 +531,28 @@ body[data-page="home"] .cs-home-hero .cs-home-hero_media_switch {
   backdrop-filter: blur(6px);
 }
 @media (min-width: 992px) {
+  body[data-page="home"] .cs-home-hero {
+    --home-hero-video-x: 50%;
+    --home-hero-poster-x: 80%;
+  }
   body[data-page="home"] .cs-home-hero .cs-home-hero_media_switch {
     transform: translateX(-50%) scale(0.5);
     transform-origin: top center;
+  }
+  body[data-page="home"] .cs-home-hero .cs-home-hero_desktop_video {
+    transform: none;
+    object-fit: cover;
+    object-position: var(--home-hero-video-x) 50% !important;
+  }
+  body[data-page="home"] .cs-home-hero .cs-home-hero_poster {
+    background-position: var(--home-hero-poster-x) 50%;
+    background-size: cover;
+    transition-property: opacity;
+    transition-duration: 0.42s;
+    transition-timing-function: linear;
+    will-change: opacity;
+    transform: translateZ(0);
+    backface-visibility: hidden;
   }
 }
 body[data-page="home"] .cs-home-hero .cs-home-hero_media_switch button {
@@ -550,22 +575,37 @@ body[data-page="home"] .cs-home-hero .cs-home-hero_media_switch .cs-home-hero_to
   visibility: hidden;
   user-select: none;
 }
-body[data-page="home"] .cs-home-hero .cs-home-shape-1 {
-  top: 25%;
-  left: 10%;
-  animation: semi-rotate-anim 12s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-}
-body[data-page="home"] .cs-home-hero .cs-home-shape-2 {
-  top: 29%;
-  left: 20%;
-  transform: rotate(-10deg);
-  animation: semi-rotate-anim 14s cubic-bezier(0.33, 1, 0.68, 1) infinite;
-}
-body[data-page="home"] .cs-home-hero .cs-home-shape-3 {
-  top: 68%;
-  left: 35%;
-  transform: rotate(-30deg);
-  animation: animo-x 9s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+/* Home hero dots: force 3 visible animated dots on desktop hero */
+@media (min-width: 992px) {
+  body[data-page="home"] .cs-home-hero .cs-home-shape-1,
+  body[data-page="home"] .cs-home-hero .cs-home-shape-2,
+  body[data-page="home"] .cs-home-hero .cs-home-shape-3 {
+    position: absolute;
+    z-index: 3;
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: none;
+  }
+  body[data-page="home"] .cs-home-hero .cs-home-shape-1 {
+    top: 25%;
+    left: 6%;
+    z-index: 1;
+    animation: semi-rotate-anim 12s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
+  body[data-page="home"] .cs-home-hero .cs-home-shape-2 {
+    top: 30%;
+    left: 73%;
+    z-index: 1;
+    transform: rotate(-15deg);
+    animation: semi-rotate-anim 8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
+  body[data-page="home"] .cs-home-hero .cs-home-shape-3 {
+    top: 64%;
+    left: 35%;
+    transform: rotate(-30deg);
+    animation: animo-x 9s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
 }
 @media (max-width: 991px) {
   html[dir="ltr"] body[data-page="home"] .cs-home-hero .cs-hero_text,
@@ -621,6 +661,9 @@ body[data-page="home"] .cs-home-hero .cs-home-shape-3 {
     height: 91.40625vw;
     transform: translateY(calc(-50% + 210px)) scale(1.45);
     transform-origin: center center;
+  }
+  body[data-page="home"] .cs-home-hero .cs-home-hero_desktop_video {
+    display: none;
   }
   body[data-page="home"] .cs-home-hero .cs-home-hero_mobile_video {
     display: block;
@@ -712,6 +755,9 @@ body[data-page="home"] .cs-home-hero .cs-home-shape-3 {
     height: 91.40625vw;
     transform: translateY(calc(-50% + 260px)) scale(1.45);
     transform-origin: center center;
+  }
+  body[data-page="home"] .cs-home-hero .cs-home-hero_desktop_video {
+    display: none;
   }
   body[data-page="home"] .cs-home-hero .cs-home-hero_mobile_video {
     display: block;
@@ -1426,7 +1472,7 @@ body.rtl .cs-process_canvas {
 .cs-process_final-dot { right:110px; box-shadow:0 0 0 5px rgba(31,48,34,.3); }
 
 /* Shape 2 position */
-.cs-shape_wrap_2 .cs-shape_2 { right:auto; left:82%; top: -40px;; }
+.cs-shape_wrap_2 .cs-shape_2 { right:auto; left:82%; top:-40px; }
 .cs-shape_2 div { background: url("../img/shape_2.png") center/contain no-repeat !important; border-radius: 0 !important; }
 
 /* Blog section circles -> photo_shape */
