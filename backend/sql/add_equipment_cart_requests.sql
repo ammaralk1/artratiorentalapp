@@ -48,6 +48,8 @@ CREATE TABLE IF NOT EXISTS equipment_request_items (
     category VARCHAR(190) NULL,
     subcategory VARCHAR(190) NULL,
     qty INT UNSIGNED NOT NULL DEFAULT 1,
+    item_status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    item_status_note VARCHAR(500) NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     KEY idx_equipment_request_items_request (request_id),
     CONSTRAINT fk_equipment_request_items_request

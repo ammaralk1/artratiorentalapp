@@ -98,6 +98,42 @@
     return 'بانتظار التأكيد';
   }
 
+  function normalizeItemStatus(status) {
+    const normalized = String(status || '').toLowerCase();
+    if (normalized === 'available') return 'available';
+    if (normalized === 'unavailable') return 'unavailable';
+    return 'pending';
+  }
+
+  function formatItemStatus(status) {
+    const normalized = normalizeItemStatus(status);
+    if (normalized === 'available') return 'متاح';
+    if (normalized === 'unavailable') return 'غير متوفر';
+    return 'قيد المراجعة';
+  }
+
+  function renderItemStatusOptions(selectedStatus) {
+    const selected = normalizeItemStatus(selectedStatus);
+    return [
+      { value: 'pending', label: 'قيد المراجعة' },
+      { value: 'available', label: 'متاح' },
+      { value: 'unavailable', label: 'غير متوفر' },
+    ]
+      .map((option) => {
+        const isSelected = option.value === selected ? ' selected' : '';
+        return `<option value="${option.value}"${isSelected}>${option.label}</option>`;
+      })
+      .join('');
+  }
+
+  function setItemTagStatus(tagEl, status) {
+    if (!tagEl) return;
+    const normalized = normalizeItemStatus(status);
+    tagEl.classList.remove('erp-item-tag--pending', 'erp-item-tag--available', 'erp-item-tag--unavailable');
+    tagEl.classList.add(`erp-item-tag--${normalized}`);
+    tagEl.textContent = formatItemStatus(normalized);
+  }
+
   function formatDate(value) {
     if (!value) return '-';
     const date = new Date(value);
@@ -272,22 +308,63 @@
   function renderItems(items) {
     if (!els.itemsBody) return;
     if (!Array.isArray(items) || !items.length) {
-      els.itemsBody.innerHTML = '<tr><td colspan="3" class="erp-muted">لا توجد عناصر.</td></tr>';
+      els.itemsBody.innerHTML = '<tr><td colspan="5" class="erp-muted">لا توجد عناصر.</td></tr>';
       return;
     }
 
     els.itemsBody.innerHTML = items
       .map((item) => {
+        const itemId = Number(item.id || 0);
         const category = [item.category, item.subcategory].filter(Boolean).join(' • ') || '-';
+        const itemStatus = normalizeItemStatus(item.item_status);
+        const itemStatusNote = String(item.item_status_note || '').trim();
         return `
-          <tr>
+          <tr data-item-id="${itemId > 0 ? itemId : ''}">
             <td>${escapeHtml(item.name || '-')}</td>
             <td>${escapeHtml(category)}</td>
             <td>${escapeHtml(String(item.qty || 1))}</td>
+            <td>
+              <div class="erp-item-status-cell">
+                <span class="erp-item-tag erp-item-tag--${escapeHtml(itemStatus)}" data-item-tag>${escapeHtml(formatItemStatus(itemStatus))}</span>
+                <select class="erp-item-status" data-item-id="${itemId}">
+                  ${renderItemStatusOptions(itemStatus)}
+                </select>
+              </div>
+            </td>
+            <td>
+              <input
+                type="text"
+                class="erp-item-note"
+                data-item-id="${itemId}"
+                maxlength="500"
+                placeholder="اكتب ملاحظة تُرسل للعميل لهذا العنصر (اختياري)"
+                value="${escapeHtml(itemStatusNote)}"
+              >
+            </td>
           </tr>
         `;
       })
       .join('');
+  }
+
+  function collectItemUpdates() {
+    if (!els.itemsBody) return [];
+    const rows = Array.from(els.itemsBody.querySelectorAll('tr[data-item-id]'));
+    return rows
+      .map((row) => {
+        const id = Number(row.getAttribute('data-item-id') || 0);
+        if (!id) return null;
+        const statusInput = row.querySelector('.erp-item-status');
+        const noteInput = row.querySelector('.erp-item-note');
+        const status = normalizeItemStatus(statusInput ? statusInput.value : 'pending');
+        const note = String((noteInput && noteInput.value) || '').trim();
+        return {
+          id,
+          status,
+          note,
+        };
+      })
+      .filter(Boolean);
   }
 
   function renderMessages(messages) {
@@ -416,7 +493,7 @@
     };
   }
 
-  async function updateStatus(status, statusNote) {
+  async function updateStatus(status, statusNote, itemUpdates) {
     if (!state.selectedId) {
       showToast('اختر طلب أولاً', 'error');
       return;
@@ -427,6 +504,7 @@
         id: state.selectedId,
         status,
         status_note: String(statusNote || ''),
+        item_updates: Array.isArray(itemUpdates) ? itemUpdates : [],
       }),
     });
 
@@ -551,17 +629,29 @@
       button.addEventListener('click', async function () {
         const status = button.getAttribute('data-set-status');
         if (!status) return;
+        const itemUpdates = collectItemUpdates();
         const noteResult = askStatusNote(status);
         if (noteResult.cancelled) {
           return;
         }
         try {
-          await updateStatus(status, noteResult.note);
+          await updateStatus(status, noteResult.note, itemUpdates);
         } catch (error) {
           showToast(error.message || 'فشل تحديث الحالة', 'error');
         }
       });
     });
+
+    if (els.itemsBody) {
+      els.itemsBody.addEventListener('change', function (event) {
+        const statusInput = event.target.closest('.erp-item-status');
+        if (!statusInput) return;
+        const row = statusInput.closest('tr[data-item-id]');
+        if (!row) return;
+        const tag = row.querySelector('[data-item-tag]');
+        setItemTagStatus(tag, statusInput.value);
+      });
+    }
 
     if (els.messageForm) {
       els.messageForm.addEventListener('submit', async function (event) {

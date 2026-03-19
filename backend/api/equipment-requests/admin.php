@@ -11,6 +11,7 @@ try {
     requireRole(['admin', 'manager']);
 
     ensureEquipmentRequestTables($pdo);
+    ensureEquipmentRequestItemStatusColumns($pdo);
     ensureEquipmentRequestMessagesTable($pdo);
 
     switch ($method) {
@@ -137,6 +138,7 @@ function handleEquipmentRequestsAdminPatch(PDO $pdo): void
     $id = isset($payload['id']) ? (int) $payload['id'] : 0;
     $status = normalizeAdminRequestStatus((string) ($payload['status'] ?? ''));
     $statusNote = normalizeEquipmentRequestMultiline((string) ($payload['status_note'] ?? ''), 1200);
+    $itemUpdates = extractAdminItemUpdatesFromPayload($payload);
 
     if ($id <= 0) {
         throw new InvalidArgumentException('Valid request id is required');
@@ -151,6 +153,8 @@ function handleEquipmentRequestsAdminPatch(PDO $pdo): void
         return;
     }
     $previousStatus = strtolower((string) ($requestBefore['status'] ?? 'pending'));
+    $itemUpdateSummary = applyEquipmentRequestItemUpdates($pdo, $id, $itemUpdates);
+    $hasItemUpdates = ((int) ($itemUpdateSummary['updated_count'] ?? 0)) > 0;
 
     $statement = $pdo->prepare(
         'UPDATE equipment_requests
@@ -181,6 +185,13 @@ function handleEquipmentRequestsAdminPatch(PDO $pdo): void
     if ($statusNote !== '') {
         $systemMessage .= ' Note: ' . $statusNote;
     }
+    if ($hasItemUpdates) {
+        $systemMessage .= sprintf(
+            ' Item-level updates applied: %d (unavailable: %d).',
+            (int) ($itemUpdateSummary['updated_count'] ?? 0),
+            (int) ($itemUpdateSummary['unavailable_count'] ?? 0)
+        );
+    }
     insertEquipmentRequestMessage($pdo, [
         'request_id' => $id,
         'sender_user_id' => (int) ($user['id'] ?? 0) ?: null,
@@ -209,7 +220,7 @@ function handleEquipmentRequestsAdminPatch(PDO $pdo): void
         'message' => '',
         'error' => null,
     ];
-    if ($statusChanged || $statusNote !== '') {
+    if ($statusChanged || $statusNote !== '' || $hasItemUpdates) {
         $statusEmailResult = sendEquipmentRequestStatusUpdateToCustomer(
             (array) ($details['request'] ?? []),
             is_array($details['items'] ?? null) ? $details['items'] : [],
@@ -239,6 +250,8 @@ function handleEquipmentRequestsAdminPatch(PDO $pdo): void
         'status_email_provider' => (string) ($statusEmailResult['provider'] ?? 'none'),
         'status_email_recipient' => (string) ($statusEmailResult['recipient'] ?? ''),
         'status_email_error' => (string) ($statusEmailResult['error'] ?? ''),
+        'item_updates_applied' => (int) ($itemUpdateSummary['updated_count'] ?? 0),
+        'item_unavailable_count' => (int) ($itemUpdateSummary['unavailable_count'] ?? 0),
     ]);
 }
 
@@ -452,7 +465,7 @@ function fetchEquipmentRequestDetails(PDO $pdo, int $id): ?array
     }
 
     $itemsStatement = $pdo->prepare(
-        'SELECT id, item_key, name, image_url, category, subcategory, qty, created_at
+        'SELECT id, item_key, name, image_url, category, subcategory, qty, item_status, item_status_note, created_at
          FROM equipment_request_items
          WHERE request_id = :request_id
          ORDER BY id ASC'
@@ -575,6 +588,120 @@ function mapAdminStatusLabel(string $status): string
     };
 }
 
+function extractAdminItemUpdatesFromPayload(array $payload): array
+{
+    $rawUpdates = $payload['item_updates'] ?? null;
+    if (!is_array($rawUpdates)) {
+        return [];
+    }
+
+    $updatesById = [];
+    foreach ($rawUpdates as $entry) {
+        if (!is_array($entry)) {
+            continue;
+        }
+
+        $itemId = (int) ($entry['id'] ?? 0);
+        if ($itemId <= 0) {
+            continue;
+        }
+
+        $status = normalizeEquipmentRequestItemStatus((string) ($entry['status'] ?? $entry['item_status'] ?? 'pending'));
+        $note = normalizeEquipmentRequestMultiline((string) ($entry['note'] ?? $entry['item_status_note'] ?? ''), 500);
+
+        $updatesById[$itemId] = [
+            'id' => $itemId,
+            'item_status' => $status,
+            'item_status_note' => $note,
+        ];
+    }
+
+    return array_values($updatesById);
+}
+
+function applyEquipmentRequestItemUpdates(PDO $pdo, int $requestId, array $itemUpdates): array
+{
+    if ($requestId <= 0 || !$itemUpdates) {
+        return [
+            'updated_count' => 0,
+            'unavailable_count' => 0,
+        ];
+    }
+
+    $existingStatement = $pdo->prepare(
+        'SELECT id, item_status, item_status_note
+         FROM equipment_request_items
+         WHERE request_id = :request_id'
+    );
+    $existingStatement->execute([
+        'request_id' => $requestId,
+    ]);
+    $existingRows = $existingStatement->fetchAll() ?: [];
+    if (!$existingRows) {
+        return [
+            'updated_count' => 0,
+            'unavailable_count' => 0,
+        ];
+    }
+
+    $existingById = [];
+    foreach ($existingRows as $row) {
+        $existingById[(int) ($row['id'] ?? 0)] = $row;
+    }
+
+    $updateStatement = $pdo->prepare(
+        'UPDATE equipment_request_items
+         SET item_status = :item_status,
+             item_status_note = :item_status_note
+         WHERE id = :id
+           AND request_id = :request_id'
+    );
+
+    $updatedCount = 0;
+    foreach ($itemUpdates as $update) {
+        $itemId = (int) ($update['id'] ?? 0);
+        if ($itemId <= 0 || !isset($existingById[$itemId])) {
+            continue;
+        }
+
+        $nextStatus = normalizeEquipmentRequestItemStatus((string) ($update['item_status'] ?? 'pending'));
+        $nextNote = normalizeEquipmentRequestMultiline((string) ($update['item_status_note'] ?? ''), 500);
+
+        $existing = $existingById[$itemId];
+        $currentStatus = normalizeEquipmentRequestItemStatus((string) ($existing['item_status'] ?? 'pending'));
+        $currentNote = normalizeEquipmentRequestMultiline((string) ($existing['item_status_note'] ?? ''), 500);
+
+        if ($nextStatus === $currentStatus && $nextNote === $currentNote) {
+            continue;
+        }
+
+        $updateStatement->execute([
+            'item_status' => $nextStatus,
+            'item_status_note' => $nextNote !== '' ? $nextNote : null,
+            'id' => $itemId,
+            'request_id' => $requestId,
+        ]);
+        $updatedCount += $updateStatement->rowCount() > 0 ? 1 : 0;
+    }
+
+    $countUnavailableStatement = $pdo->prepare(
+        'SELECT COUNT(*)
+         FROM equipment_request_items
+         WHERE request_id = :request_id
+           AND item_status = :item_status'
+    );
+    $countUnavailableStatement->execute([
+        'request_id' => $requestId,
+        'item_status' => 'unavailable',
+    ]);
+    $unavailableCount = (int) $countUnavailableStatement->fetchColumn();
+
+    return [
+        'updated_count' => $updatedCount,
+        'unavailable_count' => $unavailableCount,
+    ];
+}
+
 function sendEquipmentRequestStatusUpdateToCustomer(
     array $request,
     array $items,
@@ -669,6 +796,37 @@ function sendEquipmentRequestStatusUpdateToCustomer(
     ];
 }
 
+function mapEquipmentRequestItemStatusMeta(string $status): array
+{
+    $normalized = normalizeEquipmentRequestItemStatus($status);
+    return match ($normalized) {
+        'available' => [
+            'key' => 'available',
+            'ar' => 'متاح',
+            'en' => 'Available',
+            'background' => '#ecfdf3',
+            'text' => '#166534',
+            'border' => '#86efac',
+        ],
+        'unavailable' => [
+            'key' => 'unavailable',
+            'ar' => 'غير متوفر',
+            'en' => 'Unavailable',
+            'background' => '#fef2f2',
+            'text' => '#991b1b',
+            'border' => '#fca5a5',
+        ],
+        default => [
+            'key' => 'pending',
+            'ar' => 'قيد المراجعة',
+            'en' => 'Pending',
+            'background' => '#fffbeb',
+            'text' => '#92400e',
+            'border' => '#fcd34d',
+        ],
+    };
+}
+
 function buildEquipmentRequestStatusUpdateEmailHtml(
     string $requestCode,
     string $customerName,
@@ -692,6 +850,16 @@ function buildEquipmentRequestStatusUpdateEmailHtml(
         $category = htmlspecialchars((string) ($item['category'] ?? ''), ENT_QUOTES, 'UTF-8');
         $subcategory = htmlspecialchars((string) ($item['subcategory'] ?? ''), ENT_QUOTES, 'UTF-8');
         $qty = max(1, (int) ($item['qty'] ?? 1));
+        $itemNoteRaw = normalizeEquipmentRequestMultiline((string) ($item['item_status_note'] ?? ''), 500);
+        $itemNote = $itemNoteRaw !== '' ? htmlspecialchars($itemNoteRaw, ENT_QUOTES, 'UTF-8') : '-';
+        $itemStatusMeta = mapEquipmentRequestItemStatusMeta((string) ($item['item_status'] ?? 'pending'));
+        $itemStatusLabel = $isArabic ? (string) $itemStatusMeta['ar'] : (string) $itemStatusMeta['en'];
+        $statusTag = '<span style="display:inline-block;padding:3px 9px;border-radius:999px;'
+            . 'font-weight:700;font-size:12px;background:' . htmlspecialchars((string) $itemStatusMeta['background'], ENT_QUOTES, 'UTF-8') . ';'
+            . 'color:' . htmlspecialchars((string) $itemStatusMeta['text'], ENT_QUOTES, 'UTF-8') . ';'
+            . 'border:1px solid ' . htmlspecialchars((string) $itemStatusMeta['border'], ENT_QUOTES, 'UTF-8') . ';">'
+            . htmlspecialchars($itemStatusLabel, ENT_QUOTES, 'UTF-8')
+            . '</span>';
         $categoryText = trim($category . ($subcategory !== '' ? ' • ' . $subcategory : ''));
         if ($categoryText === '') {
             $categoryText = '-';
@@ -701,6 +869,8 @@ function buildEquipmentRequestStatusUpdateEmailHtml(
             . '<td style="padding:8px;border:1px solid #ddd;">' . $name . '</td>'
             . '<td style="padding:8px;border:1px solid #ddd;">' . $categoryText . '</td>'
             . '<td style="padding:8px;border:1px solid #ddd;text-align:center;">' . $qty . '</td>'
+            . '<td style="padding:8px;border:1px solid #ddd;text-align:center;">' . $statusTag . '</td>'
+            . '<td style="padding:8px;border:1px solid #ddd;">' . $itemNote . '</td>'
             . '</tr>';
     }
 
@@ -734,6 +904,8 @@ function buildEquipmentRequestStatusUpdateEmailHtml(
             . '<th style="padding:8px;border:1px solid #ddd;text-align:right;">العنصر</th>'
             . '<th style="padding:8px;border:1px solid #ddd;text-align:right;">التصنيف</th>'
             . '<th style="padding:8px;border:1px solid #ddd;text-align:center;">الكمية</th>'
+            . '<th style="padding:8px;border:1px solid #ddd;text-align:center;">حالة العنصر</th>'
+            . '<th style="padding:8px;border:1px solid #ddd;text-align:right;">ملاحظة</th>'
             . '</tr></thead>'
             . '<tbody>' . $rows . '</tbody>'
             . '</table>'
@@ -754,6 +926,8 @@ function buildEquipmentRequestStatusUpdateEmailHtml(
         . '<th style="padding:8px;border:1px solid #ddd;text-align:left;">Item</th>'
         . '<th style="padding:8px;border:1px solid #ddd;text-align:left;">Category</th>'
         . '<th style="padding:8px;border:1px solid #ddd;text-align:center;">Qty</th>'
+        . '<th style="padding:8px;border:1px solid #ddd;text-align:center;">Item status</th>'
+        . '<th style="padding:8px;border:1px solid #ddd;text-align:left;">Note</th>'
         . '</tr></thead>'
         . '<tbody>' . $rows . '</tbody>'
         . '</table>'
@@ -804,12 +978,18 @@ function buildEquipmentRequestStatusUpdateEmailText(
         if ($category === '') {
             $category = '-';
         }
+        $itemStatusMeta = mapEquipmentRequestItemStatusMeta((string) ($item['item_status'] ?? 'pending'));
+        $itemStatusText = $isArabic ? (string) $itemStatusMeta['ar'] : (string) $itemStatusMeta['en'];
+        $itemNote = normalizeEquipmentRequestMultiline((string) ($item['item_status_note'] ?? ''), 500);
         $lines[] = sprintf(
-            '%d. %s | Qty: %d | Category: %s',
+            '%d. %s | Qty: %d | Category: %s | %s: %s%s',
             $idx + 1,
             (string) ($item['name'] ?? ''),
             max(1, (int) ($item['qty'] ?? 1)),
-            $category
+            $category,
+            $isArabic ? 'الحالة' : 'Status',
+            $itemStatusText,
+            $itemNote !== '' ? (' | ' . ($isArabic ? 'ملاحظة' : 'Note') . ': ' . $itemNote) : ''
         );
     }
 

@@ -16,6 +16,7 @@ if (!defined('API_INCLUDE_MODE')) {
         $pdo = getDatabaseConnection();
         ensureEquipmentCartTable($pdo);
         ensureEquipmentRequestTables($pdo);
+        ensureEquipmentRequestItemStatusColumns($pdo);
         ensureEquipmentRequestMessagesTableForCreate($pdo);
         purgeStaleEquipmentCartRows($pdo);
 
@@ -126,7 +127,9 @@ function handleEquipmentRequestCreate(PDO $pdo): void
                 image_url,
                 category,
                 subcategory,
-                qty
+                qty,
+                item_status,
+                item_status_note
             ) VALUES (
                 :request_id,
                 :item_key,
@@ -134,7 +137,9 @@ function handleEquipmentRequestCreate(PDO $pdo): void
                 :image_url,
                 :category,
                 :subcategory,
-                :qty
+                :qty,
+                :item_status,
+                :item_status_note
             )'
         );
 
@@ -147,6 +152,8 @@ function handleEquipmentRequestCreate(PDO $pdo): void
                 'category' => (string) ($item['category'] ?? '') !== '' ? (string) $item['category'] : null,
                 'subcategory' => (string) ($item['subcategory'] ?? '') !== '' ? (string) $item['subcategory'] : null,
                 'qty' => max(1, (int) ($item['qty'] ?? 1)),
+                'item_status' => 'pending',
+                'item_status_note' => null,
             ]);
         }
 
@@ -811,6 +818,8 @@ function ensureEquipmentRequestTables(PDO $pdo): void
             category VARCHAR(190) NULL,
             subcategory VARCHAR(190) NULL,
             qty INT UNSIGNED NOT NULL DEFAULT 1,
+            item_status VARCHAR(20) NOT NULL DEFAULT 'pending',
+            item_status_note VARCHAR(500) NULL,
             created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             KEY idx_equipment_request_items_request (request_id),
             CONSTRAINT fk_equipment_request_items_request
@@ -824,6 +833,44 @@ function ensureEquipmentRequestTables(PDO $pdo): void
             id TINYINT UNSIGNED NOT NULL PRIMARY KEY,
             next_number INT UNSIGNED NOT NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+    );
+
+    ensureEquipmentRequestItemStatusColumns($pdo);
+
+    $ensured = true;
+}
+
+function ensureEquipmentRequestItemStatusColumns(PDO $pdo): void
+{
+    static $ensured = false;
+    if ($ensured) {
+        return;
+    }
+
+    $statusColumnStatement = $pdo->query("SHOW COLUMNS FROM equipment_request_items LIKE 'item_status'");
+    $statusColumn = $statusColumnStatement ? $statusColumnStatement->fetch() : false;
+    if (!$statusColumn) {
+        $pdo->exec(
+            "ALTER TABLE equipment_request_items
+             ADD COLUMN item_status VARCHAR(20) NOT NULL DEFAULT 'pending' AFTER qty"
+        );
+    }
+
+    $noteColumnStatement = $pdo->query("SHOW COLUMNS FROM equipment_request_items LIKE 'item_status_note'");
+    $noteColumn = $noteColumnStatement ? $noteColumnStatement->fetch() : false;
+    if (!$noteColumn) {
+        $pdo->exec(
+            "ALTER TABLE equipment_request_items
+             ADD COLUMN item_status_note VARCHAR(500) NULL AFTER item_status"
+        );
+    }
+
+    $pdo->exec(
+        "UPDATE equipment_request_items
+         SET item_status = 'pending'
+         WHERE item_status IS NULL
+            OR item_status = ''
+            OR item_status NOT IN ('pending', 'available', 'unavailable')"
     );
 
     $ensured = true;
@@ -992,6 +1039,18 @@ function normalizeEquipmentRequestLanguage(string $value): string
         return 'en';
     }
     return 'ar';
+}
+
+function normalizeEquipmentRequestItemStatus(string $value): string
+{
+    $value = strtolower(trim($value));
+    if ($value === 'available') {
+        return 'available';
+    }
+    if ($value === 'unavailable') {
+        return 'unavailable';
+    }
+    return 'pending';
 }
 
 function generateEquipmentRequestCode(PDO $pdo): string

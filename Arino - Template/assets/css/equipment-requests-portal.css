@@ -113,15 +113,15 @@ body {
   vertical-align: top;
 }
 
-.erp-table tbody tr {
+.erp-requests-panel .erp-table tbody tr {
   cursor: pointer;
 }
 
-.erp-table tbody tr:hover {
+.erp-requests-panel .erp-table tbody tr:hover {
   background: rgba(79, 140, 255, 0.08);
 }
 
-.erp-table tbody tr.is-active {
+.erp-requests-panel .erp-table tbody tr.is-active {
   background: rgba(79, 140, 255, 0.17);
 }
 
@@ -325,6 +325,44 @@ label {
 .erp-status--cancelled {
   background: rgba(181, 67, 67, 0.2);
   border-color: rgba(181, 67, 67, 0.4);
+}
+
+.erp-item-status-cell {
+  display: grid;
+  gap: 6px;
+}
+
+.erp-item-tag {
+  display: inline-flex;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 3px 10px;
+  border: 1px solid transparent;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.erp-item-tag--pending {
+  background: rgba(199, 144, 32, 0.2);
+  border-color: rgba(199, 144, 32, 0.4);
+  color: #ffe6af;
+}
+
+.erp-item-tag--available {
+  background: rgba(44, 163, 107, 0.2);
+  border-color: rgba(44, 163, 107, 0.45);
+  color: #c8ffdf;
+}
+
+.erp-item-tag--unavailable {
+  background: rgba(181, 67, 67, 0.22);
+  border-color: rgba(181, 67, 67, 0.45);
+  color: #ffd3d3;
+}
+
+.erp-item-status,
+.erp-item-note {
+  min-width: 170px;
 }
 
 @media (max-width: 980px) {
