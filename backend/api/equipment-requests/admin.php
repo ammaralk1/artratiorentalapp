@@ -302,10 +302,15 @@ function handleEquipmentRequestsAdminPost(PDO $pdo): void
         throw new InvalidArgumentException('Customer email is missing or invalid');
     }
 
-    $html = '<p>' . nl2br(htmlspecialchars($message, ENT_QUOTES, 'UTF-8')) . '</p>'
+    $isArabic = strtolower((string) ($request['request_lang'] ?? 'ar')) !== 'en';
+    $body = '<div' . ($isArabic ? ' dir="rtl"' : '') . ' style="font-family:' . ($isArabic ? 'Tahoma,Arial,sans-serif' : 'Arial,sans-serif') . ';line-height:1.8;">'
+        . '<p>' . nl2br(htmlspecialchars($message, ENT_QUOTES, 'UTF-8')) . '</p>'
         . '<hr>'
         . '<p><strong>Request:</strong> ' . htmlspecialchars((string) ($request['request_code'] ?? ''), ENT_QUOTES, 'UTF-8') . '</p>'
-        . '<p><strong>Customer:</strong> ' . htmlspecialchars((string) ($request['customer_name'] ?? ''), ENT_QUOTES, 'UTF-8') . '</p>';
+        . '<p><strong>Customer:</strong> ' . htmlspecialchars((string) ($request['customer_name'] ?? ''), ENT_QUOTES, 'UTF-8') . '</p>'
+        . buildEquipmentRequestClosingHtml($isArabic)
+        . '</div>';
+    $html = buildEquipmentRequestEmailShellHtml($body, $isArabic, 'Equipment Request Message');
 
     $sendResult = sendEquipmentRequestEmailWithRetry(
         $recipient,
@@ -866,7 +871,7 @@ function buildEquipmentRequestStatusUpdateEmailHtml(
     }
 
     if ($isArabic) {
-        return '<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;line-height:1.8;">'
+        $body = '<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;line-height:1.8;">'
             . '<p>مرحبًا ' . $safeName . '،</p>'
             . '<p>' . $messageLine . '</p>'
             . '<p><strong>حالة الطلب:</strong> ' . htmlspecialchars($statusLine, ENT_QUOTES, 'UTF-8') . '<br>'
@@ -884,11 +889,12 @@ function buildEquipmentRequestStatusUpdateEmailHtml(
             . '</tr></thead>'
             . '<tbody>' . $rows . '</tbody>'
             . '</table>'
-            . '<p style="margin-top:20px;">مع التحية،<br>فريق أرت ريشيو</p>'
+            . buildEquipmentRequestClosingHtml(true)
             . '</div>';
+        return buildEquipmentRequestEmailShellHtml($body, true, 'Equipment Request Status');
     }
 
-    return '<div style="font-family:Arial,sans-serif;line-height:1.7;">'
+    $body = '<div style="font-family:Arial,sans-serif;line-height:1.7;">'
         . '<p>Hello ' . $safeName . ',</p>'
         . '<p>' . $messageLine . '</p>'
         . '<p><strong>Status:</strong> ' . htmlspecialchars($statusLine, ENT_QUOTES, 'UTF-8') . '<br>'
@@ -906,8 +912,9 @@ function buildEquipmentRequestStatusUpdateEmailHtml(
         . '</tr></thead>'
         . '<tbody>' . $rows . '</tbody>'
         . '</table>'
-        . '<p style="margin-top:20px;">Best regards,<br>Art Ratio Team</p>'
+        . buildEquipmentRequestClosingHtml(false)
         . '</div>';
+    return buildEquipmentRequestEmailShellHtml($body, false, 'Equipment Request Status');
 }
 
 function buildEquipmentRequestStatusUpdateEmailText(
@@ -969,6 +976,8 @@ function buildEquipmentRequestStatusUpdateEmailText(
     }
 
     $lines[] = '';
-    $lines[] = $isArabic ? 'فريق أرت ريشيو' : 'Art Ratio Team';
+    $lines[] = buildEquipmentRequestClosingText($isArabic);
+    $lines[] = '';
+    $lines[] = buildEquipmentRequestEmailFooterText($isArabic);
     return implode("\n", $lines);
 }
