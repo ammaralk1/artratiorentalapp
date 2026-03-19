@@ -1471,6 +1471,7 @@
         var desktopLoopPosterTimer = null;
         var desktopLoopTransitioning = false;
         var desktopLoopPosterPauseMs = 2000;
+        var desktopSegmentTimer = null;
         var mobileInitialReadyPending = false;
         var mobilePageSettled = false;
         var mobilePageSettleTimer = null;
@@ -1511,6 +1512,12 @@
           if (!desktopLoopPosterTimer) return;
           clearTimeout(desktopLoopPosterTimer);
           desktopLoopPosterTimer = null;
+        }
+
+        function clearDesktopSegmentTimer() {
+          if (!desktopSegmentTimer) return;
+          clearTimeout(desktopSegmentTimer);
+          desktopSegmentTimer = null;
         }
 
         function clearMobilePageSettleTimer() {
@@ -1604,6 +1611,7 @@
 
           desktopLoopTransitioning = true;
           clearDesktopLoopPosterTimer();
+          clearDesktopSegmentTimer();
           showPosterForLoading();
 
           if (pauseCurrent && vimeoPlayer && typeof vimeoPlayer.pause === "function") {
@@ -1646,9 +1654,16 @@
                 if (!hasFirstFrameReady) {
                   markVideoReady();
                 }
+                clearDesktopSegmentTimer();
+                desktopSegmentTimer = setTimeout(function () {
+                  if (isMobileViewport()) return;
+                  if (!hero.classList.contains("cs-home-hero--video-active")) return;
+                  restartDesktopLoopWithPosterPause({ pauseCurrent: true, seekToStart: true });
+                }, Math.max(1200, segmentDurationMs));
               })
               .catch(function () {
                 showPosterForLoading();
+                clearDesktopSegmentTimer();
                 setTimeout(function () {
                   if (desktopLoopTransitioning || desktopLoopPosterTimer) return;
                   if (isMobileViewport() || !hero.classList.contains("cs-home-hero--video-active")) return;
@@ -1705,6 +1720,7 @@
           clearPlaybackProbe();
           clearLoopWatchdog();
           clearSegmentRestartTimer();
+          clearDesktopSegmentTimer();
           clearAttachRetryTimer();
           clearPosterHideTimer();
           hasFirstFrameReady = false;
@@ -1986,6 +2002,7 @@
           clearPlaybackProbe();
           clearAttachRetryTimer();
           clearMobileReadyFallbackTimer();
+          clearDesktopSegmentTimer();
           mobileBootstrapSeekAttempts = 0;
           mobileReadyFallbackAttempts = 0;
           hero.classList.remove("cs-home-hero--video-ready");
@@ -2120,6 +2137,7 @@
         function startLoopWatchdog() {
           clearLoopWatchdog();
           if (!vimeoPlayer) return;
+          if (!isMobileViewport()) return;
           loopWatchdog = setInterval(function () {
                 vimeoPlayer
                   .getCurrentTime()
@@ -2130,7 +2148,7 @@
                       probeStablePlayback();
                     }
                 if (isLoopSeeking) return;
-                if (seconds >= loopEndSeconds - (isMobileViewport() ? loopGuardSeconds : 0.05)) {
+                if (seconds >= loopEndSeconds - loopGuardSeconds) {
                   restartSegmentWithPoster();
                   return;
                 }
