@@ -1524,7 +1524,7 @@
 
         function clearDesktopSimpleCycleTimers() {
           if (desktopSimpleCycleTimer) {
-            clearInterval(desktopSimpleCycleTimer);
+            clearTimeout(desktopSimpleCycleTimer);
             desktopSimpleCycleTimer = null;
           }
           if (desktopSimplePlayTimer) {
@@ -1539,15 +1539,65 @@
           if (!frame) return;
 
           showPosterForLoading();
+          if (vimeoPlayer && typeof vimeoPlayer.pause === "function") {
+            vimeoPlayer.pause().catch(function () {});
+          }
           desktopSimplePlayTimer = setTimeout(function () {
             desktopSimplePlayTimer = null;
             if (isMobileViewport()) return;
             if (!hero.classList.contains("cs-home-hero--video-active")) return;
-            frame.setAttribute("src", buildSegmentSrc());
-            hidePosterForLoading();
-            if (!hasFirstFrameReady) {
-              markVideoReady();
+            if (!window.Vimeo || !window.Vimeo.Player) {
+              desktopSimpleCycleTimer = setTimeout(runDesktopSimpleCycleStep, 700);
+              return;
             }
+            if (!vimeoPlayer) {
+              try {
+                vimeoPlayer = new window.Vimeo.Player(frame);
+              } catch (e) {}
+            }
+            if (!vimeoPlayer) {
+              desktopSimpleCycleTimer = setTimeout(runDesktopSimpleCycleStep, 700);
+              return;
+            }
+
+            vimeoPlayer
+              .ready()
+              .then(function () {
+                if (typeof vimeoPlayer.setMuted === "function") {
+                  return vimeoPlayer.setMuted(true).catch(function () {});
+                }
+                return null;
+              })
+              .then(function () {
+                return vimeoPlayer.setVolume(0).catch(function () {});
+              })
+              .then(function () {
+                return vimeoPlayer.setLoop(false).catch(function () {});
+              })
+              .then(function () {
+                return vimeoPlayer.setCurrentTime(loopStartSeconds).catch(function () {});
+              })
+              .then(function () {
+                return vimeoPlayer.play();
+              })
+              .then(function () {
+                hidePosterForLoading();
+                if (!hasFirstFrameReady) {
+                  markVideoReady();
+                }
+              })
+              .catch(function () {
+                showPosterForLoading();
+              })
+              .finally(function () {
+                if (isMobileViewport()) return;
+                if (!hero.classList.contains("cs-home-hero--video-active")) return;
+                clearTimeout(desktopSimpleCycleTimer);
+                desktopSimpleCycleTimer = setTimeout(
+                  runDesktopSimpleCycleStep,
+                  Math.max(1200, segmentDurationMs - 80)
+                );
+              });
           }, desktopLoopPosterPauseMs);
         }
 
@@ -1555,9 +1605,6 @@
           if (isMobileViewport()) return;
           clearDesktopSimpleCycleTimers();
           runDesktopSimpleCycleStep();
-          desktopSimpleCycleTimer = setInterval(function () {
-            runDesktopSimpleCycleStep();
-          }, desktopLoopPosterPauseMs + segmentDurationMs);
         }
 
         function clearMobilePageSettleTimer() {
