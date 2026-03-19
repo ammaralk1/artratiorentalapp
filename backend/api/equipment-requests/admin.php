@@ -318,18 +318,8 @@ function handleEquipmentRequestsAdminPost(PDO $pdo): void
     $provider = (string) ($sendResult['provider'] ?? 'none');
     $errorMessage = $sent ? null : (string) ($sendResult['error'] ?? '');
 
-    if (!$sent) {
-        $sent = sendEquipmentRequestViaWeb3Forms(
-            $subject,
-            (string) ($request['customer_name'] ?? 'Customer'),
-            $recipient,
-            (string) ($request['customer_phone'] ?? ''),
-            $message
-        );
-        $provider = $sent ? 'web3forms' : 'none';
-        if (!$sent) {
-            $errorMessage = $errorMessage !== '' ? $errorMessage : (emailGetLastError() ?? 'Failed to send message');
-        }
+    if (!$sent && $errorMessage === '') {
+        $errorMessage = emailGetLastError() ?? 'Failed to send message';
     }
 
     $user = getAuthenticatedUser();
@@ -427,19 +417,8 @@ function handleEquipmentRequestsAdminRetryEmail(PDO $pdo, array $payload): void
     $provider = (string) ($sendResult['provider'] ?? 'none');
     $errorMessage = $sent ? null : (string) ($sendResult['error'] ?? '');
 
-    if (!$sent) {
-        $fallbackSent = sendEquipmentRequestViaWeb3Forms(
-            $subject,
-            $customerName,
-            $recipient,
-            $customerPhone,
-            $message
-        );
-        if ($fallbackSent) {
-            $sent = true;
-            $provider = 'web3forms';
-            $errorMessage = null;
-        }
+    if (!$sent && $errorMessage === '') {
+        $errorMessage = emailGetLastError() ?? 'Failed to resend email';
     }
 
     $user = getAuthenticatedUser();
@@ -777,19 +756,8 @@ function sendEquipmentRequestStatusUpdateToCustomer(
     $provider = (string) ($sendResult['provider'] ?? 'none');
     $error = $sent ? null : (string) ($sendResult['error'] ?? 'Failed to send status update email');
 
-    if (!$sent) {
-        $fallbackSent = sendEquipmentRequestViaWeb3Forms(
-            $subject,
-            $customerName,
-            $recipient,
-            $customerPhone,
-            $text
-        );
-        if ($fallbackSent) {
-            $sent = true;
-            $provider = 'web3forms';
-            $error = null;
-        }
+    if (!$sent && $error === '') {
+        $error = emailGetLastError() ?? 'Failed to send status update email';
     }
 
     return [
