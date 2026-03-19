@@ -247,6 +247,11 @@ function handleEquipmentRequestsAdminPost(PDO $pdo): void
     $payload = readEquipmentRequestJsonPayload();
     $action = strtolower(trim((string) ($payload['action'] ?? '')));
 
+    if ($action === 'retry_email') {
+        handleEquipmentRequestsAdminRetryEmail($pdo, $payload);
+        return;
+    }
+
     if ($action !== 'send_message') {
         throw new InvalidArgumentException('Unsupported action');
     }
@@ -282,15 +287,16 @@ function handleEquipmentRequestsAdminPost(PDO $pdo): void
         . '<p><strong>Request:</strong> ' . htmlspecialchars((string) ($request['request_code'] ?? ''), ENT_QUOTES, 'UTF-8') . '</p>'
         . '<p><strong>Customer:</strong> ' . htmlspecialchars((string) ($request['customer_name'] ?? ''), ENT_QUOTES, 'UTF-8') . '</p>';
 
-    $sent = sendEmail(
+    $sendResult = sendEquipmentRequestEmailWithRetry(
         $recipient,
         (string) ($request['customer_name'] ?? 'Customer'),
         $subject,
         $html,
         $message
     );
-    $provider = 'smtp';
-    $errorMessage = null;
+    $sent = !empty($sendResult['sent']);
+    $provider = (string) ($sendResult['provider'] ?? 'none');
+    $errorMessage = $sent ? null : (string) ($sendResult['error'] ?? '');
 
     if (!$sent) {
         $sent = sendEquipmentRequestViaWeb3Forms(
@@ -302,7 +308,7 @@ function handleEquipmentRequestsAdminPost(PDO $pdo): void
         );
         $provider = $sent ? 'web3forms' : 'none';
         if (!$sent) {
-            $errorMessage = emailGetLastError() ?? 'Failed to send message';
+            $errorMessage = $errorMessage !== '' ? $errorMessage : (emailGetLastError() ?? 'Failed to send message');
         }
     }
 
@@ -323,6 +329,117 @@ function handleEquipmentRequestsAdminPost(PDO $pdo): void
     respond([
         'sent' => $sent,
         'provider' => $provider,
+        'details' => $details,
+    ]);
+}
+
+function handleEquipmentRequestsAdminRetryEmail(PDO $pdo, array $payload): void
+{
+    $id = isset($payload['id']) ? (int) $payload['id'] : 0;
+    $messageId = isset($payload['message_id']) ? (int) $payload['message_id'] : 0;
+
+    if ($id <= 0) {
+        throw new InvalidArgumentException('Valid request id is required');
+    }
+    if ($messageId <= 0) {
+        throw new InvalidArgumentException('Valid message id is required');
+    }
+
+    $request = fetchEquipmentRequestRow($pdo, $id);
+    if (!$request) {
+        respondError('Request not found', 404);
+        return;
+    }
+
+    $messageStatement = $pdo->prepare(
+        'SELECT id, request_id, channel, subject, message, recipient
+         FROM equipment_request_messages
+         WHERE id = :id AND request_id = :request_id
+         LIMIT 1'
+    );
+    $messageStatement->execute([
+        'id' => $messageId,
+        'request_id' => $id,
+    ]);
+    $messageRow = $messageStatement->fetch();
+    if (!$messageRow) {
+        respondError('Message not found', 404);
+        return;
+    }
+
+    $channel = strtolower((string) ($messageRow['channel'] ?? ''));
+    if ($channel !== 'email') {
+        throw new InvalidArgumentException('Only email messages can be retried');
+    }
+
+    $recipient = trim((string) ($messageRow['recipient'] ?? ''));
+    if ($recipient === '' || !filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
+        throw new InvalidArgumentException('Message recipient is missing or invalid');
+    }
+
+    $customerName = (string) ($request['customer_name'] ?? 'Customer');
+    $customerPhone = (string) ($request['customer_phone'] ?? '');
+    $requestCode = (string) ($request['request_code'] ?? '#');
+    $subject = normalizeEquipmentRequestText((string) ($messageRow['subject'] ?? ''), 255);
+    if ($subject === '') {
+        $subject = sprintf('Update for request %s', $requestCode);
+    }
+
+    $message = normalizeEquipmentRequestMultiline((string) ($messageRow['message'] ?? ''), 5000);
+    if ($message === '') {
+        $message = sprintf('Follow-up update for request %s', $requestCode);
+    }
+
+    $html = '<p>' . nl2br(htmlspecialchars($message, ENT_QUOTES, 'UTF-8')) . '</p>'
+        . '<hr>'
+        . '<p><strong>Request:</strong> ' . htmlspecialchars($requestCode, ENT_QUOTES, 'UTF-8') . '</p>'
+        . '<p><strong>Customer:</strong> ' . htmlspecialchars($customerName, ENT_QUOTES, 'UTF-8') . '</p>';
+
+    $sendResult = sendEquipmentRequestEmailWithRetry(
+        $recipient,
+        $customerName,
+        $subject,
+        $html,
+        $message
+    );
+
+    $sent = !empty($sendResult['sent']);
+    $provider = (string) ($sendResult['provider'] ?? 'none');
+    $errorMessage = $sent ? null : (string) ($sendResult['error'] ?? '');
+
+    if (!$sent) {
+        $fallbackSent = sendEquipmentRequestViaWeb3Forms(
+            $subject,
+            $customerName,
+            $recipient,
+            $customerPhone,
+            $message
+        );
+        if ($fallbackSent) {
+            $sent = true;
+            $provider = 'web3forms';
+            $errorMessage = null;
+        }
+    }
+
+    $user = getAuthenticatedUser();
+    insertEquipmentRequestMessage($pdo, [
+        'request_id' => $id,
+        'sender_user_id' => (int) ($user['id'] ?? 0) ?: null,
+        'channel' => 'email',
+        'subject' => $subject,
+        'message' => $message,
+        'recipient' => $recipient,
+        'delivery_status' => $sent ? 'sent' : 'failed',
+        'provider' => $provider,
+        'error_message' => $errorMessage,
+    ]);
+
+    $details = fetchEquipmentRequestDetails($pdo, $id);
+    respond([
+        'sent' => $sent,
+        'provider' => $provider,
+        'error' => $errorMessage,
         'details' => $details,
     ]);
 }
@@ -521,15 +638,34 @@ function sendEquipmentRequestStatusUpdateToCustomer(
         $isArabic
     );
 
-    $sent = sendEmail($recipient, $customerName, $subject, $html, $text);
+    $sendResult = sendEquipmentRequestEmailWithRetry($recipient, $customerName, $subject, $html, $text);
+    $sent = !empty($sendResult['sent']);
+    $provider = (string) ($sendResult['provider'] ?? 'none');
+    $error = $sent ? null : (string) ($sendResult['error'] ?? 'Failed to send status update email');
+
+    if (!$sent) {
+        $fallbackSent = sendEquipmentRequestViaWeb3Forms(
+            $subject,
+            $customerName,
+            $recipient,
+            $customerPhone,
+            $text
+        );
+        if ($fallbackSent) {
+            $sent = true;
+            $provider = 'web3forms';
+            $error = null;
+        }
+    }
+
     return [
         'attempted' => true,
         'sent' => $sent,
-        'provider' => $sent ? 'smtp' : 'none',
+        'provider' => $provider,
         'recipient' => $recipient,
         'subject' => $subject,
         'message' => $text,
-        'error' => $sent ? null : (emailGetLastError() ?? 'Failed to send status update email'),
+        'error' => $error,
     ];
 }
 
@@ -591,7 +727,7 @@ function buildEquipmentRequestStatusUpdateEmailHtml(
             . '<p><strong>حالة الطلب:</strong> ' . htmlspecialchars($statusLine, ENT_QUOTES, 'UTF-8') . '<br>'
             . '<strong>رقم الطلب:</strong> ' . $safeCode . '<br>'
             . '<strong>الجوال:</strong> ' . $safePhone . '<br>'
-            . '<strong>إجمالي الكمية:</strong> ' . $totalItems . '</p>'
+            . '<strong>إجمالي المعدات:</strong> ' . $totalItems . '</p>'
             . ($safeNote !== '' ? '<p><strong>ملاحظة التحديث:</strong><br>' . $safeNote . '</p>' : '')
             . '<table style="border-collapse:collapse;width:100%;margin-top:16px;">'
             . '<thead><tr>'
@@ -643,7 +779,7 @@ function buildEquipmentRequestStatusUpdateEmailText(
         $lines[] = 'حالة الطلب: ' . $statusTextAr;
         $lines[] = 'رقم الطلب: ' . $requestCode;
         $lines[] = 'الجوال: ' . $customerPhone;
-        $lines[] = 'إجمالي الكمية: ' . $totalItems;
+        $lines[] = 'إجمالي المعدات: ' . $totalItems;
         if ($statusNote !== '') {
             $lines[] = 'ملاحظة التحديث: ' . $statusNote;
         }

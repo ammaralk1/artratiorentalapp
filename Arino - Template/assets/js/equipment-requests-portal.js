@@ -63,6 +63,7 @@
     messageForm: document.getElementById('erp-message-form'),
     messageSubject: document.getElementById('erp-message-subject'),
     messageBody: document.getElementById('erp-message-body'),
+    emailFailures: document.getElementById('erp-email-failures'),
     messageLog: document.getElementById('erp-message-log'),
     toast: document.getElementById('erp-toast'),
   };
@@ -292,12 +293,34 @@
   function renderMessages(messages) {
     if (!els.messageLog) return;
     if (!Array.isArray(messages) || !messages.length) {
+      if (els.emailFailures) {
+        els.emailFailures.hidden = true;
+        els.emailFailures.textContent = '';
+      }
       els.messageLog.innerHTML = '<li class="erp-muted">لا توجد رسائل بعد.</li>';
       return;
     }
 
+    const failedEmailMessages = messages.filter(
+      (msg) => String(msg.channel || '').toLowerCase() === 'email' && String(msg.delivery_status || '').toLowerCase() === 'failed',
+    );
+    if (els.emailFailures) {
+      if (failedEmailMessages.length > 0) {
+        els.emailFailures.hidden = false;
+        els.emailFailures.textContent = `يوجد ${failedEmailMessages.length} رسالة بريد فاشلة. يمكنك إعادة المحاولة من زر "إعادة المحاولة" لكل رسالة.`;
+      } else {
+        els.emailFailures.hidden = true;
+        els.emailFailures.textContent = '';
+      }
+    }
+
     els.messageLog.innerHTML = messages
       .map((msg) => {
+        const msgId = Number(msg.id || 0);
+        const isEmail = String(msg.channel || '').toLowerCase() === 'email';
+        const isFailed = String(msg.delivery_status || '').toLowerCase() === 'failed';
+        const hasRecipient = String(msg.recipient || '').trim() !== '';
+        const canRetry = isEmail && isFailed && hasRecipient && msgId > 0;
         const statusText = msg.delivery_status === 'sent' ? 'تم الإرسال' : msg.delivery_status === 'failed' ? 'فشل الإرسال' : 'بانتظار';
         return `
           <li>
@@ -309,10 +332,69 @@
               ${escapeHtml(statusText)}
               ${msg.recipient ? ` | ${escapeHtml(msg.recipient)}` : ''}
             </small>
+            ${canRetry ? `
+              <div class="erp-message-log__actions">
+                <button type="button" class="erp-btn-retry-email" data-retry-email-id="${msgId}">
+                  إعادة المحاولة
+                </button>
+              </div>
+            ` : ''}
           </li>
         `;
       })
       .join('');
+  }
+
+  async function retryFailedEmail(messageId, buttonEl) {
+    if (!state.selectedId) {
+      showToast('اختر طلب أولاً', 'error');
+      return;
+    }
+    const id = Number(messageId || 0);
+    if (!id) {
+      showToast('المعرف غير صالح', 'error');
+      return;
+    }
+
+    if (buttonEl) {
+      buttonEl.disabled = true;
+      buttonEl.textContent = 'جاري إعادة الإرسال...';
+    }
+
+    try {
+      const response = await apiRequest(REQUESTS_API, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'retry_email',
+          id: state.selectedId,
+          message_id: id,
+        }),
+      });
+      const data = response.data || {};
+      if (data.sent) {
+        showToast('تمت إعادة إرسال البريد بنجاح', 'success');
+      } else {
+        const errorText = String(data.error || '').trim();
+        showToast(
+          errorText ? `فشلت إعادة الإرسال: ${errorText}` : 'فشلت إعادة إرسال البريد',
+          'error',
+        );
+      }
+
+      if (data.details) {
+        state.selectedDetails = data.details;
+        renderDetails(state.selectedDetails);
+      } else {
+        await loadRequestDetails(state.selectedId);
+      }
+    } catch (error) {
+      showToast(error.message || 'فشلت إعادة الإرسال', 'error');
+    } finally {
+      if (buttonEl) {
+        buttonEl.disabled = false;
+        buttonEl.textContent = 'إعادة المحاولة';
+      }
+    }
   }
 
   function askStatusNote(status) {
@@ -489,6 +571,16 @@
         } catch (error) {
           showToast(error.message || 'فشل إرسال الرسالة', 'error');
         }
+      });
+    }
+
+    if (els.messageLog) {
+      els.messageLog.addEventListener('click', async function (event) {
+        const button = event.target.closest('[data-retry-email-id]');
+        if (!button) return;
+        const messageId = Number(button.getAttribute('data-retry-email-id') || 0);
+        if (!messageId) return;
+        await retryFailedEmail(messageId, button);
       });
     }
   }

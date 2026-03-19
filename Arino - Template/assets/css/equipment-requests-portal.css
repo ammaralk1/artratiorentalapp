@@ -201,6 +201,36 @@ table.erp-table--requests-head-white thead th * {
   color: var(--erp-muted);
 }
 
+.erp-email-failures {
+  margin-bottom: 10px;
+  border: 1px solid rgba(181, 67, 67, 0.5);
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: rgba(181, 67, 67, 0.14);
+  color: #ffd8d8;
+}
+
+.erp-message-log__actions {
+  margin-top: 8px;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.erp-btn-retry-email {
+  background: rgba(79, 140, 255, 0.18);
+  border: 1px solid rgba(79, 140, 255, 0.55);
+  color: #dce9ff;
+  border-radius: 8px;
+  padding: 5px 9px;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.erp-btn-retry-email:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .erp-btn {
   border: 1px solid transparent;
   border-radius: 9px;

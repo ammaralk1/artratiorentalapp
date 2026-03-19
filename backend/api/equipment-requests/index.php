@@ -16,6 +16,7 @@ if (!defined('API_INCLUDE_MODE')) {
         $pdo = getDatabaseConnection();
         ensureEquipmentCartTable($pdo);
         ensureEquipmentRequestTables($pdo);
+        ensureEquipmentRequestMessagesTableForCreate($pdo);
         purgeStaleEquipmentCartRows($pdo);
 
         handleEquipmentRequestCreate($pdo);
@@ -156,15 +157,6 @@ function handleEquipmentRequestCreate(PDO $pdo): void
 
         $pdo->commit();
 
-        $teamEmailResult = notifyEquipmentRequestTeamByEmail(
-            $requestCode,
-            $name,
-            $email,
-            $phone,
-            $notes,
-            $totalItems,
-            $items
-        );
         $customerEmailResult = notifyEquipmentRequestCustomerReceivedByEmail(
             $requestCode,
             $name,
@@ -175,6 +167,30 @@ function handleEquipmentRequestCreate(PDO $pdo): void
             $items,
             $language
         );
+        $teamEmailResult = notifyEquipmentRequestTeamByEmail(
+            $requestCode,
+            $name,
+            $email,
+            $phone,
+            $notes,
+            $totalItems,
+            $items
+        );
+        try {
+            logEquipmentRequestEmailDelivery($pdo, $requestId, $customerEmailResult);
+            if (is_array($teamEmailResult['details'] ?? null) && $teamEmailResult['details']) {
+                foreach ($teamEmailResult['details'] as $deliveryRow) {
+                    if (!is_array($deliveryRow)) {
+                        continue;
+                    }
+                    logEquipmentRequestEmailDelivery($pdo, $requestId, $deliveryRow);
+                }
+            } else {
+                logEquipmentRequestEmailDelivery($pdo, $requestId, $teamEmailResult);
+            }
+        } catch (Throwable $loggingError) {
+            error_log('Equipment request email log failure: ' . $loggingError->getMessage());
+        }
 
         respond([
             'request_code' => $requestCode,
@@ -230,14 +246,30 @@ function notifyEquipmentRequestTeamByEmail(
 
     $sent = false;
     $lastError = null;
+    $deliveryDetails = [];
     foreach ($recipients as $recipient) {
         if (!is_string($recipient) || !filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
             continue;
         }
-        if (sendEmail($recipient, 'Art Ratio Team', $subject, $htmlBody, $textBody)) {
+        $sendResult = sendEquipmentRequestEmailWithRetry(
+            $recipient,
+            'Art Ratio Team',
+            $subject,
+            $htmlBody,
+            $textBody
+        );
+        $deliveryDetails[] = [
+            'sent' => !empty($sendResult['sent']),
+            'provider' => (string) ($sendResult['provider'] ?? 'none'),
+            'error' => isset($sendResult['error']) ? (string) $sendResult['error'] : null,
+            'recipient' => $recipient,
+            'subject' => $subject,
+            'message' => $textBody,
+        ];
+        if (!empty($sendResult['sent'])) {
             $sent = true;
         } else {
-            $lastError = emailGetLastError() ?? ('Failed to send team email to ' . $recipient);
+            $lastError = (string) ($sendResult['error'] ?? ('Failed to send team email to ' . $recipient));
         }
     }
 
@@ -246,6 +278,9 @@ function notifyEquipmentRequestTeamByEmail(
             'sent' => true,
             'provider' => 'smtp',
             'error' => null,
+            'subject' => $subject,
+            'message' => $textBody,
+            'details' => $deliveryDetails,
         ];
     }
 
@@ -257,11 +292,23 @@ function notifyEquipmentRequestTeamByEmail(
         $textBody
     );
 
-    return [
+    $result = [
         'sent' => $fallbackSent,
         'provider' => $fallbackSent ? 'web3forms' : 'none',
         'error' => $fallbackSent ? null : ($lastError ?? 'Failed to send team notification'),
+        'subject' => $subject,
+        'message' => $textBody,
+        'details' => $deliveryDetails,
     ];
+    $result['details'][] = [
+        'sent' => $fallbackSent,
+        'provider' => $fallbackSent ? 'web3forms' : 'none',
+        'error' => $fallbackSent ? null : ($lastError ?? 'Failed to send team notification'),
+        'recipient' => implode(', ', array_values(array_filter(array_map('strval', $recipients)))),
+        'subject' => $subject,
+        'message' => $textBody,
+    ];
+    return $result;
 }
 
 function notifyEquipmentRequestCustomerReceivedByEmail(
@@ -276,8 +323,12 @@ function notifyEquipmentRequestCustomerReceivedByEmail(
 ): array {
     if (!filter_var($customerEmail, FILTER_VALIDATE_EMAIL)) {
         return [
+            'attempted' => false,
             'sent' => false,
             'provider' => 'none',
+            'recipient' => $customerEmail,
+            'subject' => '',
+            'message' => '',
             'error' => 'Customer email is missing or invalid',
         ];
     }
@@ -305,11 +356,54 @@ function notifyEquipmentRequestCustomerReceivedByEmail(
         $isArabic
     );
 
-    $sent = sendEmail($customerEmail, $customerName, $subject, $htmlBody, $textBody);
+    $result = sendEquipmentRequestEmailWithRetry(
+        $customerEmail,
+        $customerName,
+        $subject,
+        $htmlBody,
+        $textBody
+    );
+    $result['attempted'] = true;
+    $result['recipient'] = $customerEmail;
+    $result['subject'] = $subject;
+    $result['message'] = $textBody;
+    return $result;
+}
+
+function sendEquipmentRequestEmailWithRetry(
+    string $toEmail,
+    string $toName,
+    string $subject,
+    string $htmlBody,
+    string $textBody
+): array {
+    $sent = sendEmail($toEmail, $toName, $subject, $htmlBody, $textBody);
+    if ($sent) {
+        return [
+            'sent' => true,
+            'provider' => 'smtp',
+            'error' => null,
+        ];
+    }
+
+    $firstError = emailGetLastError() ?? 'First SMTP attempt failed';
+
+    // Retry once to mitigate temporary provider throttling on immediate sequential sends.
+    usleep(350000);
+    $retrySent = sendEmail($toEmail, $toName, $subject, $htmlBody, $textBody);
+    if ($retrySent) {
+        return [
+            'sent' => true,
+            'provider' => 'smtp-retry',
+            'error' => null,
+        ];
+    }
+
+    $retryError = emailGetLastError() ?? 'Second SMTP attempt failed';
     return [
-        'sent' => $sent,
-        'provider' => $sent ? 'smtp' : 'none',
-        'error' => $sent ? null : (emailGetLastError() ?? 'Failed to send customer confirmation email'),
+        'sent' => false,
+        'provider' => 'none',
+        'error' => $firstError . ' | Retry failed: ' . $retryError,
     ];
 }
 
@@ -352,7 +446,7 @@ function buildEquipmentRequestCustomerReceivedEmailHtml(
             . '<p>تم استلام طلب المعدات الخاص بك بنجاح، وفريقنا يراجع الطلب الآن وسيقوم بتحديث الحالة في أقرب وقت.</p>'
             . '<p><strong>رقم الطلب:</strong> ' . $safeCode . '<br>'
             . '<strong>الجوال:</strong> ' . $safePhone . '<br>'
-            . '<strong>إجمالي الكمية:</strong> ' . $totalItems . '</p>'
+            . '<strong>إجمالي المعدات:</strong> ' . $totalItems . '</p>'
             . '<p><strong>ملاحظاتك:</strong><br>' . $safeNotes . '</p>'
             . '<table style="border-collapse:collapse;width:100%;margin-top:16px;">'
             . '<thead><tr>'
@@ -402,7 +496,7 @@ function buildEquipmentRequestCustomerReceivedEmailText(
         $lines[] = 'تم استلام طلب المعدات الخاص بك وهو الآن قيد المراجعة.';
         $lines[] = 'رقم الطلب: ' . $requestCode;
         $lines[] = 'الجوال: ' . $customerPhone;
-        $lines[] = 'إجمالي الكمية: ' . $totalItems;
+        $lines[] = 'إجمالي المعدات: ' . $totalItems;
         $lines[] = 'ملاحظاتك: ' . ($notes !== '' ? $notes : '-');
         $lines[] = '';
         $lines[] = 'قائمة المعدات:';
@@ -573,6 +667,63 @@ function buildEquipmentRequestEmailText(
     return implode("\n", $lines);
 }
 
+function logEquipmentRequestEmailDelivery(PDO $pdo, int $requestId, array $delivery): void
+{
+    if ($requestId <= 0) {
+        return;
+    }
+
+    ensureEquipmentRequestMessagesTableForCreate($pdo);
+
+    $sent = !empty($delivery['sent']);
+    $provider = (string) ($delivery['provider'] ?? '');
+    $recipient = trim((string) ($delivery['recipient'] ?? ''));
+    $subject = trim((string) ($delivery['subject'] ?? ''));
+    $message = trim((string) ($delivery['message'] ?? ''));
+    $error = trim((string) ($delivery['error'] ?? ''));
+
+    if ($message === '') {
+        $message = $sent
+            ? 'Email delivery logged as sent.'
+            : 'Email delivery failed.';
+    }
+
+    $statement = $pdo->prepare(
+        'INSERT INTO equipment_request_messages (
+            request_id,
+            sender_user_id,
+            channel,
+            subject,
+            message,
+            recipient,
+            delivery_status,
+            provider,
+            error_message
+         ) VALUES (
+            :request_id,
+            NULL,
+            :channel,
+            :subject,
+            :message,
+            :recipient,
+            :delivery_status,
+            :provider,
+            :error_message
+         )'
+    );
+
+    $statement->execute([
+        'request_id' => $requestId,
+        'channel' => 'email',
+        'subject' => $subject !== '' ? $subject : null,
+        'message' => $message,
+        'recipient' => $recipient !== '' ? $recipient : null,
+        'delivery_status' => $sent ? 'sent' : 'failed',
+        'provider' => $provider !== '' ? $provider : null,
+        'error_message' => $error !== '' ? $error : null,
+    ]);
+}
+
 function isEquipmentRequestRateLimited(PDO $pdo, string $ipAddress, string $sessionToken): bool
 {
     $statement = $pdo->prepare(
@@ -644,6 +795,37 @@ function ensureEquipmentRequestTables(PDO $pdo): void
         "CREATE TABLE IF NOT EXISTS equipment_request_code_counter (
             id TINYINT UNSIGNED NOT NULL PRIMARY KEY,
             next_number INT UNSIGNED NOT NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+    );
+
+    $ensured = true;
+}
+
+function ensureEquipmentRequestMessagesTableForCreate(PDO $pdo): void
+{
+    static $ensured = false;
+    if ($ensured) {
+        return;
+    }
+
+    $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS equipment_request_messages (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            request_id BIGINT UNSIGNED NOT NULL,
+            sender_user_id BIGINT UNSIGNED NULL,
+            channel ENUM('email','system') NOT NULL DEFAULT 'email',
+            subject VARCHAR(255) NULL,
+            message TEXT NOT NULL,
+            recipient VARCHAR(190) NULL,
+            delivery_status ENUM('sent','failed','pending') NOT NULL DEFAULT 'pending',
+            provider VARCHAR(50) NULL,
+            error_message VARCHAR(500) NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            KEY idx_equipment_request_messages_request (request_id),
+            KEY idx_equipment_request_messages_created (created_at),
+            CONSTRAINT fk_equipment_request_messages_request
+                FOREIGN KEY (request_id) REFERENCES equipment_requests(id)
+                ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
     );
 
