@@ -67,10 +67,10 @@ function handleEquipmentRequestCreate(PDO $pdo): void
         $totalItems += max(1, (int) ($item['qty'] ?? 1));
     }
 
-    $requestCode = generateEquipmentRequestCode();
-
     $pdo->beginTransaction();
     try {
+        $requestCode = generateEquipmentRequestCode($pdo);
+
         $insertRequest = $pdo->prepare(
             'INSERT INTO equipment_requests (
                 request_code,
@@ -446,6 +446,13 @@ function ensureEquipmentRequestTables(PDO $pdo): void
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
     );
 
+    $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS equipment_request_code_counter (
+            id TINYINT UNSIGNED NOT NULL PRIMARY KEY,
+            next_number INT UNSIGNED NOT NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+    );
+
     $ensured = true;
 }
 
@@ -583,7 +590,51 @@ function normalizeEquipmentRequestLanguage(string $value): string
     return 'ar';
 }
 
-function generateEquipmentRequestCode(): string
+function generateEquipmentRequestCode(PDO $pdo): string
 {
-    return 'ER-' . gmdate('Ymd-His') . '-' . strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
+    $seedNumber = max(1000, detectMaxEquipmentOrderNumber($pdo) + 1);
+
+    $seedStatement = $pdo->prepare(
+        'INSERT INTO equipment_request_code_counter (id, next_number)
+         VALUES (1, :seed)
+         ON DUPLICATE KEY UPDATE
+         next_number = GREATEST(next_number, VALUES(next_number))'
+    );
+    $seedStatement->execute([
+        'seed' => $seedNumber,
+    ]);
+
+    $selectStatement = $pdo->prepare(
+        'SELECT next_number
+         FROM equipment_request_code_counter
+         WHERE id = 1
+         FOR UPDATE'
+    );
+    $selectStatement->execute();
+    $current = (int) $selectStatement->fetchColumn();
+    if ($current < 1000) {
+        $current = 1000;
+    }
+
+    $updateStatement = $pdo->prepare(
+        'UPDATE equipment_request_code_counter
+         SET next_number = :next_number
+         WHERE id = 1'
+    );
+    $updateStatement->execute([
+        'next_number' => $current + 1,
+    ]);
+
+    return 'Order #' . $current;
+}
+
+function detectMaxEquipmentOrderNumber(PDO $pdo): int
+{
+    $statement = $pdo->query(
+        "SELECT MAX(CAST(SUBSTRING(request_code, 8) AS UNSIGNED))
+         FROM equipment_requests
+         WHERE request_code REGEXP '^Order #[0-9]+$'"
+    );
+    $value = (int) $statement->fetchColumn();
+    return $value > 0 ? $value : 0;
 }

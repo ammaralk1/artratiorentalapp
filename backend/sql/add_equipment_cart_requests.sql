@@ -55,6 +55,11 @@ CREATE TABLE IF NOT EXISTS equipment_request_items (
       ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS equipment_request_code_counter (
+    id TINYINT UNSIGNED NOT NULL PRIMARY KEY,
+    next_number INT UNSIGNED NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS equipment_request_messages (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     request_id BIGINT UNSIGNED NOT NULL,
