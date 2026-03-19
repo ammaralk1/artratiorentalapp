@@ -14,12 +14,12 @@
   const paginationEl = document.getElementById('equipment-pagination');
   if (!grid || !countEl) return;
 
-  const CART_KEY = 'equipmentCart';
+  const CART_API_URL = '/backend/api/equipment-cart/index.php';
   const SHOP_LAST_PAGE_KEY = 'shopLastPage';
   const pageSize = 15;
   let items = [];
   let itemsLoaded = false;
-  let cart = loadCart();
+  let cart = [];
   let activeToastHideTimer = null;
   const isReloadNavigation = () => {
     try {
@@ -431,44 +431,100 @@
           }
         });
       }
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('click', async (e) => {
         e.preventDefault();
         const qty = normalizeQty();
-        const isNewItem = addToCart(item, qty);
-        if (isNewItem) {
-          btn.textContent = t('shop_added', 'تمت الإضافة', 'Added');
-          showToast(t('shop_toast_added', 'تمت إضافة المعدة إلى السلة', 'Equipment added to cart'), 'success');
-        } else {
-          btn.textContent = t('shop_updated', 'تم التحديث', 'Updated');
-          showToast(t('shop_toast_updated', 'تم تحديث الكمية في السلة', 'Cart quantity updated'), 'info');
+        btn.disabled = true;
+        try {
+          const isNewItem = await addToCart(item, qty);
+          if (isNewItem) {
+            btn.textContent = t('shop_added', 'تمت الإضافة', 'Added');
+            showToast(
+              t('shop_toast_added', 'تمت إضافة المعدة إلى السلة', 'Equipment added to cart'),
+              'success',
+            );
+          } else {
+            btn.textContent = t('shop_updated', 'تم التحديث', 'Updated');
+            showToast(
+              t('shop_toast_updated', 'تم تحديث الكمية في السلة', 'Cart quantity updated'),
+              'info',
+            );
+          }
+        } catch (error) {
+          console.error('Cart update failed', error);
+          showToast(
+            t(
+              'shop_toast_error',
+              'تعذر تحديث السلة. حاول مرة أخرى.',
+              'Unable to update cart. Please try again.',
+            ),
+            'error',
+          );
+        } finally {
+          btn.disabled = false;
         }
       });
       grid.appendChild(col);
     });
   }
 
-  function loadCart() {
-    try {
-      const raw = localStorage.getItem(CART_KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch (e) {
-      return [];
+  async function requestCart(method, body) {
+    const options = {
+      method,
+      headers: {
+        Accept: 'application/json',
+      },
+      credentials: 'same-origin',
+    };
+    if (body !== undefined) {
+      options.headers['Content-Type'] = 'application/json';
+      options.body = JSON.stringify(body);
     }
+
+    const response = await fetch(CART_API_URL, options);
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || !payload || payload.ok !== true) {
+      throw new Error((payload && payload.error) || 'Cart request failed');
+    }
+    return payload;
   }
 
-  function saveCart() {
-    localStorage.setItem(CART_KEY, JSON.stringify(cart));
+  function normalizeCartItem(item) {
+    if (!item || typeof item !== 'object') return null;
+    const name = String(item.name || '').trim();
+    if (!name) return null;
+    return {
+      item_key: String(item.item_key || '').trim(),
+      name,
+      image: String(item.image || '').trim(),
+      category: String(item.category || '').trim(),
+      subcategory: String(item.subcategory || '').trim(),
+      qty: Math.max(1, parseInt(item.qty, 10) || 1),
+    };
+  }
+
+  async function loadCartFromApi() {
+    const payload = await requestCart('GET');
+    const list = Array.isArray(payload.data) ? payload.data : [];
+    cart = list.map(normalizeCartItem).filter(Boolean);
     updateCartCount();
   }
 
   function updateCartCount() {
     const badge = document.querySelector('.cs-header_cart_label');
+    const total = cart.reduce((sum, i) => sum + (i.qty || 1), 0);
     if (badge) {
-      const total = cart.reduce((sum, i) => sum + (i.qty || 1), 0);
       if (badge.textContent !== String(total)) {
         badge.textContent = total;
       }
     }
+    try {
+      window.dispatchEvent(
+        new CustomEvent('arino:cart-updated', {
+          detail: { total },
+        }),
+      );
+    } catch (e) {}
   }
 
   function getCartQty(item) {
@@ -476,16 +532,19 @@
     return found ? found.qty || 1 : 1;
   }
 
-  function addToCart(item, qty) {
+  async function addToCart(item, qty) {
     const found = cart.find((c) => c.name === item.name && c.image === item.image);
-    if (found) {
-      found.qty = qty;
-      saveCart();
-      return false;
-    }
-    cart.push({ ...item, qty });
-    saveCart();
-    return true;
+    const payload = {
+      item_key: '',
+      name: item.name,
+      image: item.image,
+      category: item.category,
+      subcategory: item.subcategory,
+      qty: Math.max(1, parseInt(qty, 10) || 1),
+    };
+    await requestCart('POST', payload);
+    await loadCartFromApi();
+    return !found;
   }
 
   function renderPagination(totalPages) {
@@ -605,7 +664,6 @@
       setActiveFilter('category', state.category);
       setActiveFilter('subcategory', state.subcategory);
       applyFilters();
-      updateCartCount();
     } catch (err) {
       console.error('Equipment load failed', err);
       countEl.textContent = isArabic() ? 'فشل تحميل ملف المعدات.' : 'Failed to load equipment file.';
@@ -628,5 +686,14 @@
   });
   langObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['lang', 'dir'] });
 
-  loadExcel();
+  (async () => {
+    try {
+      await loadCartFromApi();
+    } catch (error) {
+      console.error('Cart preload failed', error);
+      cart = [];
+      updateCartCount();
+    }
+    loadExcel();
+  })();
 })();

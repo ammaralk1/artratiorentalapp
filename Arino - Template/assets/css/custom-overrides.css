@@ -2646,6 +2646,10 @@ body[data-page="shop"] #equipment-grid .cs-qty-stepper .cs-qty-input[type="numbe
   background: rgba(12, 84, 154, 0.92);
 }
 
+.cs-shop-toast--error {
+  background: rgba(166, 38, 38, 0.94);
+}
+
 html[dir="rtl"] .cs-shop-toast-host,
 body.rtl .cs-shop-toast-host {
   left: 50%;
@@ -2666,4 +2670,33 @@ body.rtl .cs-shop-toast-host {
     max-width: min(92vw, 340px);
     text-align: center;
   }
+}
+
+/* Cart request feedback */
+.cs-cart-request-result {
+  margin-top: 14px;
+  min-height: 24px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.cs-cart-request-result.is-success {
+  color: #4ee3a0;
+}
+
+.cs-cart-request-result.is-error {
+  color: #ff8f8f;
+}
+
+.cs-cart-request-result.is-info {
+  color: #d6dce2;
+}
+
+/* Cart qty controls use dedicated classes to avoid legacy handlers. */
+body[data-page="shop-cart"] #cart-table-body .cs-quantity_button.cs-cart-inc {
+  top: 7px;
+}
+
+body[data-page="shop-cart"] #cart-table-body .cs-quantity_button.cs-cart-dec {
+  bottom: 7px;
 }

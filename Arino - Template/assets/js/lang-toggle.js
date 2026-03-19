@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = 'arinoLang';
-  const CART_KEY = 'equipmentCart';
+  const CART_API_URL = '/backend/api/equipment-cart/index.php';
   const keyedTranslations = {
     checkout_heading: { en: 'Checkout', ar: 'الدفع' },
     checkout_coupon: {
@@ -138,6 +138,10 @@
     shop_qty_increase_aria: { en: 'Increase quantity', ar: 'زيادة الكمية' },
     shop_toast_added: { en: 'Equipment added to cart', ar: 'تمت إضافة المعدة إلى السلة' },
     shop_toast_updated: { en: 'Cart quantity updated', ar: 'تم تحديث الكمية في السلة' },
+    shop_toast_error: {
+      en: 'Unable to update cart. Please try again.',
+      ar: 'تعذر تحديث السلة. حاول مرة أخرى.',
+    },
     gallery_breadcrumb: { en: 'Photo Gallery', ar: 'معرض الصور' },
     photo_gallery_page_title: { en: 'Photo Gallery', ar: 'معرض الصور' },
     privacy_page_title: { en: 'Privacy Policy | Art Ratio', ar: 'سياسة الخصوصية | آرت ريشيو' },
@@ -2037,6 +2041,9 @@
     cart_table_item: { en: 'Item', ar: 'العنصر' },
     cart_table_category: { en: 'Category', ar: 'التصنيف' },
     cart_table_qty: { en: 'Qty', ar: 'الكمية' },
+    cart_remove_aria: { en: 'Remove item', ar: 'حذف العنصر' },
+    cart_qty_increase_aria: { en: 'Increase quantity', ar: 'زيادة الكمية' },
+    cart_qty_decrease_aria: { en: 'Decrease quantity', ar: 'تقليل الكمية' },
     cart_send_heading: { en: 'Send Request', ar: 'إرسال الطلب' },
     cart_total_items: { en: 'Total Items', ar: 'إجمالي العناصر' },
     cart_name_label: { en: 'Your Name *', ar: 'الاسم *' },
@@ -2048,6 +2055,37 @@
       ar: 'فضلا اكتب تواريخ الحجز او اي ملاحظات اضافية',
     },
     cart_send_button: { en: 'Send Request', ar: 'إرسال الطلب' },
+    cart_send_wait: { en: 'Sending...', ar: 'جاري الإرسال...' },
+    cart_send_empty: { en: 'Your list is empty, add equipment first.', ar: 'السلة فارغة، أضف معدات أولاً.' },
+    cart_send_success: {
+      en: 'Your request was sent successfully. We will contact you to confirm or decline availability.',
+      ar: 'تم إرسال طلبك بنجاح. سنتواصل معك لتأكيد الحجز أو الاعتذار عن عدم التوفر.',
+    },
+    cart_send_success_no_email: {
+      en: 'Request saved, but email notification failed and will be reviewed manually.',
+      ar: 'تم حفظ الطلب لكن فشل إشعار البريد تلقائيًا، سنراجعه يدويًا.',
+    },
+    cart_send_error: {
+      en: 'Failed to send request. Please try again or contact us directly.',
+      ar: 'فشل إرسال الطلب. حاول مرة أخرى أو تواصل معنا مباشرة.',
+    },
+    cart_validation_required: {
+      en: 'Please fill name, email, and phone.',
+      ar: 'يرجى تعبئة الاسم والبريد الإلكتروني ورقم الجوال.',
+    },
+    cart_validation_email: {
+      en: 'Please enter a valid email.',
+      ar: 'يرجى إدخال بريد إلكتروني صحيح.',
+    },
+    cart_update_error: {
+      en: 'Unable to update cart. Please try again.',
+      ar: 'تعذر تحديث السلة. حاول مرة أخرى.',
+    },
+    cart_load_error: {
+      en: 'Unable to load cart right now. Please refresh the page.',
+      ar: 'تعذر تحميل السلة الآن. حاول تحديث الصفحة.',
+    },
+    cart_request_code_prefix: { en: 'Request code', ar: 'رقم الطلب' },
     cart_legacy_product: { en: 'Product', ar: 'المنتج' },
     cart_legacy_price: { en: 'Price', ar: 'السعر' },
     cart_legacy_quantity: { en: 'Quantity', ar: 'الكمية' },
@@ -2940,15 +2978,33 @@
     toolbox.insertBefore(cart, toolbox.firstChild);
   };
 
-  const getCartCount = () => {
-    try {
-      const raw = localStorage.getItem(CART_KEY);
-      const data = raw ? JSON.parse(raw) : [];
-      if (!Array.isArray(data)) return 0;
-      return data.reduce((sum, item) => sum + (item && item.qty ? Number(item.qty) || 1 : 1), 0);
-    } catch (e) {
+  let cartBadgeRequestId = 0;
+
+  const fetchCartCount = async () => {
+    const response = await fetch(CART_API_URL, {
+      method: 'GET',
+      credentials: 'same-origin',
+      headers: {
+        Accept: 'application/json',
+      },
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || !payload || payload.ok !== true) {
       return 0;
     }
+
+    if (payload.meta && Number.isFinite(Number(payload.meta.total_items))) {
+      return Math.max(0, Number(payload.meta.total_items));
+    }
+
+    if (Array.isArray(payload.data)) {
+      return payload.data.reduce((sum, item) => {
+        const qty = item && item.qty ? Number(item.qty) || 1 : 1;
+        return sum + Math.max(1, qty);
+      }, 0);
+    }
+
+    return 0;
   };
 
   const setBadgeValue = (badge, value) => {
@@ -2958,9 +3014,26 @@
     }
   };
 
-  const updateCartBadge = () => {
+  const updateCartBadge = (knownCount = null) => {
     const badge = document.querySelector('.cs-header_cart_label');
-    setBadgeValue(badge, getCartCount());
+    if (!badge) return;
+
+    if (
+      knownCount !== null &&
+      knownCount !== undefined &&
+      Number.isFinite(Number(knownCount))
+    ) {
+      setBadgeValue(badge, Math.max(0, Number(knownCount)));
+      return;
+    }
+
+    const requestId = ++cartBadgeRequestId;
+    fetchCartCount()
+      .then((count) => {
+        if (requestId !== cartBadgeRequestId) return;
+        setBadgeValue(badge, count);
+      })
+      .catch(() => {});
   };
 
   const reorderHomeTeamSlides = (lang) => {
@@ -3207,10 +3280,9 @@
     applyResponsiveTextOverrides(currentLang);
   });
 
-  window.addEventListener('storage', (e) => {
-    if (e.key === CART_KEY) {
-      updateCartBadge();
-    }
+  window.addEventListener('arino:cart-updated', (event) => {
+    const total = event && event.detail ? event.detail.total : null;
+    updateCartBadge(total);
   });
 
   // If toggle gets removed/changed by dynamic scripts, re-inject
