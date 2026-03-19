@@ -57,6 +57,8 @@ function getEmailConfig(): array
  */
 function sendEmail(string $toEmail, string $toName, string $subject, string $htmlBody, ?string $textBody = null): bool
 {
+    emailSetLastError('');
+
     try {
         $cfg = getEmailConfig();
     } catch (Throwable $e) {
@@ -73,6 +75,7 @@ function sendEmail(string $toEmail, string $toName, string $subject, string $htm
 
     $toEmail = trim($toEmail);
     if ($toEmail === '' || !filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
+        emailSetLastError('Invalid recipient email');
         return false;
     }
 
@@ -81,23 +84,185 @@ function sendEmail(string $toEmail, string $toName, string $subject, string $htm
     $textBody = $textBody ?? strip_tags($htmlBody);
 
     if ($cfg['provider'] === 'smtp') {
-        return sendEmailViaSmtp(
-            $cfg['smtp_host'],
-            (int)$cfg['smtp_port'],
-            (string)$cfg['smtp_secure'],
-            (string)$cfg['smtp_user'],
-            (string)$cfg['smtp_pass'],
-            $cfg['from_email'],
-            $cfg['from_name'],
+        $smtpAttempts = buildSmtpAttemptList($cfg);
+        $attemptErrors = [];
+        foreach ($smtpAttempts as $attempt) {
+            $ok = sendEmailViaSmtp(
+                (string)$attempt['smtp_host'],
+                (int)$attempt['smtp_port'],
+                (string)$attempt['smtp_secure'],
+                (string)$attempt['smtp_user'],
+                (string)$attempt['smtp_pass'],
+                (string)$attempt['from_email'],
+                (string)$attempt['from_name'],
+                $toEmail,
+                $toName,
+                $subject,
+                $htmlBody,
+                $textBody ?? strip_tags($htmlBody)
+            );
+            if ($ok) {
+                emailSetLastError('');
+                return true;
+            }
+
+            $lastError = emailGetLastError() ?? 'Unknown SMTP error';
+            $attemptErrors[] = sprintf(
+                '%s:%d (%s) -> %s',
+                (string)$attempt['smtp_host'],
+                (int)$attempt['smtp_port'],
+                (string)$attempt['smtp_secure'],
+                $lastError
+            );
+            error_log('SMTP attempt failed: ' . end($attemptErrors));
+        }
+
+        $phpMailFallback = sendEmailViaPhpMail(
+            (string)$cfg['from_email'],
+            (string)$cfg['from_name'],
             $toEmail,
             $toName,
             $subject,
             $htmlBody,
             $textBody ?? strip_tags($htmlBody)
         );
+        if ($phpMailFallback) {
+            emailSetLastError('');
+            return true;
+        }
+
+        $mailFallbackError = emailGetLastError() ?? 'PHP mail() fallback failed';
+        $smtpErrorSummary = $attemptErrors
+            ? ('SMTP failed: ' . implode(' | ', $attemptErrors))
+            : 'SMTP failed with no detailed error';
+        emailSetLastError($smtpErrorSummary . ' | ' . $mailFallbackError);
+        return false;
     }
 
+    emailSetLastError('Unsupported email provider');
     return false;
+}
+
+function buildSmtpAttemptList(array $cfg): array
+{
+    $host = trim((string)($cfg['smtp_host'] ?? ''));
+    $port = (int)($cfg['smtp_port'] ?? 0);
+    $secure = strtolower(trim((string)($cfg['smtp_secure'] ?? '')));
+    $user = trim((string)($cfg['smtp_user'] ?? ''));
+    $pass = (string)($cfg['smtp_pass'] ?? '');
+    $fromEmail = trim((string)($cfg['from_email'] ?? ''));
+    $fromName = trim((string)($cfg['from_name'] ?? ''));
+
+    $attempts = [];
+    $seen = [];
+
+    $pushAttempt = static function (string $h, int $p, string $s) use (
+        &$attempts,
+        &$seen,
+        $user,
+        $pass,
+        $fromEmail,
+        $fromName
+    ): void {
+        if ($h === '' || $p <= 0) {
+            return;
+        }
+        $normalizedSecure = strtolower(trim($s));
+        $key = strtolower($h) . '|' . $p . '|' . $normalizedSecure . '|' . strtolower($user);
+        if (isset($seen[$key])) {
+            return;
+        }
+        $seen[$key] = true;
+        $attempts[] = [
+            'smtp_host' => $h,
+            'smtp_port' => $p,
+            'smtp_secure' => $normalizedSecure,
+            'smtp_user' => $user,
+            'smtp_pass' => $pass,
+            'from_email' => $fromEmail,
+            'from_name' => $fromName,
+        ];
+    };
+
+    // Primary configured attempt first.
+    $pushAttempt($host, $port, $secure);
+
+    // Common SMTP fallbacks.
+    $pushAttempt($host, 587, 'tls');
+    $pushAttempt($host, 465, 'ssl');
+    $pushAttempt($host, 25, '');
+
+    return $attempts;
+}
+
+function sendEmailViaPhpMail(
+    string $fromEmail,
+    string $fromName,
+    string $toEmail,
+    string $toName,
+    string $subject,
+    string $htmlBody,
+    string $textBody
+): bool {
+    if (!function_exists('mail')) {
+        emailSetLastError('PHP mail() is not available');
+        return false;
+    }
+
+    try {
+        $boundary = 'b_' . bin2hex(random_bytes(12));
+    } catch (Throwable $e) {
+        $boundary = 'b_' . md5((string) microtime(true));
+    }
+    $encodedSubject = '=?UTF-8?B?' . base64_encode($subject) . '?=';
+
+    $toHeader = $toName !== ''
+        ? ('=?UTF-8?B?' . base64_encode($toName) . '?= <' . $toEmail . '>')
+        : $toEmail;
+    $fromHeader = $fromName !== ''
+        ? ('=?UTF-8?B?' . base64_encode($fromName) . '?= <' . $fromEmail . '>')
+        : $fromEmail;
+
+    $headers = [];
+    $headers[] = 'From: ' . $fromHeader;
+    $headers[] = 'Reply-To: ' . $fromEmail;
+    $headers[] = 'MIME-Version: 1.0';
+    $headers[] = 'Content-Type: multipart/alternative; boundary="' . $boundary . '"';
+    $headers[] = 'Content-Transfer-Encoding: 8bit';
+
+    $bodyParts = [];
+    $bodyParts[] = '--' . $boundary;
+    $bodyParts[] = 'Content-Type: text/plain; charset=UTF-8';
+    $bodyParts[] = 'Content-Transfer-Encoding: 8bit';
+    $bodyParts[] = '';
+    $bodyParts[] = $textBody;
+    $bodyParts[] = '--' . $boundary;
+    $bodyParts[] = 'Content-Type: text/html; charset=UTF-8';
+    $bodyParts[] = 'Content-Transfer-Encoding: 8bit';
+    $bodyParts[] = '';
+    $bodyParts[] = $htmlBody;
+    $bodyParts[] = '--' . $boundary . '--';
+    $bodyParts[] = '';
+
+    $message = implode("\r\n", $bodyParts);
+    $headersString = implode("\r\n", $headers);
+
+    $extraParams = '';
+    if (filter_var($fromEmail, FILTER_VALIDATE_EMAIL)) {
+        $extraParams = '-f' . $fromEmail;
+    }
+
+    $sent = $extraParams !== ''
+        ? @mail($toHeader, $encodedSubject, $message, $headersString, $extraParams)
+        : @mail($toHeader, $encodedSubject, $message, $headersString);
+
+    if (!$sent) {
+        emailSetLastError('PHP mail() returned false');
+        return false;
+    }
+
+    emailSetLastError('');
+    return true;
 }
 
 
@@ -265,7 +430,8 @@ function sendEmailViaSmtp(
 
     $write('RCPT TO: <' . $toEmail . '>');
     $rcptTo = $read();
-    if (!$expect($rcptTo, 250)) {
+    $rcptAccepted = $expect($rcptTo, 250) || $expect($rcptTo, 251) || $expect($rcptTo, 252);
+    if (!$rcptAccepted) {
         emailSetLastError('SMTP RCPT TO failed: ' . trim($rcptTo));
         fclose($conn);
         return false;
@@ -289,5 +455,6 @@ function sendEmailViaSmtp(
 
     $write('QUIT');
     fclose($conn);
+    emailSetLastError('');
     return true;
 }

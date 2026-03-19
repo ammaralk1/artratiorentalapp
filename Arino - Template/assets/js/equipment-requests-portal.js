@@ -339,7 +339,7 @@
       showToast('اختر طلب أولاً', 'error');
       return;
     }
-    await apiRequest(REQUESTS_API, {
+    const response = await apiRequest(REQUESTS_API, {
       method: 'PATCH',
       body: JSON.stringify({
         id: state.selectedId,
@@ -347,7 +347,25 @@
         status_note: String(statusNote || ''),
       }),
     });
-    showToast('تم تحديث الحالة', 'success');
+
+    const meta = (response && response.meta) || {};
+    const emailAttempted = Boolean(meta.status_email_attempted);
+    const emailSent = Boolean(meta.status_email_sent);
+    const emailError = String(meta.status_email_error || '').trim();
+
+    if (emailAttempted && emailSent) {
+      showToast('تم تحديث الحالة وإرسال البريد للعميل', 'success');
+    } else if (emailAttempted && !emailSent) {
+      showToast(
+        emailError
+          ? `تم تحديث الحالة لكن فشل إرسال البريد: ${emailError}`
+          : 'تم تحديث الحالة لكن فشل إرسال البريد للعميل',
+        'error',
+      );
+    } else {
+      showToast('تم تحديث الحالة', 'success');
+    }
+
     await loadRequests();
   }
 

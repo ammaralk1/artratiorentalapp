@@ -2058,8 +2058,8 @@
     cart_send_wait: { en: 'Sending...', ar: 'جاري الإرسال...' },
     cart_send_empty: { en: 'Your list is empty, add equipment first.', ar: 'السلة فارغة، أضف معدات أولاً.' },
     cart_send_success: {
-      en: 'Your request was sent successfully. We will contact you to confirm or decline availability.',
-      ar: 'تم إرسال طلبك بنجاح. سنتواصل معك لتأكيد الحجز أو الاعتذار عن عدم التوفر.',
+      en: 'Your request was sent successfully. We will contact you to confirm the booking.',
+      ar: 'تم إرسال طلبك بنجاح. سنتواصل معك لتأكيد الحجز.',
     },
     cart_send_success_no_email: {
       en: 'Request saved, but email notification failed and will be reviewed manually.',
@@ -2085,7 +2085,7 @@
       en: 'Unable to load cart right now. Please refresh the page.',
       ar: 'تعذر تحميل السلة الآن. حاول تحديث الصفحة.',
     },
-    cart_request_code_prefix: { en: 'Request code', ar: 'رقم الطلب' },
+    cart_request_code_prefix: { en: 'Booking number', ar: 'رقم الحجز' },
     cart_legacy_product: { en: 'Product', ar: 'المنتج' },
     cart_legacy_price: { en: 'Price', ar: 'السعر' },
     cart_legacy_quantity: { en: 'Quantity', ar: 'الكمية' },

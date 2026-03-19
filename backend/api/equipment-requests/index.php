@@ -180,10 +180,14 @@ function handleEquipmentRequestCreate(PDO $pdo): void
             'request_code' => $requestCode,
             'status' => 'pending',
             'total_items' => $totalItems,
+            'email_attempted' => true,
             'email_sent' => $customerEmailResult['sent'],
             'email_provider' => $customerEmailResult['provider'],
+            'email_error' => $customerEmailResult['error'] ?? null,
+            'team_email_attempted' => true,
             'team_email_sent' => $teamEmailResult['sent'],
             'team_email_provider' => $teamEmailResult['provider'],
+            'team_email_error' => $teamEmailResult['error'] ?? null,
         ], 201);
     } catch (Throwable $exception) {
         if ($pdo->inTransaction()) {
@@ -225,12 +229,15 @@ function notifyEquipmentRequestTeamByEmail(
     $recipients = resolveEquipmentRequestRecipients();
 
     $sent = false;
+    $lastError = null;
     foreach ($recipients as $recipient) {
         if (!is_string($recipient) || !filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
             continue;
         }
         if (sendEmail($recipient, 'Art Ratio Team', $subject, $htmlBody, $textBody)) {
             $sent = true;
+        } else {
+            $lastError = emailGetLastError() ?? ('Failed to send team email to ' . $recipient);
         }
     }
 
@@ -238,6 +245,7 @@ function notifyEquipmentRequestTeamByEmail(
         return [
             'sent' => true,
             'provider' => 'smtp',
+            'error' => null,
         ];
     }
 
@@ -252,6 +260,7 @@ function notifyEquipmentRequestTeamByEmail(
     return [
         'sent' => $fallbackSent,
         'provider' => $fallbackSent ? 'web3forms' : 'none',
+        'error' => $fallbackSent ? null : ($lastError ?? 'Failed to send team notification'),
     ];
 }
 
@@ -269,6 +278,7 @@ function notifyEquipmentRequestCustomerReceivedByEmail(
         return [
             'sent' => false,
             'provider' => 'none',
+            'error' => 'Customer email is missing or invalid',
         ];
     }
 
@@ -299,6 +309,7 @@ function notifyEquipmentRequestCustomerReceivedByEmail(
     return [
         'sent' => $sent,
         'provider' => $sent ? 'smtp' : 'none',
+        'error' => $sent ? null : (emailGetLastError() ?? 'Failed to send customer confirmation email'),
     ];
 }
 

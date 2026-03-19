@@ -546,15 +546,15 @@
 
       const baseSuccess = t(
         'cart_send_success',
-        'تم إرسال طلبك بنجاح. سنتواصل معك لتأكيد الحجز أو الاعتذار عن عدم التوفر.',
-        'Your request was sent successfully. We will contact you to confirm or decline availability.',
+        'تم إرسال طلبك بنجاح. سنتواصل معك لتأكيد الحجز.',
+        'Your request was sent successfully. We will contact you to confirm the booking.',
       );
       const fallbackEmailNote = t(
         'cart_send_success_no_email',
         'تم حفظ الطلب لكن فشل إشعار البريد تلقائيًا، سنراجعه يدويًا.',
         'Request saved, but email notification failed and will be reviewed manually.',
       );
-      const codePrefix = t('cart_request_code_prefix', 'رقم الطلب', 'Request code');
+      const codePrefix = t('cart_request_code_prefix', 'رقم الحجز', 'Booking number');
       const emailWarning = data.email_sent === false ? ` ${fallbackEmailNote}` : '';
       showResult(
         requestCode
@@ -562,6 +562,12 @@
           : `${baseSuccess}${emailWarning}`,
         'success',
       );
+      if (data.email_sent === false && data.email_error) {
+        console.warn('Customer confirmation email failed:', data.email_error);
+      }
+      if (data.team_email_sent === false && data.team_email_error) {
+        console.warn('Team notification email failed:', data.team_email_error);
+      }
       formEl.reset();
       await loadCartFromApi();
       renderCart();

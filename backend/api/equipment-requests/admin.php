@@ -238,6 +238,7 @@ function handleEquipmentRequestsAdminPatch(PDO $pdo): void
         'status_email_sent' => (bool) ($statusEmailResult['sent'] ?? false),
         'status_email_provider' => (string) ($statusEmailResult['provider'] ?? 'none'),
         'status_email_recipient' => (string) ($statusEmailResult['recipient'] ?? ''),
+        'status_email_error' => (string) ($statusEmailResult['error'] ?? ''),
     ]);
 }
 
