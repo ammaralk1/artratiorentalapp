@@ -156,7 +156,7 @@ function handleEquipmentRequestCreate(PDO $pdo): void
 
         $pdo->commit();
 
-        $emailResult = notifyEquipmentRequestByEmail(
+        $teamEmailResult = notifyEquipmentRequestTeamByEmail(
             $requestCode,
             $name,
             $email,
@@ -165,13 +165,25 @@ function handleEquipmentRequestCreate(PDO $pdo): void
             $totalItems,
             $items
         );
+        $customerEmailResult = notifyEquipmentRequestCustomerReceivedByEmail(
+            $requestCode,
+            $name,
+            $email,
+            $phone,
+            $notes,
+            $totalItems,
+            $items,
+            $language
+        );
 
         respond([
             'request_code' => $requestCode,
             'status' => 'pending',
             'total_items' => $totalItems,
-            'email_sent' => $emailResult['sent'],
-            'email_provider' => $emailResult['provider'],
+            'email_sent' => $customerEmailResult['sent'],
+            'email_provider' => $customerEmailResult['provider'],
+            'team_email_sent' => $teamEmailResult['sent'],
+            'team_email_provider' => $teamEmailResult['provider'],
         ], 201);
     } catch (Throwable $exception) {
         if ($pdo->inTransaction()) {
@@ -181,7 +193,7 @@ function handleEquipmentRequestCreate(PDO $pdo): void
     }
 }
 
-function notifyEquipmentRequestByEmail(
+function notifyEquipmentRequestTeamByEmail(
     string $requestCode,
     string $customerName,
     string $customerEmail,
@@ -241,6 +253,177 @@ function notifyEquipmentRequestByEmail(
         'sent' => $fallbackSent,
         'provider' => $fallbackSent ? 'web3forms' : 'none',
     ];
+}
+
+function notifyEquipmentRequestCustomerReceivedByEmail(
+    string $requestCode,
+    string $customerName,
+    string $customerEmail,
+    string $customerPhone,
+    string $notes,
+    int $totalItems,
+    array $items,
+    string $language
+): array {
+    if (!filter_var($customerEmail, FILTER_VALIDATE_EMAIL)) {
+        return [
+            'sent' => false,
+            'provider' => 'none',
+        ];
+    }
+
+    $isArabic = $language !== 'en';
+    $subject = $isArabic
+        ? ('تم استلام طلب المعدات - ' . $requestCode)
+        : ('Your equipment request has been received - ' . $requestCode);
+    $htmlBody = buildEquipmentRequestCustomerReceivedEmailHtml(
+        $requestCode,
+        $customerName,
+        $customerPhone,
+        $notes,
+        $totalItems,
+        $items,
+        $isArabic
+    );
+    $textBody = buildEquipmentRequestCustomerReceivedEmailText(
+        $requestCode,
+        $customerName,
+        $customerPhone,
+        $notes,
+        $totalItems,
+        $items,
+        $isArabic
+    );
+
+    $sent = sendEmail($customerEmail, $customerName, $subject, $htmlBody, $textBody);
+    return [
+        'sent' => $sent,
+        'provider' => $sent ? 'smtp' : 'none',
+    ];
+}
+
+function buildEquipmentRequestCustomerReceivedEmailHtml(
+    string $requestCode,
+    string $customerName,
+    string $customerPhone,
+    string $notes,
+    int $totalItems,
+    array $items,
+    bool $isArabic
+): string {
+    $rows = '';
+    foreach ($items as $item) {
+        $name = htmlspecialchars((string) ($item['name'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $category = htmlspecialchars((string) ($item['category'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $subcategory = htmlspecialchars((string) ($item['subcategory'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $qty = max(1, (int) ($item['qty'] ?? 1));
+        $categoryText = trim($category . ($subcategory !== '' ? ' • ' . $subcategory : ''));
+        if ($categoryText === '') {
+            $categoryText = '-';
+        }
+
+        $rows .= '<tr>'
+            . '<td style="padding:8px;border:1px solid #ddd;">' . $name . '</td>'
+            . '<td style="padding:8px;border:1px solid #ddd;">' . $categoryText . '</td>'
+            . '<td style="padding:8px;border:1px solid #ddd;text-align:center;">' . $qty . '</td>'
+            . '</tr>';
+    }
+
+    $safeName = htmlspecialchars($customerName, ENT_QUOTES, 'UTF-8');
+    $safeCode = htmlspecialchars($requestCode, ENT_QUOTES, 'UTF-8');
+    $safePhone = htmlspecialchars($customerPhone, ENT_QUOTES, 'UTF-8');
+    $safeNotes = $notes !== '' ? nl2br(htmlspecialchars($notes, ENT_QUOTES, 'UTF-8')) : '-';
+
+    if ($isArabic) {
+        return '<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;line-height:1.8;">'
+            . '<p>مرحبًا ' . $safeName . '،</p>'
+            . '<p>شكرًا لاختيارك <strong>أرت ريشيو</strong>.</p>'
+            . '<p>تم استلام طلب المعدات الخاص بك بنجاح، وفريقنا يراجع الطلب الآن وسيقوم بتحديث الحالة في أقرب وقت.</p>'
+            . '<p><strong>رقم الطلب:</strong> ' . $safeCode . '<br>'
+            . '<strong>الجوال:</strong> ' . $safePhone . '<br>'
+            . '<strong>إجمالي الكمية:</strong> ' . $totalItems . '</p>'
+            . '<p><strong>ملاحظاتك:</strong><br>' . $safeNotes . '</p>'
+            . '<table style="border-collapse:collapse;width:100%;margin-top:16px;">'
+            . '<thead><tr>'
+            . '<th style="padding:8px;border:1px solid #ddd;text-align:right;">العنصر</th>'
+            . '<th style="padding:8px;border:1px solid #ddd;text-align:right;">التصنيف</th>'
+            . '<th style="padding:8px;border:1px solid #ddd;text-align:center;">الكمية</th>'
+            . '</tr></thead>'
+            . '<tbody>' . $rows . '</tbody>'
+            . '</table>'
+            . '<p style="margin-top:20px;">مع التحية،<br>فريق أرت ريشيو</p>'
+            . '</div>';
+    }
+
+    return '<div style="font-family:Arial,sans-serif;line-height:1.7;">'
+        . '<p>Hello ' . $safeName . ',</p>'
+        . '<p>Thank you for choosing <strong>Art Ratio</strong>.</p>'
+        . '<p>Your equipment request has been received and is now under review. Our team will update your request status as soon as possible.</p>'
+        . '<p><strong>Request code:</strong> ' . $safeCode . '<br>'
+        . '<strong>Phone:</strong> ' . $safePhone . '<br>'
+        . '<strong>Total quantity:</strong> ' . $totalItems . '</p>'
+        . '<p><strong>Your notes:</strong><br>' . $safeNotes . '</p>'
+        . '<table style="border-collapse:collapse;width:100%;margin-top:16px;">'
+        . '<thead><tr>'
+        . '<th style="padding:8px;border:1px solid #ddd;text-align:left;">Item</th>'
+        . '<th style="padding:8px;border:1px solid #ddd;text-align:left;">Category</th>'
+        . '<th style="padding:8px;border:1px solid #ddd;text-align:center;">Qty</th>'
+        . '</tr></thead>'
+        . '<tbody>' . $rows . '</tbody>'
+        . '</table>'
+        . '<p style="margin-top:20px;">Best regards,<br>Art Ratio Team</p>'
+        . '</div>';
+}
+
+function buildEquipmentRequestCustomerReceivedEmailText(
+    string $requestCode,
+    string $customerName,
+    string $customerPhone,
+    string $notes,
+    int $totalItems,
+    array $items,
+    bool $isArabic
+): string {
+    $lines = [];
+    if ($isArabic) {
+        $lines[] = 'مرحبًا ' . $customerName . '،';
+        $lines[] = 'شكرًا لاختيارك أرت ريشيو.';
+        $lines[] = 'تم استلام طلب المعدات الخاص بك وهو الآن قيد المراجعة.';
+        $lines[] = 'رقم الطلب: ' . $requestCode;
+        $lines[] = 'الجوال: ' . $customerPhone;
+        $lines[] = 'إجمالي الكمية: ' . $totalItems;
+        $lines[] = 'ملاحظاتك: ' . ($notes !== '' ? $notes : '-');
+        $lines[] = '';
+        $lines[] = 'قائمة المعدات:';
+    } else {
+        $lines[] = 'Hello ' . $customerName . ',';
+        $lines[] = 'Thank you for choosing Art Ratio.';
+        $lines[] = 'Your equipment request has been received and is now under review.';
+        $lines[] = 'Request code: ' . $requestCode;
+        $lines[] = 'Phone: ' . $customerPhone;
+        $lines[] = 'Total quantity: ' . $totalItems;
+        $lines[] = 'Your notes: ' . ($notes !== '' ? $notes : '-');
+        $lines[] = '';
+        $lines[] = 'Requested items:';
+    }
+
+    foreach ($items as $idx => $item) {
+        $category = trim(((string) ($item['category'] ?? '')) . ' ' . ((string) ($item['subcategory'] ?? '')));
+        if ($category === '') {
+            $category = '-';
+        }
+        $lines[] = sprintf(
+            '%d. %s | Qty: %d | Category: %s',
+            $idx + 1,
+            (string) ($item['name'] ?? ''),
+            max(1, (int) ($item['qty'] ?? 1)),
+            $category
+        );
+    }
+
+    $lines[] = '';
+    $lines[] = $isArabic ? 'فريق أرت ريشيو' : 'Art Ratio Team';
+    return implode("\n", $lines);
 }
 
 function resolveEquipmentRequestRecipients(): array

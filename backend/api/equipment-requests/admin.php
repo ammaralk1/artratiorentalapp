@@ -136,6 +136,7 @@ function handleEquipmentRequestsAdminPatch(PDO $pdo): void
     $payload = readEquipmentRequestJsonPayload();
     $id = isset($payload['id']) ? (int) $payload['id'] : 0;
     $status = normalizeAdminRequestStatus((string) ($payload['status'] ?? ''));
+    $statusNote = normalizeEquipmentRequestMultiline((string) ($payload['status_note'] ?? ''), 1200);
 
     if ($id <= 0) {
         throw new InvalidArgumentException('Valid request id is required');
@@ -143,6 +144,13 @@ function handleEquipmentRequestsAdminPatch(PDO $pdo): void
     if ($status === '') {
         throw new InvalidArgumentException('Valid status is required');
     }
+
+    $requestBefore = fetchEquipmentRequestRow($pdo, $id);
+    if (!$requestBefore) {
+        respondError('Request not found', 404);
+        return;
+    }
+    $previousStatus = strtolower((string) ($requestBefore['status'] ?? 'pending'));
 
     $statement = $pdo->prepare(
         'UPDATE equipment_requests
@@ -170,6 +178,9 @@ function handleEquipmentRequestsAdminPatch(PDO $pdo): void
         $statusLabel,
         (string) ($user['username'] ?? 'system')
     );
+    if ($statusNote !== '') {
+        $systemMessage .= ' Note: ' . $statusNote;
+    }
     insertEquipmentRequestMessage($pdo, [
         'request_id' => $id,
         'sender_user_id' => (int) ($user['id'] ?? 0) ?: null,
@@ -183,7 +194,51 @@ function handleEquipmentRequestsAdminPatch(PDO $pdo): void
     ]);
 
     $details = fetchEquipmentRequestDetails($pdo, $id);
-    respond($details);
+    if (!$details || !is_array($details)) {
+        respondError('Request not found', 404);
+        return;
+    }
+
+    $statusChanged = $previousStatus !== $status;
+    $statusEmailResult = [
+        'attempted' => false,
+        'sent' => false,
+        'provider' => 'none',
+        'recipient' => '',
+        'subject' => '',
+        'message' => '',
+        'error' => null,
+    ];
+    if ($statusChanged || $statusNote !== '') {
+        $statusEmailResult = sendEquipmentRequestStatusUpdateToCustomer(
+            (array) ($details['request'] ?? []),
+            is_array($details['items'] ?? null) ? $details['items'] : [],
+            $status,
+            $statusNote
+        );
+
+        if (!empty($statusEmailResult['attempted'])) {
+            insertEquipmentRequestMessage($pdo, [
+                'request_id' => $id,
+                'sender_user_id' => (int) ($user['id'] ?? 0) ?: null,
+                'channel' => 'email',
+                'subject' => (string) ($statusEmailResult['subject'] ?? ''),
+                'message' => (string) ($statusEmailResult['message'] ?? ''),
+                'recipient' => (string) ($statusEmailResult['recipient'] ?? ''),
+                'delivery_status' => !empty($statusEmailResult['sent']) ? 'sent' : 'failed',
+                'provider' => (string) ($statusEmailResult['provider'] ?? 'none'),
+                'error_message' => (string) ($statusEmailResult['error'] ?? ''),
+            ]);
+            $details = fetchEquipmentRequestDetails($pdo, $id) ?: $details;
+        }
+    }
+
+    respond($details, 200, [
+        'status_email_attempted' => (bool) ($statusEmailResult['attempted'] ?? false),
+        'status_email_sent' => (bool) ($statusEmailResult['sent'] ?? false),
+        'status_email_provider' => (string) ($statusEmailResult['provider'] ?? 'none'),
+        'status_email_recipient' => (string) ($statusEmailResult['recipient'] ?? ''),
+    ]);
 }
 
 function handleEquipmentRequestsAdminPost(PDO $pdo): void
@@ -400,4 +455,228 @@ function mapAdminStatusLabel(string $status): string
         'cancelled' => 'cancelled',
         default => 'pending',
     };
+}
+
+function sendEquipmentRequestStatusUpdateToCustomer(
+    array $request,
+    array $items,
+    string $status,
+    string $statusNote
+): array {
+    $recipient = trim((string) ($request['customer_email'] ?? ''));
+    if ($recipient === '' || !filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
+        return [
+            'attempted' => false,
+            'sent' => false,
+            'provider' => 'none',
+            'recipient' => $recipient,
+            'subject' => '',
+            'message' => '',
+            'error' => 'Customer email is missing or invalid',
+        ];
+    }
+
+    $isArabic = strtolower((string) ($request['request_lang'] ?? 'ar')) !== 'en';
+    $requestCode = (string) ($request['request_code'] ?? '#');
+    $customerName = (string) ($request['customer_name'] ?? 'Customer');
+    $customerPhone = (string) ($request['customer_phone'] ?? '-');
+    $totalItems = (int) ($request['total_items'] ?? 0);
+
+    $statusTextAr = match ($status) {
+        'confirmed' => 'تم تأكيد الطلب',
+        'cancelled' => 'غير متوفر حالياً',
+        default => 'قيد المراجعة',
+    };
+    $statusTextEn = match ($status) {
+        'confirmed' => 'Confirmed',
+        'cancelled' => 'Unavailable',
+        default => 'Under review',
+    };
+
+    $subject = $isArabic
+        ? ('تحديث حالة طلب المعدات - ' . $requestCode)
+        : ('Equipment request status update - ' . $requestCode);
+    $html = buildEquipmentRequestStatusUpdateEmailHtml(
+        $requestCode,
+        $customerName,
+        $customerPhone,
+        $totalItems,
+        $items,
+        $status,
+        $statusTextAr,
+        $statusTextEn,
+        $statusNote,
+        $isArabic
+    );
+    $text = buildEquipmentRequestStatusUpdateEmailText(
+        $requestCode,
+        $customerName,
+        $customerPhone,
+        $totalItems,
+        $items,
+        $statusTextAr,
+        $statusTextEn,
+        $statusNote,
+        $isArabic
+    );
+
+    $sent = sendEmail($recipient, $customerName, $subject, $html, $text);
+    return [
+        'attempted' => true,
+        'sent' => $sent,
+        'provider' => $sent ? 'smtp' : 'none',
+        'recipient' => $recipient,
+        'subject' => $subject,
+        'message' => $text,
+        'error' => $sent ? null : (emailGetLastError() ?? 'Failed to send status update email'),
+    ];
+}
+
+function buildEquipmentRequestStatusUpdateEmailHtml(
+    string $requestCode,
+    string $customerName,
+    string $customerPhone,
+    int $totalItems,
+    array $items,
+    string $status,
+    string $statusTextAr,
+    string $statusTextEn,
+    string $statusNote,
+    bool $isArabic
+): string {
+    $safeName = htmlspecialchars($customerName, ENT_QUOTES, 'UTF-8');
+    $safeCode = htmlspecialchars($requestCode, ENT_QUOTES, 'UTF-8');
+    $safePhone = htmlspecialchars($customerPhone, ENT_QUOTES, 'UTF-8');
+    $safeNote = $statusNote !== '' ? nl2br(htmlspecialchars($statusNote, ENT_QUOTES, 'UTF-8')) : '';
+
+    $rows = '';
+    foreach ($items as $item) {
+        $name = htmlspecialchars((string) ($item['name'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $category = htmlspecialchars((string) ($item['category'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $subcategory = htmlspecialchars((string) ($item['subcategory'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $qty = max(1, (int) ($item['qty'] ?? 1));
+        $categoryText = trim($category . ($subcategory !== '' ? ' • ' . $subcategory : ''));
+        if ($categoryText === '') {
+            $categoryText = '-';
+        }
+
+        $rows .= '<tr>'
+            . '<td style="padding:8px;border:1px solid #ddd;">' . $name . '</td>'
+            . '<td style="padding:8px;border:1px solid #ddd;">' . $categoryText . '</td>'
+            . '<td style="padding:8px;border:1px solid #ddd;text-align:center;">' . $qty . '</td>'
+            . '</tr>';
+    }
+
+    $statusLine = $isArabic ? $statusTextAr : $statusTextEn;
+    $messageLine = '';
+    if ($isArabic) {
+        $messageLine = match ($status) {
+            'confirmed' => 'تم تأكيد طلبك، وسيقوم فريقنا بالتواصل معك لإكمال الإجراءات.',
+            'cancelled' => 'نعتذر، بعض المعدات المطلوبة غير متوفرة حالياً. يمكنك الرد على هذا البريد لإرسال بدائل مناسبة.',
+            default => 'طلبك ما زال قيد المراجعة، وسيتم تحديثك في أقرب وقت.',
+        };
+    } else {
+        $messageLine = match ($status) {
+            'confirmed' => 'Your request has been confirmed. Our team will contact you to complete the next steps.',
+            'cancelled' => 'We are sorry, some requested equipment is currently unavailable. Reply to this email and we can suggest alternatives.',
+            default => 'Your request is still under review and we will update you shortly.',
+        };
+    }
+
+    if ($isArabic) {
+        return '<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;line-height:1.8;">'
+            . '<p>مرحبًا ' . $safeName . '،</p>'
+            . '<p>' . $messageLine . '</p>'
+            . '<p><strong>حالة الطلب:</strong> ' . htmlspecialchars($statusLine, ENT_QUOTES, 'UTF-8') . '<br>'
+            . '<strong>رقم الطلب:</strong> ' . $safeCode . '<br>'
+            . '<strong>الجوال:</strong> ' . $safePhone . '<br>'
+            . '<strong>إجمالي الكمية:</strong> ' . $totalItems . '</p>'
+            . ($safeNote !== '' ? '<p><strong>ملاحظة التحديث:</strong><br>' . $safeNote . '</p>' : '')
+            . '<table style="border-collapse:collapse;width:100%;margin-top:16px;">'
+            . '<thead><tr>'
+            . '<th style="padding:8px;border:1px solid #ddd;text-align:right;">العنصر</th>'
+            . '<th style="padding:8px;border:1px solid #ddd;text-align:right;">التصنيف</th>'
+            . '<th style="padding:8px;border:1px solid #ddd;text-align:center;">الكمية</th>'
+            . '</tr></thead>'
+            . '<tbody>' . $rows . '</tbody>'
+            . '</table>'
+            . '<p style="margin-top:20px;">مع التحية،<br>فريق أرت ريشيو</p>'
+            . '</div>';
+    }
+
+    return '<div style="font-family:Arial,sans-serif;line-height:1.7;">'
+        . '<p>Hello ' . $safeName . ',</p>'
+        . '<p>' . $messageLine . '</p>'
+        . '<p><strong>Status:</strong> ' . htmlspecialchars($statusLine, ENT_QUOTES, 'UTF-8') . '<br>'
+        . '<strong>Request code:</strong> ' . $safeCode . '<br>'
+        . '<strong>Phone:</strong> ' . $safePhone . '<br>'
+        . '<strong>Total quantity:</strong> ' . $totalItems . '</p>'
+        . ($safeNote !== '' ? '<p><strong>Update note:</strong><br>' . $safeNote . '</p>' : '')
+        . '<table style="border-collapse:collapse;width:100%;margin-top:16px;">'
+        . '<thead><tr>'
+        . '<th style="padding:8px;border:1px solid #ddd;text-align:left;">Item</th>'
+        . '<th style="padding:8px;border:1px solid #ddd;text-align:left;">Category</th>'
+        . '<th style="padding:8px;border:1px solid #ddd;text-align:center;">Qty</th>'
+        . '</tr></thead>'
+        . '<tbody>' . $rows . '</tbody>'
+        . '</table>'
+        . '<p style="margin-top:20px;">Best regards,<br>Art Ratio Team</p>'
+        . '</div>';
+}
+
+function buildEquipmentRequestStatusUpdateEmailText(
+    string $requestCode,
+    string $customerName,
+    string $customerPhone,
+    int $totalItems,
+    array $items,
+    string $statusTextAr,
+    string $statusTextEn,
+    string $statusNote,
+    bool $isArabic
+): string {
+    $lines = [];
+    if ($isArabic) {
+        $lines[] = 'مرحبًا ' . $customerName . '،';
+        $lines[] = 'تم تحديث حالة طلب المعدات الخاص بك.';
+        $lines[] = 'حالة الطلب: ' . $statusTextAr;
+        $lines[] = 'رقم الطلب: ' . $requestCode;
+        $lines[] = 'الجوال: ' . $customerPhone;
+        $lines[] = 'إجمالي الكمية: ' . $totalItems;
+        if ($statusNote !== '') {
+            $lines[] = 'ملاحظة التحديث: ' . $statusNote;
+        }
+        $lines[] = '';
+        $lines[] = 'قائمة المعدات:';
+    } else {
+        $lines[] = 'Hello ' . $customerName . ',';
+        $lines[] = 'Your equipment request status has been updated.';
+        $lines[] = 'Status: ' . $statusTextEn;
+        $lines[] = 'Request code: ' . $requestCode;
+        $lines[] = 'Phone: ' . $customerPhone;
+        $lines[] = 'Total quantity: ' . $totalItems;
+        if ($statusNote !== '') {
+            $lines[] = 'Update note: ' . $statusNote;
+        }
+        $lines[] = '';
+        $lines[] = 'Requested items:';
+    }
+
+    foreach ($items as $idx => $item) {
+        $category = trim(((string) ($item['category'] ?? '')) . ' ' . ((string) ($item['subcategory'] ?? '')));
+        if ($category === '') {
+            $category = '-';
+        }
+        $lines[] = sprintf(
+            '%d. %s | Qty: %d | Category: %s',
+            $idx + 1,
+            (string) ($item['name'] ?? ''),
+            max(1, (int) ($item['qty'] ?? 1)),
+            $category
+        );
+    }
+
+    $lines[] = '';
+    $lines[] = $isArabic ? 'فريق أرت ريشيو' : 'Art Ratio Team';
+    return implode("\n", $lines);
 }

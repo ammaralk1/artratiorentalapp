@@ -300,7 +300,26 @@
       .join('');
   }
 
-  async function updateStatus(status) {
+  function askStatusNote(status) {
+    const statusLabel = formatStatus(status);
+    const promptText = `ملاحظة للعميل بخصوص الحالة "${statusLabel}" (اختياري).\n` +
+      'مثال: بعض المعدات غير متوفرة وسنقترح بدائل.\n\n' +
+      'اضغط "إلغاء" للتراجع عن تغيير الحالة.';
+    const value = window.prompt(promptText, '');
+    if (value === null) {
+      return {
+        cancelled: true,
+        note: '',
+      };
+    }
+
+    return {
+      cancelled: false,
+      note: String(value || '').trim(),
+    };
+  }
+
+  async function updateStatus(status, statusNote) {
     if (!state.selectedId) {
       showToast('اختر طلب أولاً', 'error');
       return;
@@ -310,6 +329,7 @@
       body: JSON.stringify({
         id: state.selectedId,
         status,
+        status_note: String(statusNote || ''),
       }),
     });
     showToast('تم تحديث الحالة', 'success');
@@ -416,8 +436,12 @@
       button.addEventListener('click', async function () {
         const status = button.getAttribute('data-set-status');
         if (!status) return;
+        const noteResult = askStatusNote(status);
+        if (noteResult.cancelled) {
+          return;
+        }
         try {
-          await updateStatus(status);
+          await updateStatus(status, noteResult.note);
         } catch (error) {
           showToast(error.message || 'فشل تحديث الحالة', 'error');
         }
