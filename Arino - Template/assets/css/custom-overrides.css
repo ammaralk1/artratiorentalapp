@@ -2734,11 +2734,11 @@ body.rtl .cs-shop-toast-host {
 
 /* Cart qty controls use dedicated classes to avoid legacy handlers. */
 body[data-page="shop-cart"] #cart-table-body .cs-quantity_button.cs-cart-inc {
-  top: 7px;
+  top: 4px;
 }
 
 body[data-page="shop-cart"] #cart-table-body .cs-quantity_button.cs-cart-dec {
-  bottom: 7px;
+  bottom: 4px;
 }
 
 /* Shop cart page: keep all visible text white as requested. */
@@ -2809,16 +2809,30 @@ body[data-page="shop-cart"] #cart-request-form :where(input, textarea):focus {
 }
 
 body[data-page="shop-cart"] #cart-table-body .cs-quantity {
+  width: 78px;
+  height: 38px;
   border: 1px solid rgba(147, 168, 137, 0.45);
   background: rgba(27, 40, 30, 0.9);
 }
 
 body[data-page="shop-cart"] #cart-table-body .cs-quantity_input {
   color: #fff !important;
+  padding: 4px 22px 4px 10px;
+  font-size: 13px;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+body[data-page="shop-cart"] #cart-table-body .cs-quantity_input::-webkit-outer-spin-button,
+body[data-page="shop-cart"] #cart-table-body .cs-quantity_input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 body[data-page="shop-cart"] #cart-table-body .cs-quantity_button {
   color: #fff !important;
+  padding: 1px 6px;
+  font-size: 11px;
 }
 
 body[data-page="shop-cart"] #cart-table-body .cs-quantity_button:hover {

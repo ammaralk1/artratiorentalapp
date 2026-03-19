@@ -294,6 +294,26 @@
     resultEl.className = 'cs-cart-request-result';
   }
 
+  function bindNotesPlaceholderBehavior() {
+    if (!notesInput) return;
+
+    notesInput.addEventListener('focus', function () {
+      const currentPlaceholder = String(notesInput.getAttribute('placeholder') || '').trim();
+      if (currentPlaceholder) {
+        notesInput.dataset.placeholderBackup = currentPlaceholder;
+      }
+      notesInput.setAttribute('placeholder', '');
+    });
+
+    notesInput.addEventListener('blur', function () {
+      if (String(notesInput.value || '').trim()) return;
+      const backupPlaceholder = String(notesInput.dataset.placeholderBackup || '').trim();
+      if (backupPlaceholder) {
+        notesInput.setAttribute('placeholder', backupPlaceholder);
+      }
+    });
+  }
+
   function setSendButtonState() {
     sendBtn.disabled = isSending || cart.length === 0;
     sendBtn.textContent = isSending
@@ -589,6 +609,7 @@
   }
 
   bindTableEvents();
+  bindNotesPlaceholderBehavior();
   sendBtn.addEventListener('click', function (event) {
     event.preventDefault();
     sendRequest();
