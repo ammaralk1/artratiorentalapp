@@ -523,7 +523,12 @@
         'error',
       );
     } else {
-      showToast('تم تحديث الحالة', 'success');
+      showToast(
+        emailError
+          ? `تم تحديث الحالة ولكن لم تتم محاولة إرسال البريد: ${emailError}`
+          : 'تم تحديث الحالة ولكن لم تتم محاولة إرسال البريد للعميل',
+        'error',
+      );
     }
 
     await loadRequests();

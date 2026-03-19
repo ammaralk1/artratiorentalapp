@@ -211,6 +211,7 @@ function handleEquipmentRequestsAdminPatch(PDO $pdo): void
     }
 
     $statusChanged = $previousStatus !== $status;
+    $statusEmailLogged = false;
     $statusEmailResult = [
         'attempted' => false,
         'sent' => false,
@@ -220,15 +221,16 @@ function handleEquipmentRequestsAdminPatch(PDO $pdo): void
         'message' => '',
         'error' => null,
     ];
-    if ($statusChanged || $statusNote !== '' || $hasItemUpdates) {
-        $statusEmailResult = sendEquipmentRequestStatusUpdateToCustomer(
-            (array) ($details['request'] ?? []),
-            is_array($details['items'] ?? null) ? $details['items'] : [],
-            $status,
-            $statusNote
-        );
+    // Customer status email is expected on every admin status action, even if status value did not change.
+    $statusEmailResult = sendEquipmentRequestStatusUpdateToCustomer(
+        (array) ($details['request'] ?? []),
+        is_array($details['items'] ?? null) ? $details['items'] : [],
+        $status,
+        $statusNote
+    );
 
-        if (!empty($statusEmailResult['attempted'])) {
+    if (!empty($statusEmailResult['attempted'])) {
+        try {
             insertEquipmentRequestMessage($pdo, [
                 'request_id' => $id,
                 'sender_user_id' => (int) ($user['id'] ?? 0) ?: null,
@@ -240,7 +242,10 @@ function handleEquipmentRequestsAdminPatch(PDO $pdo): void
                 'provider' => (string) ($statusEmailResult['provider'] ?? 'none'),
                 'error_message' => (string) ($statusEmailResult['error'] ?? ''),
             ]);
+            $statusEmailLogged = true;
             $details = fetchEquipmentRequestDetails($pdo, $id) ?: $details;
+        } catch (Throwable $emailLogError) {
+            error_log('Equipment request status email log failure: ' . $emailLogError->getMessage());
         }
     }
 
@@ -250,6 +255,8 @@ function handleEquipmentRequestsAdminPatch(PDO $pdo): void
         'status_email_provider' => (string) ($statusEmailResult['provider'] ?? 'none'),
         'status_email_recipient' => (string) ($statusEmailResult['recipient'] ?? ''),
         'status_email_error' => (string) ($statusEmailResult['error'] ?? ''),
+        'status_email_logged' => $statusEmailLogged,
+        'status_changed' => $statusChanged,
         'item_updates_applied' => (int) ($itemUpdateSummary['updated_count'] ?? 0),
         'item_unavailable_count' => (int) ($itemUpdateSummary['unavailable_count'] ?? 0),
     ]);
