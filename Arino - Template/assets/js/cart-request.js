@@ -138,21 +138,21 @@
     return [
       {
         name: 'Sony FX6 Camera',
-        image: 'assets/img/shop/cart-product-1.jpeg',
+        image: 'assets/img/shop/product_1.jpeg',
         category: 'Camera',
         subcategory: 'Cinema',
         qty: 1,
       },
       {
         name: 'DJI Ronin RS 3 Pro',
-        image: 'assets/img/shop/cart-product-2.jpeg',
+        image: 'assets/img/shop/product_2.jpeg',
         category: 'Stabilizer',
         subcategory: 'Gimbal',
         qty: 1,
       },
       {
         name: 'Aputure 600D Pro',
-        image: 'assets/img/shop/cart-product-3.jpeg',
+        image: 'assets/img/shop/product_3.jpeg',
         category: 'Lighting',
         subcategory: 'LED',
         qty: 2,
