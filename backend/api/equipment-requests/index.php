@@ -6,24 +6,26 @@ require_once __DIR__ . '/../../services/email.php';
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
-try {
-    if ($method !== 'POST') {
-        respondError('Method not allowed', 405);
-        return;
+if (!defined('API_INCLUDE_MODE')) {
+    try {
+        if ($method !== 'POST') {
+            respondError('Method not allowed', 405);
+            return;
+        }
+
+        $pdo = getDatabaseConnection();
+        ensureEquipmentCartTable($pdo);
+        ensureEquipmentRequestTables($pdo);
+        purgeStaleEquipmentCartRows($pdo);
+
+        handleEquipmentRequestCreate($pdo);
+    } catch (InvalidArgumentException $exception) {
+        respondError($exception->getMessage(), 422);
+    } catch (Throwable $exception) {
+        respondError('Unexpected server error', 500, [
+            'details' => $exception->getMessage(),
+        ]);
     }
-
-    $pdo = getDatabaseConnection();
-    ensureEquipmentCartTable($pdo);
-    ensureEquipmentRequestTables($pdo);
-    purgeStaleEquipmentCartRows($pdo);
-
-    handleEquipmentRequestCreate($pdo);
-} catch (InvalidArgumentException $exception) {
-    respondError($exception->getMessage(), 422);
-} catch (Throwable $exception) {
-    respondError('Unexpected server error', 500, [
-        'details' => $exception->getMessage(),
-    ]);
 }
 
 function handleEquipmentRequestCreate(PDO $pdo): void

@@ -19,6 +19,10 @@
 
   let cart = [];
   let isSending = false;
+  const cloudflareBase = 'https://assets.art-ratio.com/';
+  const cloudflarePngFolderPrimary = 'png2';
+  const cloudflarePngFolderSecondary = 'png';
+  const cloudflareOutsourceFolder = 'outsource';
 
   function isArabic() {
     const lang = (document.documentElement.lang || '').toLowerCase();
@@ -46,6 +50,61 @@
     const qty = Number.parseInt(String(value || '').trim(), 10);
     if (!Number.isFinite(qty) || qty < 1) return 1;
     return qty;
+  }
+
+  function buildImageCandidates(input) {
+    const raw = String(input || '').trim();
+    if (!raw) return [];
+
+    const candidates = [];
+    const pushCandidate = (url) => {
+      const normalized = String(url || '').trim();
+      if (!normalized) return;
+      if (!candidates.includes(normalized)) {
+        candidates.push(normalized);
+      }
+    };
+
+    // Keep source URL first, then try Cloudflare fallbacks.
+    pushCandidate(raw);
+
+    let fileName = raw;
+    try {
+      const parsed = new URL(raw, window.location.origin);
+      const parts = (parsed.pathname || '').split('/').filter(Boolean);
+      fileName = parts[parts.length - 1] || raw;
+    } catch (e) {}
+
+    try {
+      fileName = decodeURIComponent(fileName);
+    } catch (e) {}
+
+    const stem = fileName.replace(/\.[^.]+$/, '').trim();
+    if (stem) {
+      pushCandidate(
+        cloudflareBase + cloudflarePngFolderPrimary + '/' + encodeURIComponent(stem) + '.png',
+      );
+      pushCandidate(
+        cloudflareBase + cloudflarePngFolderSecondary + '/' + encodeURIComponent(stem) + '.png',
+      );
+      pushCandidate(
+        cloudflareBase + cloudflareOutsourceFolder + '/' + encodeURIComponent(stem) + '.png',
+      );
+    }
+
+    if (/\.png$/i.test(fileName)) {
+      pushCandidate(
+        cloudflareBase + cloudflarePngFolderPrimary + '/' + encodeURIComponent(fileName),
+      );
+      pushCandidate(
+        cloudflareBase + cloudflarePngFolderSecondary + '/' + encodeURIComponent(fileName),
+      );
+      pushCandidate(
+        cloudflareBase + cloudflareOutsourceFolder + '/' + encodeURIComponent(fileName),
+      );
+    }
+
+    return candidates;
   }
 
   function sanitizeItem(item) {
@@ -164,7 +223,9 @@
         const tr = document.createElement('tr');
         const safeName = escapeHtml(item.name);
         const safeCategory = escapeHtml(getCategoryText(item));
-        const safeImage = escapeHtml(item.image || 'data:image/gif;base64,R0lGODlhAQABAAAAACw=');
+        const imageCandidates = buildImageCandidates(item.image);
+        const safeImage = escapeHtml(imageCandidates[0] || 'data:image/gif;base64,R0lGODlhAQABAAAAACw=');
+        const safeFallback = escapeHtml(JSON.stringify(imageCandidates.slice(1)));
         const safeQty = normalizeQty(item.qty);
 
         tr.dataset.cartIndex = String(index);
@@ -172,7 +233,7 @@
         tr.innerHTML = `
           <td>
             <div class="cs-cart_table_media">
-              <img src="${safeImage}" alt="${safeName}">
+              <img src="${safeImage}" alt="${safeName}" data-fallback-src='${safeFallback}'>
               <h3>${safeName}</h3>
             </div>
           </td>
@@ -195,6 +256,27 @@
           </td>
         `;
         tableBodyEl.appendChild(tr);
+
+        const imageEl = tr.querySelector('img[data-fallback-src]');
+        if (imageEl) {
+          imageEl.addEventListener('error', () => {
+            let remaining = [];
+            try {
+              remaining = JSON.parse(imageEl.getAttribute('data-fallback-src') || '[]');
+            } catch (e) {}
+
+            if (!Array.isArray(remaining) || remaining.length === 0) {
+              imageEl.removeAttribute('data-fallback-src');
+              return;
+            }
+
+            const nextSrc = String(remaining.shift() || '').trim();
+            imageEl.setAttribute('data-fallback-src', JSON.stringify(remaining));
+            if (nextSrc && imageEl.getAttribute('src') !== nextSrc) {
+              imageEl.setAttribute('src', nextSrc);
+            }
+          });
+        }
       });
     }
 

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <title>بوابة طلبات المعدات</title>
+  <link rel="stylesheet" href="assets/css/equipment-requests-portal.css?v=20260319-portal1">
+</head>
+<body>
+  <div class="erp-shell">
+    <header class="erp-header">
+      <div class="erp-brand">
+        <h1>بوابة طلبات المعدات</h1>
+        <p>لوحة متابعة طلبات المعدات</p>
+      </div>
+      <div class="erp-header-actions">
+        <button id="erp-refresh-btn" type="button" class="erp-btn erp-btn-secondary">تحديث</button>
+        <button id="erp-logout-btn" type="button" class="erp-btn erp-btn-danger">تسجيل الخروج</button>
+      </div>
+    </header>
+
+    <main id="erp-app" class="erp-main" hidden>
+      <aside class="erp-requests-panel">
+        <div class="erp-filters">
+          <input id="erp-search-input" type="search" placeholder="ابحث بالكود أو الاسم أو الجوال">
+          <select id="erp-status-filter">
+            <option value="">كل الحالات</option>
+            <option value="pending">بانتظار التأكيد</option>
+            <option value="confirmed">مؤكد</option>
+            <option value="cancelled">ملغي</option>
+          </select>
+          <button id="erp-apply-filter-btn" type="button" class="erp-btn erp-btn-secondary">تطبيق</button>
+        </div>
+        <div class="erp-table-wrap">
+          <table class="erp-table">
+            <thead>
+              <tr>
+                <th>الكود</th>
+                <th>العميل</th>
+                <th>الحالة</th>
+                <th>التاريخ</th>
+              </tr>
+            </thead>
+            <tbody id="erp-requests-body">
+              <tr>
+                <td colspan="4" class="erp-muted">جاري التحميل...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </aside>
+
+      <section class="erp-details-panel">
+        <div id="erp-empty-state" class="erp-empty-state">
+          اختر طلبًا من القائمة لعرض التفاصيل.
+        </div>
+
+        <div id="erp-details-content" hidden>
+          <div class="erp-card">
+            <h2>تفاصيل الطلب</h2>
+            <div class="erp-grid">
+              <div><strong>الكود:</strong> <span id="erp-request-code">-</span></div>
+              <div><strong>العميل:</strong> <span id="erp-request-name">-</span></div>
+              <div><strong>الجوال:</strong> <span id="erp-request-phone">-</span></div>
+              <div><strong>الإيميل:</strong> <span id="erp-request-email">-</span></div>
+              <div><strong>الحالة:</strong> <span id="erp-request-status">-</span></div>
+              <div><strong>التاريخ:</strong> <span id="erp-request-date">-</span></div>
+              <div class="erp-grid-full"><strong>ملاحظات العميل:</strong> <span id="erp-request-notes">-</span></div>
+            </div>
+            <div class="erp-status-actions">
+              <button class="erp-btn erp-btn-warning" data-set-status="pending" type="button">تعيين: بانتظار التأكيد</button>
+              <button class="erp-btn erp-btn-success" data-set-status="confirmed" type="button">تأكيد الطلب</button>
+              <button class="erp-btn erp-btn-danger" data-set-status="cancelled" type="button">إلغاء الطلب</button>
+            </div>
+          </div>
+
+          <div class="erp-card">
+            <h3>المعدات المطلوبة</h3>
+            <div class="erp-table-wrap">
+              <table class="erp-table">
+                <thead>
+                  <tr>
+                    <th>العنصر</th>
+                    <th>التصنيف</th>
+                    <th>الكمية</th>
+                  </tr>
+                </thead>
+                <tbody id="erp-items-body">
+                  <tr><td colspan="3" class="erp-muted">لا توجد عناصر.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="erp-card">
+            <h3>إرسال رسالة للعميل</h3>
+            <form id="erp-message-form">
+              <label for="erp-message-subject">العنوان</label>
+              <input id="erp-message-subject" type="text" placeholder="عنوان الرسالة">
+              <label for="erp-message-body">الرسالة</label>
+              <textarea id="erp-message-body" rows="5" placeholder="اكتب الرسالة التي تريد إرسالها للعميل" required></textarea>
+              <button type="submit" class="erp-btn erp-btn-primary">إرسال الرسالة</button>
+            </form>
+          </div>
+
+          <div class="erp-card">
+            <h3>سجل الرسائل</h3>
+            <ul id="erp-message-log" class="erp-message-log">
+              <li class="erp-muted">لا توجد رسائل بعد.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="erp-toast" class="erp-toast" hidden></div>
+  <script src="assets/js/equipment-requests-portal.js?v=20260319-portal1"></script>
+</body>
+</html>

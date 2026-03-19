@@ -40,8 +40,16 @@ function updateGreetingMessage() {
 
 function updateAdminCardVisibility() {
   const isAdmin = cachedRole === 'admin';
+  const canManageEquipmentRequests = cachedRole === 'admin' || cachedRole === 'manager';
   document.querySelectorAll('[data-admin-card]').forEach((element) => {
     if (isAdmin) {
+      element.classList.remove('hidden');
+    } else {
+      element.classList.add('hidden');
+    }
+  });
+  document.querySelectorAll('[data-manager-card]').forEach((element) => {
+    if (canManageEquipmentRequests) {
       element.classList.remove('hidden');
     } else {
       element.classList.add('hidden');

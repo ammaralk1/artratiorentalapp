@@ -64,10 +64,20 @@ function handleCors(array $allowedOrigins): void
         if (!in_array($normalizedOrigin, $allowedOrigins, true)) {
             $host = parse_url($normalizedOrigin, PHP_URL_HOST) ?: '';
             $host = strtolower((string) $host);
-            $baseHost = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
+            $baseHostHeader = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
+            $baseHost = parse_url('http://' . $baseHostHeader, PHP_URL_HOST) ?: '';
+            $baseHost = strtolower((string) $baseHost);
+            if ($baseHost === '' && $baseHostHeader !== '') {
+                $baseHost = strtolower(preg_replace('/:\d+$/', '', $baseHostHeader) ?? '');
+            }
             $allowByHost = false;
             if ($host !== '') {
                 if ($host === $baseHost) {
+                    $allowByHost = true;
+                } elseif (
+                    in_array($host, ['localhost', '127.0.0.1', '::1'], true)
+                    && in_array($baseHost, ['localhost', '127.0.0.1', '::1'], true)
+                ) {
                     $allowByHost = true;
                 } elseif (str_ends_with($host, '.art-ratio.com') || $host === 'art-ratio.com') {
                     $allowByHost = true;
