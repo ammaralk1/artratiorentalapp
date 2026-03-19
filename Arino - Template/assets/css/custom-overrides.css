@@ -2601,12 +2601,6 @@ body[data-page="shop"] #equipment-grid .cs-qty-stepper .cs-qty-input[type="numbe
   appearance: textfield;
 }
 
-@media (min-width: 992px) {
-  body[data-page="shop"] #equipment-grid .cs-qty-step {
-    display: none;
-  }
-}
-
 /* Shop toast notifications */
 .cs-shop-toast-host {
   position: fixed;

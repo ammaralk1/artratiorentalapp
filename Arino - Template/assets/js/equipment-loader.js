@@ -409,14 +409,17 @@
       }
       qtyInput.addEventListener('change', normalizeQty);
       qtyInput.addEventListener('blur', normalizeQty);
-      if (window.matchMedia && window.matchMedia('(max-width: 991px)').matches) {
-        qtyInput.readOnly = true;
-        qtyInput.setAttribute('readonly', 'readonly');
-        qtyInput.addEventListener('keydown', (e) => e.preventDefault());
-        qtyInput.addEventListener('input', () => {
-          normalizeQty();
-        });
-      }
+      // Keep quantity behavior consistent across desktop/mobile:
+      // stepper buttons only, without manual typing.
+      qtyInput.readOnly = true;
+      qtyInput.setAttribute('readonly', 'readonly');
+      qtyInput.addEventListener('keydown', (e) => e.preventDefault());
+      qtyInput.addEventListener('input', () => {
+        normalizeQty();
+      });
+      qtyInput.addEventListener('wheel', (e) => {
+        e.preventDefault();
+      }, { passive: false });
       if (img) {
         img.addEventListener('error', () => {
           let remaining = [];

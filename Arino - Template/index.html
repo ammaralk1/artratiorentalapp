@@ -1609,6 +1609,77 @@
             vimeoPlayer.pause().catch(function () {});
           }
 
+          function waitForDesktopPlaybackProgress() {
+            return new Promise(function (resolve, reject) {
+              var checks = 0;
+              var maxChecks = 12;
+              var lastSecond = null;
+
+              function tick() {
+                if (!vimeoPlayer || isMobileViewport() || !hero.classList.contains("cs-home-hero--video-active")) {
+                  reject(new Error("Desktop playback probe aborted"));
+                  return;
+                }
+                vimeoPlayer
+                  .getCurrentTime()
+                  .then(function (seconds) {
+                    if (typeof seconds !== "number") {
+                      checks += 1;
+                      if (checks >= maxChecks) {
+                        reject(new Error("Desktop playback probe failed"));
+                        return;
+                      }
+                      setTimeout(tick, 120);
+                      return;
+                    }
+
+                    if (lastSecond === null) {
+                      lastSecond = seconds;
+                      checks += 1;
+                      setTimeout(tick, 120);
+                      return;
+                    }
+
+                    if (seconds > lastSecond + 0.02) {
+                      resolve();
+                      return;
+                    }
+
+                    lastSecond = seconds;
+                    checks += 1;
+                    if (checks >= maxChecks) {
+                      reject(new Error("Desktop playback not advancing"));
+                      return;
+                    }
+                    setTimeout(tick, 120);
+                  })
+                  .catch(function () {
+                    checks += 1;
+                    if (checks >= maxChecks) {
+                      reject(new Error("Desktop playback probe error"));
+                      return;
+                    }
+                    setTimeout(tick, 120);
+                  });
+              }
+
+              tick();
+            });
+          }
+
+          function reloadDesktopSegmentAndReattach() {
+            if (!frame) return;
+            clearLoopWatchdog();
+            clearSegmentRestartTimer();
+            frame.setAttribute("src", buildSegmentSrc());
+            vimeoPlayer = null;
+            reachedLoopWindow = false;
+            setTimeout(function () {
+              attachVimeoLoop();
+              scheduleHardSegmentRestart();
+            }, 140);
+          }
+
           desktopLoopPosterTimer = setTimeout(function () {
             desktopLoopPosterTimer = null;
             if (isMobileViewport() || !hero.classList.contains("cs-home-hero--video-active")) {
@@ -1624,14 +1695,7 @@
 
             if (!vimeoPlayer) {
               desktopLoopTransitioning = false;
-              if (frame) {
-                frame.setAttribute("src", buildSegmentSrc());
-                reachedLoopWindow = false;
-                setTimeout(function () {
-                  attachVimeoLoop();
-                  scheduleHardSegmentRestart();
-                }, 140);
-              }
+              reloadDesktopSegmentAndReattach();
               return;
             }
 
@@ -1645,12 +1709,18 @@
                 return vimeoPlayer.play();
               })
               .then(function () {
+                return waitForDesktopPlaybackProgress();
+              })
+              .then(function () {
                 hidePosterForLoading();
                 if (!hasFirstFrameReady) {
                   markVideoReady();
                 }
               })
-              .catch(function () {})
+              .catch(function () {
+                // Keep poster visible and hard-reload Vimeo segment instead of ending up on a black frame.
+                reloadDesktopSegmentAndReattach();
+              })
               .finally(function () {
                 desktopLoopTransitioning = false;
                 startLoopWatchdog();
@@ -2219,6 +2289,16 @@
             probeStablePlayback();
           });
           vimeoPlayer.on("play", function () {
+            if (!isMobileViewport() && hero.classList.contains("cs-home-hero--show-poster")) {
+              vimeoPlayer
+                .getCurrentTime()
+                .then(function (seconds) {
+                  if (typeof seconds === "number" && seconds >= loopStartSeconds - 0.5) {
+                    hidePosterForLoading();
+                  }
+                })
+                .catch(function () {});
+            }
             if (hasFirstFrameReady) return;
             if (isMobileViewport()) {
               markVideoReady();
