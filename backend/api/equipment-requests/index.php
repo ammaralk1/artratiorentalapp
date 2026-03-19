@@ -374,21 +374,6 @@ function notifyEquipmentRequestCustomerReceivedByEmail(
     $provider = (string) ($result['provider'] ?? 'none');
     $error = $sent ? null : (string) ($result['error'] ?? 'Failed to send customer confirmation email');
 
-    if (!$sent) {
-        $fallbackSent = sendEquipmentRequestViaWeb3Forms(
-            $subject,
-            $customerName,
-            $customerEmail,
-            $customerPhone,
-            $textBody
-        );
-        if ($fallbackSent) {
-            $sent = true;
-            $provider = 'web3forms';
-            $error = null;
-        }
-    }
-
     $result['sent'] = $sent;
     $result['provider'] = $provider;
     $result['error'] = $error;

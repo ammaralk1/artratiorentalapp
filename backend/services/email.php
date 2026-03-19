@@ -195,6 +195,117 @@ function buildSmtpAttemptList(array $cfg): array
     return $attempts;
 }
 
+function encodeEmailHeaderValue(string $value): string
+{
+    $value = trim($value);
+    if ($value === '') {
+        return '';
+    }
+
+    if (preg_match('/^[\x20-\x7E]+$/', $value)) {
+        return $value;
+    }
+
+    return '=?UTF-8?B?' . base64_encode($value) . '?=';
+}
+
+function formatEmailAddressHeader(string $email, string $name = ''): string
+{
+    $email = trim($email);
+    $name = trim($name);
+
+    if ($name === '') {
+        return $email;
+    }
+
+    return encodeEmailHeaderValue($name) . ' <' . $email . '>';
+}
+
+function generateEmailMessageId(string $fromEmail): string
+{
+    $domain = 'localhost';
+    if (filter_var($fromEmail, FILTER_VALIDATE_EMAIL)) {
+        $parts = explode('@', $fromEmail, 2);
+        $candidateDomain = isset($parts[1]) ? trim((string) $parts[1]) : '';
+        $candidateDomain = preg_replace('/[^A-Za-z0-9.-]/', '', $candidateDomain) ?? '';
+        if ($candidateDomain !== '') {
+            $domain = $candidateDomain;
+        }
+    }
+
+    try {
+        $token = bin2hex(random_bytes(16));
+    } catch (Throwable $e) {
+        $token = md5((string) microtime(true));
+    }
+
+    return '<' . $token . '@' . $domain . '>';
+}
+
+function encodeEmailBodyBase64(string $content): string
+{
+    return rtrim(chunk_split(base64_encode($content), 76, "\r\n"));
+}
+
+function buildMultipartEmailPayload(
+    string $fromEmail,
+    string $fromName,
+    string $toEmail,
+    string $toName,
+    string $subject,
+    string $htmlBody,
+    string $textBody
+): array {
+    try {
+        $boundary = 'b_' . bin2hex(random_bytes(12));
+    } catch (Throwable $e) {
+        $boundary = 'b_' . md5((string) microtime(true));
+    }
+
+    $headers = [];
+    $headers[] = 'From: ' . formatEmailAddressHeader($fromEmail, $fromName);
+    $headers[] = 'To: ' . formatEmailAddressHeader($toEmail, $toName);
+    $headers[] = 'Reply-To: ' . $fromEmail;
+    $headers[] = 'Date: ' . gmdate('D, d M Y H:i:s O');
+    $headers[] = 'Message-ID: ' . generateEmailMessageId($fromEmail);
+    $headers[] = 'Subject: ' . encodeEmailHeaderValue($subject);
+    $headers[] = 'MIME-Version: 1.0';
+    $headers[] = 'Content-Type: multipart/alternative; boundary="' . $boundary . '"';
+
+    $bodyParts = [];
+    $bodyParts[] = '--' . $boundary;
+    $bodyParts[] = 'Content-Type: text/plain; charset=UTF-8';
+    $bodyParts[] = 'Content-Transfer-Encoding: base64';
+    $bodyParts[] = '';
+    $bodyParts[] = encodeEmailBodyBase64($textBody);
+    $bodyParts[] = '--' . $boundary;
+    $bodyParts[] = 'Content-Type: text/html; charset=UTF-8';
+    $bodyParts[] = 'Content-Transfer-Encoding: base64';
+    $bodyParts[] = '';
+    $bodyParts[] = encodeEmailBodyBase64($htmlBody);
+    $bodyParts[] = '--' . $boundary . '--';
+    $bodyParts[] = '';
+
+    return [
+        'boundary' => $boundary,
+        'encoded_subject' => encodeEmailHeaderValue($subject),
+        'headers' => $headers,
+        'headers_string' => implode("\r\n", $headers),
+        'message' => implode("\r\n", $bodyParts),
+    ];
+}
+
+function escapeSmtpData(string $data): string
+{
+    $normalized = str_replace("\r\n", "\n", $data);
+    $escaped = preg_replace('/(?m)^\./', '..', $normalized);
+    if (!is_string($escaped)) {
+        $escaped = $normalized;
+    }
+
+    return str_replace("\n", "\r\n", $escaped);
+}
+
 function sendEmailViaPhpMail(
     string $fromEmail,
     string $fromName,
@@ -209,43 +320,26 @@ function sendEmailViaPhpMail(
         return false;
     }
 
-    try {
-        $boundary = 'b_' . bin2hex(random_bytes(12));
-    } catch (Throwable $e) {
-        $boundary = 'b_' . md5((string) microtime(true));
-    }
-    $encodedSubject = '=?UTF-8?B?' . base64_encode($subject) . '?=';
+    $payload = buildMultipartEmailPayload(
+        $fromEmail,
+        $fromName,
+        $toEmail,
+        $toName,
+        $subject,
+        $htmlBody,
+        $textBody
+    );
+    $toHeader = formatEmailAddressHeader($toEmail, $toName);
+    $mailHeaders = array_values(array_filter(
+        (array) ($payload['headers'] ?? []),
+        static function (mixed $header): bool {
+            if (!is_string($header)) {
+                return false;
+            }
 
-    $toHeader = $toName !== ''
-        ? ('=?UTF-8?B?' . base64_encode($toName) . '?= <' . $toEmail . '>')
-        : $toEmail;
-    $fromHeader = $fromName !== ''
-        ? ('=?UTF-8?B?' . base64_encode($fromName) . '?= <' . $fromEmail . '>')
-        : $fromEmail;
-
-    $headers = [];
-    $headers[] = 'From: ' . $fromHeader;
-    $headers[] = 'Reply-To: ' . $fromEmail;
-    $headers[] = 'MIME-Version: 1.0';
-    $headers[] = 'Content-Type: multipart/alternative; boundary="' . $boundary . '"';
-    $headers[] = 'Content-Transfer-Encoding: 8bit';
-
-    $bodyParts = [];
-    $bodyParts[] = '--' . $boundary;
-    $bodyParts[] = 'Content-Type: text/plain; charset=UTF-8';
-    $bodyParts[] = 'Content-Transfer-Encoding: 8bit';
-    $bodyParts[] = '';
-    $bodyParts[] = $textBody;
-    $bodyParts[] = '--' . $boundary;
-    $bodyParts[] = 'Content-Type: text/html; charset=UTF-8';
-    $bodyParts[] = 'Content-Transfer-Encoding: 8bit';
-    $bodyParts[] = '';
-    $bodyParts[] = $htmlBody;
-    $bodyParts[] = '--' . $boundary . '--';
-    $bodyParts[] = '';
-
-    $message = implode("\r\n", $bodyParts);
-    $headersString = implode("\r\n", $headers);
+            return stripos($header, 'Subject:') !== 0 && stripos($header, 'To:') !== 0;
+        }
+    ));
 
     $extraParams = '';
     if (filter_var($fromEmail, FILTER_VALIDATE_EMAIL)) {
@@ -253,8 +347,8 @@ function sendEmailViaPhpMail(
     }
 
     $sent = $extraParams !== ''
-        ? @mail($toHeader, $encodedSubject, $message, $headersString, $extraParams)
-        : @mail($toHeader, $encodedSubject, $message, $headersString);
+        ? @mail($toHeader, (string) $payload['encoded_subject'], (string) $payload['message'], implode("\r\n", $mailHeaders), $extraParams)
+        : @mail($toHeader, (string) $payload['encoded_subject'], (string) $payload['message'], implode("\r\n", $mailHeaders));
 
     if (!$sent) {
         emailSetLastError('PHP mail() returned false');
@@ -393,32 +487,16 @@ function sendEmailViaSmtp(
         return false;
     }
 
-    $boundary = 'b_' . bin2hex(random_bytes(12));
-    $encodedSubject = '=?UTF-8?B?' . base64_encode($subject) . '?=';
-
-    $headers = [];
-    $headers[] = 'From: ' . ($fromName !== '' ? ('=?UTF-8?B?' . base64_encode($fromName) . '?= <' . $fromEmail . '>') : $fromEmail);
-    $headers[] = 'To: ' . ($toName !== '' ? ('=?UTF-8?B?' . base64_encode($toName) . '?= <' . $toEmail . '>') : $toEmail);
-    $headers[] = 'Subject: ' . $encodedSubject;
-    $headers[] = 'MIME-Version: 1.0';
-    $headers[] = 'Content-Type: multipart/alternative; boundary="' . $boundary . '"; charset=UTF-8';
-    $headers[] = 'Content-Transfer-Encoding: 8bit';
-
-    $bodyParts = [];
-    $bodyParts[] = '--' . $boundary;
-    $bodyParts[] = 'Content-Type: text/plain; charset=UTF-8';
-    $bodyParts[] = 'Content-Transfer-Encoding: 8bit';
-    $bodyParts[] = '';
-    $bodyParts[] = $textBody;
-    $bodyParts[] = '--' . $boundary;
-    $bodyParts[] = 'Content-Type: text/html; charset=UTF-8';
-    $bodyParts[] = 'Content-Transfer-Encoding: 8bit';
-    $bodyParts[] = '';
-    $bodyParts[] = $htmlBody;
-    $bodyParts[] = '--' . $boundary . '--';
-    $bodyParts[] = '';
-
-    $data = implode("\r\n", $headers) . "\r\n\r\n" . implode("\r\n", $bodyParts);
+    $payload = buildMultipartEmailPayload(
+        $fromEmail,
+        $fromName,
+        $toEmail,
+        $toName,
+        $subject,
+        $htmlBody,
+        $textBody
+    );
+    $data = escapeSmtpData((string) $payload['headers_string'] . "\r\n\r\n" . (string) $payload['message']);
 
     $write('MAIL FROM: <' . $fromEmail . '>');
     $mailFrom = $read();
