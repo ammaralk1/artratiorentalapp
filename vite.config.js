@@ -46,6 +46,7 @@ export default defineConfig(async () => {
           projects: resolve(__dirname, 'src/pages/projects.html'),
           users: resolve(__dirname, 'src/pages/users.html'),
           notifications: resolve(__dirname, 'src/pages/notifications.html'),
+          siteAnalytics: resolve(__dirname, 'src/pages/site-analytics.html'),
           contactInquiries: resolve(__dirname, 'src/pages/contact-inquiries.html'),
           feedbackSubmissions: resolve(__dirname, 'src/pages/feedback-submissions.html')
         },

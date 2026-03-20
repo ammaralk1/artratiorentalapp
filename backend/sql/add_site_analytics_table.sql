@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS site_page_visits (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    visitor_id VARCHAR(64) NOT NULL,
+    session_id VARCHAR(64) NOT NULL,
+    page_path VARCHAR(255) NOT NULL,
+    page_title VARCHAR(255) NULL,
+    page_type VARCHAR(80) NULL,
+    referrer_url VARCHAR(500) NULL,
+    referrer_host VARCHAR(190) NULL,
+    referrer_type VARCHAR(20) NOT NULL DEFAULT 'direct',
+    device_type VARCHAR(20) NOT NULL DEFAULT 'desktop',
+    language_code VARCHAR(12) NULL,
+    screen_width INT UNSIGNED NULL,
+    user_agent VARCHAR(500) NULL,
+    ip_address VARCHAR(45) NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_site_page_visits_created_at (created_at),
+    INDEX idx_site_page_visits_path (page_path),
+    INDEX idx_site_page_visits_visitor (visitor_id),
+    INDEX idx_site_page_visits_session (session_id),
+    INDEX idx_site_page_visits_referrer_type (referrer_type),
+    INDEX idx_site_page_visits_referrer_host (referrer_host)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

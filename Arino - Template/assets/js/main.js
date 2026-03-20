@@ -115,6 +115,7 @@
     relocateFooterSocial();
     applyPortfolioBreadcrumbReturn();
     initVimeoTapControls();
+    initSiteAnalyticsTracking();
     if ($.exists('.wow')) {
       new WOW().init();
     }
@@ -149,6 +150,109 @@
   function getCurrentPageFileName() {
     var rawPath = (window.location.pathname || '').split('/').pop();
     return rawPath && rawPath.length ? rawPath : 'index.html';
+  }
+
+  function initSiteAnalyticsTracking() {
+    if (window.__arinoSiteAnalyticsInitialized) return;
+    window.__arinoSiteAnalyticsInitialized = true;
+
+    var pathname = window.location.pathname || '/';
+    var fileName = getCurrentPageFileName().toLowerCase();
+    var internalPages = new Set([
+      'home.html',
+      'login.html',
+      'dashboard.html',
+      'projects.html',
+      'users.html',
+      'notifications.html',
+      'contact-inquiries.html',
+      'feedback-submissions.html',
+      'site-analytics.html',
+    ]);
+    if (pathname.indexOf('/src/pages/') !== -1 || internalPages.has(fileName)) {
+      return;
+    }
+
+    function safeStorage(storage, key, factory) {
+      try {
+        var existing = storage.getItem(key);
+        if (existing) return existing;
+        var created = factory();
+        storage.setItem(key, created);
+        return created;
+      } catch (error) {
+        return factory();
+      }
+    }
+
+    function generateToken(prefix) {
+      var random = Math.random().toString(36).slice(2, 10);
+      return (prefix + Date.now().toString(36) + random).toLowerCase();
+    }
+
+    function detectDeviceType() {
+      var width = Math.max(window.innerWidth || 0, document.documentElement.clientWidth || 0);
+      var userAgent = (navigator.userAgent || '').toLowerCase();
+      if (/ipad|tablet|playbook|silk/.test(userAgent) || (width >= 768 && width < 1024 && /android/.test(userAgent))) {
+        return 'tablet';
+      }
+      if (width < 768 || /mobi|iphone|ipod|android/.test(userAgent)) {
+        return 'mobile';
+      }
+      return 'desktop';
+    }
+
+    function buildPayload() {
+      var title = (document.title || '').trim();
+      var bodyPage = document.body && document.body.dataset ? (document.body.dataset.page || '') : '';
+      return {
+        visitor_id: safeStorage(window.localStorage, 'art_ratio_visitor_id', function () {
+          return generateToken('v_');
+        }),
+        session_id: safeStorage(window.sessionStorage, 'art_ratio_session_id', function () {
+          return generateToken('s_');
+        }),
+        page_path: pathname,
+        page_title: title,
+        page_type: bodyPage || fileName.replace(/\.html$/, '') || 'page',
+        referrer: document.referrer || '',
+        language: (document.documentElement.lang || '').toLowerCase() || 'ar',
+        device_type: detectDeviceType(),
+        screen_width: Math.max(window.innerWidth || 0, screen.width || 0) || null,
+      };
+    }
+
+    function sendTrackingPayload(payload) {
+      var endpoint = '/backend/api/analytics/index.php';
+      var body = JSON.stringify(payload);
+
+      try {
+        if (navigator.sendBeacon) {
+          var blob = new Blob([body], { type: 'application/json' });
+          if (navigator.sendBeacon(endpoint, blob)) {
+            return;
+          }
+        }
+      } catch (error) {}
+
+      try {
+        fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          body: body,
+          keepalive: true,
+        }).catch(function () {});
+      } catch (error) {}
+    }
+
+    window.setTimeout(function () {
+      try {
+        sendTrackingPayload(buildPayload());
+      } catch (error) {}
+    }, 120);
   }
 
   function applyPortfolioBreadcrumbReturn() {
