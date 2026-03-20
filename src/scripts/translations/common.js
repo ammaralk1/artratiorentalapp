@@ -3,6 +3,7 @@ import { registerTranslations } from '../language.js';
 registerTranslations({
   ar: {
     'actions.logout': '🚪 تسجيل الخروج',
+    'actions.backHome': '🏠 الرجوع إلى الهوم',
     'actions.toggleTheme': '🌙 الوضع الليلي',
     'theme.toggle.toLight': '☀️ الوضع العادي',
     'theme.toggle.toDark': '🌙 الوضع الليلي',
@@ -120,6 +121,7 @@ registerTranslations({
   },
   en: {
     'actions.logout': '🚪 Log Out',
+    'actions.backHome': '🏠 Back to Home',
     'actions.toggleTheme': '🌙 Dark Mode',
     'theme.toggle.toLight': '☀️ Light Mode',
     'theme.toggle.toDark': '🌙 Dark Mode',

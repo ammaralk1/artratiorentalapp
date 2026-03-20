@@ -123,6 +123,10 @@ function updateRoleVisibility() {
   });
 }
 
+function revealPage() {
+  document.body.classList.remove('auth-pending');
+}
+
 function renderStats(rows) {
   const list = Array.isArray(rows) ? rows : [];
   const countByStatus = (status) => list.filter((row) => String(row?.status || '') === status).length;
@@ -500,7 +504,19 @@ async function bootstrap() {
     currentUser = null;
   }
 
+  if (!currentUser) {
+    window.location.href = 'login.html';
+    return;
+  }
+
+  const role = String(currentUser?.role || '').toLowerCase();
+  if (role !== 'admin' && role !== 'manager') {
+    window.location.href = 'home.html';
+    return;
+  }
+
   updateRoleVisibility();
+  revealPage();
   await loadInquiries({ preserveSelection: true });
 }
 

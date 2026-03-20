@@ -25,6 +25,10 @@ body {
   min-height: 100vh;
 }
 
+body.erp-auth-pending .erp-shell {
+  visibility: hidden;
+}
+
 .erp-shell {
   width: min(1500px, 96vw);
   margin: 18px auto;
@@ -238,6 +242,13 @@ table.erp-table--requests-head-white thead th * {
   color: #fff;
   font-weight: 600;
   cursor: pointer;
+}
+
+.erp-btn-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
 }
 
 .erp-btn:disabled {

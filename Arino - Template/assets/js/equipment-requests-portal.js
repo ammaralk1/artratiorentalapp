@@ -171,6 +171,9 @@
   }
 
   function showApp() {
+    if (document.body) {
+      document.body.classList.remove('erp-auth-pending');
+    }
     if (els.app) els.app.hidden = false;
   }
 

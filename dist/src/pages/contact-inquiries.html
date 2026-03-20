@@ -12,13 +12,20 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="../../assets/contactInquiries.BO3gOmXx.js"></script>
-  <link rel="modulepreload" crossorigin href="../../assets/auth.D6qGTG2k.js">
-  <link rel="modulepreload" crossorigin href="../../assets/dashboard.DxySzp-u.js">
+  <style>
+    body.auth-pending .page-grid,
+    body.auth-pending #dashboard-sidebar,
+    body.auth-pending #sidebar-backdrop {
+      visibility: hidden;
+    }
+  </style>
+  <script type="module" crossorigin src="../../assets/contactInquiries.CnNmut71.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/auth.Ds2WBl9G.js">
+  <link rel="modulepreload" crossorigin href="../../assets/dashboard.CrdD3q6G.js">
   <link rel="modulepreload" crossorigin href="../../assets/dashboardShell.DF2kUed9.js">
   <link rel="stylesheet" crossorigin href="../../assets/auth.B74S_KtX.css">
 </head>
-<body class="page-shell theme-loading contact-inquiries-page" data-theme="light">
+<body class="page-shell theme-loading contact-inquiries-page auth-pending" data-theme="light">
   <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
 
   <aside id="dashboard-sidebar" class="sidebar-shell sidebar-drawer" aria-label="التنقل الجانبي" data-i18n data-i18n-aria-label-key="dashboard.nav.sidebar">
@@ -112,6 +119,7 @@
           </section>
         </div>
         <div class="dashboard-header-end">
+          <a href="home.html" class="btn btn-outline btn-sm rounded-full" data-i18n data-i18n-key="actions.backHome">🏠 الرجوع إلى الهوم</a>
           <button class="language-toggle-btn" id="language-toggle" data-label-ar="🇸🇦 العربية" data-label-en="🇬🇧 English" aria-pressed="false"></button>
           <label class="theme-toggle-btn swap swap-rotate" data-theme-toggle role="button">
             <input id="theme-toggle" type="checkbox" class="sr-only" aria-hidden="true">
