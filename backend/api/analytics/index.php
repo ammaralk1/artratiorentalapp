@@ -49,6 +49,10 @@ function handleSiteAnalyticsTrack(PDO $pdo): void
     $ipAddress = substr(function_exists('getClientIpAddress') ? getClientIpAddress() : ((string) ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0')), 0, 45);
     $userAgent = substr(trim((string) ($_SERVER['HTTP_USER_AGENT'] ?? '')), 0, 500);
 
+    if ($isInternal) {
+        markVisitorTrafficAsInternal($pdo, $visitorId);
+    }
+
     if (hasRecentTrackedSiteVisit($pdo, $visitorId, $sessionId, $pagePath)) {
         respond([
             'tracked' => false,
@@ -333,6 +337,23 @@ function ensureSiteAnalyticsIndexExists(PDO $pdo, string $tableName, string $ind
     if ((int) $statement->fetchColumn() === 0) {
         $pdo->exec($sql);
     }
+}
+
+function markVisitorTrafficAsInternal(PDO $pdo, string $visitorId): void
+{
+    if ($visitorId === '') {
+        return;
+    }
+
+    $statement = $pdo->prepare(
+        'UPDATE site_page_visits
+         SET is_internal = 1
+         WHERE visitor_id = :visitor_id
+           AND is_internal = 0'
+    );
+    $statement->execute([
+        'visitor_id' => $visitorId,
+    ]);
 }
 
 function hasRecentTrackedSiteVisit(PDO $pdo, string $visitorId, string $sessionId, string $pagePath, int $seconds = 20): bool
