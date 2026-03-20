@@ -13,7 +13,6 @@ import { refreshReservationsFromApi } from './reservationsService.js';
 import { determineProjectStatus } from './projectsCommon.js';
 
 applyStoredTheme();
-checkAuth();
 initDashboardShell();
 initThemeToggle();
 migrateOldData();
@@ -24,6 +23,7 @@ let summaryState = null;
 let summaryLoading = false;
 let summaryErrorMessage = '';
 let homeTabScrollInitialized = false;
+let authResolved = false;
 
 function updateGreetingMessage() {
   const greetingElements = document.querySelectorAll('[data-home-greeting]');
@@ -96,7 +96,7 @@ function refreshHomeTabScrollState() {
     const track = root.querySelector('[data-tab-scroll-track]');
     const prevBtn = root.querySelector('[data-tab-scroll-prev]');
     const nextBtn = root.querySelector('[data-tab-scroll-next]');
-    if (!track || !prevBtn || !nextBtn) return;
+    if (!track) return;
 
     const visibleButtons = Array.from(track.querySelectorAll('.tab-button')).filter((button) =>
       button instanceof HTMLElement && !button.classList.contains('hidden') && button.offsetParent !== null
@@ -104,10 +104,14 @@ function refreshHomeTabScrollState() {
     const hasOverflow = visibleButtons.length > 0 && (track.scrollWidth - track.clientWidth) > 12;
     const { isRTL, position, max } = getLogicalScrollMetrics(track);
 
-    prevBtn.hidden = !hasOverflow;
-    nextBtn.hidden = !hasOverflow;
-    prevBtn.disabled = !hasOverflow || (isRTL ? position >= max - 4 : position <= 4);
-    nextBtn.disabled = !hasOverflow || (isRTL ? position <= 4 : position >= max - 4);
+    if (prevBtn) {
+      prevBtn.hidden = !hasOverflow;
+      prevBtn.disabled = !hasOverflow || (isRTL ? position >= max - 4 : position <= 4);
+    }
+    if (nextBtn) {
+      nextBtn.hidden = !hasOverflow;
+      nextBtn.disabled = !hasOverflow || (isRTL ? position <= 4 : position >= max - 4);
+    }
 
     root.classList.toggle('has-left', hasOverflow && (isRTL ? position < max - 4 : position > 4));
     root.classList.toggle('has-right', hasOverflow && (isRTL ? position > 4 : position < max - 4));
@@ -124,19 +128,22 @@ function initHomeTabScroll() {
     const track = root.querySelector('[data-tab-scroll-track]');
     const prevBtn = root.querySelector('[data-tab-scroll-prev]');
     const nextBtn = root.querySelector('[data-tab-scroll-next]');
-    if (!track || !prevBtn || !nextBtn) return;
+    if (!track) return;
 
-    const scrollByStep = (direction) => {
-      const { isRTL, position } = getLogicalScrollMetrics(track);
-      const step = Math.max(track.clientWidth * 0.78, 180);
-      const nextPosition = isRTL
-        ? position + (direction === 'prev' ? step : -step)
-        : position + (direction === 'next' ? step : -step);
-      setLogicalScrollPosition(track, nextPosition);
-    };
+    if (prevBtn && nextBtn) {
+      const scrollByStep = (direction) => {
+        const { isRTL, position } = getLogicalScrollMetrics(track);
+        const step = Math.max(track.clientWidth * 0.78, 180);
+        const nextPosition = isRTL
+          ? position + (direction === 'prev' ? step : -step)
+          : position + (direction === 'next' ? step : -step);
+        setLogicalScrollPosition(track, nextPosition);
+      };
 
-    prevBtn.addEventListener('click', () => scrollByStep('prev'));
-    nextBtn.addEventListener('click', () => scrollByStep('next'));
+      prevBtn.addEventListener('click', () => scrollByStep('prev'));
+      nextBtn.addEventListener('click', () => scrollByStep('next'));
+    }
+
     track.addEventListener('scroll', refreshHomeTabScrollState, { passive: true });
   });
 
@@ -724,6 +731,7 @@ function renderHomeSummary() {
 }
 
 async function loadHomeSummary({ silent = false } = {}) {
+  if (!authResolved) return;
   if (summaryLoading) return;
   summaryLoading = true;
 
@@ -738,6 +746,29 @@ async function loadHomeSummary({ silent = false } = {}) {
     summaryErrorMessage = '';
   } catch (error) {
     console.error('❌ [home] Failed to load summary data', error);
+    if (error instanceof ApiError && error.status === 401) {
+      authResolved = false;
+
+      try {
+        const user = await checkAuth({ redirect: false, retries: 1, retryDelay: 250 });
+        if (!user) {
+          window.location.href = 'login.html';
+          return;
+        }
+
+        authResolved = true;
+        const retryResponse = await apiRequest('/summary/');
+        summaryState = normalizeSummaryResponse(retryResponse?.data ?? null);
+        summaryState = mergeSummaryWithLocalData(summaryState);
+        summaryErrorMessage = '';
+        return;
+      } catch (authError) {
+        console.error('❌ [home] Summary auth recovery failed', authError);
+        window.location.href = 'login.html';
+        return;
+      }
+    }
+
     summaryState = mergeSummaryWithLocalData(null);
     summaryErrorMessage = error instanceof ApiError
       ? error.message
@@ -749,6 +780,7 @@ async function loadHomeSummary({ silent = false } = {}) {
 }
 
 function handleSummaryRefresh() {
+  if (!authResolved) return;
   loadHomeSummary({ silent: true }).catch((error) => {
     console.error('❌ [home] Summary refresh failed', error);
   });
@@ -783,79 +815,93 @@ function bootstrapHome() {
     logoutBtn.dataset.listenerAttached = 'true';
   }
 
-  Promise.resolve(getCurrentUser({ refresh: true }))
-    .then((user) => {
-      cachedUsername = user?.username || '';
-      cachedRole = (user?.role || '').toLowerCase();
-      updateGreetingMessage();
-      updateAdminCardVisibility();
-    })
-    .catch(() => {
-      cachedUsername = '';
-      cachedRole = '';
-      updateGreetingMessage();
-      updateAdminCardVisibility();
-    });
-
   updateGreetingMessage();
   updateAdminCardVisibility();
   initHomeTabScroll();
   renderHomeSummary();
-  loadHomeSummary();
 
-  document.addEventListener('customers:changed', handleSummaryRefresh, { passive: true });
-  document.addEventListener('reservations:changed', handleSummaryRefresh, { passive: true });
-  document.addEventListener('equipment:changed', handleSummaryRefresh, { passive: true });
-  document.addEventListener('maintenance:updated', handleSummaryRefresh, { passive: true });
-  document.addEventListener('technicians:updated', handleSummaryRefresh, { passive: true });
-  document.addEventListener('projects:changed', handleSummaryRefresh, { passive: true });
+  Promise.resolve(checkAuth({ redirect: false, retries: 1, retryDelay: 250 }))
+    .then((authUser) => {
+      if (!authUser) {
+        window.location.href = 'login.html';
+        return null;
+      }
 
-  if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
-    window.addEventListener('technicians:updated', handleSummaryRefresh, { passive: true });
-  }
+      return getCurrentUser({ refresh: true }).catch(() => authUser);
+    })
+    .then((user) => {
+      if (!user) return;
 
-  const scheduleRefresh = () => {
-    handleSummaryRefresh();
-  };
+      authResolved = true;
+      cachedUsername = user?.username || '';
+      cachedRole = (user?.role || '').toLowerCase();
+      updateGreetingMessage();
+      updateAdminCardVisibility();
+      loadHomeSummary();
 
-  const attachRefetch = (promise, label) => {
-    if (!promise || typeof promise.then !== 'function') {
-      return;
-    }
-    promise
-      .then(() => {
-        scheduleRefresh();
-      })
-      .catch((error) => {
-        console.warn(`⚠️ [home] Failed to prefetch ${label} for summary`, error);
-      });
-  };
+      document.addEventListener('customers:changed', handleSummaryRefresh, { passive: true });
+      document.addEventListener('reservations:changed', handleSummaryRefresh, { passive: true });
+      document.addEventListener('equipment:changed', handleSummaryRefresh, { passive: true });
+      document.addEventListener('maintenance:updated', handleSummaryRefresh, { passive: true });
+      document.addEventListener('technicians:updated', handleSummaryRefresh, { passive: true });
+      document.addEventListener('projects:changed', handleSummaryRefresh, { passive: true });
 
-  try {
-    attachRefetch(refreshTechniciansFromApi(), 'technicians');
-  } catch (error) {
-    console.warn('⚠️ [home] Failed to kick off technicians prefetch', error);
-  }
+      if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+        window.addEventListener('technicians:updated', handleSummaryRefresh, { passive: true });
+      }
 
-  try {
-    attachRefetch(refreshReservationsFromApi(), 'reservations');
-  } catch (error) {
-    console.warn('⚠️ [home] Failed to kick off reservations prefetch', error);
-  }
+      const scheduleRefresh = () => {
+        handleSummaryRefresh();
+      };
 
-  try {
-    import('./projectsService.js')
-      .then(({ refreshProjectsFromApi }) => {
-        if (typeof refreshProjectsFromApi === 'function') {
-          attachRefetch(refreshProjectsFromApi(), 'projects');
+      const attachRefetch = (promise, label) => {
+        if (!promise || typeof promise.then !== 'function') {
+          return;
         }
-      })
-      .catch((error) => {
+        promise
+          .then(() => {
+            scheduleRefresh();
+          })
+          .catch((error) => {
+            console.warn(`⚠️ [home] Failed to prefetch ${label} for summary`, error);
+          });
+      };
+
+      try {
+        attachRefetch(refreshTechniciansFromApi(), 'technicians');
+      } catch (error) {
+        console.warn('⚠️ [home] Failed to kick off technicians prefetch', error);
+      }
+
+      try {
+        attachRefetch(refreshReservationsFromApi(), 'reservations');
+      } catch (error) {
+        console.warn('⚠️ [home] Failed to kick off reservations prefetch', error);
+      }
+
+      try {
+        import('./projectsService.js')
+          .then(({ refreshProjectsFromApi }) => {
+            if (typeof refreshProjectsFromApi === 'function') {
+              attachRefetch(refreshProjectsFromApi(), 'projects');
+            }
+          })
+          .catch((error) => {
+            console.warn('⚠️ [home] Failed to kick off projects prefetch', error);
+          });
+      } catch (error) {
         console.warn('⚠️ [home] Failed to kick off projects prefetch', error);
-      });
-  } catch (error) {
-    console.warn('⚠️ [home] Failed to kick off projects prefetch', error);
-  }
+      }
+    })
+    .catch((error) => {
+      console.error('❌ [home] Failed to bootstrap auth state', error);
+      authResolved = false;
+      cachedUsername = '';
+      cachedRole = '';
+      updateGreetingMessage();
+      updateAdminCardVisibility();
+      window.location.href = 'login.html';
+    });
 }
 
 if (document.readyState === 'loading') {
