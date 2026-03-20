@@ -1673,12 +1673,36 @@
         });
       };
 
+      const previewStars = (value) => {
+        const numeric = Number(value) || 0;
+        paintStars(numeric > 0 ? numeric : ratingInput.value);
+      };
+
       stars.forEach((star) => {
+        star.addEventListener('pointerenter', () => {
+          previewStars(star.dataset.ratingValue || '0');
+        });
+        star.addEventListener('pointerdown', () => {
+          previewStars(star.dataset.ratingValue || '0');
+        });
+        star.addEventListener('focus', () => {
+          previewStars(star.dataset.ratingValue || '0');
+        });
         star.addEventListener('click', () => {
           const value = Number(star.dataset.ratingValue || '0');
           ratingInput.value = value > 0 ? String(value) : '';
           paintStars(ratingInput.value);
         });
+      });
+
+      ratingWrap.addEventListener('pointerleave', () => {
+        paintStars(ratingInput.value);
+      });
+
+      ratingWrap.addEventListener('focusout', (event) => {
+        if (!ratingWrap.contains(event.relatedTarget)) {
+          paintStars(ratingInput.value);
+        }
       });
 
       paintStars(ratingInput.value);

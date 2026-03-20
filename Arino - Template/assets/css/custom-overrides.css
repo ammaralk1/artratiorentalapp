@@ -327,6 +327,10 @@ body[data-page="feedback"] .ar-feedback-rating {
 }
 
 body[data-page="feedback"] .ar-feedback-rating__star {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
   width: 52px;
   height: 52px;
   border: 1px solid rgba(255, 255, 255, 0.16);
@@ -334,7 +338,15 @@ body[data-page="feedback"] .ar-feedback-rating__star {
   background: rgba(255, 255, 255, 0.04);
   color: rgba(255, 255, 255, 0.32);
   font-size: 24px;
+  line-height: 1;
+  touch-action: manipulation;
   transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+
+body[data-page="feedback"] .ar-feedback-rating__star i {
+  display: block;
+  line-height: 1;
+  pointer-events: none;
 }
 
 body[data-page="feedback"] .ar-feedback-rating__star:hover,
@@ -368,8 +380,8 @@ body.rtl[data-page="feedback"] .ar-feedback-rating {
   }
 
   body[data-page="feedback"] .ar-feedback-rating__star {
-    width: 46px;
-    height: 46px;
+    width: 48px;
+    height: 48px;
     border-radius: 14px;
     font-size: 21px;
   }
@@ -2518,6 +2530,27 @@ button.cs-btn.is-disabled {
   -webkit-text-fill-color: #ffffff !important;
   box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0) inset !important;
   border: 2px solid #ffffff !important;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+body[data-page="contact"] .cs-form_field:-webkit-autofill,
+body[data-page="contact"] .cs-form_field:-webkit-autofill:hover,
+body[data-page="contact"] .cs-form_field:-webkit-autofill:focus,
+body[data-page="feedback"] .cs-form_field:-webkit-autofill,
+body[data-page="feedback"] .cs-form_field:-webkit-autofill:hover,
+body[data-page="feedback"] .cs-form_field:-webkit-autofill:focus,
+body[data-page="shop-checkout"] .cs-form_field:-webkit-autofill,
+body[data-page="shop-checkout"] .cs-form_field:-webkit-autofill:hover,
+body[data-page="shop-checkout"] .cs-form_field:-webkit-autofill:focus,
+body[data-page="contact"] .cs-form_field:autofill,
+body[data-page="feedback"] .cs-form_field:autofill,
+body[data-page="shop-checkout"] .cs-form_field:autofill {
+  -webkit-text-fill-color: #f5f1e8 !important;
+  caret-color: #f5f1e8 !important;
+  border-color: rgba(147, 168, 137, 0.92) !important;
+  box-shadow:
+    0 0 0 1000px rgba(62, 86, 62, 0.88) inset !important,
+    0 0 0 1px rgba(147, 168, 137, 0.42) !important;
   transition: background-color 9999s ease-in-out 0s;
 }
 

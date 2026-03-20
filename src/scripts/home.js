@@ -23,6 +23,7 @@ let cachedRole = '';
 let summaryState = null;
 let summaryLoading = false;
 let summaryErrorMessage = '';
+let homeTabScrollInitialized = false;
 
 function updateGreetingMessage() {
   const greetingElements = document.querySelectorAll('[data-home-greeting]');
@@ -55,6 +56,93 @@ function updateAdminCardVisibility() {
       element.classList.add('hidden');
     }
   });
+  refreshHomeTabScrollState();
+}
+
+function getLogicalScrollMetrics(track) {
+  const max = Math.max(0, track.scrollWidth - track.clientWidth);
+  const raw = Number(track.scrollLeft || 0);
+  const isRTL = getComputedStyle(track).direction === 'rtl';
+
+  let position = raw;
+  if (isRTL) {
+    position = raw < 0 ? -raw : max - raw;
+  }
+
+  if (!Number.isFinite(position)) {
+    position = 0;
+  }
+
+  position = Math.min(max, Math.max(0, position));
+  return { isRTL, position, max };
+}
+
+function setLogicalScrollPosition(track, nextPosition) {
+  const { isRTL, max } = getLogicalScrollMetrics(track);
+  const clamped = Math.min(max, Math.max(0, nextPosition));
+  const currentRaw = Number(track.scrollLeft || 0);
+
+  if (!isRTL) {
+    track.scrollTo({ left: clamped, behavior: 'smooth' });
+    return;
+  }
+
+  const targetRaw = currentRaw < 0 ? -clamped : max - clamped;
+  track.scrollTo({ left: targetRaw, behavior: 'smooth' });
+}
+
+function refreshHomeTabScrollState() {
+  document.querySelectorAll('[data-tab-scroll]').forEach((root) => {
+    const track = root.querySelector('[data-tab-scroll-track]');
+    const prevBtn = root.querySelector('[data-tab-scroll-prev]');
+    const nextBtn = root.querySelector('[data-tab-scroll-next]');
+    if (!track || !prevBtn || !nextBtn) return;
+
+    const visibleButtons = Array.from(track.querySelectorAll('.tab-button')).filter((button) =>
+      button instanceof HTMLElement && !button.classList.contains('hidden') && button.offsetParent !== null
+    );
+    const hasOverflow = visibleButtons.length > 0 && (track.scrollWidth - track.clientWidth) > 12;
+    const { isRTL, position, max } = getLogicalScrollMetrics(track);
+
+    prevBtn.hidden = !hasOverflow;
+    nextBtn.hidden = !hasOverflow;
+    prevBtn.disabled = !hasOverflow || (isRTL ? position >= max - 4 : position <= 4);
+    nextBtn.disabled = !hasOverflow || (isRTL ? position <= 4 : position >= max - 4);
+
+    root.classList.toggle('has-left', hasOverflow && (isRTL ? position < max - 4 : position > 4));
+    root.classList.toggle('has-right', hasOverflow && (isRTL ? position > 4 : position < max - 4));
+  });
+}
+
+function initHomeTabScroll() {
+  if (homeTabScrollInitialized) {
+    refreshHomeTabScrollState();
+    return;
+  }
+
+  document.querySelectorAll('[data-tab-scroll]').forEach((root) => {
+    const track = root.querySelector('[data-tab-scroll-track]');
+    const prevBtn = root.querySelector('[data-tab-scroll-prev]');
+    const nextBtn = root.querySelector('[data-tab-scroll-next]');
+    if (!track || !prevBtn || !nextBtn) return;
+
+    const scrollByStep = (direction) => {
+      const { isRTL, position } = getLogicalScrollMetrics(track);
+      const step = Math.max(track.clientWidth * 0.78, 180);
+      const nextPosition = isRTL
+        ? position + (direction === 'prev' ? step : -step)
+        : position + (direction === 'next' ? step : -step);
+      setLogicalScrollPosition(track, nextPosition);
+    };
+
+    prevBtn.addEventListener('click', () => scrollByStep('prev'));
+    nextBtn.addEventListener('click', () => scrollByStep('next'));
+    track.addEventListener('scroll', refreshHomeTabScrollState, { passive: true });
+  });
+
+  window.addEventListener('resize', refreshHomeTabScrollState, { passive: true });
+  homeTabScrollInitialized = true;
+  refreshHomeTabScrollState();
 }
 
 function normalizeSummaryResponse(raw) {
@@ -676,11 +764,13 @@ if (refreshSummaryBtn && !refreshSummaryBtn.dataset.listenerAttached) {
 
 document.addEventListener('language:translationsReady', () => {
   updateGreetingMessage();
+  refreshHomeTabScrollState();
   renderHomeSummary();
 });
 
 document.addEventListener('language:changed', () => {
   updateGreetingMessage();
+  refreshHomeTabScrollState();
   renderHomeSummary();
 });
 
@@ -709,6 +799,7 @@ function bootstrapHome() {
 
   updateGreetingMessage();
   updateAdminCardVisibility();
+  initHomeTabScroll();
   renderHomeSummary();
   loadHomeSummary();
 

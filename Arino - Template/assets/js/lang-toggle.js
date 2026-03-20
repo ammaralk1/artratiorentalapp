@@ -588,8 +588,8 @@
     footer_service_photography: { en: 'Commercial Photography', ar: 'التصوير الفوتوغرافي التجاري' },
     footer_service_rental: { en: 'Equipment Rental', ar: 'تأجير المعدات' },
     footer_service_consultancy: {
-      en: 'Cinematography & Film Production Consultancy',
-      ar: 'الاستشارات في التصوير والإنتاج السينمائي',
+      en: 'Production Consultancy',
+      ar: 'الاستشارات الإنتاجية',
     },
     footer_contact_title: { en: 'Contact Us', ar: 'تواصل معنا' },
     footer_copyright: { en: 'Copyright © 2026 Art Ratio.', ar: 'جميع الحقوق محفوظة © 2026 آرت ريشيو.' },
@@ -724,7 +724,7 @@
     service_card_social: { en: 'Social Media Visuals', ar: 'محتوى شبكات التواصل' },
     service_card_photo: { en: 'Commercial Photography', ar: 'التصوير الفوتوغرافي التجاري' },
     service_card_rental: { en: 'Equipment Rental', ar: 'تأجير المعدات' },
-    service_card_consult: { en: 'Cinematography & Film Production Consultancy', ar: 'الاستشارات في التصوير والإنتاج السينمائي' },
+    service_card_consult: { en: 'Production Consultancy', ar: 'الاستشارات الإنتاجية' },
     service_tv_details_title: { en: 'TV & Commercial Ads', ar: 'إعلانات تلفزيونية وتجارية' },
     service_tv_details_p1: {
       en: 'An ad is not just product shooting. It is a decision about perception.',
@@ -1193,7 +1193,7 @@
     feedback_form_company: { en: 'Company Name*', ar: 'اسم الشركة*' },
     feedback_form_company_optional: { en: 'Company Name (Optional)', ar: 'اسم الشركة (اختياري)' },
     feedback_form_rating: { en: 'Overall Rating*', ar: 'التقييم العام*' },
-    feedback_form_rating_hint: { en: 'Tap a star from 1 to 5', ar: 'اختر من نجمة إلى خمس نجمات' },
+    feedback_form_rating_hint: { en: 'Hover or tap to choose from 1 to 5 stars', ar: 'مرر أو اضغط لاختيار من نجمة إلى خمس نجمات' },
     feedback_form_rating_required: { en: 'Please choose a rating before sending.', ar: 'اختر التقييم أولًا قبل الإرسال.' },
     feedback_form_recommend: {
       en: 'Would you recommend us?*',
@@ -2330,7 +2330,7 @@
       { selector: '.cs-footer_services a:nth-child(3)', type: 'text', en: 'Social Media Visuals', ar: 'محتوى شبكات التواصل' },
       { selector: '.cs-footer_services a:nth-child(4)', type: 'text', en: 'Commercial Photography', ar: 'التصوير الفوتوغرافي التجاري' },
       { selector: '.cs-footer_services a:nth-child(5)', type: 'text', en: 'Equipment Rental', ar: 'تأجير المعدات' },
-      { selector: '.cs-footer_services a:nth-child(6)', type: 'text', en: 'Cinematography & Film Production Consultancy', ar: 'الاستشارات في التصوير والإنتاج السينمائي' },
+      { selector: '.cs-footer_services a:nth-child(6)', type: 'text', en: 'Production Consultancy', ar: 'الاستشارات الإنتاجية' },
       { selector: '.cs-footer_item_contact .cs-widget_title', type: 'text', en: 'Contact Us', ar: 'تواصل معنا' },
       { selector: '.cs-copyright', type: 'text', en: 'Copyright © 2026 Art Ratio.', ar: 'جميع الحقوق محفوظة © 2026 آرت ريشو.' },
       { selector: '.cs-footer_links li:nth-child(1) a', type: 'text', en: 'Terms of Use', ar: 'شروط الاستخدام' },
@@ -2370,7 +2370,7 @@
         { selector: '.cs-iconbox_3_list .cs-hover_tab:nth-child(4) .cs-iconbox_subtitle', type: 'text', en: 'Customized photography and videography, covering food menus, professional portraits, and e-commerce product visuals.', ar: 'نظبطك بتصوير مخصّص لقوائم الطعام، والبورتريه، ومنتجات التجارة الإلكترونية.' },
         { selector: '.cs-iconbox_3_list .cs-hover_tab:nth-child(5) .cs-iconbox_title', type: 'text', en: 'Equipment Rental', ar: 'تأجير المعدات' },
         { selector: '.cs-iconbox_3_list .cs-hover_tab:nth-child(5) .cs-iconbox_subtitle', type: 'text', en: 'Professional filming and lighting equipment rentals to empower production teams with everything they need for seamless results.', ar: 'نأجّر معدات تصوير وإضاءة احترافية، نجهّز فيها فرق الإنتاج بكل اللي يحتاجونه عشان يشتغلون بسلاسة ويطلعوا بنتائج قوية' },
-        { selector: '.cs-iconbox_3_list .cs-hover_tab:nth-child(6) .cs-iconbox_title', type: 'text', en: 'Cinematography & Film Production Consultancy', ar: 'الاستشارات في التصوير والإنتاج السينمائي' },
+        { selector: '.cs-iconbox_3_list .cs-hover_tab:nth-child(6) .cs-iconbox_title', type: 'text', en: 'Production Consultancy', ar: 'الاستشارات الإنتاجية' },
         { selector: '.cs-iconbox_3_list .cs-hover_tab:nth-child(6) .cs-iconbox_subtitle', type: 'text', en: 'We provide expert film production and cinematography consultancy, guiding projects from concept to delivery to ensure they meet clients’ goals efficiently.', ar: 'نقدّم استشارات في الإنتاج السينمائي من البداية للنهاية، ونشتغل معك خطوة بخطوة لتحقيق أهدافك.' },
         // Portfolio (per-card handled via data-i18n-key)
         { selector: '.cs-portfolio_subtitle', type: 'text', en: 'See Details', ar: 'عرض التفاصيل' },

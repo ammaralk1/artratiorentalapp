@@ -16,6 +16,8 @@ if (!defined('API_INCLUDE_MODE')) {
 
         $pdo = getDatabaseConnection();
         ensureFeedbackSubmissionTables($pdo);
+        ensureFeedbackSubmissionWorkflowColumns($pdo);
+        ensureFeedbackSubmissionActivitiesTable($pdo);
         handleFeedbackSubmissionCreate($pdo);
     } catch (InvalidArgumentException $exception) {
         respondError($exception->getMessage(), 422);
@@ -39,6 +41,7 @@ function handleFeedbackSubmissionCreate(PDO $pdo): void
     $feedbackMessage = normalizeFeedbackMultiline((string) ($payload['feedback_message'] ?? ''), 4000);
     $language = normalizeFeedbackLanguage((string) ($payload['language'] ?? ''));
     $sourcePath = normalizeFeedbackText((string) ($payload['source_path'] ?? ''), 255);
+    $initialStatus = determineInitialFeedbackStatus($overallRating);
 
     if ($fullName === '' || $overallRating === 0 || $feedbackMessage === '') {
         throw new InvalidArgumentException('Full name, overall rating, and feedback are required');
@@ -73,6 +76,7 @@ function handleFeedbackSubmissionCreate(PDO $pdo): void
                 feedback_message,
                 feedback_lang,
                 source_path,
+                status,
                 ip_address,
                 user_agent,
                 notification_attempted,
@@ -89,6 +93,7 @@ function handleFeedbackSubmissionCreate(PDO $pdo): void
                 :feedback_message,
                 :feedback_lang,
                 :source_path,
+                :status,
                 :ip_address,
                 :user_agent,
                 0,
@@ -107,11 +112,17 @@ function handleFeedbackSubmissionCreate(PDO $pdo): void
             'feedback_message' => $feedbackMessage,
             'feedback_lang' => $language,
             'source_path' => $sourcePath !== '' ? $sourcePath : null,
+            'status' => $initialStatus,
             'ip_address' => $ipAddress,
             'user_agent' => $userAgent !== '' ? $userAgent : null,
             'raw_payload' => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
         ]);
         $feedbackId = (int) $pdo->lastInsertId();
+        insertFeedbackSubmissionActivity($pdo, [
+            'feedback_id' => $feedbackId,
+            'action_type' => 'created',
+            'message' => buildFeedbackSubmissionActivityMessage($overallRating, $initialStatus),
+        ]);
         $pdo->commit();
 
         $teamEmailResult = notifyFeedbackTeamByEmail(
@@ -530,6 +541,13 @@ function ensureFeedbackSubmissionTables(PDO $pdo): void
             feedback_message TEXT NOT NULL,
             feedback_lang VARCHAR(5) NOT NULL DEFAULT 'ar',
             source_path VARCHAR(255) NULL,
+            status VARCHAR(30) NOT NULL DEFAULT 'new',
+            internal_notes TEXT NULL,
+            assigned_user_id BIGINT UNSIGNED NULL,
+            assigned_username VARCHAR(120) NULL,
+            follow_up_at DATETIME NULL,
+            last_responded_at DATETIME NULL,
+            closed_at DATETIME NULL,
             ip_address VARCHAR(45) NOT NULL,
             user_agent VARCHAR(500) NULL,
             notification_attempted TINYINT(1) NOT NULL DEFAULT 0,
@@ -558,6 +576,135 @@ function ensureFeedbackSubmissionTables(PDO $pdo): void
     );
 
     $ensured = true;
+}
+
+function ensureFeedbackSubmissionWorkflowColumns(PDO $pdo): void
+{
+    static $ensured = false;
+    if ($ensured) {
+        return;
+    }
+
+    $columns = [
+        'status' => "ALTER TABLE feedback_submissions ADD COLUMN status VARCHAR(30) NOT NULL DEFAULT 'new' AFTER source_path",
+        'internal_notes' => "ALTER TABLE feedback_submissions ADD COLUMN internal_notes TEXT NULL AFTER status",
+        'assigned_user_id' => "ALTER TABLE feedback_submissions ADD COLUMN assigned_user_id BIGINT UNSIGNED NULL AFTER internal_notes",
+        'assigned_username' => "ALTER TABLE feedback_submissions ADD COLUMN assigned_username VARCHAR(120) NULL AFTER assigned_user_id",
+        'follow_up_at' => "ALTER TABLE feedback_submissions ADD COLUMN follow_up_at DATETIME NULL AFTER assigned_username",
+        'last_responded_at' => "ALTER TABLE feedback_submissions ADD COLUMN last_responded_at DATETIME NULL AFTER follow_up_at",
+        'closed_at' => "ALTER TABLE feedback_submissions ADD COLUMN closed_at DATETIME NULL AFTER last_responded_at",
+    ];
+
+    foreach ($columns as $columnName => $sql) {
+        if (!feedbackTableColumnExists($pdo, 'feedback_submissions', $columnName)) {
+            $pdo->exec($sql);
+        }
+    }
+
+    $pdo->exec("UPDATE feedback_submissions SET status = 'new' WHERE status IS NULL OR TRIM(status) = ''");
+
+    try {
+        $pdo->exec('CREATE INDEX idx_feedback_submissions_status ON feedback_submissions (status)');
+    } catch (Throwable $ignored) {
+    }
+
+    try {
+        $pdo->exec('CREATE INDEX idx_feedback_submissions_follow_up_at ON feedback_submissions (follow_up_at)');
+    } catch (Throwable $ignored) {
+    }
+
+    $ensured = true;
+}
+
+function feedbackTableColumnExists(PDO $pdo, string $tableName, string $columnName): bool
+{
+    $statement = $pdo->prepare(
+        'SELECT COUNT(*)
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = :table_name
+           AND COLUMN_NAME = :column_name'
+    );
+    $statement->execute([
+        'table_name' => $tableName,
+        'column_name' => $columnName,
+    ]);
+
+    return (int) $statement->fetchColumn() > 0;
+}
+
+function ensureFeedbackSubmissionActivitiesTable(PDO $pdo): void
+{
+    static $ensured = false;
+    if ($ensured) {
+        return;
+    }
+
+    $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS feedback_submission_activities (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            feedback_id BIGINT UNSIGNED NOT NULL,
+            user_id BIGINT UNSIGNED NULL,
+            username VARCHAR(120) NULL,
+            action_type VARCHAR(40) NOT NULL,
+            message TEXT NOT NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            KEY idx_feedback_submission_activities_feedback (feedback_id),
+            KEY idx_feedback_submission_activities_created_at (created_at),
+            CONSTRAINT fk_feedback_submission_activities_feedback
+                FOREIGN KEY (feedback_id) REFERENCES feedback_submissions(id)
+                ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+    );
+
+    $ensured = true;
+}
+
+function insertFeedbackSubmissionActivity(PDO $pdo, array $activity): void
+{
+    $feedbackId = isset($activity['feedback_id']) ? (int) $activity['feedback_id'] : 0;
+    if ($feedbackId <= 0) {
+        return;
+    }
+
+    ensureFeedbackSubmissionActivitiesTable($pdo);
+
+    $statement = $pdo->prepare(
+        'INSERT INTO feedback_submission_activities (
+            feedback_id,
+            user_id,
+            username,
+            action_type,
+            message
+        ) VALUES (
+            :feedback_id,
+            :user_id,
+            :username,
+            :action_type,
+            :message
+        )'
+    );
+    $statement->execute([
+        'feedback_id' => $feedbackId,
+        'user_id' => isset($activity['user_id']) && (int) $activity['user_id'] > 0 ? (int) $activity['user_id'] : null,
+        'username' => trim((string) ($activity['username'] ?? '')) !== '' ? trim((string) ($activity['username'] ?? '')) : null,
+        'action_type' => trim((string) ($activity['action_type'] ?? 'note')) ?: 'note',
+        'message' => trim((string) ($activity['message'] ?? 'Activity recorded.')) ?: 'Activity recorded.',
+    ]);
+}
+
+function determineInitialFeedbackStatus(int $overallRating): string
+{
+    return $overallRating <= 3 ? 'follow_up_needed' : 'new';
+}
+
+function buildFeedbackSubmissionActivityMessage(int $overallRating, string $initialStatus): string
+{
+    if ($initialStatus === 'follow_up_needed') {
+        return sprintf('Feedback submitted with %d/5 rating and flagged for follow-up.', $overallRating);
+    }
+
+    return sprintf('Feedback submitted with %d/5 rating.', $overallRating);
 }
 
 function generateFeedbackSubmissionCode(PDO $pdo): string
@@ -670,6 +817,36 @@ function normalizeFeedbackLanguage(string $value): string
 {
     $value = strtolower(trim($value));
     return $value === 'en' ? 'en' : 'ar';
+}
+
+function normalizeFeedbackAdminStatus(string $value): string
+{
+    $value = strtolower(trim($value));
+    $allowed = ['new', 'reviewed', 'follow_up_needed', 'responded', 'closed'];
+    return in_array($value, $allowed, true) ? $value : '';
+}
+
+function normalizeFeedbackDateTime(?string $value): ?string
+{
+    $raw = trim((string) ($value ?? ''));
+    if ($raw === '') {
+        return null;
+    }
+
+    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $raw)) {
+        $raw .= ' 00:00:00';
+    } elseif (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/', $raw)) {
+        $raw = str_replace('T', ' ', $raw) . ':00';
+    } else {
+        $raw = str_replace('T', ' ', $raw);
+    }
+
+    $date = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $raw);
+    if (!$date) {
+        throw new InvalidArgumentException('Invalid follow-up date');
+    }
+
+    return $date->format('Y-m-d H:i:s');
 }
 
 function resolveFeedbackServiceLabel(string $serviceType, bool $isArabic): string
