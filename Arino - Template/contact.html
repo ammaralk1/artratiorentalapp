@@ -193,25 +193,25 @@
         <div class="cs-height_0 cs-height_lg_50"></div>
       </div>
       <div class="col-lg-6">
-        <form id="cs-form" data-api-endpoint="/backend/api/contact/index.php" data-toast-enabled method="POST" class="row">
+        <form id="cs-form" data-api-endpoint="/backend/api/contact/index.php" data-toast-enabled method="POST" class="row" autocomplete="on">
           <div class="col-sm-6">
             <label class="cs-primary_color" data-i18n-key="contact_form_name">Full Name*</label>
-            <input type="text" class="cs-form_field" name="full_name" required>
+            <input type="text" class="cs-form_field" name="full_name" autocomplete="name" required>
             <div class="cs-height_20 cs-height_lg_20"></div>
           </div>
           <div class="col-sm-6">
             <label class="cs-primary_color" data-i18n-key="contact_form_email">Email*</label>
-            <input type="email" class="cs-form_field" name="email" required>
+            <input type="email" class="cs-form_field" name="email" autocomplete="email" required>
             <div class="cs-height_20 cs-height_lg_20"></div>
           </div>
           <div class="col-sm-6">
             <label class="cs-primary_color" data-i18n-key="contact_form_company_optional">Company Name (Optional)</label>
-            <input type="text" class="cs-form_field" name="company_name">
+            <input type="text" class="cs-form_field" name="company_name" autocomplete="organization">
             <div class="cs-height_20 cs-height_lg_20"></div>
           </div>
           <div class="col-sm-6">
             <label class="cs-primary_color" data-i18n-key="contact_form_mobile">Mobile*</label>
-            <input type="tel" class="cs-form_field" name="phone" required>
+            <input type="tel" class="cs-form_field" name="phone" autocomplete="tel" inputmode="tel" required>
             <div class="cs-height_20 cs-height_lg_20"></div>
           </div>
           <div class="col-sm-12">
@@ -342,6 +342,6 @@
   <script src="assets/js/plugins/wow.min.js"></script>
   <script src="assets/js/plugins/gsap.min.js"></script>
   <script src="assets/js/lang-toggle.js?v=20260320-contact-i18n-fix1"></script>
-    <script src="assets/js/main.js?v=20260320-contact-toast-fix2"></script>
+    <script src="assets/js/main.js?v=20260320-customer-autofill-fix1"></script>
 </body>
 </html>

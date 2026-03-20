@@ -81,6 +81,10 @@ return [
         // Contact form notification recipients
         'notification_emails' => ['ammar@art-ratio.com'],
     ],
+    'feedback' => [
+        // Feedback form notification recipients
+        'notification_emails' => ['ammar@art-ratio.com'],
+    ],
     'telegram' => [
         // Telegram Bot API configuration
         'enabled' => false,

@@ -1567,10 +1567,17 @@
     const result = document.getElementById('cs-result');
     const submitButton = form.querySelector('button[type="submit"]');
     const pageKey = (document.body && document.body.dataset.page) || '';
+    const isContactPage = pageKey === 'contact';
+    const isFeedbackPage = pageKey === 'feedback';
+    const isInternalLeadForm = isContactPage || isFeedbackPage;
     const formAction = (form.getAttribute('action') || '').trim();
     const toastEnabled = form.hasAttribute('data-toast-enabled');
     const apiEndpoint = (form.dataset.apiEndpoint || '').trim()
-      || (pageKey === 'contact' ? '/backend/api/contact/index.php' : formAction);
+      || (isContactPage
+        ? '/backend/api/contact/index.php'
+        : isFeedbackPage
+          ? '/backend/api/feedback/index.php'
+          : formAction);
     let toastTimer = null;
     let toastHideTimer = null;
     let toastHost = null;
@@ -1600,6 +1607,81 @@
         return window.getArinoTranslation(key, fallback);
       }
       return fallback;
+    }
+
+    function getPageFormMessages() {
+      if (isFeedbackPage) {
+        return {
+          sending: translateFormMessage(
+            'feedback_form_sending',
+            'جاري إرسال تقييمك...',
+            'Sending your feedback...',
+          ),
+          success: translateFormMessage(
+            'feedback_form_success',
+            'شكرًا على تقييمك. نقدّر وقتك وملاحظاتك.',
+            'Thank you for your feedback. We appreciate your time.',
+          ),
+          error: translateFormMessage(
+            'feedback_form_error',
+            'تعذر إرسال تقييمك الآن. حاول مرة أخرى.',
+            'Unable to send your feedback right now. Please try again.',
+          ),
+          ratingRequired: translateFormMessage(
+            'feedback_form_rating_required',
+            'اختر التقييم أولًا قبل الإرسال.',
+            'Please choose a rating before sending.',
+          ),
+        };
+      }
+
+      return {
+        sending: translateFormMessage(
+          'contact_form_sending',
+          'جاري إرسال رسالتك...',
+          'Sending your message...',
+        ),
+        success: translateFormMessage(
+          'contact_form_success',
+          'تم استلام رسالتك بنجاح، وسنتواصل معك قريبًا.',
+          'Your message has been received successfully. We will contact you soon.',
+        ),
+        error: translateFormMessage(
+          'contact_form_error',
+          'تعذر إرسال الرسالة الآن. حاول مرة أخرى.',
+          'Unable to send your message right now. Please try again.',
+        ),
+        ratingRequired: '',
+      };
+    }
+
+    function initFeedbackRating() {
+      if (!isFeedbackPage) return;
+      const ratingWrap = form.querySelector('[data-rating-input]');
+      if (!ratingWrap) return;
+
+      const ratingInput = ratingWrap.querySelector('input[name="overall_rating"]');
+      const stars = Array.from(ratingWrap.querySelectorAll('[data-rating-value]'));
+      if (!ratingInput || !stars.length) return;
+
+      const paintStars = (value) => {
+        const numeric = Number(value) || 0;
+        stars.forEach((star) => {
+          const starValue = Number(star.dataset.ratingValue || '0');
+          star.classList.toggle('is-active', starValue <= numeric);
+          star.setAttribute('aria-pressed', starValue === numeric ? 'true' : 'false');
+        });
+      };
+
+      stars.forEach((star) => {
+        star.addEventListener('click', () => {
+          const value = Number(star.dataset.ratingValue || '0');
+          ratingInput.value = value > 0 ? String(value) : '';
+          paintStars(ratingInput.value);
+        });
+      });
+
+      paintStars(ratingInput.value);
     }
 
     function showFormToast(message, type) {
@@ -1665,27 +1747,32 @@
 
       if (!apiEndpoint) {
         renderFormResult(
-          translateFormMessage(
-            'contact_form_error',
-            'تعذر إرسال الرسالة الآن. حاول مرة أخرى.',
-            'Unable to send your message right now. Please try again.',
-          ),
+          getPageFormMessages().error,
           'error',
         );
         return;
+      }
+
+      if (isFeedbackPage) {
+        const ratingInput = form.querySelector('input[name="overall_rating"]');
+        const ratingValue = Number(ratingInput && ratingInput.value ? ratingInput.value : '0');
+        if (!Number.isFinite(ratingValue) || ratingValue < 1 || ratingValue > 5) {
+          renderFormResult(getPageFormMessages().ratingRequired, 'error');
+          return;
+        }
       }
 
       var object = {};
       formData.forEach((value, key) => {
         object[key] = value;
       });
-      if (pageKey === 'contact') {
+      if (isInternalLeadForm) {
         object.language = isArabicForm() ? 'ar' : 'en';
         object.source_path = window.location.pathname || '';
       }
       var json = JSON.stringify(object);
       renderFormResult(
-        translateFormMessage('contact_form_sending', 'جاري إرسال رسالتك...', 'Sending your message...'),
+        getPageFormMessages().sending,
         'info',
       );
       if (submitButton) {
@@ -1702,16 +1789,20 @@
       })
         .then(async response => {
           let json = await response.json();
-          if (response.ok && pageKey === 'contact') {
-            renderFormResult(
-              translateFormMessage(
-                'contact_form_success',
-                'تم استلام رسالتك بنجاح، وسنتواصل معك قريبًا.',
-                'Your message has been received successfully. We will contact you soon.',
-              ),
-              'success',
-            );
+          if (response.ok && isInternalLeadForm) {
+            renderFormResult(getPageFormMessages().success, 'success');
             form.reset();
+            if (isFeedbackPage) {
+              const ratingInput = form.querySelector('input[name="overall_rating"]');
+              const stars = form.querySelectorAll('[data-rating-value]');
+              if (ratingInput) {
+                ratingInput.value = '';
+              }
+              stars.forEach((star) => {
+                star.classList.remove('is-active');
+                star.setAttribute('aria-pressed', 'false');
+              });
+            }
             return;
           }
           if (response.status == 200) {
@@ -1721,25 +1812,14 @@
             console.log(response);
             renderFormResult(
               (json && (json.error || json.message)) ||
-                translateFormMessage(
-                  'contact_form_error',
-                  'تعذر إرسال الرسالة الآن. حاول مرة أخرى.',
-                  'Unable to send your message right now. Please try again.',
-                ),
+                getPageFormMessages().error,
               'error',
             );
           }
         })
         .catch(error => {
           console.log(error);
-          renderFormResult(
-            translateFormMessage(
-              'contact_form_error',
-              'تعذر إرسال الرسالة الآن. حاول مرة أخرى.',
-              'Unable to send your message right now. Please try again.',
-            ),
-            'error',
-          );
+          renderFormResult(getPageFormMessages().error, 'error');
         })
         .then(function () {
           if (submitButton) {
@@ -1752,6 +1832,8 @@
           }, 5000);
         });
     });
+
+    initFeedbackRating();
   }
 
   /*--------------------------------------------------------------

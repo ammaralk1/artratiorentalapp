@@ -37,7 +37,7 @@
   <link rel="stylesheet" href="assets/css/plugins/lightgallery.min.css">
   <link rel="stylesheet" href="assets/css/plugins/animate.css">
   <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="stylesheet" href="assets/css/custom-overrides.css?v=20260318-page-font-row5">
+    <link rel="stylesheet" href="assets/css/custom-overrides.css?v=20260320-feedback-form-row1">
       <link rel="stylesheet" href="assets/css/pattern-bg.css">
   </head>
 
@@ -116,10 +116,10 @@
         <img src="assets/img/footer_logo.svg" alt="Logo">
       </a>
       <div class="cs-side_header_box">
-        <h2 class="cs-side_header_heading">Got a project in mind? <br>We’re ready to bring it to life.</h2>
+        <h2 class="cs-side_header_heading" data-i18n-key="side_header_heading">Got a project in mind? <br>We’re ready to bring it to life.</h2>
       </div>
       <div class="cs-side_header_box">
-        <h3 class="cs-side_header_title cs-primary_color">Contact Us</h3>
+        <h3 class="cs-side_header_title cs-primary_color" data-i18n-key="side_header_contact_title">Contact Us</h3>
         <ul class="cs-contact_info cs-style1 cs-mp0">
           <li>
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -136,8 +136,8 @@
         </ul>
       </div>
         <div class="cs-side_header_box">
-          <h3 class="cs-side_header_title cs-primary_color">Portal Access</h3>
-          <a class="cs-login-link" href="https://art-ratio.com/login">Login to Dashboard</a>
+          <h3 class="cs-side_header_title cs-primary_color" data-i18n-key="side_header_portal_title">Portal Access</h3>
+          <a class="cs-login-link" href="https://art-ratio.com/login" data-i18n-key="side_header_login_link">Login to Dashboard</a>
         </div>
 
       <div class="cs-side_header_box">
@@ -193,65 +193,75 @@
         <div class="cs-height_0 cs-height_lg_50"></div>
       </div>
       <div class="col-lg-6">
-        <form id="cs-form" action="https://api.web3forms.com/submit" method="POST" class="row">
-          
-          <input type="hidden" name="access_key" value="6d7bc3fc-6190-43c5-8298-89ac5ef7494f">
-          <input type="checkbox" name="botcheck" style="display: none;">
-          <!-- Optional: Can be type="hidden" or type="text" for subject -->
-          <input type="hidden" name="subject" value="Client Feedback - Art Ratio">
-
+        <form id="cs-form" data-api-endpoint="/backend/api/feedback/index.php" data-toast-enabled method="POST" class="row" autocomplete="on">
           <div class="col-sm-6">
             <label class="cs-primary_color" data-i18n-key="feedback_form_name">Full Name*</label>
-            <input type="text" class="cs-form_field" name="full-name" required>
+            <input type="text" class="cs-form_field" name="full_name" autocomplete="name" required>
             <div class="cs-height_20 cs-height_lg_20"></div>
           </div>
           <div class="col-sm-6">
-            <label class="cs-primary_color" data-i18n-key="feedback_form_email">Email*</label>
-            <input type="text" class="cs-form_field" name="email" required>
+            <label class="cs-primary_color" data-i18n-key="feedback_form_email_optional">Email (Optional)</label>
+            <input type="email" class="cs-form_field" name="email" autocomplete="email">
             <div class="cs-height_20 cs-height_lg_20"></div>
           </div>
           <div class="col-sm-6">
-            <label class="cs-primary_color" data-i18n-key="feedback_form_company">Company Name*</label>
-            <input type="text" class="cs-form_field" name="company-name" required>
+            <label class="cs-primary_color" data-i18n-key="feedback_form_company_optional">Company Name (Optional)</label>
+            <input type="text" class="cs-form_field" name="company_name" autocomplete="organization">
             <div class="cs-height_20 cs-height_lg_20"></div>
           </div>
           <div class="col-sm-6">
-            <label class="cs-primary_color" data-i18n-key="feedback_form_rating">Overall Rating*</label>
-            <select class="cs-form_field" name="overall-rating" required>
-              <option value="" data-i18n-key="feedback_select_rating">Select rating</option>
-              <option value="5">5 / 5</option>
-              <option value="4">4 / 5</option>
-              <option value="3">3 / 5</option>
-              <option value="2">2 / 5</option>
-              <option value="1">1 / 5</option>
+            <label class="cs-primary_color" data-i18n-key="feedback_form_service_optional">Service Used (Optional)</label>
+            <select class="cs-form_field" name="service_type">
+              <option value="" data-i18n-key="feedback_service_placeholder">Choose service</option>
+              <option value="production_consultancy" data-i18n-key="feedback_service_consultancy">Production Consultancy</option>
+              <option value="commercial_photography" data-i18n-key="feedback_service_photography">Commercial Photography</option>
+              <option value="events_coverage" data-i18n-key="feedback_service_events">Events Coverage</option>
+              <option value="social_media_content" data-i18n-key="feedback_service_social">Social Media Content</option>
+              <option value="tv_commercial_ads" data-i18n-key="feedback_service_tv">TV & Commercial Ads</option>
+              <option value="equipment_rental" data-i18n-key="feedback_service_rental">Equipment Rental</option>
             </select>
             <div class="cs-height_20 cs-height_lg_20"></div>
           </div>
+          <div class="col-lg-12">
+            <label class="cs-primary_color" data-i18n-key="feedback_form_rating">Overall Rating*</label>
+            <div class="ar-feedback-rating" data-rating-input data-field-name="overall_rating" aria-label="Overall rating">
+              <button type="button" class="ar-feedback-rating__star" data-rating-value="1" aria-label="1 star">
+                <i class="fas fa-star" aria-hidden="true"></i>
+              </button>
+              <button type="button" class="ar-feedback-rating__star" data-rating-value="2" aria-label="2 stars">
+                <i class="fas fa-star" aria-hidden="true"></i>
+              </button>
+              <button type="button" class="ar-feedback-rating__star" data-rating-value="3" aria-label="3 stars">
+                <i class="fas fa-star" aria-hidden="true"></i>
+              </button>
+              <button type="button" class="ar-feedback-rating__star" data-rating-value="4" aria-label="4 stars">
+                <i class="fas fa-star" aria-hidden="true"></i>
+              </button>
+              <button type="button" class="ar-feedback-rating__star" data-rating-value="5" aria-label="5 stars">
+                <i class="fas fa-star" aria-hidden="true"></i>
+              </button>
+              <input type="hidden" name="overall_rating" value="">
+            </div>
+            <p class="ar-feedback-rating__hint" data-i18n-key="feedback_form_rating_hint">Tap a star from 1 to 5</p>
+            <div class="cs-height_20 cs-height_lg_20"></div>
+          </div>
           <div class="col-sm-6">
-            <label class="cs-primary_color" data-i18n-key="feedback_form_recommend">Would you recommend us?*</label>
-            <select class="cs-form_field" name="recommendation" required>
-              <option value="" data-i18n-key="feedback_select_option">Select option</option>
+            <label class="cs-primary_color" data-i18n-key="feedback_form_recommend_optional">Would you recommend us? (Optional)</label>
+            <select class="cs-form_field" name="recommendation">
+              <option value="" data-i18n-key="feedback_select_option_optional">Choose option</option>
               <option value="Yes" data-i18n-key="feedback_option_yes">Yes</option>
               <option value="No" data-i18n-key="feedback_option_no">No</option>
             </select>
             <div class="cs-height_20 cs-height_lg_20"></div>
           </div>
-          <div class="col-sm-6">
-            <label class="cs-primary_color" data-i18n-key="feedback_form_delivery">Delivery Satisfaction*</label>
-            <select class="cs-form_field" name="delivery-satisfaction" required>
-              <option value="" data-i18n-key="feedback_select_rating">Select rating</option>
-              <option value="5">5 / 5</option>
-              <option value="4">4 / 5</option>
-              <option value="3">3 / 5</option>
-              <option value="2">2 / 5</option>
-              <option value="1">1 / 5</option>
-            </select>
-            <div class="cs-height_20 cs-height_lg_20"></div>
-          </div>
           <div class="col-lg-12">
             <label class="cs-primary_color" data-i18n-key="feedback_form_comment">Share your experience*</label>
-            <textarea cols="30" rows="7" class="cs-form_field" name="feedback-message" required></textarea>
+            <textarea cols="30" rows="7" class="cs-form_field" name="feedback_message" required data-i18n-placeholder="feedback_form_comment_placeholder" placeholder="Tell us what went well and what we can improve"></textarea>
             <div class="cs-height_25 cs-height_lg_25"></div>
+          </div>
+          <div class="col-lg-12">
+            <p class="cs-m0" data-i18n-key="feedback_form_required_note">Required fields: full name, overall rating, and your feedback. Email, company, service, and recommendation are optional.</p>
+            <div class="cs-height_25 cs-height_lg_20"></div>
           </div>
           <div class="col-lg-12">
             <button class="cs-btn cs-style1" type="submit">
@@ -276,7 +286,7 @@
                 <div class="cs-footer_item cs-footer_brand">
                   <div class="cs-text_widget">
                     <img src="assets/img/footer_logo.svg" alt="Thumb">
-                    <p>we turn your vision into captivating visuals. From commercials and events to social media stories, we blend creativity and precision to bring your ideas to life.</p>
+                    <p data-i18n-key="footer_brand_intro">we turn your vision into captivating visuals. From commercials and events to social media stories, we blend creativity and precision to bring your ideas to life.</p>
                   </div>
                   <div class="cs-social_btns cs-style1">
               <a href="https://www.instagram.com/art_ratio" class="cs-center"><i class="fab fa-instagram"></i></a>
@@ -292,20 +302,20 @@
               </div>
               <div class="col-lg-5 col-sm-6">
                 <div class="cs-footer_item cs-footer_item_services">
-                  <h2 class="cs-widget_title">Services</h2>
+                  <h2 class="cs-widget_title" data-i18n-key="footer_services_title">Services</h2>
                   <div class="cs-footer_services">
-                    <a href="service-details-tv-commercial-ads.html">TV & Commercial Ads</a>
-                    <a href="service-details-events-coverage.html">Events & Coverage</a>
-                    <a href="service-details-social-media-content.html">Social Media Visuals</a>
-                    <a href="service-details-photography.html">Commercial Photography</a>
-                    <a href="service-details-equipment-rental.html">Equipment Rental</a>
-                    <a href="service-details-consultancy.html">Cinematography & Film Production Consultancy</a>
+                    <a href="service-details-tv-commercial-ads.html" data-i18n-key="footer_service_tv_ads">TV & Commercial Ads</a>
+                    <a href="service-details-events-coverage.html" data-i18n-key="footer_service_events">Events & Coverage</a>
+                    <a href="service-details-social-media-content.html" data-i18n-key="footer_service_social">Social Media Visuals</a>
+                    <a href="service-details-photography.html" data-i18n-key="footer_service_photography">Commercial Photography</a>
+                    <a href="service-details-equipment-rental.html" data-i18n-key="footer_service_rental">Equipment Rental</a>
+                    <a href="service-details-consultancy.html" data-i18n-key="footer_service_consultancy">Cinematography & Film Production Consultancy</a>
                   </div>
                 </div>
               </div>
               <div class="col-lg-4 col-sm-6 cs-footer_contact_col">
                 <div class="cs-footer_item cs-footer_item_contact">
-                  <h2 class="cs-widget_title">Contact Us</h2>
+                  <h2 class="cs-widget_title" data-i18n-key="footer_contact_title">Contact Us</h2>
                   <ul class="cs-menu_widget cs-mp0">
                     <li><a href="tel:+966567680152">+966 56 768 0152</a></li>
                     <li><a href="mailto:info@art-ratio.com">info@art-ratio.com</a></li>
@@ -318,15 +328,15 @@
         <div class="container">
           <div class="cs-bottom_footer">
             <div class="cs-bottom_footer_left">
-              <div class="cs-copyright">Copyright © 2026 Art Ratio.</div>
+              <div class="cs-copyright" data-i18n-key="footer_copyright">Copyright © 2026 Art Ratio.</div>
             </div>
             <div class="cs-bottom_footer_right">
               <ul class="cs-footer_links cs-mp0">
                 <li>
-                  <a href="terms.html">Terms of Use</a>
+                  <a href="terms.html" data-i18n-key="terms_breadcrumb">Terms of Use</a>
                 </li>
                 <li>
-                  <a href="privacy.html">Privacy Policy</a>
+                  <a href="privacy.html" data-i18n-key="privacy_breadcrumb">Privacy Policy</a>
                 </li>
               </ul>
             </div>
@@ -366,7 +376,7 @@
   <script src="assets/js/plugins/lightgallery.min.js"></script>
   <script src="assets/js/plugins/wow.min.js"></script>
   <script src="assets/js/plugins/gsap.min.js"></script>
-  <script src="assets/js/lang-toggle.js?v=20260318-force-lang-query4"></script>
-    <script src="assets/js/main.js?v=20260318-video-mobile-fix4"></script>
+  <script src="assets/js/lang-toggle.js?v=20260320-feedback-i18n-fix1"></script>
+    <script src="assets/js/main.js?v=20260320-customer-autofill-fix1"></script>
 </body>
 </html>
