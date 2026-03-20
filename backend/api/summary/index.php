@@ -3,9 +3,6 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../bootstrap.php';
 
-use PDO;
-use Throwable;
-
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
 if ($method !== 'GET') {
@@ -15,7 +12,12 @@ if ($method !== 'GET') {
 
 try {
     $pdo = getDatabaseConnection();
-    requireAuthenticated();
+    if (!isAuthenticated()) {
+        respond(buildEmptySummaryResponse(), 200, [
+            'authenticated' => false,
+        ]);
+        return;
+    }
     $data = buildSummaryResponse($pdo);
     respond($data);
 } catch (Throwable $exception) {
@@ -53,6 +55,36 @@ function buildSummaryResponse(PDO $pdo): array
                 $pdo,
                 "SELECT COUNT(*) FROM maintenance_requests WHERE priority = 'high' AND status IN ('open','in_progress')"
             ),
+        ],
+    ];
+}
+
+function buildEmptySummaryResponse(): array
+{
+    return [
+        'customers' => [
+            'total' => 0,
+        ],
+        'reservations' => [
+            'total' => 0,
+            'today' => 0,
+            'upcoming' => 0,
+        ],
+        'equipment' => [
+            'total' => 0,
+            'maintenance' => 0,
+        ],
+        'technicians' => [
+            'total' => 0,
+            'busy' => 0,
+        ],
+        'projects' => [
+            'total' => 0,
+            'active' => 0,
+        ],
+        'maintenance' => [
+            'open' => 0,
+            'highPriority' => 0,
         ],
     ];
 }
