@@ -1574,6 +1574,7 @@
     let toastTimer = null;
     let toastHideTimer = null;
     let toastHost = null;
+    let activeToast = null;
 
     function ensureToastHost() {
       if (!toastEnabled) return null;
@@ -1614,16 +1615,25 @@
         toastHideTimer = null;
       }
 
-      host.innerHTML = '';
+      if (activeToast && host.contains(activeToast)) {
+        host.removeChild(activeToast);
+        activeToast = null;
+      }
+
       const toast = document.createElement('div');
       const variant = type === 'success' ? 'success' : type === 'error' ? 'error' : 'info';
       toast.className = 'cs-shop-toast cs-shop-toast--' + variant;
       toast.textContent = message;
       host.appendChild(toast);
+      activeToast = toast;
 
       toastTimer = window.setTimeout(() => {
         toast.classList.add('is-visible');
       }, 10);
+
+      if (type === 'info') {
+        return;
+      }
 
       toastHideTimer = window.setTimeout(() => {
         toast.classList.remove('is-visible');
@@ -1631,8 +1641,11 @@
           if (host.contains(toast)) {
             host.removeChild(toast);
           }
+          if (activeToast === toast) {
+            activeToast = null;
+          }
         }, 220);
-      }, type === 'success' ? 4200 : type === 'error' ? 5200 : 1800);
+      }, type === 'success' ? 4200 : 5200);
     }
 
     function renderFormResult(message, type) {

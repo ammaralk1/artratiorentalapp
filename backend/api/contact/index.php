@@ -948,18 +948,18 @@ function generateContactInquiryCode(PDO $pdo): string
     $current = $statement->fetchColumn();
 
     if ($current === false) {
-        $nextNumber = 1;
-        $insert = $pdo->prepare('INSERT INTO contact_inquiry_code_counter (id, next_number) VALUES (1, 2)');
+        $nextNumber = 1000;
+        $insert = $pdo->prepare('INSERT INTO contact_inquiry_code_counter (id, next_number) VALUES (1, 1001)');
         $insert->execute();
     } else {
-        $nextNumber = max(1, (int) $current);
+        $nextNumber = max(1000, (int) $current);
         $update = $pdo->prepare('UPDATE contact_inquiry_code_counter SET next_number = :next_number WHERE id = 1');
         $update->execute([
             'next_number' => $nextNumber + 1,
         ]);
     }
 
-    return sprintf('CNT-%s-%04d', (new DateTimeImmutable())->format('Ymd'), $nextNumber);
+    return sprintf('CNT# %d', $nextNumber);
 }
 
 function readContactJsonPayload(): array
