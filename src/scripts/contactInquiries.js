@@ -8,7 +8,6 @@ import { initDashboardShell } from './dashboardShell.js';
 import { normalizeNumbers } from './utils.js';
 
 applyStoredTheme();
-checkAuth();
 initDashboardShell();
 initThemeToggle();
 
@@ -499,7 +498,10 @@ async function bootstrap() {
   renderDetailPlaceholder();
 
   try {
-    currentUser = await getCurrentUser({ refresh: true });
+    currentUser = await checkAuth({ redirect: false });
+    if (!currentUser) {
+      currentUser = await getCurrentUser({ refresh: true });
+    }
   } catch {
     currentUser = null;
   }
