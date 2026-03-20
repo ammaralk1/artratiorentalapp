@@ -474,9 +474,7 @@ function ensureContactInquiryWorkflowColumns(PDO $pdo): void
     ];
 
     foreach ($columns as $name => $ddl) {
-        $statement = $pdo->prepare('SHOW COLUMNS FROM contact_inquiries LIKE :name');
-        $statement->execute(['name' => $name]);
-        if (!$statement->fetch()) {
+        if (!contactTableColumnExists($pdo, 'contact_inquiries', $name)) {
             $pdo->exec($ddl);
         }
     }
@@ -494,6 +492,23 @@ function ensureContactInquiryWorkflowColumns(PDO $pdo): void
     }
 
     $ensured = true;
+}
+
+function contactTableColumnExists(PDO $pdo, string $tableName, string $columnName): bool
+{
+    $statement = $pdo->prepare(
+        'SELECT COUNT(*)
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = :table_name
+           AND COLUMN_NAME = :column_name'
+    );
+    $statement->execute([
+        'table_name' => $tableName,
+        'column_name' => $columnName,
+    ]);
+
+    return (int) $statement->fetchColumn() > 0;
 }
 
 function ensureContactInquiryActivitiesTable(PDO $pdo): void
