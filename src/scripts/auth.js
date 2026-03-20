@@ -12,6 +12,8 @@ const LOGIN_ERROR_MESSAGES = {
   NETWORK: { key: 'login.errors.network', fallback: '🌐 تعذر الاتصال بالخادم. حاول مرة أخرى.' },
   GENERIC: { key: 'login.errors.generic', fallback: '⚠️ حدث خطأ غير متوقع. حاول مرة أخرى.' },
 };
+const INTERNAL_TRAFFIC_COOKIE = 'ar_internal_traffic';
+const INTERNAL_TRAFFIC_MAX_AGE = 60 * 60 * 24 * 90;
 let currentUser = null;
 
 export const AUTH_EVENTS = {
@@ -90,6 +92,21 @@ function setCurrentUser(user) {
 
   applyRoleToDocument(currentUser?.role || '');
   emitUserUpdated();
+}
+
+function setInternalTrafficCookie() {
+  if (typeof document === 'undefined') return;
+
+  const parts = [
+    `${INTERNAL_TRAFFIC_COOKIE}=1`,
+    'Path=/',
+    `Max-Age=${INTERNAL_TRAFFIC_MAX_AGE}`,
+    'SameSite=Lax',
+  ];
+  if (typeof window !== 'undefined' && window.location?.protocol === 'https:') {
+    parts.push('Secure');
+  }
+  document.cookie = parts.join('; ');
 }
 
 function resolveLoginErrorMessage(type = 'INVALID', overrideMessage) {
@@ -207,6 +224,7 @@ export async function login(username, password, { form } = {}) {
     }
 
     clearSkipRemotePreferencesFlag();
+    setInternalTrafficCookie();
 
     await storeBrowserCredentials({ username: sanitizedUsername, password: sanitizedPassword, form });
 
@@ -264,6 +282,9 @@ export async function getCurrentUser({ refresh = false } = {}) {
       ? (Object.prototype.hasOwnProperty.call(response, 'data') ? response.data : response)
       : null;
     setCurrentUser(userPayload ?? null);
+    if (userPayload) {
+      setInternalTrafficCookie();
+    }
     return currentUser;
   } catch (error) {
     // If unauthorized, propagate so callers may redirect

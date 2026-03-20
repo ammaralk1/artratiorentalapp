@@ -18,6 +18,7 @@ let currentFilters = {
   pageType: '',
   deviceType: '',
   sourceType: '',
+  includeInternal: false,
 };
 
 function q(selector) {
@@ -135,6 +136,7 @@ function cacheElements() {
   els.pageTypeSelect = q('#site-analytics-page-type');
   els.deviceTypeSelect = q('#site-analytics-device-type');
   els.sourceTypeSelect = q('#site-analytics-source-type');
+  els.includeInternal = q('#site-analytics-include-internal');
   els.rangeLabel = q('#site-analytics-range-label');
   els.statVisitors = q('#analytics-stat-visitors');
   els.statSessions = q('#analytics-stat-sessions');
@@ -194,6 +196,9 @@ function renderRangeLabel(range) {
   if (currentFilters.sourceType) {
     parts.push(`${t('siteAnalytics.filters.source', 'المصدر')}: ${humanizeSourceType(currentFilters.sourceType)}`);
   }
+  if (!currentFilters.includeInternal) {
+    parts.push(t('siteAnalytics.filters.internalExcluded', 'تم استبعاد زيارات الفريق الداخلي'));
+  }
   els.rangeLabel.textContent = parts.join(' • ');
 }
 
@@ -215,6 +220,9 @@ function renderFilterOptions(payload) {
   syncSelectValue(els.pageTypeSelect, currentFilters.pageType);
   syncSelectValue(els.deviceTypeSelect, currentFilters.deviceType);
   syncSelectValue(els.sourceTypeSelect, currentFilters.sourceType);
+  if (els.includeInternal) {
+    els.includeInternal.checked = Boolean(currentFilters.includeInternal);
+  }
 }
 
 function renderTopPages(rows) {
@@ -375,6 +383,7 @@ async function loadAnalytics() {
     if (currentFilters.pageType) query.set('page_type', currentFilters.pageType);
     if (currentFilters.deviceType) query.set('device_type', currentFilters.deviceType);
     if (currentFilters.sourceType) query.set('source_type', currentFilters.sourceType);
+    if (currentFilters.includeInternal) query.set('include_internal', '1');
 
     const response = await apiRequest(`/analytics/admin.php?${query.toString()}`);
     renderPayload(response?.data || null);
@@ -431,6 +440,12 @@ function bindEvents() {
   if (els.sourceTypeSelect) {
     els.sourceTypeSelect.addEventListener('change', () => {
       currentFilters.sourceType = String(els.sourceTypeSelect.value || '').trim();
+      loadAnalytics();
+    });
+  }
+  if (els.includeInternal) {
+    els.includeInternal.addEventListener('change', () => {
+      currentFilters.includeInternal = Boolean(els.includeInternal.checked);
       loadAnalytics();
     });
   }

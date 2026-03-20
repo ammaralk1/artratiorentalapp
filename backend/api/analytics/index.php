@@ -37,6 +37,7 @@ function handleSiteAnalyticsTrack(PDO $pdo): void
     $referrerUrl = normalizeSiteAnalyticsUrl((string) ($payload['referrer'] ?? ''), 500);
     $deviceType = normalizeSiteAnalyticsDeviceType((string) ($payload['device_type'] ?? ''));
     $screenWidth = normalizeSiteAnalyticsScreenWidth($payload['screen_width'] ?? null);
+    $isInternal = normalizeSiteAnalyticsBoolean($payload['is_internal'] ?? null) || hasInternalTrafficCookie();
 
     if ($visitorId === '' || $sessionId === '' || $pagePath === '') {
         throw new InvalidArgumentException('Visitor id, session id, and page path are required');
@@ -69,6 +70,7 @@ function handleSiteAnalyticsTrack(PDO $pdo): void
             device_type,
             language_code,
             screen_width,
+            is_internal,
             user_agent,
             ip_address
         ) VALUES (
@@ -83,6 +85,7 @@ function handleSiteAnalyticsTrack(PDO $pdo): void
             :device_type,
             :language_code,
             :screen_width,
+            :is_internal,
             :user_agent,
             :ip_address
         )'
@@ -99,6 +102,7 @@ function handleSiteAnalyticsTrack(PDO $pdo): void
         'device_type' => $deviceType,
         'language_code' => $languageCode !== '' ? $languageCode : null,
         'screen_width' => $screenWidth,
+        'is_internal' => $isInternal ? 1 : 0,
         'user_agent' => $userAgent !== '' ? $userAgent : null,
         'ip_address' => $ipAddress,
     ]);
@@ -131,6 +135,7 @@ function ensureSiteAnalyticsTables(PDO $pdo): void
             device_type VARCHAR(20) NOT NULL DEFAULT "desktop",
             language_code VARCHAR(12) NULL,
             screen_width INT UNSIGNED NULL,
+            is_internal TINYINT(1) NOT NULL DEFAULT 0,
             user_agent VARCHAR(500) NULL,
             ip_address VARCHAR(45) NULL,
             created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -139,9 +144,13 @@ function ensureSiteAnalyticsTables(PDO $pdo): void
             INDEX idx_site_page_visits_visitor (visitor_id),
             INDEX idx_site_page_visits_session (session_id),
             INDEX idx_site_page_visits_referrer_type (referrer_type),
-            INDEX idx_site_page_visits_referrer_host (referrer_host)
+            INDEX idx_site_page_visits_referrer_host (referrer_host),
+            INDEX idx_site_page_visits_is_internal (is_internal)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
     );
+
+    ensureSiteAnalyticsColumnExists($pdo, 'is_internal', 'ALTER TABLE site_page_visits ADD COLUMN is_internal TINYINT(1) NOT NULL DEFAULT 0 AFTER screen_width');
+    ensureSiteAnalyticsIndexExists($pdo, 'site_page_visits', 'idx_site_page_visits_is_internal', 'CREATE INDEX idx_site_page_visits_is_internal ON site_page_visits (is_internal)');
 
     $ensured = true;
 }
@@ -271,6 +280,59 @@ function normalizeSiteAnalyticsScreenWidth(mixed $value): ?int
     }
 
     return $parsed;
+}
+
+function normalizeSiteAnalyticsBoolean(mixed $value): bool
+{
+    if (is_bool($value)) {
+        return $value;
+    }
+
+    $normalized = strtolower(trim((string) $value));
+    return in_array($normalized, ['1', 'true', 'yes', 'on'], true);
+}
+
+function hasInternalTrafficCookie(): bool
+{
+    return normalizeSiteAnalyticsBoolean($_COOKIE['ar_internal_traffic'] ?? null);
+}
+
+function ensureSiteAnalyticsColumnExists(PDO $pdo, string $columnName, string $sql): void
+{
+    $statement = $pdo->prepare(
+        'SELECT COUNT(*)
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = :table_name
+           AND COLUMN_NAME = :column_name'
+    );
+    $statement->execute([
+        'table_name' => 'site_page_visits',
+        'column_name' => $columnName,
+    ]);
+
+    if ((int) $statement->fetchColumn() === 0) {
+        $pdo->exec($sql);
+    }
+}
+
+function ensureSiteAnalyticsIndexExists(PDO $pdo, string $tableName, string $indexName, string $sql): void
+{
+    $statement = $pdo->prepare(
+        'SELECT COUNT(*)
+         FROM information_schema.STATISTICS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = :table_name
+           AND INDEX_NAME = :index_name'
+    );
+    $statement->execute([
+        'table_name' => $tableName,
+        'index_name' => $indexName,
+    ]);
+
+    if ((int) $statement->fetchColumn() === 0) {
+        $pdo->exec($sql);
+    }
 }
 
 function hasRecentTrackedSiteVisit(PDO $pdo, string $visitorId, string $sessionId, string $pagePath, int $seconds = 20): bool

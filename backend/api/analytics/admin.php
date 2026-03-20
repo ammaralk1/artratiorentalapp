@@ -254,10 +254,15 @@ function buildSiteAnalyticsAdminFilters(): array
         'page_type' => normalizeSiteAnalyticsFilterValue((string) ($_GET['page_type'] ?? '')),
         'device_type' => normalizeSiteAnalyticsFilterDevice((string) ($_GET['device_type'] ?? '')),
         'source_type' => normalizeSiteAnalyticsFilterSource((string) ($_GET['source_type'] ?? '')),
+        'include_internal' => normalizeSiteAnalyticsFilterBoolean($_GET['include_internal'] ?? null),
     ];
 
     $conditions = [];
     $params = [];
+
+    if (!$filters['include_internal']) {
+        $conditions[] = ' AND is_internal = 0';
+    }
 
     if ($filters['page_type'] !== '') {
         $conditions[] = ' AND page_type = :page_type';
@@ -278,6 +283,9 @@ function buildSiteAnalyticsAdminFilters(): array
 function buildSiteAnalyticsFilterSqlExcludingPageType(array $filters): string
 {
     $conditions = [];
+    if (!($filters['include_internal'] ?? false)) {
+        $conditions[] = ' AND is_internal = 0';
+    }
     if (($filters['device_type'] ?? '') !== '') {
         $conditions[] = ' AND device_type = :device_type';
     }
@@ -347,4 +355,14 @@ function canCountSiteConversionsForFilters(array $filters): bool
     return ($filters['page_type'] ?? '') === ''
         && ($filters['device_type'] ?? '') === ''
         && ($filters['source_type'] ?? '') === '';
+}
+
+function normalizeSiteAnalyticsFilterBoolean(mixed $value): bool
+{
+    if (is_bool($value)) {
+        return $value;
+    }
+
+    $normalized = strtolower(trim((string) $value));
+    return in_array($normalized, ['1', 'true', 'yes', 'on'], true);
 }

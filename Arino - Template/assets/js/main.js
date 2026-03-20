@@ -202,6 +202,17 @@
       return 'desktop';
     }
 
+    function hasInternalTrafficCookie() {
+      try {
+        return document.cookie
+          .split(';')
+          .map(function (chunk) { return chunk.trim(); })
+          .some(function (chunk) { return chunk === 'ar_internal_traffic=1'; });
+      } catch (error) {
+        return false;
+      }
+    }
+
     function buildPayload() {
       var title = (document.title || '').trim();
       var bodyPage = document.body && document.body.dataset ? (document.body.dataset.page || '') : '';
@@ -219,6 +230,7 @@
         language: (document.documentElement.lang || '').toLowerCase() || 'ar',
         device_type: detectDeviceType(),
         screen_width: Math.max(window.innerWidth || 0, screen.width || 0) || null,
+        is_internal: hasInternalTrafficCookie(),
       };
     }
 

@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS site_page_visits (
     device_type VARCHAR(20) NOT NULL DEFAULT 'desktop',
     language_code VARCHAR(12) NULL,
     screen_width INT UNSIGNED NULL,
+    is_internal TINYINT(1) NOT NULL DEFAULT 0,
     user_agent VARCHAR(500) NULL,
     ip_address VARCHAR(45) NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -19,5 +20,6 @@ CREATE TABLE IF NOT EXISTS site_page_visits (
     INDEX idx_site_page_visits_visitor (visitor_id),
     INDEX idx_site_page_visits_session (session_id),
     INDEX idx_site_page_visits_referrer_type (referrer_type),
-    INDEX idx_site_page_visits_referrer_host (referrer_host)
+    INDEX idx_site_page_visits_referrer_host (referrer_host),
+    INDEX idx_site_page_visits_is_internal (is_internal)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
