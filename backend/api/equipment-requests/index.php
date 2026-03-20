@@ -560,10 +560,11 @@ function buildEquipmentRequestClosingText(bool $isArabic): string
 
 function buildEquipmentRequestTableHeaderCell(string $label, string $align = 'left'): string
 {
+    $palette = resolveEquipmentRequestBrandPalette();
     $safeLabel = htmlspecialchars($label, ENT_QUOTES, 'UTF-8');
     $safeAlign = htmlspecialchars($align, ENT_QUOTES, 'UTF-8');
 
-    return '<th style="padding:8px;border:1px solid #ddd;text-align:' . $safeAlign . ';background:#93a889;color:#ffffff;font-weight:700;">' . $safeLabel . '</th>';
+    return '<th style="padding:8px;border:1px solid #ddd;text-align:' . $safeAlign . ';background:' . $palette['panel'] . ';color:#ffffff;font-weight:700;">' . $safeLabel . '</th>';
 }
 
 function buildEquipmentRequestPhoneHtml(string $phone): string
