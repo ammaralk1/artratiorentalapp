@@ -1144,9 +1144,24 @@
     contact_form_name: { en: 'Full Name*', ar: 'الاسم الكامل*' },
     contact_form_email: { en: 'Email*', ar: 'البريد الإلكتروني*' },
     contact_form_project: { en: 'Project Type*', ar: 'نوع المشروع*' },
+    contact_form_company_optional: { en: 'Company Name (Optional)', ar: 'اسم الشركة (اختياري)' },
+    contact_form_project_optional: { en: 'Project Type (Optional)', ar: 'نوع المشروع (اختياري)' },
     contact_form_mobile: { en: 'Mobile*', ar: 'رقم الجوال*' },
     contact_form_details: { en: 'Write Project Details*', ar: 'اكتب تفاصيل المشروع*' },
+    contact_form_required_note: {
+      en: 'Required fields: full name, email, mobile, and message. Company name and project type are optional.',
+      ar: 'الحقول الأساسية: الاسم الكامل، البريد الإلكتروني، رقم الجوال، وتفاصيل الرسالة. اسم الشركة ونوع المشروع اختياريان.',
+    },
     contact_form_send: { en: 'Send Message', ar: 'أرسل الرسالة' },
+    contact_form_sending: { en: 'Sending your message...', ar: 'جاري إرسال رسالتك...' },
+    contact_form_success: {
+      en: 'Your message has been received successfully. We will contact you soon.',
+      ar: 'تم استلام رسالتك بنجاح، وسنتواصل معك قريبًا.',
+    },
+    contact_form_error: {
+      en: 'Unable to send your message right now. Please try again.',
+      ar: 'تعذر إرسال الرسالة الآن. حاول مرة أخرى.',
+    },
     feedback_breadcrumb: { en: 'Feedback', ar: 'آراء العملاء' },
     feedback_intro_subtitle: { en: 'Client Feedback', ar: 'تقييم العميل' },
     feedback_intro_title: {

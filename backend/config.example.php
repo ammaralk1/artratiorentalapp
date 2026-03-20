@@ -77,6 +77,10 @@ return [
         'smtp_user' => 'no-reply@your-domain.com',
         'smtp_pass' => 'YOUR_SMTP_PASSWORD',
     ],
+    'contact' => [
+        // Contact form notification recipients
+        'notification_emails' => ['ammar@art-ratio.com'],
+    ],
     'telegram' => [
         // Telegram Bot API configuration
         'enabled' => false,

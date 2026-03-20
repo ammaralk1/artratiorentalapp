@@ -1565,6 +1565,31 @@
   if ($.exists('#cs-form')) {
     const form = document.getElementById('cs-form');
     const result = document.getElementById('cs-result');
+    const submitButton = form.querySelector('button[type="submit"]');
+    const apiEndpoint = (form.dataset.apiEndpoint || '').trim();
+
+    function isArabicForm() {
+      const lang = (document.documentElement.lang || '').toLowerCase();
+      return lang.startsWith('ar') || document.body.dir === 'rtl';
+    }
+
+    function translateFormMessage(key, arFallback, enFallback) {
+      const fallback = isArabicForm() ? arFallback : enFallback;
+      if (typeof window.getArinoTranslation === 'function') {
+        return window.getArinoTranslation(key, fallback);
+      }
+      return fallback;
+    }
+
+    function renderFormResult(message, type) {
+      if (!result) return;
+      result.style.display = 'block';
+      result.style.marginTop = '16px';
+      result.style.fontSize = '15px';
+      result.style.lineHeight = '1.7';
+      result.style.color = type === 'success' ? '#1f7a46' : type === 'error' ? '#b42318' : '#7a93a0';
+      result.textContent = message;
+    }
 
     form.addEventListener('submit', function (e) {
       const formData = new FormData(form);
@@ -1573,10 +1598,20 @@
       formData.forEach((value, key) => {
         object[key] = value;
       });
+      if (apiEndpoint) {
+        object.language = isArabicForm() ? 'ar' : 'en';
+        object.source_path = window.location.pathname || '';
+      }
       var json = JSON.stringify(object);
-      result.innerHTML = 'Please wait...';
+      renderFormResult(
+        translateFormMessage('contact_form_sending', 'جاري إرسال رسالتك...', 'Sending your message...'),
+        'info',
+      );
+      if (submitButton) {
+        submitButton.disabled = true;
+      }
 
-      fetch('https://api.web3forms.com/submit', {
+      fetch(apiEndpoint || 'https://api.web3forms.com/submit', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1586,21 +1621,53 @@
       })
         .then(async response => {
           let json = await response.json();
+          if (response.ok && apiEndpoint) {
+            renderFormResult(
+              translateFormMessage(
+                'contact_form_success',
+                'تم استلام رسالتك بنجاح، وسنتواصل معك قريبًا.',
+                'Your message has been received successfully. We will contact you soon.',
+              ),
+              'success',
+            );
+            form.reset();
+            return;
+          }
           if (response.status == 200) {
-            result.innerHTML = json.message;
+            renderFormResult(json.message || 'Success', 'success');
+            form.reset();
           } else {
             console.log(response);
-            result.innerHTML = json.message;
+            renderFormResult(
+              (json && (json.error || json.message)) ||
+                translateFormMessage(
+                  'contact_form_error',
+                  'تعذر إرسال الرسالة الآن. حاول مرة أخرى.',
+                  'Unable to send your message right now. Please try again.',
+                ),
+              'error',
+            );
           }
         })
         .catch(error => {
           console.log(error);
-          result.innerHTML = 'Something went wrong!';
+          renderFormResult(
+            translateFormMessage(
+              'contact_form_error',
+              'تعذر إرسال الرسالة الآن. حاول مرة أخرى.',
+              'Unable to send your message right now. Please try again.',
+            ),
+            'error',
+          );
         })
         .then(function () {
-          form.reset();
+          if (submitButton) {
+            submitButton.disabled = false;
+          }
           setTimeout(() => {
-            result.style.display = 'none';
+            if (result) {
+              result.style.display = 'none';
+            }
           }, 5000);
         });
     });
