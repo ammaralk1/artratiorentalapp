@@ -1566,7 +1566,27 @@
     const form = document.getElementById('cs-form');
     const result = document.getElementById('cs-result');
     const submitButton = form.querySelector('button[type="submit"]');
-    const apiEndpoint = (form.dataset.apiEndpoint || '').trim();
+    const pageKey = (document.body && document.body.dataset.page) || '';
+    const formAction = (form.getAttribute('action') || '').trim();
+    const toastEnabled = form.hasAttribute('data-toast-enabled');
+    const apiEndpoint = (form.dataset.apiEndpoint || '').trim()
+      || (pageKey === 'contact' ? '/backend/api/contact/index.php' : formAction);
+    let toastTimer = null;
+    let toastHideTimer = null;
+    let toastHost = null;
+
+    function ensureToastHost() {
+      if (!toastEnabled) return null;
+      if (toastHost && document.body.contains(toastHost)) {
+        return toastHost;
+      }
+      toastHost = document.createElement('div');
+      toastHost.className = 'cs-shop-toast-host';
+      toastHost.setAttribute('aria-live', 'polite');
+      toastHost.setAttribute('aria-atomic', 'true');
+      document.body.appendChild(toastHost);
+      return toastHost;
+    }
 
     function isArabicForm() {
       const lang = (document.documentElement.lang || '').toLowerCase();
@@ -1581,6 +1601,40 @@
       return fallback;
     }
 
+    function showFormToast(message, type) {
+      const host = ensureToastHost();
+      if (!host) return;
+
+      if (toastTimer) {
+        clearTimeout(toastTimer);
+        toastTimer = null;
+      }
+      if (toastHideTimer) {
+        clearTimeout(toastHideTimer);
+        toastHideTimer = null;
+      }
+
+      host.innerHTML = '';
+      const toast = document.createElement('div');
+      const variant = type === 'success' ? 'success' : type === 'error' ? 'error' : 'info';
+      toast.className = 'cs-shop-toast cs-shop-toast--' + variant;
+      toast.textContent = message;
+      host.appendChild(toast);
+
+      toastTimer = window.setTimeout(() => {
+        toast.classList.add('is-visible');
+      }, 10);
+
+      toastHideTimer = window.setTimeout(() => {
+        toast.classList.remove('is-visible');
+        window.setTimeout(() => {
+          if (host.contains(toast)) {
+            host.removeChild(toast);
+          }
+        }, 220);
+      }, type === 'success' ? 4200 : type === 'error' ? 5200 : 1800);
+    }
+
     function renderFormResult(message, type) {
       if (!result) return;
       result.style.display = 'block';
@@ -1589,16 +1643,30 @@
       result.style.lineHeight = '1.7';
       result.style.color = type === 'success' ? '#1f7a46' : type === 'error' ? '#b42318' : '#7a93a0';
       result.textContent = message;
+      showFormToast(message, type);
     }
 
     form.addEventListener('submit', function (e) {
       const formData = new FormData(form);
       e.preventDefault();
+
+      if (!apiEndpoint) {
+        renderFormResult(
+          translateFormMessage(
+            'contact_form_error',
+            'تعذر إرسال الرسالة الآن. حاول مرة أخرى.',
+            'Unable to send your message right now. Please try again.',
+          ),
+          'error',
+        );
+        return;
+      }
+
       var object = {};
       formData.forEach((value, key) => {
         object[key] = value;
       });
-      if (apiEndpoint) {
+      if (pageKey === 'contact') {
         object.language = isArabicForm() ? 'ar' : 'en';
         object.source_path = window.location.pathname || '';
       }
@@ -1611,7 +1679,7 @@
         submitButton.disabled = true;
       }
 
-      fetch(apiEndpoint || 'https://api.web3forms.com/submit', {
+      fetch(apiEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1621,7 +1689,7 @@
       })
         .then(async response => {
           let json = await response.json();
-          if (response.ok && apiEndpoint) {
+          if (response.ok && pageKey === 'contact') {
             renderFormResult(
               translateFormMessage(
                 'contact_form_success',
