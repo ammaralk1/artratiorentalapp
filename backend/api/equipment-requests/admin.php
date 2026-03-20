@@ -870,6 +870,26 @@ function buildEquipmentRequestStatusUpdateEmailHtml(
         };
     }
 
+    $itemsTableHtml = buildEquipmentRequestScrollableBlock(
+        '<table style="border-collapse:collapse;width:100%;min-width:720px;margin-top:16px;">'
+        . '<thead><tr>'
+        . ($isArabic
+            ? buildEquipmentRequestTableHeaderCell('العنصر', 'right')
+                . buildEquipmentRequestTableHeaderCell('التصنيف', 'right')
+                . buildEquipmentRequestTableHeaderCell('الكمية', 'center')
+                . buildEquipmentRequestTableHeaderCell('حالة العنصر', 'center')
+                . buildEquipmentRequestTableHeaderCell('ملاحظة', 'right')
+            : buildEquipmentRequestTableHeaderCell('Item', 'left')
+                . buildEquipmentRequestTableHeaderCell('Category', 'left')
+                . buildEquipmentRequestTableHeaderCell('Qty', 'center')
+                . buildEquipmentRequestTableHeaderCell('Item status', 'center')
+                . buildEquipmentRequestTableHeaderCell('Note', 'left'))
+        . '</tr></thead>'
+        . '<tbody>' . $rows . '</tbody>'
+        . '</table>',
+        '720px'
+    );
+
     if ($isArabic) {
         $body = '<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;line-height:1.8;">'
             . '<p>مرحبًا ' . $safeName . '،</p>'
@@ -879,16 +899,7 @@ function buildEquipmentRequestStatusUpdateEmailHtml(
             . '<strong>الجوال:</strong> ' . $safePhone . '<br>'
             . '<strong>إجمالي المعدات:</strong> ' . $totalItems . '</p>'
             . ($safeNote !== '' ? '<p><strong>ملاحظة التحديث:</strong><br>' . $safeNote . '</p>' : '')
-            . '<table style="border-collapse:collapse;width:100%;margin-top:16px;">'
-            . '<thead><tr>'
-            . buildEquipmentRequestTableHeaderCell('العنصر', 'right')
-            . buildEquipmentRequestTableHeaderCell('التصنيف', 'right')
-            . buildEquipmentRequestTableHeaderCell('الكمية', 'center')
-            . buildEquipmentRequestTableHeaderCell('حالة العنصر', 'center')
-            . buildEquipmentRequestTableHeaderCell('ملاحظة', 'right')
-            . '</tr></thead>'
-            . '<tbody>' . $rows . '</tbody>'
-            . '</table>'
+            . $itemsTableHtml
             . buildEquipmentRequestClosingHtml(true)
             . '</div>';
         return buildEquipmentRequestEmailShellHtml($body, true, 'Equipment Request Status');
@@ -902,16 +913,7 @@ function buildEquipmentRequestStatusUpdateEmailHtml(
         . '<strong>Phone:</strong> ' . $safePhone . '<br>'
         . '<strong>Total quantity:</strong> ' . $totalItems . '</p>'
         . ($safeNote !== '' ? '<p><strong>Update note:</strong><br>' . $safeNote . '</p>' : '')
-        . '<table style="border-collapse:collapse;width:100%;margin-top:16px;">'
-        . '<thead><tr>'
-        . buildEquipmentRequestTableHeaderCell('Item', 'left')
-        . buildEquipmentRequestTableHeaderCell('Category', 'left')
-        . buildEquipmentRequestTableHeaderCell('Qty', 'center')
-        . buildEquipmentRequestTableHeaderCell('Item status', 'center')
-        . buildEquipmentRequestTableHeaderCell('Note', 'left')
-        . '</tr></thead>'
-        . '<tbody>' . $rows . '</tbody>'
-        . '</table>'
+        . $itemsTableHtml
         . buildEquipmentRequestClosingHtml(false)
         . '</div>';
     return buildEquipmentRequestEmailShellHtml($body, false, 'Equipment Request Status');

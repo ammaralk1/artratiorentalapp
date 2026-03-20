@@ -516,12 +516,22 @@ function buildEquipmentRequestSocialLinksHtml(): string
         $iconUrl = htmlspecialchars((string) ($social['icon_url'] ?? ''), ENT_QUOTES, 'UTF-8');
         $label = htmlspecialchars((string) ($social['label'] ?? ''), ENT_QUOTES, 'UTF-8');
 
-        $links[] = '<a href="' . $url . '" style="display:inline-block;width:38px;height:38px;line-height:38px;margin:0 4px;border:1px solid rgba(255,255,255,0.72);border-radius:999px;background:transparent;color:#ffffff;text-decoration:none;text-align:center;vertical-align:middle;" target="_blank" rel="noopener noreferrer" aria-label="' . $label . '">'
-            . '<img src="' . $iconUrl . '" alt="' . $label . '" width="16" height="16" style="display:inline-block;width:16px;height:16px;vertical-align:middle;border:0;outline:none;text-decoration:none;">'
-            . '</a>';
+        $links[] = '<td style="padding:0 4px;">'
+            . '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate;">'
+            . '<tr><td align="center" valign="middle" width="38" height="38" style="width:38px;height:38px;border:1px solid rgba(255,255,255,0.72);border-radius:999px;text-align:center;vertical-align:middle;">'
+            . '<a href="' . $url . '" target="_blank" rel="noopener noreferrer" aria-label="' . $label . '" style="display:block;width:38px;height:38px;line-height:38px;text-decoration:none;">'
+            . '<img src="' . $iconUrl . '" alt="' . $label . '" width="16" height="16" style="display:block;width:16px;height:16px;margin:11px auto;border:0;outline:none;text-decoration:none;">'
+            . '</a>'
+            . '</td></tr>'
+            . '</table>'
+            . '</td>';
     }
 
-    return '<div style="text-align:center;white-space:nowrap;">' . implode('', $links) . '</div>';
+    return '<div style="width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;text-align:center;">'
+        . '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:0 auto;">'
+        . '<tr>' . implode('', $links) . '</tr>'
+        . '</table>'
+        . '</div>';
 }
 
 function buildEquipmentRequestSocialLinksText(): string
@@ -573,6 +583,16 @@ function buildEquipmentRequestPhoneHtml(string $phone): string
     return '<span dir="ltr" style="display:inline-block;direction:ltr;unicode-bidi:bidi-override;white-space:nowrap;">' . $safePhone . '</span>';
 }
 
+function buildEquipmentRequestScrollableBlock(string $contentHtml, string $minWidth = '560px', string $align = 'left'): string
+{
+    $safeMinWidth = htmlspecialchars($minWidth, ENT_QUOTES, 'UTF-8');
+    $safeAlign = htmlspecialchars($align, ENT_QUOTES, 'UTF-8');
+
+    return '<div style="width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;">'
+        . '<div style="min-width:' . $safeMinWidth . ';text-align:' . $safeAlign . ';">' . $contentHtml . '</div>'
+        . '</div>';
+}
+
 function buildEquipmentRequestEmailFooterHtml(bool $isArabic): string
 {
     $palette = resolveEquipmentRequestBrandPalette();
@@ -581,30 +601,34 @@ function buildEquipmentRequestEmailFooterHtml(bool $isArabic): string
     $safeSiteUrl = htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8');
     $socialLinks = buildEquipmentRequestSocialLinksHtml();
     $contactPhone = buildEquipmentRequestPhoneHtml('+966 56 768 0152');
-
-    if ($isArabic) {
-        return '<div style="margin-top:22px;padding:16px 20px 18px;border-radius:18px;background:' . $palette['panel'] . ';border:1px solid ' . $palette['slate'] . ';color:#fefefe;text-align:center;">'
-            . '<img src="' . $logoUrl . '" alt="Art Ratio" style="display:block;margin:0 auto 12px;max-width:132px;height:auto;">'
-            . '<p style="margin:0;color:rgba(255,255,255,0.82);font-size:12px;line-height:1.8;white-space:nowrap;">'
-            . 'الهاتف: ' . $contactPhone
+    $contactLine = $isArabic
+        ? 'الهاتف: ' . $contactPhone
             . '<span style="display:inline-block;margin:0 8px;color:' . $palette['slate'] . ';">|</span>'
             . 'الموقع الإلكتروني: <a href="' . $safeSiteUrl . '" style="color:' . $palette['sage'] . ';text-decoration:none;font-weight:700;">art-ratio.com</a>'
             . '<span style="display:inline-block;margin:0 8px;color:' . $palette['slate'] . ';">|</span>'
             . 'البريد: <a href="mailto:info@art-ratio.com" style="color:' . $palette['sage'] . ';text-decoration:none;font-weight:700;">info@art-ratio.com</a>'
-            . '</p>'
+        : 'Phone: ' . $contactPhone
+            . '<span style="display:inline-block;margin:0 8px;color:' . $palette['slate'] . ';">|</span>'
+            . 'Website: <a href="' . $safeSiteUrl . '" style="color:' . $palette['sage'] . ';text-decoration:none;font-weight:700;">art-ratio.com</a>'
+            . '<span style="display:inline-block;margin:0 8px;color:' . $palette['slate'] . ';">|</span>'
+            . 'Email: <a href="mailto:info@art-ratio.com" style="color:' . $palette['sage'] . ';text-decoration:none;font-weight:700;">info@art-ratio.com</a>';
+    $contactLineHtml = buildEquipmentRequestScrollableBlock(
+        '<p style="margin:0;color:rgba(255,255,255,0.82);font-size:12px;line-height:1.8;white-space:nowrap;text-align:center;">' . $contactLine . '</p>',
+        '520px',
+        'center'
+    );
+
+    if ($isArabic) {
+        return '<div style="margin-top:22px;padding:16px 20px 18px;border-radius:18px;background:' . $palette['panel'] . ';border:1px solid ' . $palette['slate'] . ';color:#fefefe;text-align:center;">'
+            . '<img src="' . $logoUrl . '" alt="Art Ratio" style="display:block;margin:0 auto 12px;max-width:132px;height:auto;">'
+            . $contactLineHtml
             . '<div style="margin-top:12px;">' . $socialLinks . '</div>'
             . '</div>';
     }
 
     return '<div style="margin-top:22px;padding:16px 20px 18px;border-radius:18px;background:' . $palette['panel'] . ';border:1px solid ' . $palette['slate'] . ';color:#fefefe;text-align:center;">'
         . '<img src="' . $logoUrl . '" alt="Art Ratio" style="display:block;margin:0 auto 12px;max-width:132px;height:auto;">'
-        . '<p style="margin:0;color:rgba(255,255,255,0.82);font-size:12px;line-height:1.8;white-space:nowrap;">'
-        . 'Phone: ' . $contactPhone
-        . '<span style="display:inline-block;margin:0 8px;color:' . $palette['slate'] . ';">|</span>'
-        . 'Website: <a href="' . $safeSiteUrl . '" style="color:' . $palette['sage'] . ';text-decoration:none;font-weight:700;">art-ratio.com</a>'
-        . '<span style="display:inline-block;margin:0 8px;color:' . $palette['slate'] . ';">|</span>'
-        . 'Email: <a href="mailto:info@art-ratio.com" style="color:' . $palette['sage'] . ';text-decoration:none;font-weight:700;">info@art-ratio.com</a>'
-        . '</p>'
+        . $contactLineHtml
         . '<div style="margin-top:12px;">' . $socialLinks . '</div>'
         . '</div>';
 }
@@ -676,6 +700,21 @@ function buildEquipmentRequestCustomerReceivedEmailHtml(
     $safeCode = htmlspecialchars($requestCode, ENT_QUOTES, 'UTF-8');
     $safePhone = buildEquipmentRequestPhoneHtml($customerPhone);
     $safeNotes = $notes !== '' ? nl2br(htmlspecialchars($notes, ENT_QUOTES, 'UTF-8')) : '-';
+    $itemsTableHtml = buildEquipmentRequestScrollableBlock(
+        '<table style="border-collapse:collapse;width:100%;min-width:560px;margin-top:16px;">'
+        . '<thead><tr>'
+        . ($isArabic
+            ? buildEquipmentRequestTableHeaderCell('العنصر', 'right')
+                . buildEquipmentRequestTableHeaderCell('التصنيف', 'right')
+                . buildEquipmentRequestTableHeaderCell('الكمية', 'center')
+            : buildEquipmentRequestTableHeaderCell('Item', 'left')
+                . buildEquipmentRequestTableHeaderCell('Category', 'left')
+                . buildEquipmentRequestTableHeaderCell('Qty', 'center'))
+        . '</tr></thead>'
+        . '<tbody>' . $rows . '</tbody>'
+        . '</table>',
+        '560px'
+    );
 
     if ($isArabic) {
         $body = '<div style="font-family:Tahoma,Arial,sans-serif;line-height:1.8;">'
@@ -686,14 +725,7 @@ function buildEquipmentRequestCustomerReceivedEmailHtml(
             . '<strong>الجوال:</strong> ' . $safePhone . '<br>'
             . '<strong>إجمالي المعدات:</strong> ' . $totalItems . '</p>'
             . '<p><strong>ملاحظاتك:</strong><br>' . $safeNotes . '</p>'
-            . '<table style="border-collapse:collapse;width:100%;margin-top:16px;">'
-            . '<thead><tr>'
-            . buildEquipmentRequestTableHeaderCell('العنصر', 'right')
-            . buildEquipmentRequestTableHeaderCell('التصنيف', 'right')
-            . buildEquipmentRequestTableHeaderCell('الكمية', 'center')
-            . '</tr></thead>'
-            . '<tbody>' . $rows . '</tbody>'
-            . '</table>'
+            . $itemsTableHtml
             . buildEquipmentRequestClosingHtml(true)
             . '</div>';
 
@@ -708,14 +740,7 @@ function buildEquipmentRequestCustomerReceivedEmailHtml(
         . '<strong>Phone:</strong> ' . $safePhone . '<br>'
         . '<strong>Total quantity:</strong> ' . $totalItems . '</p>'
         . '<p><strong>Your notes:</strong><br>' . $safeNotes . '</p>'
-        . '<table style="border-collapse:collapse;width:100%;margin-top:16px;">'
-        . '<thead><tr>'
-        . buildEquipmentRequestTableHeaderCell('Item', 'left')
-        . buildEquipmentRequestTableHeaderCell('Category', 'left')
-        . buildEquipmentRequestTableHeaderCell('Qty', 'center')
-        . '</tr></thead>'
-        . '<tbody>' . $rows . '</tbody>'
-        . '</table>'
+        . $itemsTableHtml
         . buildEquipmentRequestClosingHtml(false)
         . '</div>';
 
@@ -857,6 +882,18 @@ function buildEquipmentRequestEmailHtml(
 
     $safeNotes = $notes !== '' ? nl2br(htmlspecialchars($notes, ENT_QUOTES, 'UTF-8')) : '-';
 
+    $itemsTableHtml = buildEquipmentRequestScrollableBlock(
+        '<table style="border-collapse:collapse;width:100%;min-width:560px;margin-top:16px;">'
+        . '<thead><tr>'
+        . buildEquipmentRequestTableHeaderCell('Item', 'left')
+        . buildEquipmentRequestTableHeaderCell('Category', 'left')
+        . buildEquipmentRequestTableHeaderCell('Qty', 'center')
+        . '</tr></thead>'
+        . '<tbody>' . $rows . '</tbody>'
+        . '</table>',
+        '560px'
+    );
+
     $body = '<div style="font-family:Arial,sans-serif;line-height:1.7;">'
         . '<h2 style="margin-top:0;">New Equipment Request</h2>'
         . '<p><strong>Request Code:</strong> ' . htmlspecialchars($requestCode, ENT_QUOTES, 'UTF-8') . '</p>'
@@ -865,14 +902,7 @@ function buildEquipmentRequestEmailHtml(
         . '<p><strong>Phone:</strong> ' . buildEquipmentRequestPhoneHtml($customerPhone) . '</p>'
         . '<p><strong>Total Items:</strong> ' . $totalItems . '</p>'
         . '<p><strong>Notes:</strong><br>' . $safeNotes . '</p>'
-        . '<table style="border-collapse:collapse;width:100%;margin-top:16px;">'
-        . '<thead><tr>'
-        . buildEquipmentRequestTableHeaderCell('Item', 'left')
-        . buildEquipmentRequestTableHeaderCell('Category', 'left')
-        . buildEquipmentRequestTableHeaderCell('Qty', 'center')
-        . '</tr></thead>'
-        . '<tbody>' . $rows . '</tbody>'
-        . '</table>'
+        . $itemsTableHtml
         . buildEquipmentRequestClosingHtml(false)
         . '</div>';
 
