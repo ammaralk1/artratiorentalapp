@@ -65,6 +65,7 @@ function handleAuthLogin(): void
     }
 
     loginUser($user);
+    sendInternalTrafficCookie();
 
     respond(getAuthenticatedUser());
 }
@@ -76,6 +77,7 @@ function handleAuthStatus(): void
         return;
     }
 
+    sendInternalTrafficCookie();
     respond(getAuthenticatedUser());
 }
 
@@ -98,4 +100,25 @@ function readJsonPayload(): array
     }
 
     return is_array($data) ? $data : [];
+}
+
+function sendInternalTrafficCookie(): void
+{
+    $hostHeader = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
+    $host = preg_replace('/:\d+$/', '', $hostHeader) ?? '';
+    $host = strtolower(trim($host));
+
+    $options = [
+        'expires' => time() + (60 * 60 * 24 * 90),
+        'path' => '/',
+        'secure' => isSecureRequest(),
+        'httponly' => false,
+        'samesite' => 'Lax',
+    ];
+
+    if ($host === 'art-ratio.com' || str_ends_with($host, '.art-ratio.com')) {
+        $options['domain'] = 'art-ratio.com';
+    }
+
+    setcookie('ar_internal_traffic', '1', $options);
 }
