@@ -2938,7 +2938,12 @@
     });
   };
 
+  const isHtmlSeoOwnedPage = () =>
+    !!(document.body && document.body.dataset && document.body.dataset.htmlSeoOwned === 'true');
+
   const syncSeoHead = () => {
+    if (isHtmlSeoOwnedPage()) return;
+
     const title = document.title || '';
     document
       .querySelectorAll('meta[property="og:title"], meta[name="twitter:title"]')
@@ -2999,6 +3004,8 @@
   const applyTranslations = (lang) => {
     const pageKey = (document.body && document.body.dataset.page) || '';
     document.querySelectorAll('[data-i18n-key]').forEach((el) => {
+      if (isHtmlSeoOwnedPage() && el.tagName === 'TITLE') return;
+
       const key = el.dataset.i18nKey;
       const rule = keyedTranslations[key];
       if (!rule) return;
