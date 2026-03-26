@@ -51,33 +51,30 @@ RewriteRule ^equipment-requests-portal(?:\.html)?/?$ Arino\ -\ Template/equipmen
 RewriteRule ^src/pages/(.*)$ dist/src/pages/$1 [L,NC]
 
 # BEGIN I18N ROUTES
-# BEGIN LOCALIZED PUBLIC ROUTING PREP (STAGING ONLY - DO NOT ENABLE YET)
-# These exact-path rewrites are placeholders for the currently covered public pages only.
-# They are intentionally commented out so current production behavior stays unchanged.
-# When staging is ready, enable and validate only against deploy-artifact files in dist/public-localized/.
+# BEGIN LOCALIZED PUBLIC ROUTES
+# Exact-path localized rewrites for the currently covered public pages only.
 # Keep this block above the existing EN template rewrites so exact localized routes win first.
-#
-# RewriteRule ^en/?$ dist/public-localized/en/index.html [L,NC]
-# RewriteRule ^/?$ dist/public-localized/ar/index.html [L,NC]
-# RewriteRule ^en/about/?$ dist/public-localized/en/about.html [L,NC]
-# RewriteRule ^من-نحن/?$ dist/public-localized/ar/about.html [L,NC]
-# RewriteRule ^en/contact/?$ dist/public-localized/en/contact.html [L,NC]
-# RewriteRule ^تواصل-معنا/?$ dist/public-localized/ar/contact.html [L,NC]
-# RewriteRule ^en/service/?$ dist/public-localized/en/service.html [L,NC]
-# RewriteRule ^خدماتنا/?$ dist/public-localized/ar/service.html [L,NC]
-# RewriteRule ^en/service-details-tv-commercial-ads/?$ dist/public-localized/en/service-details-tv-commercial-ads.html [L,NC]
-# RewriteRule ^خدمة-إعلانات-التلفزيون-والإعلانات-التجارية/?$ dist/public-localized/ar/service-details-tv-commercial-ads.html [L,NC]
-# RewriteRule ^en/service-details-events-coverage/?$ dist/public-localized/en/service-details-events-coverage.html [L,NC]
-# RewriteRule ^خدمة-تغطية-الفعاليات/?$ dist/public-localized/ar/service-details-events-coverage.html [L,NC]
-# RewriteRule ^en/service-details-social-media-content/?$ dist/public-localized/en/service-details-social-media-content.html [L,NC]
-# RewriteRule ^خدمة-محتوى-السوشال-ميديا/?$ dist/public-localized/ar/service-details-social-media-content.html [L,NC]
-# RewriteRule ^en/service-details-photography/?$ dist/public-localized/en/service-details-photography.html [L,NC]
-# RewriteRule ^خدمة-التصوير-التجاري/?$ dist/public-localized/ar/service-details-photography.html [L,NC]
-# RewriteRule ^en/service-details-equipment-rental/?$ dist/public-localized/en/service-details-equipment-rental.html [L,NC]
-# RewriteRule ^خدمة-تأجير-المعدات/?$ dist/public-localized/ar/service-details-equipment-rental.html [L,NC]
-# RewriteRule ^en/service-details-consultancy/?$ dist/public-localized/en/service-details-consultancy.html [L,NC]
-# RewriteRule ^خدمة-الاستشارات-الإنتاجية/?$ dist/public-localized/ar/service-details-consultancy.html [L,NC]
-# END LOCALIZED PUBLIC ROUTING PREP (STAGING ONLY - DO NOT ENABLE YET)
+RewriteRule ^en/?$ dist/public-localized/en/index.html [L,NC]
+RewriteRule ^/?$ dist/public-localized/ar/index.html [L,NC]
+RewriteRule ^en/about/?$ dist/public-localized/en/about.html [L,NC]
+RewriteRule ^من-نحن/?$ dist/public-localized/ar/about.html [L,NC]
+RewriteRule ^en/contact/?$ dist/public-localized/en/contact.html [L,NC]
+RewriteRule ^تواصل-معنا/?$ dist/public-localized/ar/contact.html [L,NC]
+RewriteRule ^en/service/?$ dist/public-localized/en/service.html [L,NC]
+RewriteRule ^خدماتنا/?$ dist/public-localized/ar/service.html [L,NC]
+RewriteRule ^en/service-details-tv-commercial-ads/?$ dist/public-localized/en/service-details-tv-commercial-ads.html [L,NC]
+RewriteRule ^خدمة-إعلانات-التلفزيون-والإعلانات-التجارية/?$ dist/public-localized/ar/service-details-tv-commercial-ads.html [L,NC]
+RewriteRule ^en/service-details-events-coverage/?$ dist/public-localized/en/service-details-events-coverage.html [L,NC]
+RewriteRule ^خدمة-تغطية-الفعاليات/?$ dist/public-localized/ar/service-details-events-coverage.html [L,NC]
+RewriteRule ^en/service-details-social-media-content/?$ dist/public-localized/en/service-details-social-media-content.html [L,NC]
+RewriteRule ^خدمة-محتوى-السوشال-ميديا/?$ dist/public-localized/ar/service-details-social-media-content.html [L,NC]
+RewriteRule ^en/service-details-photography/?$ dist/public-localized/en/service-details-photography.html [L,NC]
+RewriteRule ^خدمة-التصوير-التجاري/?$ dist/public-localized/ar/service-details-photography.html [L,NC]
+RewriteRule ^en/service-details-equipment-rental/?$ dist/public-localized/en/service-details-equipment-rental.html [L,NC]
+RewriteRule ^خدمة-تأجير-المعدات/?$ dist/public-localized/ar/service-details-equipment-rental.html [L,NC]
+RewriteRule ^en/service-details-consultancy/?$ dist/public-localized/en/service-details-consultancy.html [L,NC]
+RewriteRule ^خدمة-الاستشارات-الإنتاجية/?$ dist/public-localized/ar/service-details-consultancy.html [L,NC]
+# END LOCALIZED PUBLIC ROUTES
 
 RewriteRule ^en/?$ Arino\ -\ Template/index.html [L,NC]
 RewriteRule ^en/shop/?$ Arino\ -\ Template/shop.html [L,NC]
