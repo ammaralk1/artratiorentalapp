@@ -153,15 +153,16 @@ function renderUrlNode(entry) {
 const localizedRouteMap = evaluateObjectLiteral(
   extractObjectLiteral("const localizedRouteMap = {")
 );
-const blogCategorySlugMap = evaluateObjectLiteral(
-  extractObjectLiteral("const blogCategorySlugMap = Object.freeze({")
-);
-const blogTagSlugMap = evaluateObjectLiteral(
-  extractObjectLiteral("const blogTagSlugMap = Object.freeze({")
-);
 const blogPostSlugMap = evaluateObjectLiteral(
   extractObjectLiteral("const blogPostSlugMap = Object.freeze({")
 );
+
+const EXCLUDED_LOCALIZED_FILES = new Set([
+  "shop-cart.html",
+  "shop-checkout.html",
+  "shop-wishlist.html",
+  "shop-order-recived.html",
+]);
 
 const pairEntries = [];
 const pairSeen = new Set();
@@ -175,7 +176,8 @@ function addPair(enPath, arPath, priority = "0.7") {
   pairEntries.push(...makePairEntries(en, ar, priority));
 }
 
-for (const paths of Object.values(localizedRouteMap)) {
+for (const [file, paths] of Object.entries(localizedRouteMap)) {
+  if (EXCLUDED_LOCALIZED_FILES.has(file)) continue;
   const enPath = withTrailingSlash(paths.en);
   const arPath = withTrailingSlash(toDirectArabicPath(paths.ar));
   const priority = enPath === "/en/" ? "1.0" : "0.7";
@@ -186,27 +188,6 @@ for (const [enPost, arPost] of Object.entries(blogPostSlugMap)) {
   const postFile = path.join(ROOT, "Arino - Template", "blog", enPost, "index.html");
   if (fs.existsSync(postFile)) {
     addPair(`/en/blog/${enPost}/`, `/كشكولنا/${arPost}/`, "0.7");
-  }
-}
-
-for (const [enCategory, arCategory] of Object.entries(blogCategorySlugMap)) {
-  const categoryFile = path.join(
-    ROOT,
-    "Arino - Template",
-    "blog",
-    "category",
-    enCategory,
-    "index.html"
-  );
-  if (fs.existsSync(categoryFile)) {
-    addPair(`/en/blog/category/${enCategory}/`, `/كشكولنا/التصنيف/${arCategory}/`, "0.6");
-  }
-}
-
-for (const [enTag, arTag] of Object.entries(blogTagSlugMap)) {
-  const tagFile = path.join(ROOT, "Arino - Template", "blog", "tag", enTag, "index.html");
-  if (fs.existsSync(tagFile)) {
-    addPair(`/en/blog/tag/${enTag}/`, `/كشكولنا/وسم/${arTag}/`, "0.5");
   }
 }
 

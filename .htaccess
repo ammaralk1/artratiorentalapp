@@ -28,6 +28,23 @@ RewriteRule ^favicon\.ico$ dist/favicon.ico [L,NC]
 RewriteRule ^favicon_io/(.*)$ dist/favicon_io/$1 [L,NC]
 RewriteRule ^site\.webmanifest$ dist/favicon_io/site.webmanifest [L,NC]
 
+<IfModule mod_headers.c>
+  # Internal/back-office routes
+  SetEnvIf Request_URI "^/(dashboard|home|login|customer|technician|projects|projects-reports|projects-expenses|users|notifications|site-analytics|contact-inquiries|feedback-submissions|dashboard-local)(?:\\.html)?/?$" ar_private_page=1
+
+  # Raw implementation paths should never be indexable
+  SetEnvIf Request_URI "^/(?:src|public)/.*\\.html$" ar_private_page=1
+  SetEnvIf Request_URI "^/dist/(?:src/pages/.*|.*\\.html)$" ar_private_page=1
+
+  Header always set X-Robots-Tag "noindex, nofollow, noarchive" env=ar_private_page
+</IfModule>
+
+<IfModule mod_headers.c>
+  <FilesMatch "^(equipment-requests-portal|shop-cart|shop-checkout|shop-wishlist|shop-order-recived)\.html$">
+    Header always set X-Robots-Tag "noindex, follow, noarchive"
+  </FilesMatch>
+</IfModule>
+
 RewriteRule ^(dashboard|home|login|customer|technician|projects|projects-reports|projects-expenses|users|notifications)(?:\.html)?/?$ dist/src/pages/$1.html [L,NC]
 RewriteRule ^equipment-requests-portal(?:\.html)?/?$ Arino\ -\ Template/equipment-requests-portal.html [L,NC]
 # Redirect any legacy /src/pages/* paths to the built pages
