@@ -72,34 +72,43 @@
     nav_portfolio: { en: 'Portfolio', ar: 'أعمالنا' },
     nav_gallery: { en: 'Photo Gallery', ar: 'معرض الصور' },
     nav_blog: { en: 'Blog', ar: 'كشكولنا' },
-    home_page_title: { en: 'Art Ratio - Home', ar: 'آرت ريشيو - الرئيسية' },
-    about_page_title: { en: 'Art Ratio - About', ar: 'آرت ريشيو - من نحن' },
-    services_page_title: { en: 'Art Ratio - Services', ar: 'آرت ريشيو - خدماتنا' },
+    home_page_title: {
+      en: 'Art Ratio | Visual Production, Photography & Equipment Rental',
+      ar: 'آرت ريشيو | إنتاج بصري وتصوير وتأجير معدات',
+    },
+    about_page_title: {
+      en: 'About Art Ratio | A Saudi-Based Production House',
+      ar: 'من نحن | آرت ريشيو',
+    },
+    services_page_title: {
+      en: 'Services | Art Ratio',
+      ar: 'الخدمات | آرت ريشيو',
+    },
     service_consultancy_page_title: {
-      en: 'Art Ratio - Service: Production Consultancy',
-      ar: 'آرت ريشو - خدمة: الاستشارات الإنتاجية',
+      en: 'Production Consultancy | Art Ratio',
+      ar: 'الاستشارات الإنتاجية | آرت ريشيو',
     },
     service_photography_page_title: {
-      en: 'Art Ratio - Service: Commercial Photography',
-      ar: 'آرت ريشو - خدمة: التصوير التجاري',
+      en: 'Commercial Photography | Art Ratio',
+      ar: 'التصوير التجاري | آرت ريشيو',
     },
     service_events_page_title: {
-      en: 'Art Ratio - Service: Events Coverage',
-      ar: 'آرت ريشو - خدمة: تغطية الفعاليات',
+      en: 'Events & Coverage | Art Ratio',
+      ar: 'تغطية الفعاليات | آرت ريشيو',
     },
     service_social_page_title: {
-      en: 'Art Ratio - Service: Social Media Content',
-      ar: 'آرت ريشو - خدمة: محتوى السوشال ميديا',
+      en: 'Social Media Visuals | Art Ratio',
+      ar: 'محتوى السوشال ميديا | آرت ريشيو',
     },
     service_tv_page_title: {
-      en: 'Art Ratio - Service: TV & Commercial Ads',
-      ar: 'آرت ريشو - خدمة: إعلانات التلفزيون والإعلانات التجارية',
+      en: 'TV & Commercial Ads | Art Ratio',
+      ar: 'إعلانات التلفزيون والإعلانات التجارية | آرت ريشيو',
     },
     service_rental_page_title: {
-      en: 'Art Ratio - Service: Equipment Rental',
-      ar: 'آرت ريشو - خدمة: تأجير المعدات',
+      en: 'Equipment Rental | Art Ratio',
+      ar: 'تأجير المعدات | آرت ريشيو',
     },
-    portfolio_page_title: { en: 'Art Ratio - Portfolio', ar: 'آرت ريشيو - أعمالنا' },
+    portfolio_page_title: { en: 'Portfolio | Art Ratio', ar: 'أعمالنا | آرت ريشيو' },
     portfolio_airport_lounge_page_title: {
       en: 'Art Ratio - Project: Airport Executive Lounge',
       ar: 'آرت ريشو - مشروع: صالة كبار الشخصيات في المطار',
@@ -112,9 +121,12 @@
       en: 'Art Ratio - Project: Saudi Dent',
       ar: 'آرت ريشو - مشروع: سعودي دنت',
     },
-    blog_page_title: { en: 'Art Ratio - Blog', ar: 'آرت ريشيو - كشكولنا' },
+    blog_page_title: { en: 'Blog | Art Ratio', ar: 'كشكولنا | آرت ريشيو' },
     team_page_title: { en: 'Art Ratio - Team', ar: 'آرت ريشيو - فريقنا' },
-    contact_page_title: { en: 'Art Ratio - Contact', ar: 'آرت ريشيو - تواصل معنا' },
+    contact_page_title: {
+      en: 'Contact Art Ratio',
+      ar: 'تواصل مع آرت ريشيو',
+    },
     feedback_page_title: { en: 'Art Ratio - Feedback', ar: 'آرت ريشيو - آراء العملاء' },
     faq_page_title: { en: 'Art Ratio - FAQ', ar: 'آرت ريشيو - الأسئلة الشائعة' },
     shop_page_title: { en: 'Art Ratio - Equipment List', ar: 'آرت ريشيو - معداتنا' },
@@ -689,6 +701,10 @@
       en: 'We take concepts and turn them into impactful visual content that connects with people, backed by state-of-the-art technology and a highly-skilled team of creatives.',
       ar: 'نحوّل الأفكار لتجارب بصرية توصل للناس، بتقنيات حديثة وفريق يعرف كيف يطلع أفضل نتيجة.',
     },
+    about_local_market_note: {
+      en: 'From the heart of Saudi Arabia, we shape each project with a close feel for the market, the audience, and the pace it needs.',
+      ar: 'ومن قلب المملكة العربية السعودية، نتعامل مع كل مشروع بفهم قريب للسوق والجمهور والإيقاع الذي يحتاجه.',
+    },
     funfacts_title: { en: 'Our fun fact', ar: 'أرقام تروي قصتنا' },
     funfacts_body: {
       type: 'html',
@@ -1159,6 +1175,8 @@
     contact_breadcrumb: { en: 'Contact', ar: 'تواصل' },
     contact_intro_subtitle: { en: 'Let’s Connect', ar: 'يلا نبدأ رحلتنا سوا.' },
     contact_intro_title: { type: 'html', en: 'Got a project in mind? <br>We’re ready to bring it to life.', ar: 'عندك مشروع في بالك؟<br>جاهز نحوله لواقع.' },
+    contact_region_label: { en: 'Kingdom of Saudi Arabia', ar: 'المملكة العربية السعودية' },
+    contact_channels_title: { en: 'Contact Channels', ar: 'قنوات التواصل' },
     contact_form_name: { en: 'Full Name*', ar: 'الاسم الكامل*' },
     contact_form_email: { en: 'Email*', ar: 'البريد الإلكتروني*' },
     contact_form_project: { en: 'Project Type*', ar: 'نوع المشروع*' },
@@ -1959,6 +1977,7 @@
     blog4_page_title: { en: 'Professional Event Coverage | Complete Guide to Event Filming', ar: 'تغطية الفعاليات الاحترافية: كيف توثق الحدث وتُبرز تأثيره؟ | مدونة آرت ريشيو' },
     blog4_breadcrumb: { en: 'Professional Event Coverage', ar: 'تغطية الفعاليات الاحترافية' },
     blog_breadcrumb: { en: 'Blog', ar: 'كشكولنا' },
+    blog_intro_title: { en: 'From the Journal', ar: 'من الكشكول' },
     blog4_date: { en: '22 Feb 2026', ar: '22 فبراير 2026' },
     blog4_meta_category: { en: 'Event Coverage', ar: 'تغطية الفعاليات' },
     blog4_title: { en: 'Professional Event Coverage: How to Document Your Event and Maximize Its Impact?', ar: 'تغطية الفعاليات الاحترافية: كيف توثق الحدث وتُبرز تأثيره؟' },
@@ -2313,7 +2332,7 @@
         ar: 'الأسئلة الشائعة',
       },
       {
-        selector: '.cs-side_header_box h2.cs-side_header_heading',
+        selector: '.cs-side_header_box .cs-side_header_heading',
         type: 'html',
         en: 'Got a project in mind?<br>We’re ready to bring it to life.',
         ar: 'عندك مشروع في بالك؟<br>جاهز نحوله لواقع.',
@@ -2606,6 +2625,57 @@
     'terms.html': { en: '/en/terms/', ar: '/ar/شروط-الاستخدام/' }
   };
 
+  const pageMetaDescriptions = {
+    'index.html': {
+      en: 'Art Ratio brings together production, photography, and equipment rental for brands, campaigns, events, and visual stories that need craft and clarity.',
+      ar: 'في آرت ريشيو نجمع بين الإنتاج البصري، والتصوير، وتأجير المعدات لصناعة أعمال تُنفّذ بحرفية وتُقدَّم بوضوح.',
+    },
+    'about.html': {
+      en: 'Art Ratio is a Saudi-based production house shaped by cinematic craft, commercial clarity, and a close reading of the market it creates for.',
+      ar: 'آرت ريشيو بيت إنتاج بصري ينطلق من السعودية، ويشتغل بحس سينمائي وفهم قريب من السوق الذي يصنع له.',
+    },
+    'contact.html': {
+      en: 'Tell us what you’re building. Art Ratio works across commercials, events, photography, equipment, and visual content with a process built around clarity and execution.',
+      ar: 'إذا عندك مشروع قيد التشكّل، حدّثنا عنه. نعمل على الإعلانات، والتغطيات، والتصوير، وتأجير المعدات، بتنفيذ واضح من أول خطوة.',
+    },
+    'service.html': {
+      en: 'Explore Art Ratio’s work across TV & Commercial Ads, Events & Coverage, Social Media Visuals, Commercial Photography, Equipment Rental, and Production Consultancy.',
+      ar: 'استكشف خدمات آرت ريشيو عبر الإعلانات التلفزيونية والتجارية، وتغطية الفعاليات، ومحتوى السوشال ميديا، والتصوير التجاري، وتأجير المعدات، والاستشارات الإنتاجية.',
+    },
+    'blog.html': {
+      en: 'Notes, behind-the-scenes thinking, and practical reads from the Art Ratio process across production, events, photography, and visual craft.',
+      ar: 'ملاحظات من الكواليس، وقراءات عملية من طريقة آرت ريشيو في الإنتاج، والفعاليات، والتصوير، وصناعة الصورة.',
+    },
+    'portfolio.html': {
+      en: 'A selection of Art Ratio work across campaigns, events, films, photography, and visual pieces shaped with craft, pace, and presence.',
+      ar: 'نماذج من أعمال آرت ريشيو عبر الحملات، والفعاليات، والأفلام، والتصوير، بصناعة تهتم بالحرفة والإيقاع والحضور.',
+    },
+    'service-details-tv-commercial-ads.html': {
+      en: 'From the first idea to the final second on screen, Art Ratio develops commercials with clear direction, cinematic craft, and commercial intent.',
+      ar: 'من أول فكرة إلى آخر ثانية على الشاشة، تطوّر آرت ريشيو الإعلان بصياغة واضحة وتنفيذ بصري يحمل أثره.',
+    },
+    'service-details-events-coverage.html': {
+      en: 'Art Ratio covers events with a production eye that keeps the energy, detail, and story intact across film, photography, and social-ready moments.',
+      ar: 'نغطي الفعاليات بعين إنتاجية تحفظ الإيقاع، والتفاصيل، والقصة عبر الفيلم، والصورة، واللحظة الجاهزة للنشر.',
+    },
+    'service-details-photography.html': {
+      en: 'Art Ratio creates commercial photography for products, menus, portraits, campaigns, and visual assets that need polish without losing character.',
+      ar: 'نصنع صورًا تجارية للمنتجات، والقوائم، والبورتريه، والحملات، بأناقة تحفظ شخصية العمل ولا تفقده حضوره.',
+    },
+    'service-details-equipment-rental.html': {
+      en: 'Art Ratio provides production equipment rental with practical support for teams that need reliable gear, smooth prep, and a setup built for the job.',
+      ar: 'توفر آرت ريشيو تأجير معدات إنتاج بدعم عملي وتجهيزات موثوقة لفِرق تحتاج سير عمل واضحًا وجاهزية حقيقية.',
+    },
+    'service-details-social-media-content.html': {
+      en: 'Art Ratio creates social media visuals with a production eye, helping brands show up with clarity, pace, and a visual language that holds attention.',
+      ar: 'تصنع آرت ريشيو محتوى للسوشال ميديا بعين إنتاجية، لتظهر العلامات بوضوح وإيقاع بصري يحفظ حضورها ويشد الانتباه.',
+    },
+    'service-details-consultancy.html': {
+      en: 'Art Ratio offers production consultancy shaped by practical experience, helping teams plan clearly, make better decisions, and move into execution with confidence.',
+      ar: 'تقدم آرت ريشيو استشارات إنتاجية مبنية على خبرة عملية، تساعد الفرق على التخطيط بوضوح، واتخاذ قرارات أدق، والدخول إلى التنفيذ بثقة.',
+    },
+  };
+
   const normalizePath = (rawPath) => {
     let p = rawPath || '/';
     try {
@@ -2874,13 +2944,24 @@
       .querySelectorAll('meta[property="og:title"], meta[name="twitter:title"]')
       .forEach((meta) => meta.setAttribute('content', title));
 
+    const currentPath = window.location.pathname || '/';
+    const currentFile = resolveFileFromPath(currentPath);
+    const activeLang = (document.documentElement.lang || '').toLowerCase().startsWith('ar') ? 'ar' : 'en';
+    const description =
+      currentFile && pageMetaDescriptions[currentFile]
+        ? pageMetaDescriptions[currentFile][activeLang] || pageMetaDescriptions[currentFile].en || ''
+        : '';
+
+    if (description) {
+      document
+        .querySelectorAll('meta[name="description"], meta[property="og:description"], meta[name="twitter:description"]')
+        .forEach((meta) => meta.setAttribute('content', description));
+    }
+
     const absoluteUrl = window.location.origin + window.location.pathname + (window.location.search || '');
     const canonical = document.querySelector('link[rel="canonical"]');
     if (canonical) canonical.setAttribute('href', absoluteUrl);
     document.querySelectorAll('meta[property="og:url"]').forEach((meta) => meta.setAttribute('content', absoluteUrl));
-
-    const currentPath = window.location.pathname || '/';
-    const currentFile = resolveFileFromPath(currentPath);
     const enPath = currentFile ? pathForLanguage(currentFile, 'en') : localizeSpecialPath(currentPath, 'en');
     const arPath = currentFile ? pathForLanguage(currentFile, 'ar') : localizeSpecialPath(currentPath, 'ar');
     if (!enPath || !arPath) return;
