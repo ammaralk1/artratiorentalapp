@@ -156,9 +156,20 @@ const setSeoHead = (document, localeConfig, locale) => {
   );
 };
 
-const applyValueToNode = (node, type, value, key) => {
+const applyValueToNode = (node, entry, value, key) => {
+  const type = entry?.type || 'text';
+
   if (type === 'html') {
     node.innerHTML = value;
+    return;
+  }
+
+  if (type === 'attr') {
+    const attrName = entry?.attr || node.getAttribute('data-i18n-attr');
+    if (!attrName) {
+      throw new Error(`Missing attr name for ${key}`);
+    }
+    node.setAttribute(attrName, value);
     return;
   }
 
@@ -180,7 +191,7 @@ const applyKeyedEntries = (document, keyedTranslations, locale) => {
       continue;
     }
 
-    applyValueToNode(node, entry.type || 'text', entry[locale], key);
+    applyValueToNode(node, entry, entry[locale], key);
   }
 };
 
@@ -200,7 +211,7 @@ const applySelectorEntries = (document, entries, locale) => {
     }
 
     nodes.forEach((node) => {
-      applyValueToNode(node, entry.type || 'text', value, entry.key || entry.selector);
+      applyValueToNode(node, entry, value, entry.key || entry.selector);
     });
   }
 };

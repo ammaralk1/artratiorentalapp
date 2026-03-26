@@ -290,6 +290,54 @@ export const PUBLIC_PAGE_LOCALES = Object.freeze({
     },
     body: [],
   },
+  'portfolio.html': {
+    pageId: 'portfolio',
+    routes: {
+      en: '/en/portfolio/',
+      ar: '/أعمالنا/',
+    },
+    seo: {
+      en: {
+        title: 'Portfolio | Art Ratio',
+        description:
+          'A selection of Art Ratio work across campaigns, events, films, photography, and visual pieces shaped with craft, pace, and presence.',
+      },
+      ar: {
+        title: 'أعمالنا | آرت ريشيو',
+        description:
+          'مجموعة من أعمال آرت ريشيو عبر الحملات، والفعاليات، والأفلام، والتصوير، وقطع بصرية صيغت بحرفة وإيقاع وحضور.',
+      },
+    },
+    document: {
+      en: { lang: 'en', dir: 'ltr' },
+      ar: { lang: 'ar', dir: 'rtl' },
+    },
+    body: [],
+  },
+  'blog.html': {
+    pageId: 'blog',
+    routes: {
+      en: '/en/blog/',
+      ar: '/كشكولنا/',
+    },
+    seo: {
+      en: {
+        title: 'Blog | Art Ratio',
+        description:
+          'Notes, behind-the-scenes thinking, and practical reads from the Art Ratio process across production, events, photography, and visual craft.',
+      },
+      ar: {
+        title: 'المدونة | آرت ريشيو',
+        description:
+          'ملاحظات وقراءات عملية وكواليس من تجربة آرت ريشيو في الإنتاج، والفعاليات، والتصوير، وصناعة التفاصيل البصرية.',
+      },
+    },
+    document: {
+      en: { lang: 'en', dir: 'ltr' },
+      ar: { lang: 'ar', dir: 'rtl' },
+    },
+    body: [],
+  },
   'service-details-tv-commercial-ads.html': {
     pageId: 'service-tv-details',
     routes: {

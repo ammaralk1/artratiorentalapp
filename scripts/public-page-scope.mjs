@@ -5,6 +5,8 @@ export const PHASE_1_PILOT_FILES = Object.freeze([
   'about.html',
   'contact.html',
   'service.html',
+  'portfolio.html',
+  'blog.html',
   'service-details-tv-commercial-ads.html',
   'service-details-events-coverage.html',
   'service-details-social-media-content.html',
@@ -35,6 +37,16 @@ export const PHASE_1_PAGE_SCOPE = Object.freeze({
   },
   'service.html': {
     pageId: 'service',
+    include: true,
+    rollout: '3a-pilot',
+  },
+  'portfolio.html': {
+    pageId: 'portfolio',
+    include: true,
+    rollout: '3a-pilot',
+  },
+  'blog.html': {
+    pageId: 'blog',
     include: true,
     rollout: '3a-pilot',
   },
