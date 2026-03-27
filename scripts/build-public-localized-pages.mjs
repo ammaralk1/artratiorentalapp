@@ -17,6 +17,14 @@ import {
   PUBLIC_SITE_ORIGIN,
 } from './public-page-locales.mjs';
 import {
+  GLOBAL_SCHEMA_FOUNDATION,
+  HOME_BREADCRUMB_LABELS,
+  ORGANIZATION_ID,
+  PAGE_SPECIFIC_SCHEMA_TYPES,
+  PROFESSIONAL_SERVICE_ID,
+  WEBSITE_ID,
+} from './public-page-schema.mjs';
+import {
   PILOT_KEYED_TRANSLATIONS,
   PILOT_SELECTOR_TRANSLATIONS,
 } from './public-page-pilot-build-content.mjs';
@@ -38,6 +46,12 @@ const getBuildTarget = () => {
 };
 
 const toAbsoluteUrl = (pathname) => new URL(pathname, PUBLIC_SITE_ORIGIN).toString();
+const toSchemaScriptContent = (graph) => JSON.stringify({ '@context': 'https://schema.org', '@graph': graph });
+
+const getWebPageSchemaType = (pageId) => {
+  const pageSpecificType = PAGE_SPECIFIC_SCHEMA_TYPES[pageId];
+  return pageSpecificType ? ['WebPage', pageSpecificType] : 'WebPage';
+};
 
 const ensureSingleNode = (document, selector) => {
   const nodes = [...document.querySelectorAll(selector)];
@@ -154,6 +168,96 @@ const setSeoHead = (document, localeConfig, locale) => {
     { rel: 'alternate', hreflang: 'x-default' },
     enUrl,
   );
+};
+
+const getSchemaPageName = (document, localeConfig, locale) => {
+  const activeBreadcrumb = document.querySelector('.breadcrumb-item.active');
+  if (activeBreadcrumb?.textContent?.trim()) {
+    return activeBreadcrumb.textContent.replace(/\s+/g, ' ').trim();
+  }
+
+  const heading = document.querySelector('h1');
+  if (heading?.textContent?.trim()) {
+    return heading.textContent.replace(/\s+/g, ' ').trim();
+  }
+
+  return localeConfig.seo[locale].title.split('|')[0].trim();
+};
+
+const buildBreadcrumbList = (document, localeConfig, locale) => {
+  if (localeConfig.pageId === 'home') {
+    return null;
+  }
+
+  const currentUrl = toAbsoluteUrl(localeConfig.routes[locale]);
+  const homeRoute = PUBLIC_PAGE_LOCALES['index.html']?.routes?.[locale];
+  if (!homeRoute) {
+    throw new Error(`Missing localized home route for breadcrumb generation (${locale})`);
+  }
+
+  const breadcrumbId = `${currentUrl}#breadcrumb`;
+  const pageName = getSchemaPageName(document, localeConfig, locale);
+
+  return {
+    '@type': 'BreadcrumbList',
+    '@id': breadcrumbId,
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: HOME_BREADCRUMB_LABELS[locale],
+        item: toAbsoluteUrl(homeRoute),
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: pageName,
+        item: currentUrl,
+      },
+    ],
+  };
+};
+
+const setStructuredData = (document, localeConfig, locale) => {
+  const currentUrl = toAbsoluteUrl(localeConfig.routes[locale]);
+  const webpageId = `${currentUrl}#webpage`;
+  const breadcrumb = buildBreadcrumbList(document, localeConfig, locale);
+
+  const graph = [
+    GLOBAL_SCHEMA_FOUNDATION.organization,
+    GLOBAL_SCHEMA_FOUNDATION.website,
+    GLOBAL_SCHEMA_FOUNDATION.professionalService,
+    {
+      '@type': getWebPageSchemaType(localeConfig.pageId),
+      '@id': webpageId,
+      url: currentUrl,
+      name: localeConfig.seo[locale].title,
+      description: localeConfig.seo[locale].description,
+      inLanguage: localeConfig.document[locale].lang,
+      isPartOf: { '@id': WEBSITE_ID },
+      about: { '@id': PROFESSIONAL_SERVICE_ID },
+      publisher: { '@id': ORGANIZATION_ID },
+      ...(breadcrumb ? { breadcrumb: { '@id': breadcrumb['@id'] } } : {}),
+    },
+  ];
+
+  if (breadcrumb) {
+    graph.push(breadcrumb);
+  }
+
+  document.querySelectorAll('script[type="application/ld+json"]').forEach((node) => node.remove());
+
+  const script = document.createElement('script');
+  script.type = 'application/ld+json';
+  script.textContent = toSchemaScriptContent(graph);
+
+  const baseTag = document.querySelector('base');
+  if (baseTag?.parentNode) {
+    baseTag.insertAdjacentElement('afterend', script);
+    return;
+  }
+
+  document.head.appendChild(script);
 };
 
 const applyValueToNode = (node, entry, value, key) => {
@@ -294,6 +398,7 @@ const generatePage = async (file, outputRoot) => {
     const localeDir = path.join(outputRoot, locale);
     await fs.mkdir(localeDir, { recursive: true });
     applyBodyEntries(document, localeConfig, locale, ALL_KEYED_TRANSLATIONS, PILOT_SELECTOR_TRANSLATIONS);
+    setStructuredData(document, localeConfig, locale);
     const outputPath = path.join(localeDir, file);
     await fs.writeFile(outputPath, dom.serialize(), 'utf8');
     assertVisibleBodyCoverage(document, locale, file);
