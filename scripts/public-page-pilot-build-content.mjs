@@ -102,6 +102,11 @@ export const PILOT_KEYED_TRANSLATIONS = Object.freeze({
   blog1_sidebar_tag_8: { en: 'Event Coverage', ar: 'تغطية الفعاليات' },
   blog_breadcrumb: { en: 'Blog', ar: 'كشكولنا' },
   blog_intro_title: { en: 'From the Journal', ar: 'من الكشكول' },
+  blog_support_link_note: {
+    type: 'html',
+    en: 'Want to connect these ideas to real work? Explore our <a href="service.html">Services</a> or browse selected projects in our <a href="portfolio.html">Portfolio</a>.',
+    ar: 'إذا كنت تريد ربط هذه الأفكار بأعمال حقيقية، فتصفح <a href="service.html">خدماتنا</a> أو استعرض نماذج مختارة في <a href="portfolio.html">أعمالنا</a>.',
+  },
   blog_read_more: { en: 'See More', ar: 'اقرأ المزيد' },
   funfacts_body: {
     type: 'html',
@@ -120,6 +125,11 @@ export const PILOT_KEYED_TRANSLATIONS = Object.freeze({
   gallery_filter_ecommerce: { en: 'E-commerce', ar: 'التجارة الإلكترونية' },
   gallery_filter_events: { en: 'Events', ar: 'فعاليات' },
   gallery_filter_social_media: { en: 'Social Media', ar: 'التواصل الاجتماعي' },
+  gallery_portfolio_link_note: {
+    type: 'html',
+    en: 'For campaign films and selected motion work, visit our <a href="portfolio.html">Portfolio</a>.',
+    ar: 'وللاطلاع على أفلام الحملات وبعض الأعمال الحركية المختارة، زر <a href="portfolio.html">أعمالنا</a>.',
+  },
   gallery_section_subtitle: { en: 'Our Portfolio', ar: 'معرض الصور' },
   gallery_section_title: { en: 'Some recent work', ar: 'أحدث أعمالنا المصورة' },
   home_blog_subtitle: { en: 'Our Blog', ar: 'كشكولنا' },
@@ -207,6 +217,16 @@ export const PILOT_KEYED_TRANSLATIONS = Object.freeze({
     en: 'Awesome team <br>members',
     ar: 'أعضاء فريقنا المتميز',
   },
+  about_team_link_note: {
+    type: 'html',
+    en: 'Meet the people behind the work on our <a href="team.html">Team page</a>.',
+    ar: 'تعرّف على الأشخاص الذين يقفون خلف هذا العمل في <a href="team.html">صفحة الفريق</a>.',
+  },
+  team_about_link_note: {
+    type: 'html',
+    en: 'See what shapes the way we work on our <a href="about.html">About page</a>.',
+    ar: 'تعرّف على ما يشكّل طريقتنا في العمل عبر <a href="about.html">صفحة من نحن</a>.',
+  },
   home_testimonial_faisal_name: { en: 'Coach Al-Baiti Al-Faisal', ar: 'كوتش البيتي الفيصل' },
   home_testimonial_faisal_role: { en: 'Success and High Achievement Consultant', ar: 'مستشار نجاح وتحقيق عالي' },
   home_testimonial_faisal_text: {
@@ -242,6 +262,11 @@ export const PILOT_KEYED_TRANSLATIONS = Object.freeze({
   portfolio_hero_title: { en: 'Portfolio', ar: 'أعمالنا' },
   portfolio_intro_subtitle: { en: 'Our Portfolio', ar: 'أعمالنا' },
   portfolio_intro_title: { en: 'Some recent work', ar: 'استكشف أعمالنا' },
+  portfolio_gallery_link_note: {
+    type: 'html',
+    en: 'Looking for still-image work? Explore the <a href="photography-agency.html">Photo Gallery</a>.',
+    ar: 'إذا كنت تبحث عن أعمال الصور الثابتة، فتفضل بزيارة <a href="photography-agency.html">معرض الصور</a>.',
+  },
   portfolio_item_tazaj_title: { en: 'Tikka Sandwich by Al Tazaj', ar: 'ساندوتش تيكا من الطازج' },
   portfolio_item_trump_title: { en: 'Trump Tower Jeddah', ar: 'برج ترامب جدة' },
   portfolio_item_zuluf_title: { en: 'Reel for Um Al Zuluf', ar: 'ريل لأم الزلف' },
@@ -754,6 +779,11 @@ export const PILOT_KEYED_TRANSLATIONS = Object.freeze({
   faq_category_services: { en: 'Service related', ar: 'الخدمات' },
   faq_nav_title: { en: 'FAQ Category', ar: 'تصنيفات الأسئلة' },
   faq_page_title: { en: 'FAQ | Art Ratio', ar: 'الأسئلة الشائعة | آرت ريشيو' },
+  faq_support_link_note: {
+    type: 'html',
+    en: 'Need service details or a direct answer? Browse our <a href="service.html">Services</a> or <a href="contact.html">contact us</a>.',
+    ar: 'إذا كنت تحتاج تفاصيل أكثر عن الخدمات أو جوابًا مباشرًا، تصفح <a href="service.html">خدماتنا</a> أو <a href="contact.html">تواصل معنا</a>.',
+  },
   faq_q1: { en: 'Do you design illustration website?', ar: 'هل تقومون بتصميم مواقع تتضمن الرسوم التوضيحية؟' },
   faq_q2: { en: 'Do you provide design source file after finish work?', ar: 'هل توفرون ملفات المصدر بعد الانتهاء من العمل؟' },
   faq_q3: { en: 'How to provide project details and payments?', ar: 'كيف يمكن تزويدكم بتفاصيل المشروع وآلية الدفع؟' },
@@ -778,6 +808,11 @@ export const PILOT_KEYED_TRANSLATIONS = Object.freeze({
     en: 'Got a project in mind? <br>We’re ready to bring it to life.',
     ar: 'عندك مشروع في بالك؟<br>جاهز نحوله لواقع.',
   },
+  contact_services_link_note: {
+    type: 'html',
+    en: 'Still comparing options? Browse our <a href="service.html">Services</a> first.',
+    ar: 'إذا كنت ما زلت تقارن بين الخيارات، تصفح <a href="service.html">خدماتنا</a> أولًا.',
+  },
   contact_page_title: { en: 'Contact Art Ratio', ar: 'تواصل مع آرت ريشيو' },
   contact_region_label: { en: 'Kingdom of Saudi Arabia', ar: 'المملكة العربية السعودية' },
   service_card_consult: { en: 'Production Consultancy', ar: 'الاستشارات الإنتاجية' },
@@ -791,6 +826,11 @@ export const PILOT_KEYED_TRANSLATIONS = Object.freeze({
   service_intro_title: {
     en: 'We craft powerful visual experiences that elevate your brand and bring your stories to life.',
     ar: 'نصنع تجارب بصرية قوية ترفع من حضور علامتك وتحكي قصتك بالشكل الذي يليق بها.',
+  },
+  service_contact_link_note: {
+    type: 'html',
+    en: 'Need help choosing the right service? <a href="contact.html">Talk to us here</a>.',
+    ar: 'إذا كنت تحتاج مساعدة في اختيار الخدمة المناسبة، <a href="contact.html">تواصل معنا من هنا</a>.',
   },
   services_page_title: { en: 'Services | Art Ratio', ar: 'الخدمات | آرت ريشيو' },
   values_collaboration_text: { en: 'Working hand-in-hand with clients as one team.', ar: 'نشتغل مع عملائنا يد بيد كفريق واحد' },
@@ -811,6 +851,11 @@ export const PILOT_KEYED_TRANSLATIONS = Object.freeze({
   shop_page_title: { en: 'Equipment List | Art Ratio', ar: 'معداتنا | آرت ريشيو' },
   shop_price_title: { en: 'Price Filter', ar: 'تصفية السعر' },
   shop_product_breadcrumb: { en: 'Equipment Details', ar: 'تفاصيل المعدة' },
+  shop_product_back_to_list_note: {
+    type: 'html',
+    en: 'Looking for more equipment options? Return to the <a href="shop.html">equipment list</a>.',
+    ar: 'إذا كنت تبحث عن خيارات معدات أكثر، فارجع إلى <a href="shop.html">قائمة المعدات</a>.',
+  },
   shop_product_details_categories: { en: 'Categories: Graphics', ar: 'التصنيفات: جرافيكس' },
   shop_product_details_cta: { en: 'Add to cart', ar: 'أضف إلى السلة' },
   shop_product_details_intro_1: {
