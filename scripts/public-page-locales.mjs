@@ -386,6 +386,78 @@ export const PUBLIC_PAGE_LOCALES = Object.freeze({
     },
     body: [],
   },
+  'faq.html': {
+    pageId: 'faq',
+    routes: {
+      en: '/en/faq/',
+      ar: '/الأسئلة-الشائعة/',
+    },
+    seo: {
+      en: {
+        title: 'FAQ | Art Ratio',
+        description:
+          'Find answers about Art Ratio services, production workflow, equipment, booking expectations, and how projects move from brief to delivery.',
+      },
+      ar: {
+        title: 'الأسئلة الشائعة | آرت ريشيو',
+        description:
+          'اعثر على إجابات حول خدمات آرت ريشيو، وآلية العمل، والمعدات، ومتطلبات الحجز، وكيف ينتقل المشروع من الفكرة إلى التسليم.',
+      },
+    },
+    document: {
+      en: { lang: 'en', dir: 'ltr' },
+      ar: { lang: 'ar', dir: 'rtl' },
+    },
+    body: [],
+  },
+  'shop.html': {
+    pageId: 'shop',
+    routes: {
+      en: '/en/shop/',
+      ar: '/معداتنا/',
+    },
+    seo: {
+      en: {
+        title: 'Equipment List | Art Ratio',
+        description:
+          'Browse the Art Ratio equipment list for production-ready gear, tools, and supporting items available across the current public rental surface.',
+      },
+      ar: {
+        title: 'معداتنا | آرت ريشيو',
+        description:
+          'تصفح قائمة معدات آرت ريشيو وما يتبعها من أدوات وتجهيزات مخصصة لسطح التأجير العام الحالي.',
+      },
+    },
+    document: {
+      en: { lang: 'en', dir: 'ltr' },
+      ar: { lang: 'ar', dir: 'rtl' },
+    },
+    body: [],
+  },
+  'shop-product-details.html': {
+    pageId: 'shop-product-details',
+    routes: {
+      en: '/en/shop-product-details/',
+      ar: '/تفاصيل-معدة/',
+    },
+    seo: {
+      en: {
+        title: 'Equipment Details | Art Ratio',
+        description:
+          'View the current public equipment detail page on Art Ratio to review item presentation, pricing context, and supporting rental information.',
+      },
+      ar: {
+        title: 'تفاصيل المعدة | آرت ريشيو',
+        description:
+          'استعرض صفحة تفاصيل المعدة العامة في آرت ريشيو لمراجعة عرض العنصر وسياق التسعير ومعلومات التأجير المساندة.',
+      },
+    },
+    document: {
+      en: { lang: 'en', dir: 'ltr' },
+      ar: { lang: 'ar', dir: 'rtl' },
+    },
+    body: [],
+  },
   'service-details-tv-commercial-ads.html': {
     pageId: 'service-tv-details',
     routes: {
