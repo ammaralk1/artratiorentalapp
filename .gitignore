@@ -10,6 +10,7 @@ cookies.txt
 # Local artifacts
 tmp/
 tmp.out
+test-results/
 backups/*.xlsx
 backups/mysql/*.sql.gz
 
