@@ -845,22 +845,24 @@
       });
     }
     // Testimonial Slider
-    $('.slider-for').slick({
-      slidesToShow: 1,
-      slidesToScroll: 1,
-      arrows: true,
-      asNavFor: '.slider-nav',
-    });
+    if ($.exists('.slider-for') && $.exists('.slider-nav')) {
+      $('.slider-for').slick({
+        slidesToShow: 1,
+        slidesToScroll: 1,
+        arrows: true,
+        asNavFor: '.slider-nav',
+      });
 
-    $('.slider-nav').slick({
-      slidesToShow: 2,
-      slidesToScroll: 1,
-      asNavFor: '.slider-for',
-      dots: true,
-      centerMode: true,
-      focusOnSelect: true,
-      variableWidth: true,
-    });
+      $('.slider-nav').slick({
+        slidesToShow: 2,
+        slidesToScroll: 1,
+        asNavFor: '.slider-for',
+        dots: true,
+        centerMode: true,
+        focusOnSelect: true,
+        variableWidth: true,
+      });
+    }
   }
 
   /*--------------------------------------------------------------
@@ -1181,6 +1183,7 @@
     7. Review
   --------------------------------------------------------------*/
   function review() {
+    if (!$.exists('.cs-rating')) return;
     $('.cs-rating').each(function () {
       var review = $(this).data('rating');
       var reviewVal = review * 20 + '%';
@@ -1192,6 +1195,7 @@
     8. Modal Video
   --------------------------------------------------------------*/
   function modalVideo() {
+    if (!$.exists('.cs-video_open') && !$.exists('.cs-video_popup')) return;
     $(document).on('click', '.cs-video_open', function (e) {
       e.preventDefault();
       var video = $(this).attr('href');
@@ -1214,6 +1218,7 @@
     9. Tabs
   --------------------------------------------------------------*/
   function tabs() {
+    if (!$.exists('.cs-tabs .cs-tab_links a')) return;
     $('.cs-tabs .cs-tab_links a').on('click', function (e) {
       var currentAttrValue = $(this).attr('href');
       $('.cs-tabs ' + currentAttrValue)
@@ -1229,6 +1234,7 @@
     10. Accordian
   --------------------------------------------------------------*/
   function accordian() {
+    if (!$.exists('.cs-accordian')) return;
     $('.cs-accordian').children('.cs-accordian_body').hide();
     $('.cs-accordian.active').children('.cs-accordian_body').show();
     $('.cs-accordian_head').on('click', function () {
@@ -1254,23 +1260,21 @@
     11. Counter Animation
   --------------------------------------------------------------*/
   function counterInit() {
-    if ($.exists('.odometer')) {
-      $(window).on('scroll', function () {
-        function winScrollPosition() {
-          var scrollPos = $(window).scrollTop(),
-            winHeight = $(window).height();
-          var scrollPosition = Math.round(scrollPos + winHeight / 1.2);
-          return scrollPosition;
-        }
+    if (!$.exists('.odometer')) return;
 
-        $('.odometer').each(function () {
-          var elemOffset = $(this).offset().top;
-          if (elemOffset < winScrollPosition()) {
-            $(this).html($(this).data('count-to'));
-          }
-        });
-      });
+    function winScrollPosition() {
+      var scrollPos = $(window).scrollTop(),
+        winHeight = $(window).height();
+      var scrollPosition = Math.round(scrollPos + winHeight / 1.2);
+      return scrollPosition;
     }
+
+    $('.odometer').each(function () {
+      var elemOffset = $(this).offset().top;
+      if (elemOffset < winScrollPosition()) {
+        $(this).html($(this).data('count-to'));
+      }
+    });
   }
 
   /*--------------------------------------------------------------
@@ -1278,12 +1282,10 @@
   --------------------------------------------------------------*/
   function rippleInit() {
     if ($.exists('.cs-ripple_version')) {
-      $('.cs-ripple_version').each(function () {
-        $('.cs-ripple_version').ripples({
-          resolution: 512,
-          dropRadius: 20,
-          perturbance: 0.04,
-        });
+      $('.cs-ripple_version').ripples({
+        resolution: 512,
+        dropRadius: 20,
+        perturbance: 0.04,
       });
     }
   }
@@ -1393,6 +1395,7 @@
     15. Social Button Hover
   --------------------------------------------------------------*/
   function hoverTab() {
+    if (!$.exists('.cs-hover_tab a')) return;
     $('.cs-hover_tab a').hover(
       function () {
         $(this)
@@ -1487,6 +1490,7 @@
     17. Scroll Up
   --------------------------------------------------------------*/
   function scrollUp() {
+    if (!$.exists('.cs-scrollup')) return;
     $('.cs-scrollup').on('click', function (e) {
       e.preventDefault();
       $('html,body').animate(
@@ -1511,6 +1515,7 @@
     18. Portfolio Section
   --------------------------------------------------------------*/
   function portfolioSection() {
+    if (!$.exists('.cs-portfolio.cs-style2 .cs-text_btn')) return;
     $('.cs-portfolio.cs-style2 .cs-text_btn').hover(
       function () {
         $(this)
@@ -1614,30 +1619,36 @@
   --------------------------------------------------------------*/
   function ecommerce() {
     // Star Rating Input
-    $('.cs-input_rating i').on('click', function () {
-      $(this).siblings().removeClass('fa-solid');
-      $(this).addClass('fa-solid').prevAll().addClass('fa-solid');
-    });
+    if ($.exists('.cs-input_rating i')) {
+      $('.cs-input_rating i').on('click', function () {
+        $(this).siblings().removeClass('fa-solid');
+        $(this).addClass('fa-solid').prevAll().addClass('fa-solid');
+      });
+    }
     // Product Single Slider
-    $('.cs-single_product_thumb').slick({
-      slidesToShow: 1,
-      slidesToScroll: 1,
-      arrows: false,
-      asNavFor: '.cs-single_product_nav',
-    });
+    if ($.exists('.cs-single_product_thumb') && $.exists('.cs-single_product_nav')) {
+      $('.cs-single_product_thumb').slick({
+        slidesToShow: 1,
+        slidesToScroll: 1,
+        arrows: false,
+        asNavFor: '.cs-single_product_nav',
+      });
 
-    $('.cs-single_product_nav').slick({
-      slidesToShow: 4,
-      slidesToScroll: 1,
-      asNavFor: '.cs-single_product_thumb',
-      focusOnSelect: true,
-      arrows: false,
-    });
+      $('.cs-single_product_nav').slick({
+        slidesToShow: 4,
+        slidesToScroll: 1,
+        asNavFor: '.cs-single_product_thumb',
+        focusOnSelect: true,
+        arrows: false,
+      });
+    }
     // Check All
-    $('#checkAll').change(function () {
-      var isChecked = $(this).prop('checked');
-      $('table input[type="checkbox"]').prop('checked', isChecked);
-    });
+    if ($.exists('#checkAll')) {
+      $('#checkAll').change(function () {
+        var isChecked = $(this).prop('checked');
+        $('table input[type="checkbox"]').prop('checked', isChecked);
+      });
+    }
     // Range Slider
     if ($.exists('#slider-range')) {
       $('#slider-range').slider({
@@ -1650,7 +1661,7 @@
         },
       });
     }
-    if ($.exists('#amount')) {
+    if ($.exists('#amount') && $.exists('#slider-range')) {
       $('#amount').val(
         'Price: $' +
           $('#slider-range').slider('values', 0) +
@@ -1659,21 +1670,25 @@
       );
     }
     // Counter
-    $('.cs-increment').click(function () {
-      var countElement = $(this).siblings('.cs-quantity_input');
-      var count = parseInt(countElement.text());
-      count++;
-      countElement.text(count);
-    });
-
-    $('.cs-decrement').click(function () {
-      var countElement = $(this).siblings('.cs-quantity_input');
-      var count = parseInt(countElement.text());
-      if (count > 0) {
-        count--;
+    if ($.exists('.cs-increment')) {
+      $('.cs-increment').click(function () {
+        var countElement = $(this).siblings('.cs-quantity_input');
+        var count = parseInt(countElement.text());
+        count++;
         countElement.text(count);
-      }
-    });
+      });
+    }
+
+    if ($.exists('.cs-decrement')) {
+      $('.cs-decrement').click(function () {
+        var countElement = $(this).siblings('.cs-quantity_input');
+        var count = parseInt(countElement.text());
+        if (count > 0) {
+          count--;
+          countElement.text(count);
+        }
+      });
+    }
   }
   /*--------------------------------------------------------------
     21. Dynamic contact form

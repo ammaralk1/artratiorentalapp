@@ -50,6 +50,12 @@ RewriteRule ^equipment-requests-portal(?:\.html)?/?$ Arino\ -\ Template/equipmen
 # Redirect any legacy /src/pages/* paths to the built pages
 RewriteRule ^src/pages/(.*)$ dist/src/pages/$1 [L,NC]
 
+# Temporarily remove shop-product-details from public exposure while preserving the source.
+RewriteRule ^en/shop-product-details/?$ /en/shop/ [R=302,L,NC]
+RewriteRule ^تفاصيل-معدة/?$ /معداتنا/ [R=302,L,NC]
+RewriteRule ^ar/تفاصيل-معدة/?$ /معداتنا/ [R=302,L,NC]
+RewriteRule ^shop-product-details(?:\.html)?/?$ /en/shop/ [R=302,L,NC]
+
 # BEGIN I18N ROUTES
 # BEGIN LOCALIZED PUBLIC ROUTES
 # Exact-path localized rewrites for the currently covered public pages only.

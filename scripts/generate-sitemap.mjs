@@ -160,6 +160,7 @@ const blogPostSlugMap = evaluateObjectLiteral(
 const EXCLUDED_LOCALIZED_FILES = new Set([
   "shop-cart.html",
   "shop-checkout.html",
+  "shop-product-details.html",
   "shop-wishlist.html",
   "shop-order-recived.html",
 ]);
