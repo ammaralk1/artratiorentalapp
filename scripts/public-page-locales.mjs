@@ -338,6 +338,54 @@ export const PUBLIC_PAGE_LOCALES = Object.freeze({
     },
     body: [],
   },
+  'photography-agency.html': {
+    pageId: 'photo-gallery',
+    routes: {
+      en: '/en/photography-agency/',
+      ar: '/معرض-الصور/',
+    },
+    seo: {
+      en: {
+        title: 'Photo Gallery | Art Ratio',
+        description:
+          'Browse selected photography from Art Ratio across commercial work, e-commerce, events, and social-first visual content.',
+      },
+      ar: {
+        title: 'معرض الصور | آرت ريشيو',
+        description:
+          'استكشف مجموعة مختارة من أعمال التصوير لدى آرت ريشيو عبر الأعمال التجارية، والتجارة الإلكترونية، والفعاليات، والمحتوى البصري المخصص للنشر.',
+      },
+    },
+    document: {
+      en: { lang: 'en', dir: 'ltr' },
+      ar: { lang: 'ar', dir: 'rtl' },
+    },
+    body: [],
+  },
+  'team.html': {
+    pageId: 'team',
+    routes: {
+      en: '/en/team/',
+      ar: '/فريقنا/',
+    },
+    seo: {
+      en: {
+        title: 'Team | Art Ratio',
+        description:
+          'Meet the Art Ratio team behind the production, photography, lighting, and direction work shaping each project.',
+      },
+      ar: {
+        title: 'فريقنا | آرت ريشيو',
+        description:
+          'تعرّف على فريق آرت ريشيو خلف أعمال الإنتاج، والتصوير، والإضاءة، والإخراج التي تصوغ كل مشروع.',
+      },
+    },
+    document: {
+      en: { lang: 'en', dir: 'ltr' },
+      ar: { lang: 'ar', dir: 'rtl' },
+    },
+    body: [],
+  },
   'service-details-tv-commercial-ads.html': {
     pageId: 'service-tv-details',
     routes: {
