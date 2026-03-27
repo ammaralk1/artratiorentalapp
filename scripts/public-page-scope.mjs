@@ -12,6 +12,8 @@ export const PHASE_1_PILOT_FILES = Object.freeze([
   'faq.html',
   'shop.html',
   'shop-product-details.html',
+  'privacy.html',
+  'terms.html',
   'service-details-tv-commercial-ads.html',
   'service-details-events-coverage.html',
   'service-details-social-media-content.html',
@@ -77,6 +79,16 @@ export const PHASE_1_PAGE_SCOPE = Object.freeze({
   },
   'shop-product-details.html': {
     pageId: 'shop-product-details',
+    include: true,
+    rollout: '3a-pilot',
+  },
+  'privacy.html': {
+    pageId: 'privacy',
+    include: true,
+    rollout: '3a-pilot',
+  },
+  'terms.html': {
+    pageId: 'terms',
     include: true,
     rollout: '3a-pilot',
   },

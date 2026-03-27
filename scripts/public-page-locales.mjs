@@ -458,6 +458,54 @@ export const PUBLIC_PAGE_LOCALES = Object.freeze({
     },
     body: [],
   },
+  'privacy.html': {
+    pageId: 'privacy',
+    routes: {
+      en: '/en/privacy/',
+      ar: '/سياسة-الخصوصية/',
+    },
+    seo: {
+      en: {
+        title: 'Privacy Policy | Art Ratio',
+        description:
+          'Read how Art Ratio handles personal data, contact information, service inquiries, and related website interactions across its public digital surface.',
+      },
+      ar: {
+        title: 'سياسة الخصوصية | آرت ريشيو',
+        description:
+          'اطلع على كيفية تعامل آرت ريشيو مع البيانات الشخصية ومعلومات التواصل وطلبات الخدمات والتفاعلات المرتبطة بسطحها الرقمي العام.',
+      },
+    },
+    document: {
+      en: { lang: 'en', dir: 'ltr' },
+      ar: { lang: 'ar', dir: 'rtl' },
+    },
+    body: [],
+  },
+  'terms.html': {
+    pageId: 'terms',
+    routes: {
+      en: '/en/terms/',
+      ar: '/شروط-الاستخدام/',
+    },
+    seo: {
+      en: {
+        title: 'Terms of Use | Art Ratio',
+        description:
+          'Review the Art Ratio terms of use governing website access, public content, inquiries, and related use of the company’s public-facing digital experience.',
+      },
+      ar: {
+        title: 'شروط الاستخدام | آرت ريشيو',
+        description:
+          'راجع شروط استخدام آرت ريشيو المنظمة للوصول إلى الموقع والمحتوى العام وطلبات التواصل واستخدام التجربة الرقمية العامة الخاصة بالشركة.',
+      },
+    },
+    document: {
+      en: { lang: 'en', dir: 'ltr' },
+      ar: { lang: 'ar', dir: 'rtl' },
+    },
+    body: [],
+  },
   'service-details-tv-commercial-ads.html': {
     pageId: 'service-tv-details',
     routes: {
