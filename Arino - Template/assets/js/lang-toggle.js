@@ -600,8 +600,8 @@
     },
     footer_brand_intro: {
       type: 'html',
-      en: 'we turn your vision into captivating visuals.<br>From commercials and events to social media stories, we blend creativity and precision to bring your ideas to life.',
-      ar: 'نحوّل رؤيتك لصور تنبض بالحياة.<br>من الإعلانات والفعاليات إلى قصص السوشال ميديا، نشتغل بإبداع ودقة عشان نحيي أفكارك.',
+      en: 'Art Ratio is a media production company based in Saudi Arabia<br>We deliver commercials, event coverage, social media visuals, and commercial photography with sharp execution and brand-focused visuals',
+      ar: 'آرت ريشيو شركة إنتاج إبداعية في المملكة العربية السعودية<br>نقدّم الإعلانات، وتغطية الفعاليات، ومحتوى السوشال، والتصوير التجاري بتنفيذ دقيق وصورة تخدم البراند',
     },
     footer_services_title: { en: 'Services', ar: 'الخدمات' },
     footer_service_tv_ads: { en: 'TV & Commercial Ads', ar: 'إعلانات تلفزيونية وتجارية' },
@@ -614,7 +614,7 @@
       ar: 'الاستشارات الإنتاجية',
     },
     footer_contact_title: { en: 'Contact Us', ar: 'تواصل معنا' },
-    footer_copyright: { en: 'Copyright © 2026 Art Ratio · Saudi Arabia', ar: 'جميع الحقوق محفوظة © 2026 آرت ريشيو · المملكة العربية السعودية' },
+    footer_copyright: { en: 'Copyright © 2026 Art Ratio.', ar: 'جميع الحقوق محفوظة © 2026 آرت ريشيو.' },
     home_hero_subtitle: {
       en: 'We turn your concepts into visual masterpieces, crafting every project with a unique blend of artistry and innovation that brings your vision to life.',
       ar: 'نحوّل أفكاركم لروائع بصرية، ونشتغل على كل مشروع بمزيج خاص من الفن والابتكار، عشان نطلع عمل يجسّد رؤيتكم',
@@ -2482,8 +2482,8 @@
       {
         selector: '.cs-footer_item.cs-footer_brand p',
         type: 'html',
-        en: 'we turn your vision into captivating visuals.<br>From commercials and events to social media stories, we blend creativity and precision to bring your ideas to life.',
-        ar: 'نحوّل رؤيتك لصور تنبض بالحياة.<br>من الإعلانات والفعاليات إلى قصص السوشال ميديا، نشتغل بإبداع ودقة عشان نحيي أفكارك.',
+        en: 'Art Ratio is a media production company based in Saudi Arabia<br>We deliver commercials, event coverage, social media visuals, and commercial photography with sharp execution and brand-focused visuals',
+        ar: 'آرت ريشيو شركة إنتاج إبداعية في المملكة العربية السعودية<br>نقدّم الإعلانات، وتغطية الفعاليات، ومحتوى السوشال، والتصوير التجاري بتنفيذ دقيق وصورة تخدم البراند',
       },
       { selector: '.cs-footer_item_services .cs-widget_title', type: 'text', en: 'Services', ar: 'الخدمات' },
       { selector: '.cs-footer_services a:nth-child(1)', type: 'text', en: 'TV & Commercial Ads', ar: 'إعلانات تلفزيونية وتجارية' },
