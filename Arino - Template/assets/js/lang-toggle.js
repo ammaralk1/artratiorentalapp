@@ -571,8 +571,17 @@
           الهاتف: <a href="tel:+966567680152">+966 56 768 0152</a></p>
         </section>`,
     },
+    gallery_intro_copy: {
+      en: 'These are selected photography projects across commercial photography, e-commerce imagery, events, and social content, each showing how Art Ratio builds the image from idea to final result.',
+      ar: 'هذه نماذج مختارة من أعمالنا الفوتوغرافية في التصوير التجاري، وتصوير التجارة الإلكترونية، والفعاليات، ومحتوى السوشال، وكل مجموعة منها توضح كيف تبني آرت ريشيو الصورة من الفكرة إلى النتيجة.',
+    },
+    gallery_portfolio_link_note: {
+      en: 'Looking for campaign films and selected motion work?',
+      ar: 'إذا كنت تبحث عن أفلام الحملات وبعض الأعمال الحركية،',
+    },
+    gallery_portfolio_link_button: { en: 'Browse the Portfolio', ar: 'تصفح أعمالنا' },
     gallery_section_subtitle: { en: 'Our Portfolio', ar: 'معرض الصور' },
-    gallery_section_title: { en: 'Some recent work', ar: 'أحدث أعمالنا المصورة' },
+    gallery_section_title: { en: 'Explore Our Photography Work', ar: 'استكشف أعمالنا المصورة' },
     gallery_filter_commercial: { en: 'Commercial', ar: 'تجاري' },
     gallery_filter_ecommerce: { en: 'E-commerce', ar: 'التجارة الإلكترونية' },
     gallery_filter_events: { en: 'Events', ar: 'فعاليات' },
@@ -619,7 +628,13 @@
     home_process_subtitle: { en: 'Production Creative Process', ar: 'عملية الإنتاج الإبداعي' },
     home_process_title: { en: 'From Idea to Final Version', ar: 'من الفكرة إلى النسخة النهائية' },
     home_team_subtitle: { en: ' Our Team ', ar: 'فريقنا' },
-    home_team_title: { type: 'html', en: 'Awesome team <br>members', ar: 'أعضاء فريقنا المتميز' },
+    home_team_title: { en: 'Meet the Team Behind the Work', ar: 'تعرّف على الفريق وراء الشغل' },
+    team_intro_copy: {
+      en: 'This is the team behind the planning, execution, and visual details that shape every Art Ratio production from set to final delivery.',
+      ar: 'هذا هو الفريق اللي يقف خلف التخطيط، والتنفيذ، والتفاصيل البصرية اللي تصنع كل إنتاج في آرت ريشيو من الموقع إلى التسليم.',
+    },
+    team_about_link_note: { en: 'Want to see what shapes the way we work?', ar: 'ودك تعرف إيش اللي يشكّل طريقتنا في الشغل؟' },
+    team_about_link_button: { en: 'Read About Art Ratio', ar: 'اقرأ عن آرت ريشيو' },
     home_partners_marquee: { en: 'Our trusted and successful partners', ar: 'شركاء النجاح • شركاء النجاح   •' },
     home_testimonial_tala_text: {
       en: 'Perfect, hard-working team with on-time delivery. The overall quality reflected real perfection in every detail.',
@@ -735,7 +750,7 @@
       en: 'We listen closely, move with flexibility, and build each production around what the project actually needs.<br>That is what helps us deliver work that feels polished, relevant, and ready to perform.',
       ar: 'نسمع كويس، ونتحرّك بمرونة، ونبني كل إنتاج على احتياج المشروع فعلًا.<br>وهذا اللي يساعدنا نطلع شغل متقن، مناسب، وجاهز يشتغل بالشكل المطلوب.',
     },
-    service_hero_title: { en: 'Services', ar: 'خدماتنا' },
+    service_hero_title: { en: 'Explore Our Services', ar: 'استكشف خدماتنا' },
     service_intro_subtitle: { en: 'Explore Our Services', ar: 'استكشف خدماتنا' },
     service_intro_title: {
       en: 'We build visual production services that help brands show up clearly, sell more confidently, and stay memorable.',

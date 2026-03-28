@@ -125,13 +125,20 @@ export const PILOT_KEYED_TRANSLATIONS = Object.freeze({
   gallery_filter_ecommerce: { en: 'E-commerce', ar: 'التجارة الإلكترونية' },
   gallery_filter_events: { en: 'Events', ar: 'فعاليات' },
   gallery_filter_social_media: { en: 'Social Media', ar: 'التواصل الاجتماعي' },
+  gallery_intro_copy: {
+    en: 'These are selected photography projects across commercial photography, e-commerce imagery, events, and social content, each showing how Art Ratio builds the image from idea to final result.',
+    ar: 'هذه نماذج مختارة من أعمالنا الفوتوغرافية في التصوير التجاري، وتصوير التجارة الإلكترونية، والفعاليات، ومحتوى السوشال، وكل مجموعة منها توضح كيف تبني آرت ريشيو الصورة من الفكرة إلى النتيجة.',
+  },
   gallery_portfolio_link_note: {
-    type: 'html',
-    en: 'For campaign films and selected motion work, visit our <a href="portfolio.html">Portfolio</a>.',
-    ar: 'وللاطلاع على أفلام الحملات وبعض الأعمال الحركية المختارة، زر <a href="portfolio.html">أعمالنا</a>.',
+    en: 'Looking for campaign films and selected motion work?',
+    ar: 'إذا كنت تبحث عن أفلام الحملات وبعض الأعمال الحركية،',
+  },
+  gallery_portfolio_link_button: {
+    en: 'Browse the Portfolio',
+    ar: 'تصفح أعمالنا',
   },
   gallery_section_subtitle: { en: 'Our Portfolio', ar: 'معرض الصور' },
-  gallery_section_title: { en: 'Some recent work', ar: 'أحدث أعمالنا المصورة' },
+  gallery_section_title: { en: 'Explore Our Photography Work', ar: 'استكشف أعمالنا المصورة' },
   home_blog_subtitle: { en: 'Our Blog', ar: 'كشكولنا' },
   home_blog_title: { en: 'Explore Recent Publications', ar: 'استكشف أحدث المقالات' },
   home_blog_view_more: { en: 'View More Blog', ar: 'عرض المزيد من المقالات' },
@@ -213,9 +220,12 @@ export const PILOT_KEYED_TRANSLATIONS = Object.freeze({
   },
   home_team_subtitle: { en: ' Our Team ', ar: 'فريقنا' },
   home_team_title: {
-    type: 'html',
-    en: 'Awesome team <br>members',
-    ar: 'أعضاء فريقنا المتميز',
+    en: 'Meet the Team Behind the Work',
+    ar: 'تعرّف على الفريق وراء الشغل',
+  },
+  team_intro_copy: {
+    en: 'This is the team behind the planning, execution, and visual details that shape every Art Ratio production from set to final delivery.',
+    ar: 'هذا هو الفريق اللي يقف خلف التخطيط، والتنفيذ، والتفاصيل البصرية اللي تصنع كل إنتاج في آرت ريشيو من الموقع إلى التسليم.',
   },
   about_team_link_note: {
     type: 'html',
@@ -223,9 +233,12 @@ export const PILOT_KEYED_TRANSLATIONS = Object.freeze({
     ar: 'تعرّف على الأشخاص اللي يقفون خلف الشغل في <a href="team.html">صفحة الفريق</a>.',
   },
   team_about_link_note: {
-    type: 'html',
-    en: 'See what shapes the way we work on our <a href="about.html">About page</a>.',
-    ar: 'تعرّف على ما يشكّل طريقتنا في العمل عبر <a href="about.html">صفحة من نحن</a>.',
+    en: 'Want to see what shapes the way we work?',
+    ar: 'ودك تعرف إيش اللي يشكّل طريقتنا في الشغل؟',
+  },
+  team_about_link_button: {
+    en: 'Read About Art Ratio',
+    ar: 'اقرأ عن آرت ريشيو',
   },
   home_testimonial_faisal_name: { en: 'Coach Al-Baiti Al-Faisal', ar: 'كوتش البيتي الفيصل' },
   home_testimonial_faisal_role: { en: 'Success and High Achievement Consultant', ar: 'مستشار نجاح وتحقيق عالي' },
@@ -843,7 +856,7 @@ export const PILOT_KEYED_TRANSLATIONS = Object.freeze({
   service_card_rental: { en: 'Equipment Rental', ar: 'تأجير المعدات' },
   service_card_social: { en: 'Social Media Visuals', ar: 'محتوى شبكات التواصل' },
   service_card_tv: { en: 'TV & Commercial Ads', ar: 'إعلانات تلفزيونية وتجارية' },
-  service_hero_title: { en: 'Services', ar: 'خدماتنا' },
+  service_hero_title: { en: 'Explore Our Services', ar: 'استكشف خدماتنا' },
   service_intro_subtitle: { en: 'Explore Our Services', ar: 'استكشف خدماتنا' },
   service_intro_title: {
     en: 'We build visual production services that help brands show up clearly, sell more confidently, and stay memorable.',
