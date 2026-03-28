@@ -629,7 +629,7 @@
     home_process_subtitle: { en: 'Production Creative Process', ar: 'عملية الإنتاج الإبداعي' },
     home_process_title: { en: 'From Idea to Final Version', ar: 'من الفكرة إلى النسخة النهائية' },
     home_team_subtitle: { en: ' Our Team ', ar: 'فريقنا' },
-    home_team_title: { en: 'Meet the Team Behind the Work', ar: 'تعرّف على الفريق وراء الشغل' },
+    home_team_title: { en: 'Meet the Team Behind the Scenes', ar: 'تعرّف على الفريق خلف الكواليس' },
     team_intro_copy: {
       en: 'This is the team behind the planning, execution, and visual details that shape every Art Ratio production from set to final delivery.',
       ar: 'هذا هو الفريق اللي يقف خلف التخطيط، والتنفيذ، والتفاصيل البصرية اللي تصنع كل إنتاج في آرت ريشيو من الموقع إلى التسليم.',
@@ -662,7 +662,7 @@
     values_excellence_title: { en: 'Excellence', ar: 'التميز' },
     values_excellence_text: { en: 'Delivering work crafted with precision and artistry.', ar: 'تسليم أعمال مصنوعة بدقة وفن.' },
     values_professionalism_title: { en: 'Professionalism', ar: 'الاحترافية' },
-    values_professionalism_text: { en: 'Commitment to quality and deadlines in every project.', ar: 'التزام بالجودة والمواعيد في كل مشروع.' },
+    values_professionalism_text: { en: 'Commitment to quality and deadlines in every project.', ar: 'الالتزام بالجودة والمواعيد في كل مشروع.' },
     values_collaboration_title: { en: 'Collaboration', ar: 'التعاون' },
     values_collaboration_text: { en: 'Working hand-in-hand with clients as one team.', ar: 'نشتغل مع عملائنا يد بيد كفريق واحد' },
     values_reliability_title: { en: 'Reliability', ar: 'الموثوقية' },
@@ -675,7 +675,7 @@
     service_tv_cta_title: {
       type: 'html',
       en: 'Need a commercial that presents the brand with clarity and impact? <br>Let’s plan the ad around the result you want people to remember.',
-      ar: 'تحتاج إعلان يقدّم البراند بوضوح وأثر؟<br>خلّينا نخطط الإعلان على النتيجة اللي تبي الناس تتذكرها.',
+      ar: 'تحتاج إعلان يقدّم البراند بوضوح وله أثر؟<br>خلّينا نخطط الإعلان على النتيجة اللي تبي الناس تتذكرها.',
     },
     service_tv_cta_button: { en: 'Plan the commercial', ar: 'خطط الإعلان' },
     service_events_cta_title: {
@@ -841,15 +841,15 @@
     },
     service_tv_details_p7: {
       en: 'Whether it is for TV, digital platforms, or a full campaign, we ensure the final output reflects your brand at its best.',
-      ar: 'سواء كان الإعلان للتلفزيون، المنصات الرقمية، أو حملة متكاملة، نضمن إن العمل يطلع بصورة تليق باسمك.',
+      ar: 'سواء كان الإعلان للتلفزيون، المنصات الرقمية، أو حملة متكاملة، نضمن إن العمل يخرج بصورة تليق باسمك.',
     },
     service_tv_details_p8: {
       en: 'We do not create ads that appear and fade. We craft visual experiences that elevate brand value and leave a lasting impact.',
-      ar: 'ما نصنع إعلان يُعرض وينتهي، نصنع تجربة بصرية ترفع مكانة العلامة وتترك أثر.',
+      ar: 'إحنا ما نصنع إعلان يُعرض وينتهي، نصنع تجربة بصرية ترفع مكانة العلامة وتترك أثر.',
     },
     service_tv_details_p9: {
       en: 'At Art Ratio, we transform your idea from a simple message into work that is watched with confidence and remembered for long.',
-      ar: 'في آرت ريشيو، نحوّل الفكرة من مجرد رسالة إلى عمل يُشاهد بثقة... ويُتذكَر طويلًا.',
+      ar: 'في آرت ريشيو، نحوّل الفكرة من مجرد رسالة إلى عمل يُشاهد بثقة... ويبقى في الذاكرة طويلًا.',
     },
     service_tv_showreel_intro: {
       en: 'A look at our recent TV and commercial ads work, where the idea, direction, and execution come together in one clear visual result.',
@@ -869,7 +869,7 @@
     },
     service_events_details_p2: {
       en: 'Whether it is a conference, product launch, exhibition, sports event, or private activation, we handle the day with a production mindset that protects timing, key moments, and brand presence.',
-      ar: 'سواء كانت مؤتمرًا، إطلاق منتج، معرضًا، فعالية رياضية، أو تفعيلًا خاصًا، نتعامل مع اليوم كاملًا بعقلية إنتاج تحفظ التوقيت، واللحظات المهمة، وحضور العلامة.',
+      ar: 'سواء كان مؤتمرًا، أو إطلاق منتج، أو معرضًا، أو فعالية رياضية، أو تفعيلًا خاصًا، نتعامل مع اليوم كاملًا بعقلية إنتاج تحفظ التوقيت، واللحظات المهمة، وحضور العلامة.',
     },
     service_events_details_p3: {
       en: 'We plan before the event, build the visual scenario, define angles, lighting, and pacing, and assemble a team that matches the event type and scale.',
@@ -1253,11 +1253,11 @@
     service_tv_faq_a2: { en: 'Both are possible. We can produce for TV broadcast, digital campaigns, social media ads, or a campaign that needs multiple outputs from the same shoot.', ar: 'الاثنين ممكن. نقدر ننتج للتلفزيون، وللحملات الرقمية، ولإعلانات السوشال ميديا، أو لحملة تحتاج أكثر من مخرج من نفس التصوير.' },
     service_tv_faq_q3: { en: 'What do clients usually need to prepare before production starts?', ar: 'إيش الأشياء اللي عادة يحتاج العميل يجهزها قبل بدء الإنتاج؟' },
     service_tv_faq_a3: { en: 'Usually we align on the objective, audience, product or service details, timeline, approvals, and any brand guidelines. After that, we can help structure the rest of the production requirements.', ar: 'عادة نحدد الهدف، والجمهور، وتفاصيل المنتج أو الخدمة، والجدول الزمني، والموافقات، وأي متطلبات تخص هوية البراند. وبعدها نرتب بقية احتياجات الإنتاج بشكل واضح.' },
-    service_tv_faq_q4: { en: 'How long does a commercial project usually take?', ar: 'كم عادة يأخذ مشروع الإعلان من وقت؟' },
+    service_tv_faq_q4: { en: 'How long does a commercial project usually take?', ar: 'كم يستغرق تنفيذ الإعلان عادة؟' },
     service_tv_faq_a4: { en: 'That depends on the complexity of the concept, prep needs, cast, locations, and post-production. Some ads move fast, while others need a fuller production window. We define that early so the schedule is realistic.', ar: 'هذا يعتمد على تعقيد الفكرة، والتحضير، والكاست، والمواقع، وما بعد الإنتاج. بعض الإعلانات تمشي بسرعة، وبعضها يحتاج نافذة إنتاج أوسع. لذلك نحدد الجدول من البداية بشكل واقعي.' },
-    service_tv_faq_q5: { en: 'Do you handle casting, locations, crew, and the full production setup?', ar: 'هل تتولون الكاست، والمواقع، والفريق، وتجهيز الإنتاج كامل؟' },
+    service_tv_faq_q5: { en: 'Do you handle casting, locations, crew, and the full production setup?', ar: 'هل تقومون بتوفير الكاست والمواقع والفريق وتجهيز الإنتاج بالكامل؟' },
     service_tv_faq_a5: { en: 'Yes. If the project needs full production support, we can handle crew structure, casting coordination, location planning, equipment, scheduling, and production management around the shoot.', ar: 'نعم. إذا كان المشروع يحتاج دعم إنتاج كامل، نتولى تنظيم الفريق، وتنسيق الكاست، وتجهيز المواقع، والمعدات، والجدولة، وإدارة يوم التصوير حول متطلبات الإعلان.' },
-    service_tv_faq_q6: { en: 'Can one production be delivered in more than one version or format?', ar: 'هل ممكن يطلع من نفس الإنتاج أكثر من نسخة أو صيغة؟' },
+    service_tv_faq_q6: { en: 'Can one production be delivered in more than one version or format?', ar: 'هل ممكن أن نحصل من نفس الإنتاج على أكثر من نسخة أو صيغة؟' },
     service_tv_faq_a6: { en: 'Yes. We can plan the production so the same shoot serves multiple edits, durations, aspect ratios, or platform-ready versions, as long as that is defined from the beginning.', ar: 'نعم. نقدر نخطط الإنتاج بحيث يخدم أكثر من مونتاج، أو مدة، أو مقاس، أو نسخة مخصصة للمنصات، بشرط يتحدد هذا من البداية.' },
     service_tv_testimonial_text: {
       en: 'I wish I would have thought of it first. Creative agency is the most tech valuable business resource we have ever purchased. Dude your stuff is the bomb! eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt to the explicabo.',

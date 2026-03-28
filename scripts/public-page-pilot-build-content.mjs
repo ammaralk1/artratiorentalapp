@@ -224,8 +224,8 @@ export const PILOT_KEYED_TRANSLATIONS = Object.freeze({
   },
   home_team_subtitle: { en: ' Our Team ', ar: 'فريقنا' },
   home_team_title: {
-    en: 'Meet the Team Behind the Work',
-    ar: 'تعرّف على الفريق وراء الشغل',
+    en: 'Meet the Team Behind the Scenes',
+    ar: 'تعرّف على الفريق خلف الكواليس',
   },
   team_intro_copy: {
     en: 'This is the team behind the planning, execution, and visual details that shape every Art Ratio production from set to final delivery.',
@@ -890,7 +890,7 @@ export const PILOT_KEYED_TRANSLATIONS = Object.freeze({
   values_excellence_title: { en: 'Excellence', ar: 'التميز' },
   values_innovation_text: { en: 'Leveraging the latest technologies and techniques in production.', ar: 'توظيف أحدث التقنيات والأساليب في الإنتاج.' },
   values_innovation_title: { en: 'Innovation', ar: 'الابتكار' },
-  values_professionalism_text: { en: 'Commitment to quality and deadlines in every project.', ar: 'التزام بالجودة والمواعيد في كل مشروع.' },
+  values_professionalism_text: { en: 'Commitment to quality and deadlines in every project.', ar: 'الالتزام بالجودة والمواعيد في كل مشروع.' },
   values_professionalism_title: { en: 'Professionalism', ar: 'الاحترافية' },
   values_reliability_text: { en: 'Building long-term relationships based on trust.', ar: 'نبني علاقات طويلة الأمد قائمة على الثقة.' },
   values_reliability_title: { en: 'Reliability', ar: 'الموثوقية' },

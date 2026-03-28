@@ -224,6 +224,27 @@ body[data-page="service"] .cs-service-intro-lead {
 }
 
 @media (max-width: 991px) {
+  .cs-testimonial_slider--home-mobile .cs-testimonial_slider_left {
+    margin-bottom: 30px;
+  }
+
+  .cs-testimonial_slider--home-mobile .slider-nav.cs-style1 {
+    width: min(100%, 320px);
+    margin-inline: auto;
+  }
+
+  .cs-testimonial_slider--home-mobile .slider-nav.cs-style1 .slick-list {
+    padding: 40px 0 !important;
+  }
+
+  .cs-testimonial_slider--home-mobile .slider-nav_item,
+  .cs-testimonial_slider--home-mobile .cs-rotate_img,
+  .cs-testimonial_slider--home-mobile .cs-rotate_img_in {
+    margin-inline: auto;
+  }
+}
+
+@media (max-width: 991px) {
   body[data-page="service"] .cs-service-kufidia-title {
     font-size: clamp(42px, 11vw, 64px) !important;
   }
