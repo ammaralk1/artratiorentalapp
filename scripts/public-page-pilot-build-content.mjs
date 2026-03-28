@@ -485,7 +485,7 @@ export const PILOT_KEYED_TRANSLATIONS = Object.freeze({
             <li>طلب تصحيح أو استكمال أو تحديث البيانات غير الدقيقة أو غير المكتملة؛ و</li>
             <li>طلب حذف أو إتلاف البيانات الشخصية حيث يسمح النظام بذلك.</li>
           </ul>
-          <p>لتقديم طلب متعلق بالخصوصية، يرجى التواصل عبر:<br><a href="mailto:info@art-ratio.com">info@art-ratio.com</a></p>
+          <p>لتقديم طلب متعلق بالخصوصية، يرجى التواصل عبر:<br><!--email_off--><a href="mailto:info@art-ratio.com">info@art-ratio.com</a><!--/email_off--></p>
           <p>قد نطلب معلومات لازمة للتحقق من هويتك قبل الاستجابة لطلبك.</p>
         </section>
 
@@ -525,7 +525,7 @@ export const PILOT_KEYED_TRANSLATIONS = Object.freeze({
           العاملة تحت العلامة التجارية المسجلة آرت ريشو<br>
           السجل التجاري: 7030880632<br>
           رقم رخصة الإعلام: 159460<br>
-          البريد الإلكتروني: <a href="mailto:info@art-ratio.com">info@art-ratio.com</a><br>
+          البريد الإلكتروني: <!--email_off--><a href="mailto:info@art-ratio.com">info@art-ratio.com</a><!--/email_off--><br>
           الهاتف: <a href="tel:+966567680152">+966 56 768 0152</a></p>
         </section>`,
   },
@@ -539,7 +539,7 @@ export const PILOT_KEYED_TRANSLATIONS = Object.freeze({
     ar: `<span><strong>تاريخ السريان:</strong> 9 مارس 2026</span>
         <span><strong>رقم السجل التجاري:</strong> 7030880632</span>
         <span><strong>رقم رخصة الإعلام:</strong> 159460</span>
-        <span><strong>البريد الإلكتروني للتواصل:</strong> <a href="mailto:info@art-ratio.com">info@art-ratio.com</a></span>
+        <span><strong>البريد الإلكتروني للتواصل:</strong> <!--email_off--><a href="mailto:info@art-ratio.com">info@art-ratio.com</a><!--/email_off--></span>
         <span><strong>هاتف التواصل:</strong> <a href="tel:+966567680152">+966 56 768 0152</a></span>`,
   },
   privacy_page_title: { en: 'Privacy Policy | Art Ratio', ar: 'سياسة الخصوصية | آرت ريشيو' },
@@ -732,7 +732,7 @@ export const PILOT_KEYED_TRANSLATIONS = Object.freeze({
           العاملة تحت العلامة التجارية المسجلة آرت ريشو<br>
           السجل التجاري: 7030880632<br>
           رقم رخصة الإعلام: 159460<br>
-          البريد الإلكتروني: <a href="mailto:info@art-ratio.com">info@art-ratio.com</a><br>
+          البريد الإلكتروني: <!--email_off--><a href="mailto:info@art-ratio.com">info@art-ratio.com</a><!--/email_off--><br>
           الهاتف: <a href="tel:+966567680152">+966 56 768 0152</a></p>
         </section>`,
   },
@@ -750,7 +750,7 @@ export const PILOT_KEYED_TRANSLATIONS = Object.freeze({
     ar: `<span><strong>تاريخ السريان:</strong> 9 مارس 2026</span>
         <span><strong>رقم السجل التجاري:</strong> 7030880632</span>
         <span><strong>رقم رخصة الإعلام:</strong> 159460</span>
-        <span><strong>البريد الإلكتروني:</strong> <a href="mailto:info@art-ratio.com">info@art-ratio.com</a></span>
+        <span><strong>البريد الإلكتروني:</strong> <!--email_off--><a href="mailto:info@art-ratio.com">info@art-ratio.com</a><!--/email_off--></span>
         <span><strong>الهاتف:</strong> <a href="tel:+966567680152">+966 56 768 0152</a></span>`,
   },
   terms_page_title: { en: 'Terms of Use | Art Ratio', ar: 'شروط الاستخدام | آرت ريشيو' },
