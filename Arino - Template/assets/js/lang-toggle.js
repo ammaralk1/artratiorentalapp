@@ -3080,8 +3080,36 @@
     });
   };
 
+  const removeSeoHeadSignals = () => {
+    document
+      .querySelectorAll(
+        'link[rel="canonical"], link[rel="alternate"][hreflang], meta[property="og:url"]',
+      )
+      .forEach((node) => node.remove());
+  };
+
+  const SEO_SUPPRESSED_BLOG_ARTICLE_SLUGS = new Set([
+    'event-coverage/professional-event-coverage-guide',
+    'filmmaking-techniques/cinematic-lighting-basics',
+    'product-photography/professional-product-photography-ecommerce',
+    'video-production/how-to-choose-professional-video-production-company',
+  ]);
+
+  const isSeoSuppressedFile = (file) =>
+    file === 'feedback.html'
+    || file === 'shop-product-details.html'
+    || /^team-details-[a-z-]+\.html$/i.test(file || '')
+    || /^portfolio-details-[A-Za-z0-9-]+\.html$/i.test(file || '')
+    || /^portfolio[2-6](?:-details-video-[1-7])?\.html$/i.test(file || '');
+
   const isHtmlSeoOwnedPage = () =>
     !!(document.body && document.body.dataset && document.body.dataset.htmlSeoOwned === 'true');
+
+  const isSeoSuppressedBlogPath = (rawPath) => {
+    const blog = resolveBlogPath(rawPath);
+    if (!blog?.slug) return false;
+    return SEO_SUPPRESSED_BLOG_ARTICLE_SLUGS.has(blog.slug);
+  };
 
   const syncSeoHead = () => {
     if (isHtmlSeoOwnedPage()) return;
@@ -3111,6 +3139,10 @@
     document.querySelectorAll('meta[property="og:url"]').forEach((meta) => meta.setAttribute('content', absoluteUrl));
     const enPath = currentFile ? pathForLanguage(currentFile, 'en') : localizeSpecialPath(currentPath, 'en');
     const arPath = currentFile ? pathForLanguage(currentFile, 'ar') : localizeSpecialPath(currentPath, 'ar');
+    if (isSeoSuppressedFile(currentFile) || isSeoSuppressedBlogPath(currentPath)) {
+      removeSeoHeadSignals();
+      return;
+    }
     if (!enPath || !arPath) return;
     const enHref = window.location.origin + enPath;
     const arHref = window.location.origin + arPath;

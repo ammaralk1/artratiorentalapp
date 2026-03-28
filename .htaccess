@@ -31,12 +31,22 @@ RewriteRule ^site\.webmanifest$ dist/favicon_io/site.webmanifest [L,NC]
 <IfModule mod_headers.c>
   # Internal/back-office routes
   SetEnvIf Request_URI "^/(dashboard|home|login|customer|technician|projects|projects-reports|projects-expenses|users|notifications|site-analytics|contact-inquiries|feedback-submissions|dashboard-local)(?:\\.html)?/?$" ar_private_page=1
+  SetEnvIf Request_URI "^/(?:feedback(?:\\.html)?|en/feedback|آراء-العملاء|ar/آراء-العملاء)/?$" ar_feedback_page=1
+  SetEnvIf Request_URI "^/(?:team-details-[a-z-]+(?:\\.html)?|en/team-details-[a-z-]+|(?:ar/)?[^/]*تفاصيل-الفريق)/?$" ar_team_details_page=1
+  SetEnvIf Request_URI "^/(?:portfolio-details-[A-Za-z0-9-]+(?:\\.html)?|en/portfolio-details-[A-Za-z0-9-]+|(?:ar/)?(?:مشروع-صالة-كبار-الشخصيات-في-المطار|مشروع-بطولة-الجولف|مشروع-سعودي-دنت|ساندوتش-تيكا-من-الطازج|برج-ترامب-جدة|ريل-لأم-الزلف|الفيلم-النهائي-للستي-ووك-٢٠٢٤|ايفنت-هوبلو|ريل-لميت-ذا-فيش|معرض-الكتاب))/?$" ar_portfolio_details_page=1
+  SetEnvIf Request_URI "^/(?:(?:blog|en/blog)/(?:event-coverage/professional-event-coverage-guide|filmmaking-techniques/cinematic-lighting-basics|product-photography/professional-product-photography-ecommerce|video-production/how-to-choose-professional-video-production-company)|(?:ar/)?(?:كشكولنا|المدونة)/(?:تغطية-الفعاليات/دليل-تغطية-الفعاليات-الاحترافية|تقنيات-صناعة-الافلام/اساسيات-الاضاءة-السينمائية|تصوير-المنتجات/دليل-تصوير-المنتجات-الاحترافي-للمتاجر-الالكترونية|انتاج-الفيديو/كيف-تختار-شركة-انتاج-فيديو-احترافية))/?$" ar_blog_articles_page=1
+  SetEnvIf Request_URI "^/(?:portfolio[2-6](?:\\.html)?|en/portfolio[2-6]|portfolio[2-6]-details-video-[1-7](?:\\.html)?|en/portfolio[2-6]-details-video-[1-7]|(?:ar/)?(?:أعمالنا-[2-6]|ريل-إعلاني-لعبدالصمد-القرشي|ريل-للكوتش-البيتي-الفيصل|نهائي-دوري-أبطال-آسيا-للنخبة|توبا-ذا-ون|ايفنت-معوض|ريل-اليوم-الوطني|موفي-بوكس-الطازج|ريل-رنة-خلخال|اوفردوز-ايس-كريم|سفاري-اكستريم|تغطية-محلات-في-السيتي-ووك|فيديو-مجوهرات|فول-جرين-فارمز|صنع-في-باكستان|افتتاح-فرع-روومرز|تغطية-كشك-في-ويشن|كيكو-ميلانو|العروض-الجوالة-سيتي-ووك|قرية-التأسيس-عرعر|معرض-الكتاب-2|مقابلات-مختارة|في-60|مجوهرات|مجوهرات-2|اوفردوز-عام|قيمرية|ريل-للطريقة-المعينة|عدنان-خان-مجھ-سے-دور|كيكة-كوز|هنجرستيشن|ايوا|بوكس-الباربكيو-زد|اعلان-قهوة|تجمع-نادي-فيراري-السعودي|اعلان-ازار))/?$" ar_portfolio_legacy_cluster_page=1
 
   # Raw implementation paths should never be indexable
   SetEnvIf Request_URI "^/(?:src|public)/.*\\.html$" ar_private_page=1
   SetEnvIf Request_URI "^/dist/(?:src/pages/.*|(?!public-localized/).*\\.html)$" ar_private_page=1
 
   Header always set X-Robots-Tag "noindex, nofollow, noarchive" env=ar_private_page
+  Header always set X-Robots-Tag "noindex, nofollow, noarchive" env=ar_feedback_page
+  Header always set X-Robots-Tag "noindex, nofollow, noarchive" env=ar_team_details_page
+  Header always set X-Robots-Tag "noindex, nofollow, noarchive" env=ar_portfolio_details_page
+  Header always set X-Robots-Tag "noindex, nofollow, noarchive" env=ar_blog_articles_page
+  Header always set X-Robots-Tag "noindex, nofollow, noarchive" env=ar_portfolio_legacy_cluster_page
 </IfModule>
 
 <IfModule mod_headers.c>
@@ -55,6 +65,44 @@ RewriteRule ^en/shop-product-details/?$ /en/shop/ [R=302,L,NC]
 RewriteRule ^تفاصيل-معدة/?$ /معداتنا/ [R=302,L,NC]
 RewriteRule ^ar/تفاصيل-معدة/?$ /معداتنا/ [R=302,L,NC]
 RewriteRule ^shop-product-details(?:\.html)?/?$ /en/shop/ [R=302,L,NC]
+
+# Contain duplicate executable routes for the approved localized/public pages only.
+# Do not broaden this to legacy detail pages, parked pages, or utility pages.
+RewriteRule ^index\.html$ / [R=301,L,NC]
+RewriteRule ^about\.html$ /en/about/ [R=301,L,NC]
+RewriteRule ^contact\.html$ /en/contact/ [R=301,L,NC]
+RewriteRule ^service\.html$ /en/service/ [R=301,L,NC]
+RewriteRule ^portfolio\.html$ /en/portfolio/ [R=301,L,NC]
+RewriteRule ^blog\.html$ /en/blog/ [R=301,L,NC]
+RewriteRule ^photography-agency\.html$ /en/photography-agency/ [R=301,L,NC]
+RewriteRule ^team\.html$ /en/team/ [R=301,L,NC]
+RewriteRule ^faq\.html$ /en/faq/ [R=301,L,NC]
+RewriteRule ^shop\.html$ /en/shop/ [R=301,L,NC]
+RewriteRule ^privacy\.html$ /en/privacy/ [R=301,L,NC]
+RewriteRule ^terms\.html$ /en/terms/ [R=301,L,NC]
+RewriteRule ^service-details-tv-commercial-ads\.html$ /en/service-details-tv-commercial-ads/ [R=301,L,NC]
+RewriteRule ^service-details-events-coverage\.html$ /en/service-details-events-coverage/ [R=301,L,NC]
+RewriteRule ^service-details-social-media-content\.html$ /en/service-details-social-media-content/ [R=301,L,NC]
+RewriteRule ^service-details-photography\.html$ /en/service-details-photography/ [R=301,L,NC]
+RewriteRule ^service-details-equipment-rental\.html$ /en/service-details-equipment-rental/ [R=301,L,NC]
+RewriteRule ^service-details-consultancy\.html$ /en/service-details-consultancy/ [R=301,L,NC]
+
+RewriteRule ^ar/من-نحن/?$ /من-نحن/ [R=301,L,NC]
+RewriteRule ^ar/تواصل-معنا/?$ /تواصل-معنا/ [R=301,L,NC]
+RewriteRule ^ar/خدماتنا/?$ /خدماتنا/ [R=301,L,NC]
+RewriteRule ^ar/أعمالنا/?$ /أعمالنا/ [R=301,L,NC]
+RewriteRule ^ar/معرض-الصور/?$ /معرض-الصور/ [R=301,L,NC]
+RewriteRule ^ar/فريقنا/?$ /فريقنا/ [R=301,L,NC]
+RewriteRule ^ar/الأسئلة-الشائعة/?$ /الأسئلة-الشائعة/ [R=301,L,NC]
+RewriteRule ^ar/(?:shop|معداتنا|%D9%85%D8%B9%D8%AF%D8%A7%D8%AA%D9%86%D8%A7)/?$ /معداتنا/ [R=301,L,NC]
+RewriteRule ^ar/سياسة-الخصوصية/?$ /سياسة-الخصوصية/ [R=301,L,NC]
+RewriteRule ^ar/شروط-الاستخدام/?$ /شروط-الاستخدام/ [R=301,L,NC]
+RewriteRule ^ar/خدمة-إعلانات-التلفزيون-والإعلانات-التجارية/?$ /خدمة-إعلانات-التلفزيون-والإعلانات-التجارية/ [R=301,L,NC]
+RewriteRule ^ar/خدمة-تغطية-الفعاليات/?$ /خدمة-تغطية-الفعاليات/ [R=301,L,NC]
+RewriteRule ^ar/خدمة-محتوى-السوشال-ميديا/?$ /خدمة-محتوى-السوشال-ميديا/ [R=301,L,NC]
+RewriteRule ^ar/خدمة-التصوير-التجاري/?$ /خدمة-التصوير-التجاري/ [R=301,L,NC]
+RewriteRule ^ar/خدمة-تأجير-المعدات/?$ /خدمة-تأجير-المعدات/ [R=301,L,NC]
+RewriteRule ^ar/خدمة-الاستشارات-الإنتاجية/?$ /خدمة-الاستشارات-الإنتاجية/ [R=301,L,NC]
 
 # BEGIN I18N ROUTES
 # BEGIN LOCALIZED PUBLIC ROUTES
@@ -80,8 +128,6 @@ RewriteRule ^en/faq/?$ dist/public-localized/en/faq.html [L,NC]
 RewriteRule ^الأسئلة-الشائعة/?$ dist/public-localized/ar/faq.html [L,NC]
 RewriteRule ^en/shop/?$ dist/public-localized/en/shop.html [L,NC]
 RewriteRule ^معداتنا/?$ dist/public-localized/ar/shop.html [L,NC]
-RewriteRule ^en/shop-product-details/?$ dist/public-localized/en/shop-product-details.html [L,NC]
-RewriteRule ^تفاصيل-معدة/?$ dist/public-localized/ar/shop-product-details.html [L,NC]
 RewriteRule ^en/privacy/?$ dist/public-localized/en/privacy.html [L,NC]
 RewriteRule ^سياسة-الخصوصية/?$ dist/public-localized/ar/privacy.html [L,NC]
 RewriteRule ^en/terms/?$ dist/public-localized/en/terms.html [L,NC]
@@ -104,7 +150,6 @@ RewriteRule ^en/?$ Arino\ -\ Template/index.html [L,NC]
 RewriteRule ^en/shop/?$ Arino\ -\ Template/shop.html [L,NC]
 RewriteRule ^en/shop-cart/?$ Arino\ -\ Template/shop-cart.html [L,NC]
 RewriteRule ^en/shop-checkout/?$ Arino\ -\ Template/shop-checkout.html [L,NC]
-RewriteRule ^en/shop-product-details/?$ Arino\ -\ Template/shop-product-details.html [L,NC]
 RewriteRule ^en/shop-wishlist/?$ Arino\ -\ Template/shop-wishlist.html [L,NC]
 RewriteRule ^en/shop-order-recived/?$ Arino\ -\ Template/shop-order-recived.html [L,NC]
 RewriteCond %{REQUEST_URI} !^/en/?$ [NC]
@@ -122,14 +167,14 @@ RewriteRule ^ar/المدونة/?$ Arino\ -\ Template/blog.html [L,NC]
 RewriteRule ^en/blog/?$ Arino\ -\ Template/blog.html [L,NC]
 RewriteRule ^ar/كشكولنا/?$ Arino\ -\ Template/blog.html [L,NC]
 
-# Blog category/tag listing routes: keep users on the styled blog page with filters.
-RewriteRule ^blog/category/([A-Za-z0-9-]+)/?$ Arino\ -\ Template/blog.html?category=$1 [L,NC,QSA]
-RewriteRule ^en/blog/category/([A-Za-z0-9-]+)/?$ Arino\ -\ Template/blog.html?category=$1 [L,NC,QSA]
-RewriteRule ^(?:كشكولنا|المدونة)/التصنيف/([^/]+)/?$ Arino\ -\ Template/blog.html?category=$1 [L,NC,QSA]
+# Blog category/tag listing routes: redirect to the approved blog surface with query filters.
+RewriteRule ^blog/category/([A-Za-z0-9-]+)/?$ /en/blog/?category=$1 [R=302,L,NC]
+RewriteRule ^en/blog/category/([A-Za-z0-9-]+)/?$ /en/blog/?category=$1 [R=302,L,NC]
+RewriteRule ^(?:كشكولنا|المدونة)/التصنيف/([^/]+)/?$ /كشكولنا/?category=$1 [R=302,L,NC]
 
-RewriteRule ^blog/tag/([A-Za-z0-9-]+)/?$ Arino\ -\ Template/blog.html?tag=$1 [L,NC,QSA]
-RewriteRule ^en/blog/tag/([A-Za-z0-9-]+)/?$ Arino\ -\ Template/blog.html?tag=$1 [L,NC,QSA]
-RewriteRule ^(?:كشكولنا|المدونة)/وسم/([^/]+)/?$ Arino\ -\ Template/blog.html?tag=$1 [L,NC,QSA]
+RewriteRule ^blog/tag/([A-Za-z0-9-]+)/?$ /en/blog/?tag=$1 [R=302,L,NC]
+RewriteRule ^en/blog/tag/([A-Za-z0-9-]+)/?$ /en/blog/?tag=$1 [R=302,L,NC]
+RewriteRule ^(?:كشكولنا|المدونة)/وسم/([^/]+)/?$ /كشكولنا/?tag=$1 [R=302,L,NC]
 
 RewriteRule ^(?:كشكولنا|المدونة)/انتاج-الفيديو/كيف-تختار-شركة-انتاج-فيديو-احترافية/?$ Arino\ -\ Template/blog/video-production/how-to-choose-professional-video-production-company/index.html [L,NC,QSA]
 RewriteRule ^(?:كشكولنا|المدونة)/تصوير-المنتجات/دليل-تصوير-المنتجات-الاحترافي-للمتاجر-الالكترونية/?$ Arino\ -\ Template/blog/product-photography/professional-product-photography-ecommerce/index.html [L,NC,QSA]
@@ -152,13 +197,11 @@ RewriteRule ^المدونة/(.+)/?$ Arino\ -\ Template/blog/$1/index.html [L,NC,
 RewriteRule ^shop(?:\.html)?/?$ Arino\ -\ Template/shop.html [L,NC]
 RewriteRule ^shop-cart(?:\.html)?/?$ Arino\ -\ Template/shop-cart.html [L,NC]
 RewriteRule ^shop-checkout(?:\.html)?/?$ Arino\ -\ Template/shop-checkout.html [L,NC]
-RewriteRule ^shop-product-details(?:\.html)?/?$ Arino\ -\ Template/shop-product-details.html [L,NC]
 RewriteRule ^shop-wishlist(?:\.html)?/?$ Arino\ -\ Template/shop-wishlist.html [L,NC]
 RewriteRule ^shop-order-recived(?:\.html)?/?$ Arino\ -\ Template/shop-order-recived.html [L,NC]
 RewriteRule ^ar/(?:shop|معداتنا|%D9%85%D8%B9%D8%AF%D8%A7%D8%AA%D9%86%D8%A7)/?$ Arino\ -\ Template/shop.html [L,NC]
 RewriteRule ^ar/سلة-المعدات/?$ Arino\ -\ Template/shop-cart.html [L,NC]
 RewriteRule ^ar/طلب-المعدات/?$ Arino\ -\ Template/shop-checkout.html [L,NC]
-RewriteRule ^ar/تفاصيل-معدة/?$ Arino\ -\ Template/shop-product-details.html [L,NC]
 RewriteRule ^ar/المفضلة/?$ Arino\ -\ Template/shop-wishlist.html [L,NC]
 RewriteRule ^ar/تأكيد-الطلب/?$ Arino\ -\ Template/shop-order-recived.html [L,NC]
 RewriteRule ^ar/من-نحن/?$ Arino\ -\ Template/about.html [L,NC]
@@ -241,7 +284,6 @@ RewriteRule ^كشكولنا/?$ Arino\ -\ Template/blog.html [L,NC]
 RewriteRule ^(?:shop|معداتنا|%D9%85%D8%B9%D8%AF%D8%A7%D8%AA%D9%86%D8%A7)/?$ Arino\ -\ Template/shop.html [L,NC]
 RewriteRule ^سلة-المعدات/?$ Arino\ -\ Template/shop-cart.html [L,NC]
 RewriteRule ^طلب-المعدات/?$ Arino\ -\ Template/shop-checkout.html [L,NC]
-RewriteRule ^تفاصيل-معدة/?$ Arino\ -\ Template/shop-product-details.html [L,NC]
 RewriteRule ^المفضلة/?$ Arino\ -\ Template/shop-wishlist.html [L,NC]
 RewriteRule ^تأكيد-الطلب/?$ Arino\ -\ Template/shop-order-recived.html [L,NC]
 RewriteRule ^من-نحن/?$ Arino\ -\ Template/about.html [L,NC]

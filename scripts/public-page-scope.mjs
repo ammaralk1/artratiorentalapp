@@ -11,7 +11,6 @@ export const PHASE_1_PILOT_FILES = Object.freeze([
   'team.html',
   'faq.html',
   'shop.html',
-  'shop-product-details.html',
   'privacy.html',
   'terms.html',
   'service-details-tv-commercial-ads.html',
@@ -25,6 +24,13 @@ export const PHASE_1_PILOT_FILES = Object.freeze([
 export const PHASE_1_PILOT_LOCALES = Object.freeze(['en', 'ar']);
 
 export const PHASE_1_OUTPUT_ROOT = LOCALIZED_PILOT_OUTPUT_ROOT;
+
+// Production-approved SEO surface only.
+// Keep temporarily depublished/special-case routes out of sitemap/hreflang alignment
+// until their serving/canonical ownership is resolved independently.
+export const APPROVED_PUBLIC_SEO_FILES = Object.freeze(
+  PHASE_1_PILOT_FILES.filter((file) => file !== 'shop-product-details.html'),
+);
 
 export const PHASE_1_PAGE_SCOPE = Object.freeze({
   'index.html': {
@@ -79,8 +85,8 @@ export const PHASE_1_PAGE_SCOPE = Object.freeze({
   },
   'shop-product-details.html': {
     pageId: 'shop-product-details',
-    include: true,
-    rollout: '3a-pilot',
+    include: false,
+    rollout: 'parked-special-case',
   },
   'privacy.html': {
     pageId: 'privacy',

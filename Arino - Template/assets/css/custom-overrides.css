@@ -636,7 +636,7 @@ body[data-page="home"] .cs-home-hero .cs-home-hero_poster {
   position: absolute;
   inset: 0;
   z-index: 1;
-  background-image: url("../img/hero_bg.jpeg");
+  background-image: url("../img/hero_bg.webp");
   background-size: cover;
   background-position: center center;
   background-repeat: no-repeat;
@@ -827,7 +827,7 @@ body[data-page="home"] .cs-home-hero .cs-home-hero_media_switch .cs-home-hero_to
     background-position: center 0% !important;
   }
   body[data-page="home"] .cs-home-hero .cs-home-hero_poster {
-    background-image: url("../img/Mob Hero BG/hero_bg.jpg");
+    background-image: url("../img/Mob Hero BG/hero_bg.webp");
     background-position: center -6% !important;
   }
   body[data-page="home"] .cs-home-hero .cs-home-hero_media_switch {
@@ -927,7 +927,7 @@ body[data-page="home"] .cs-home-hero .cs-home-hero_media_switch .cs-home-hero_to
     background-position: center 0% !important;
   }
   body[data-page="home"] .cs-home-hero .cs-home-hero_poster {
-    background-image: url("../img/Mob Hero BG/hero_bg.jpg");
+    background-image: url("../img/Mob Hero BG/hero_bg.webp");
     background-position: center -8% !important;
   }
   body[data-page="home"] .cs-home-hero .cs-home-hero_media_switch {
@@ -2423,9 +2423,38 @@ body[data-page="terms"] .cs-page_heading.cs-style1.cs-bg {
   background-size: cover !important;
 }
 @media (max-width: 991px) {
+  body[data-page="about"] .cs-page_heading.cs-style1.cs-bg {
+    background-image: url("../img/Mob Hero BG/about_hero_bg-mobile.webp") !important;
+  }
+  body[data-page="contact"] .cs-page_heading.cs-style1.cs-bg,
+  body[data-page-file="faq.html"] .cs-page_heading.cs-style1.cs-bg {
+    background-image: url("../img/Mob Hero BG/contact_hero_bg_mobile.webp") !important;
+  }
+  body[data-page="service"] .cs-page_heading.cs-style1.cs-bg,
+  body[data-page-file="service-details-tv-commercial-ads.html"] .cs-page_heading.cs-style1.cs-bg,
+  body[data-page-file="service-details-events-coverage.html"] .cs-page_heading.cs-style1.cs-bg,
+  body[data-page-file="service-details-social-media-content.html"] .cs-page_heading.cs-style1.cs-bg,
+  body[data-page-file="service-details-photography.html"] .cs-page_heading.cs-style1.cs-bg,
+  body[data-page-file="service-details-equipment-rental.html"] .cs-page_heading.cs-style1.cs-bg,
+  body[data-page-file="service-details-consultancy.html"] .cs-page_heading.cs-style1.cs-bg {
+    background-image: url("../img/Mob Hero BG/service_hero_bg_mobile.webp") !important;
+  }
+  body[data-page="portfolio"] .cs-page_heading.cs-style1.cs-bg,
+  body[data-page="photo-gallery"] .cs-page_heading.cs-style1.cs-bg {
+    background-image: url("../img/Mob Hero BG/portfolio_hero_bg_mobile.webp") !important;
+  }
+  body[data-page="blog"] .cs-page_heading.cs-style1.cs-bg {
+    background-image: url("../img/Mob Hero BG/blog_hero_bg_mobile.webp") !important;
+  }
+  body[data-page="team"] .cs-page_heading.cs-style1.cs-bg {
+    background-image: url("../img/Mob Hero BG/team_hero_bg_mobile.webp") !important;
+  }
+  body[data-page="shop"] .cs-page_heading.cs-style1.cs-bg {
+    background-image: url("../img/Mob Hero BG/shop_hero_bg_mobile.webp") !important;
+  }
   body[data-page="privacy"] .cs-page_heading.cs-style1.cs-bg,
   body[data-page="terms"] .cs-page_heading.cs-style1.cs-bg {
-    background-image: url("../img/Mob Hero BG/hero_bg.jpg") !important;
+    background-image: url("../img/Mob Hero BG/hero_bg.webp") !important;
     background-size: 148% auto !important;
   }
 }

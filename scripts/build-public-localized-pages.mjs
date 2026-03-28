@@ -22,6 +22,7 @@ import {
   ORGANIZATION_ID,
   PAGE_SPECIFIC_SCHEMA_TYPES,
   PROFESSIONAL_SERVICE_ID,
+  SOCIAL_SHARE_IMAGE_URL,
   WEBSITE_ID,
 } from './public-page-schema.mjs';
 import {
@@ -130,9 +131,16 @@ const setSeoHead = (document, localeConfig, locale) => {
   const arUrl = toAbsoluteUrl(localeConfig.routes.ar);
   const seo = localeConfig.seo[locale];
 
+  const titleNode = ensureSingleNode(document, 'title');
+  if (!titleNode) {
+    const createdTitle = document.createElement('title');
+    document.head.appendChild(createdTitle);
+  }
   document.title = seo.title;
 
   upsertMeta(document, 'meta[name="description"]', { name: 'description' }, seo.description);
+  upsertMeta(document, 'meta[property="og:type"]', { property: 'og:type' }, 'website');
+  upsertMeta(document, 'meta[property="og:site_name"]', { property: 'og:site_name' }, 'Art Ratio');
   upsertMeta(document, 'meta[property="og:title"]', { property: 'og:title' }, seo.title);
   upsertMeta(
     document,
@@ -141,6 +149,8 @@ const setSeoHead = (document, localeConfig, locale) => {
     seo.description,
   );
   upsertMeta(document, 'meta[property="og:url"]', { property: 'og:url' }, currentUrl);
+  upsertMeta(document, 'meta[property="og:image"]', { property: 'og:image' }, SOCIAL_SHARE_IMAGE_URL);
+  upsertMeta(document, 'meta[name="twitter:card"]', { name: 'twitter:card' }, 'summary_large_image');
   upsertMeta(document, 'meta[name="twitter:title"]', { name: 'twitter:title' }, seo.title);
   upsertMeta(
     document,
@@ -148,6 +158,7 @@ const setSeoHead = (document, localeConfig, locale) => {
     { name: 'twitter:description' },
     seo.description,
   );
+  upsertMeta(document, 'meta[name="twitter:image"]', { name: 'twitter:image' }, SOCIAL_SHARE_IMAGE_URL);
 
   upsertLink(document, 'link[rel="canonical"]', { rel: 'canonical' }, currentUrl);
   upsertLink(
@@ -258,6 +269,185 @@ const setStructuredData = (document, localeConfig, locale) => {
   }
 
   document.head.appendChild(script);
+};
+
+const normalizePath = (rawPath) => {
+  let value = rawPath || '/';
+  if (!value.startsWith('/')) {
+    value = `/${value}`;
+  }
+  value = value.replace(/\/{2,}/g, '/');
+  if (value !== '/' && value.endsWith('/')) {
+    value = value.slice(0, -1);
+  }
+  return value || '/';
+};
+
+const toDirectArabicPath = (rawPath) => {
+  const normalized = normalizePath(rawPath);
+  if (normalized === '/ar') return '/';
+  if (normalized.startsWith('/ar/')) {
+    const direct = normalized.slice(3);
+    return direct || '/';
+  }
+  return normalized;
+};
+
+const APPROVED_PERFORMANCE_ASSET_REWRITES = Object.freeze([
+  ['assets/img/hero_bg.jpeg', 'assets/img/hero_bg.webp'],
+  ['assets/img/service_hero_bg.jpeg', 'assets/img/service_hero_bg.webp'],
+  ['assets/img/contact_hero_bg.jpeg', 'assets/img/contact_hero_bg.webp'],
+  ['assets/img/portfolio_hero_bg.jpeg', 'assets/img/portfolio_hero_bg.webp'],
+  ['assets/img/blog_hero_bg.jpeg', 'assets/img/blog_hero_bg.webp'],
+  ['assets/img/team_hero_bg.jpeg', 'assets/img/team_hero_bg.webp'],
+  ['assets/img/about_hero_bg.jpeg', 'assets/img/about_hero_bg.webp'],
+  ['assets/img/shop_hero_bg.jpeg', 'assets/img/shop_hero_bg.webp'],
+  ['assets/img/cta_bg_2.jpeg', 'assets/img/cta_bg_2.webp'],
+  ['assets/img/Mob%20Hero%20BG/hero_bg.jpg', 'assets/img/Mob%20Hero%20BG/hero_bg.webp'],
+  ['assets/img/Mob Hero BG/hero_bg.jpg', 'assets/img/Mob Hero BG/hero_bg.webp'],
+]);
+
+const APPROVED_PERFORMANCE_CUSTOM_OVERRIDES_VERSION = '20260329-approved-performance2';
+
+const applyApprovedPerformanceAssetRewrites = (html) => {
+  let nextHtml = html;
+
+  for (const [source, target] of APPROVED_PERFORMANCE_ASSET_REWRITES) {
+    nextHtml = nextHtml.replaceAll(source, target);
+  }
+
+  nextHtml = nextHtml.replace(
+    /assets\/css\/custom-overrides\.css\?v=[^"']+/g,
+    `assets/css/custom-overrides.css?v=${APPROVED_PERFORMANCE_CUSTOM_OVERRIDES_VERSION}`,
+  );
+
+  return nextHtml;
+};
+
+const pathForFileLocale = (file, locale) => {
+  const config = PUBLIC_PAGE_LOCALES[file];
+  if (!config) return '';
+  if (locale === 'en') return config.routes.en;
+  return toDirectArabicPath(config.routes.ar);
+};
+
+const APPROVED_BLOG_ARTICLE_PATHS = Object.freeze({
+  'blog/event-coverage/professional-event-coverage-guide/': {
+    en: '/en/blog/event-coverage/professional-event-coverage-guide/',
+    ar: '/كشكولنا/تغطية-الفعاليات/دليل-تغطية-الفعاليات-الاحترافية/',
+  },
+  'blog/filmmaking-techniques/cinematic-lighting-basics/': {
+    en: '/en/blog/filmmaking-techniques/cinematic-lighting-basics/',
+    ar: '/كشكولنا/تقنيات-صناعة-الافلام/اساسيات-الاضاءة-السينمائية/',
+  },
+  'blog/product-photography/professional-product-photography-ecommerce/': {
+    en: '/en/blog/product-photography/professional-product-photography-ecommerce/',
+    ar: '/كشكولنا/تصوير-المنتجات/دليل-تصوير-المنتجات-الاحترافي-للمتاجر-الالكترونية/',
+  },
+  'blog/video-production/how-to-choose-professional-video-production-company/': {
+    en: '/en/blog/video-production/how-to-choose-professional-video-production-company/',
+    ar: '/كشكولنا/انتاج-الفيديو/كيف-تختار-شركة-انتاج-فيديو-احترافية/',
+  },
+});
+
+const pathForApprovedBlogArticleLocale = (pathname, locale) => {
+  const normalized = normalizePath(pathname);
+  const clean = normalized.startsWith('/') ? normalized.slice(1) : normalized;
+  const key = clean.endsWith('/') ? clean : `${clean}/`;
+  const config = APPROVED_BLOG_ARTICLE_PATHS[key];
+  if (!config) return '';
+  return locale === 'en' ? config.en : config.ar;
+};
+
+const pathForApprovedBlogFacetLocale = (pathname, locale) => {
+  const normalized = normalizePath(pathname);
+  const categoryMatch = normalized.match(/^\/blog\/category\/([A-Za-z0-9-]+)$/i);
+  if (categoryMatch) {
+    const base = locale === 'en' ? '/en/blog/' : '/كشكولنا/';
+    return `${base}?category=${categoryMatch[1]}`;
+  }
+
+  const tagMatch = normalized.match(/^\/blog\/tag\/([A-Za-z0-9-]+)$/i);
+  if (tagMatch) {
+    const base = locale === 'en' ? '/en/blog/' : '/كشكولنا/';
+    return `${base}?tag=${tagMatch[1]}`;
+  }
+
+  return '';
+};
+
+const localizeInternalLinks = (document, locale) => {
+  const currentFile = document.body?.dataset?.pageFile || '';
+  const currentPath = currentFile ? pathForFileLocale(currentFile, locale) : '';
+
+  document.querySelectorAll('a[href]').forEach((anchor) => {
+    const rawHref = anchor.getAttribute('href');
+    if (!rawHref) return;
+    if (/^(#|mailto:|tel:|javascript:)/i.test(rawHref)) return;
+
+    let parsed;
+    try {
+      parsed = new URL(rawHref, 'https://art-ratio.com');
+    } catch {
+      return;
+    }
+
+    if (parsed.origin !== 'https://art-ratio.com') return;
+
+    const pathname = parsed.pathname || '';
+    const localizedFacetPath = pathForApprovedBlogFacetLocale(pathname, locale);
+    if (localizedFacetPath) {
+      anchor.setAttribute('href', localizedFacetPath + (parsed.hash || ''));
+      return;
+    }
+
+    const fileMatch = pathname.match(/\/([^/]+\.html)$/i);
+    if (!fileMatch) {
+      const localizedArticlePath = pathForApprovedBlogArticleLocale(pathname, locale);
+      if (!localizedArticlePath) return;
+      anchor.setAttribute('href', localizedArticlePath + (parsed.search || '') + (parsed.hash || ''));
+      return;
+    }
+
+    const targetFile = fileMatch[1];
+    const localizedPath = pathForFileLocale(targetFile, locale);
+    if (!localizedPath) return;
+
+    const normalizedTarget = normalizePath(localizedPath);
+    const nextHref =
+      normalizedTarget +
+      (parsed.search || '') +
+      (parsed.hash || '');
+
+    // Preserve same-page anchors as relative-only links when possible.
+    if (currentPath && normalizePath(currentPath) === normalizedTarget && !parsed.search) {
+      anchor.setAttribute('href', parsed.hash || normalizedTarget);
+      return;
+    }
+
+    anchor.setAttribute('href', nextHref);
+  });
+};
+
+const applyLegacyClusterLinkContainment = (document) => {
+  document.querySelectorAll('a[href]').forEach((anchor) => {
+    const href = anchor.getAttribute('href') || '';
+    if (
+      !/team-details-[a-z-]+\.html(?:[?#].*)?$/i.test(href)
+      && !/portfolio-details-[A-Za-z0-9-]+\.html(?:[?#].*)?$/i.test(href)
+      && !/^(?:\/?blog\/(?:event-coverage\/professional-event-coverage-guide|filmmaking-techniques\/cinematic-lighting-basics|product-photography\/professional-product-photography-ecommerce|video-production\/how-to-choose-professional-video-production-company)|\/en\/blog\/(?:event-coverage\/professional-event-coverage-guide|filmmaking-techniques\/cinematic-lighting-basics|product-photography\/professional-product-photography-ecommerce|video-production\/how-to-choose-professional-video-production-company)|\/كشكولنا\/(?:تغطية-الفعاليات\/دليل-تغطية-الفعاليات-الاحترافية|تقنيات-صناعة-الافلام\/اساسيات-الاضاءة-السينمائية|تصوير-المنتجات\/دليل-تصوير-المنتجات-الاحترافي-للمتاجر-الالكترونية|انتاج-الفيديو\/كيف-تختار-شركة-انتاج-فيديو-احترافية))\/?(?:[?#].*)?$/i.test(href)
+    ) {
+      return;
+    }
+
+    const currentRel = (anchor.getAttribute('rel') || '')
+      .split(/\s+/)
+      .filter(Boolean);
+    if (!currentRel.includes('nofollow')) {
+      currentRel.push('nofollow');
+      anchor.setAttribute('rel', currentRel.join(' '));
+    }
+  });
 };
 
 const applyValueToNode = (node, entry, value, key) => {
@@ -394,13 +584,19 @@ const generatePage = async (file, outputRoot) => {
     const { document } = dom.window;
 
     setDocumentLanguage(document, localeConfig, locale);
+    if (document.body) {
+      document.body.dataset.pageFile = file;
+    }
     setSeoHead(document, localeConfig, locale);
     const localeDir = path.join(outputRoot, locale);
     await fs.mkdir(localeDir, { recursive: true });
     applyBodyEntries(document, localeConfig, locale, ALL_KEYED_TRANSLATIONS, PILOT_SELECTOR_TRANSLATIONS);
+    localizeInternalLinks(document, locale);
+    applyLegacyClusterLinkContainment(document);
     setStructuredData(document, localeConfig, locale);
     const outputPath = path.join(localeDir, file);
-    await fs.writeFile(outputPath, dom.serialize(), 'utf8');
+    const optimizedHtml = applyApprovedPerformanceAssetRewrites(dom.serialize());
+    await fs.writeFile(outputPath, optimizedHtml, 'utf8');
     assertVisibleBodyCoverage(document, locale, file);
   }
 };

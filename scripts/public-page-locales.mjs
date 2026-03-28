@@ -252,7 +252,7 @@ export const PUBLIC_PAGE_LOCALES = Object.freeze({
       en: {
         title: 'Contact Art Ratio',
         description:
-          'Tell us what you’re building. Art Ratio works across commercials, events, photography, equipment, and visual content with a process built around clarity and execution.',
+          'Tell us what you’re building. Art Ratio handles commercials, events, photography, equipment, and visual content with a clear, execution-first process.',
       },
       ar: {
         title: 'تواصل مع آرت ريشيو',
@@ -276,7 +276,7 @@ export const PUBLIC_PAGE_LOCALES = Object.freeze({
       en: {
         title: 'Services | Art Ratio',
         description:
-          'Explore Art Ratio’s work across TV & Commercial Ads, Events & Coverage, Social Media Visuals, Commercial Photography, Equipment Rental, and Production Consultancy.',
+          'Explore Art Ratio services across ads, events, social visuals, photography, equipment rental, and production consultancy.',
       },
       ar: {
         title: 'الخدمات | آرت ريشيو',
@@ -636,7 +636,7 @@ export const PUBLIC_PAGE_LOCALES = Object.freeze({
       en: {
         title: 'Production Consultancy | Art Ratio',
         description:
-          'Art Ratio offers production consultancy shaped by practical experience, helping teams plan clearly, make better decisions, and move into execution with confidence.',
+          'Art Ratio offers production consultancy that helps teams plan clearly, make better decisions, and move into execution with confidence.',
       },
       ar: {
         title: 'الاستشارات الإنتاجية | آرت ريشيو',

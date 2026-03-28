@@ -1,84 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import { PUBLIC_PAGE_LOCALES, PUBLIC_SITE_ORIGIN } from "./public-page-locales.mjs";
+import { APPROVED_PUBLIC_SEO_FILES } from "./public-page-scope.mjs";
+
 const ROOT = process.cwd();
-const LANG_TOGGLE_PATH = path.join(ROOT, "Arino - Template", "assets", "js", "lang-toggle.js");
 const SITEMAP_PATH = path.join(ROOT, "sitemap.xml");
-const BASE_URL = "https://art-ratio.com";
 const LASTMOD = new Date().toISOString().slice(0, 10);
-
-const source = fs.readFileSync(LANG_TOGGLE_PATH, "utf8");
-
-function extractObjectLiteral(anchor) {
-  const anchorIndex = source.indexOf(anchor);
-  if (anchorIndex < 0) {
-    throw new Error(`Anchor not found: ${anchor}`);
-  }
-
-  const openIndex = source.indexOf("{", anchorIndex);
-  if (openIndex < 0) {
-    throw new Error(`Object literal start not found for: ${anchor}`);
-  }
-
-  let depth = 0;
-  let inSingle = false;
-  let inDouble = false;
-  let inTemplate = false;
-  let escaped = false;
-
-  for (let i = openIndex; i < source.length; i += 1) {
-    const ch = source[i];
-
-    if (escaped) {
-      escaped = false;
-      continue;
-    }
-
-    if (ch === "\\") {
-      escaped = true;
-      continue;
-    }
-
-    if (!inDouble && !inTemplate && ch === "'" && !inSingle) {
-      inSingle = true;
-      continue;
-    } else if (inSingle && ch === "'") {
-      inSingle = false;
-      continue;
-    }
-
-    if (!inSingle && !inTemplate && ch === '"' && !inDouble) {
-      inDouble = true;
-      continue;
-    } else if (inDouble && ch === '"') {
-      inDouble = false;
-      continue;
-    }
-
-    if (!inSingle && !inDouble && ch === "`" && !inTemplate) {
-      inTemplate = true;
-      continue;
-    } else if (inTemplate && ch === "`") {
-      inTemplate = false;
-      continue;
-    }
-
-    if (inSingle || inDouble || inTemplate) continue;
-
-    if (ch === "{") depth += 1;
-    if (ch === "}") depth -= 1;
-
-    if (depth === 0) {
-      return source.slice(openIndex, i + 1);
-    }
-  }
-
-  throw new Error(`Object literal end not found for: ${anchor}`);
-}
-
-function evaluateObjectLiteral(literal) {
-  return Function(`"use strict"; return (${literal});`)();
-}
 
 function normalizePath(rawPath) {
   let p = String(rawPath || "/");
@@ -93,16 +21,9 @@ function withTrailingSlash(rawPath) {
   return p === "/" ? "/" : `${p}/`;
 }
 
-function toDirectArabicPath(rawPath) {
-  const p = withTrailingSlash(rawPath);
-  if (p === "/ar/") return "/";
-  if (p.startsWith("/ar/")) return `/${p.slice("/ar/".length)}`;
-  return p;
-}
-
 function absoluteUrl(sitePath) {
-  if (sitePath === "/") return `${BASE_URL}/`;
-  return `${BASE_URL}${sitePath}`;
+  if (sitePath === "/") return `${PUBLIC_SITE_ORIGIN}/`;
+  return `${PUBLIC_SITE_ORIGIN}${sitePath}`;
 }
 
 function escapeXml(value) {
@@ -150,46 +71,18 @@ function renderUrlNode(entry) {
   ].join("\n");
 }
 
-const localizedRouteMap = evaluateObjectLiteral(
-  extractObjectLiteral("const localizedRouteMap = {")
-);
-const blogPostSlugMap = evaluateObjectLiteral(
-  extractObjectLiteral("const blogPostSlugMap = Object.freeze({")
-);
-
-const EXCLUDED_LOCALIZED_FILES = new Set([
-  "shop-cart.html",
-  "shop-checkout.html",
-  "shop-product-details.html",
-  "shop-wishlist.html",
-  "shop-order-recived.html",
-]);
-
 const pairEntries = [];
-const pairSeen = new Set();
 
-function addPair(enPath, arPath, priority = "0.7") {
-  const en = withTrailingSlash(enPath);
-  const ar = withTrailingSlash(arPath);
-  const key = `${en}|${ar}`;
-  if (pairSeen.has(key)) return;
-  pairSeen.add(key);
-  pairEntries.push(...makePairEntries(en, ar, priority));
-}
-
-for (const [file, paths] of Object.entries(localizedRouteMap)) {
-  if (EXCLUDED_LOCALIZED_FILES.has(file)) continue;
-  const enPath = withTrailingSlash(paths.en);
-  const arPath = withTrailingSlash(toDirectArabicPath(paths.ar));
-  const priority = enPath === "/en/" ? "1.0" : "0.7";
-  addPair(enPath, arPath, priority);
-}
-
-for (const [enPost, arPost] of Object.entries(blogPostSlugMap)) {
-  const postFile = path.join(ROOT, "Arino - Template", "blog", enPost, "index.html");
-  if (fs.existsSync(postFile)) {
-    addPair(`/en/blog/${enPost}/`, `/كشكولنا/${arPost}/`, "0.7");
+for (const file of APPROVED_PUBLIC_SEO_FILES) {
+  const localeConfig = PUBLIC_PAGE_LOCALES[file];
+  if (!localeConfig?.routes?.en || !localeConfig?.routes?.ar) {
+    throw new Error(`Missing approved localized routes for sitemap file: ${file}`);
   }
+
+  const enPath = withTrailingSlash(localeConfig.routes.en);
+  const arPath = withTrailingSlash(localeConfig.routes.ar);
+  const priority = enPath === "/en/" ? "1.0" : "0.7";
+  pairEntries.push(...makePairEntries(enPath, arPath, priority));
 }
 
 const xml = [
@@ -201,4 +94,6 @@ const xml = [
 ].join("\n");
 
 fs.writeFileSync(SITEMAP_PATH, xml, "utf8");
-console.log(`Generated sitemap with ${pairEntries.length} URLs at ${path.relative(ROOT, SITEMAP_PATH)}`);
+console.log(
+  `Generated sitemap with ${pairEntries.length} URLs from ${APPROVED_PUBLIC_SEO_FILES.length} approved files at ${path.relative(ROOT, SITEMAP_PATH)}`,
+);
