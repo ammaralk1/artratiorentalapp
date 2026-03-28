@@ -209,6 +209,31 @@ body[data-page="home"] .cs-funfact_heading h2 {
   font-weight: 400;
 }
 
+body[data-page="service"] .cs-service-kufidia-title {
+  font-family: "TSKufidia-Normal", "Tajawal", sans-serif !important;
+  font-weight: 400 !important;
+  font-size: clamp(58px, 8vw, 96px) !important;
+  line-height: 1;
+}
+
+body[data-page="service"] .cs-service-intro-lead {
+  font-size: clamp(21px, 2.1vw, 28px) !important;
+  line-height: 1.5;
+  max-width: 900px;
+  margin-inline: auto;
+}
+
+@media (max-width: 991px) {
+  body[data-page="service"] .cs-service-kufidia-title {
+    font-size: clamp(42px, 11vw, 64px) !important;
+  }
+
+  body[data-page="service"] .cs-service-intro-lead {
+    font-size: clamp(18px, 5vw, 24px) !important;
+    line-height: 1.45;
+  }
+}
+
 html[lang="ar"] body[data-page="home"] [data-i18n-key="home_general_text_1"],
 html[dir="rtl"] body[data-page="home"] [data-i18n-key="home_general_text_1"],
 body.rtl[data-page="home"] [data-i18n-key="home_general_text_1"],
@@ -301,7 +326,6 @@ body[data-page="home"] [data-i18n-key="home_partners_marquee"] {
 }
 
 /* About page section typography (AR/EN) */
-body[data-page="about"] [data-i18n-key="about_intro_title"],
 body[data-page="about"] [data-i18n-key="funfacts_title"],
 body[data-page="about"] [data-i18n-key="about_why_title"],
 body[data-page="about"] [data-i18n-key="home_team_title"] {
@@ -313,10 +337,97 @@ body[data-page="about"] [data-i18n-key="home_team_title"] {
 body[data-page="portfolio"] [data-i18n-key="portfolio_intro_title"],
 body[data-page="photo-gallery"] [data-i18n-key="gallery_section_title"],
 body[data-page="team"] [data-i18n-key="home_team_title"],
-body[data-page="contact"] [data-i18n-key="contact_intro_title"],
 body[data-page="feedback"] [data-i18n-key="feedback_intro_title"] {
   font-family: "TSKufidia-Normal", "Tajawal", sans-serif;
   font-weight: 400;
+}
+
+body[data-page="contact"] .cs-contact-kufidia-subtitle {
+  font-family: "TSKufidia-Normal", "Tajawal", sans-serif !important;
+  font-weight: 400 !important;
+  font-size: clamp(46px, 7vw, 78px) !important;
+  line-height: 1.05;
+  color: #fff !important;
+  opacity: 1 !important;
+  margin-bottom: 18px;
+}
+
+body[data-page="contact"] .cs-contact-intro-lead {
+  font-family: "DINNextLTArabic-Medium", "TSKufidia-Normal", "Tajawal", sans-serif !important;
+  font-weight: 500 !important;
+  font-size: clamp(26px, 3.2vw, 38px) !important;
+  line-height: 1.35;
+}
+
+@media (max-width: 991px) {
+  body[data-page="contact"] .cs-contact-kufidia-subtitle {
+    font-size: clamp(34px, 10vw, 54px) !important;
+  }
+
+  body[data-page="contact"] .cs-contact-intro-lead {
+    font-size: clamp(22px, 5.2vw, 30px) !important;
+  }
+}
+
+body[data-page="about"] .cs-about-kufidia-subtitle {
+  font-family: "TSKufidia-Normal", "Tajawal", sans-serif !important;
+  font-weight: 400 !important;
+  font-size: clamp(46px, 7vw, 78px) !important;
+  line-height: 1.05;
+  color: #fff !important;
+  opacity: 1 !important;
+  margin-bottom: 18px;
+}
+
+body[data-page="about"] .cs-about-intro-lead {
+  font-family: "DINNextLTArabic-Medium", "TSKufidia-Normal", "Tajawal", sans-serif !important;
+  font-weight: 500 !important;
+  font-size: clamp(26px, 3.2vw, 38px) !important;
+  line-height: 1.35;
+}
+
+body[data-page="about"] .cs-about-why-kufidia-subtitle {
+  font-family: "TSKufidia-Normal", "Tajawal", sans-serif !important;
+  font-weight: 400 !important;
+  font-size: clamp(46px, 7vw, 78px) !important;
+  line-height: 1.05;
+  color: #fff !important;
+  opacity: 1 !important;
+  margin-bottom: 18px;
+}
+
+body[data-page="about"] .cs-about-why-intro-lead {
+  font-family: "DINNextLTArabic-Medium", "TSKufidia-Normal", "Tajawal", sans-serif !important;
+  font-weight: 500 !important;
+  font-size: clamp(26px, 3.2vw, 38px) !important;
+  line-height: 1.35;
+}
+
+body[data-page="about"] .cs-about-team-title {
+  font-size: clamp(42px, 4.6vw, 58px) !important;
+  line-height: 1.1;
+}
+
+@media (max-width: 991px) {
+  body[data-page="about"] .cs-about-kufidia-subtitle {
+    font-size: clamp(34px, 10vw, 54px) !important;
+  }
+
+  body[data-page="about"] .cs-about-intro-lead {
+    font-size: clamp(22px, 5.2vw, 30px) !important;
+  }
+
+  body[data-page="about"] .cs-about-why-kufidia-subtitle {
+    font-size: clamp(34px, 10vw, 54px) !important;
+  }
+
+  body[data-page="about"] .cs-about-why-intro-lead {
+    font-size: clamp(22px, 5.2vw, 30px) !important;
+  }
+
+  body[data-page="about"] .cs-about-team-title {
+    font-size: clamp(30px, 7vw, 40px) !important;
+  }
 }
 
 body[data-page="feedback"] .ar-feedback-rating {
@@ -1110,7 +1221,6 @@ body[data-page="service-social-details"] .cs-video_embed_wrap.cs-video_vertical 
   color: var(--brand-mid);
   text-shadow: 0 0 12px rgba(122, 147, 160, 0.45);
 }
-
 /* Team image quality controls */
 body[data-page="team"] .cs-team.cs-style1 .cs-member_thumb {
   aspect-ratio: auto;
