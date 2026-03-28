@@ -261,11 +261,19 @@ export const PILOT_KEYED_TRANSLATIONS = Object.freeze({
   portfolio_filter_photography: { en: 'Photography', ar: 'صور فوتوغرافية' },
   portfolio_hero_title: { en: 'Portfolio', ar: 'أعمالنا' },
   portfolio_intro_subtitle: { en: 'Our Portfolio', ar: 'أعمالنا' },
-  portfolio_intro_title: { en: 'Some recent work', ar: 'استكشف أعمالنا' },
-  portfolio_gallery_link_note: {
+  portfolio_intro_title: { en: 'Explore Our Work', ar: 'استكشف أعمالنا' },
+  portfolio_intro_copy: {
     type: 'html',
-    en: 'Looking for still-image work? Explore the <a href="photography-agency.html">Photo Gallery</a>.',
-    ar: 'إذا كنت تبحث عن أعمال الصور الثابتة، فتفضل بزيارة <a href="photography-agency.html">معرض الصور</a>.',
+    en: 'These are selected projects across campaigns, events, social content, films, and photography, each showing a different side of how Art Ratio plans, executes, and delivers.',
+    ar: 'هنا نماذج مختارة من أعمالنا في الحملات، والفعاليات، ومحتوى السوشال، والأفلام، والتصوير، وكل واحد منها يوضح جانبًا مختلفًا من طريقة آرت ريشيو في التخطيط والتنفيذ والتسليم.',
+  },
+  portfolio_gallery_link_note: {
+    en: 'Looking for more photography work?',
+    ar: 'إذا كنت تبحث عن أعمال أكثر في الصور الفوتوغرافية،',
+  },
+  portfolio_gallery_link_button: {
+    en: 'Browse the Photo Gallery',
+    ar: 'تصفح معرض الصور',
   },
   portfolio_item_tazaj_title: { en: 'Tikka Sandwich by Al Tazaj', ar: 'ساندوتش تيكا من الطازج' },
   portfolio_item_trump_title: { en: 'Trump Tower Jeddah', ar: 'برج ترامب جدة' },
@@ -276,6 +284,12 @@ export const PILOT_KEYED_TRANSLATIONS = Object.freeze({
   portfolio_item_bookfair_title: { en: 'Book Fair', ar: 'معرض الكتاب' },
   portfolio_item_subtitle: { en: 'See Details', ar: 'عرض التفاصيل' },
   portfolio_load_more: { en: 'Load More', ar: 'تحميل المزيد' },
+  portfolio_cta_title: {
+    type: 'html',
+    en: 'Seen work that feels close to your project? <br>Share the idea with us, and we will help you shape the right production path.',
+    ar: 'شفت عمل حسّيته قريب من مشروعك؟<br>شاركنا الفكرة، ونرتب معك المسار الإنتاجي الأنسب.',
+  },
+  portfolio_cta_button: { en: 'Talk to us about your project', ar: 'تواصل معنا بخصوص مشروعك' },
   portfolio_item_title_2: {
     type: 'html',
     en: 'Airport Executive Lounge',

@@ -1772,6 +1772,46 @@ body[data-page="portfolio"] .cs-portfolio_pagination_wrap {
   align-items: center;
 }
 
+body[data-page="portfolio"] .cs-portfolio-kufidia-title {
+  font-family: "TSKufidia-Normal", "Tajawal", sans-serif !important;
+  font-weight: 400 !important;
+  font-size: clamp(58px, 8vw, 96px) !important;
+  line-height: 1;
+  text-align: center;
+}
+
+body[data-page="portfolio"] .cs-portfolio-intro-lead {
+  font-size: clamp(21px, 2.1vw, 28px) !important;
+  line-height: 1.5;
+  max-width: 980px;
+  margin-inline: auto;
+  text-wrap: pretty;
+  text-align: center !important;
+  color: #fff !important;
+}
+
+body[data-page="portfolio"] .cs-portfolio-gallery-note {
+  max-width: 980px;
+  margin-inline: auto;
+  text-align: center;
+}
+
+body[data-page="portfolio"] .cs-portfolio_1_heading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+body[data-page="portfolio"] .cs-portfolio_1_heading .cs-section_heading,
+body[data-page="portfolio"] .cs-portfolio_1_heading .cs-isotop_filter {
+  width: 100%;
+}
+
+body[data-page="portfolio"] .cs-portfolio_1_heading .cs-isotop_filter {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
 body[data-page="portfolio"] .cs-portfolio_pagination {
   display: flex;
   flex-wrap: wrap;
@@ -1803,6 +1843,23 @@ body[data-page="portfolio"] .cs-isotop_item.cs-hidden-by-pagination {
 }
 body[data-page="photo-gallery"] .cs-isotop_item.cs-hidden-by-pagination {
   display: none !important;
+}
+
+@media (max-width: 767px) {
+  body[data-page="portfolio"] .cs-portfolio-kufidia-title {
+    font-size: clamp(42px, 11vw, 64px) !important;
+  }
+
+  body[data-page="portfolio"] .cs-portfolio-intro-lead {
+    max-width: none;
+    font-size: clamp(18px, 5vw, 24px) !important;
+    line-height: 1.45;
+  }
+
+  body[data-page="portfolio"] .cs-portfolio_1_heading .cs-isotop_filter {
+    margin-top: 18px;
+    margin-bottom: 18px;
+  }
 }
 
 /* Home portfolio section: mirror image-shapes placement in LTR to match Arabic layout */
