@@ -830,7 +830,7 @@ export const PILOT_KEYED_TRANSLATIONS = Object.freeze({
   contact_form_project_optional: { en: 'Project Type (Optional)', ar: 'نوع المشروع (اختياري)' },
   contact_form_required_note: {
     en: 'Required fields: full name, email, mobile, and message. Company name and project type are optional.',
-    ar: 'الحقول الأساسية: الاسم الكامل، البريد الإلكتروني، رقم الجوال، وتفاصيل الرسالة. اسم الشركة ونوع المشروع اختياريان.',
+    ar: 'الحقول الأساسية: الاسم الكامل، البريد الإلكتروني، رقم الجوال، وتفاصيل الرسالة. اسم الشركة ونوع المشروع اختياري.',
   },
   contact_form_intro: {
     en: 'The clearer the project details, the easier it is for us to point you to the right next step.',

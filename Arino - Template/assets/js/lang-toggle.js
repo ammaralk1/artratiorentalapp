@@ -1312,7 +1312,7 @@
     contact_form_details: { en: 'Write Project Details*', ar: 'اكتب تفاصيل المشروع*' },
     contact_form_required_note: {
       en: 'Required fields: full name, email, mobile, and message. Company name and project type are optional.',
-      ar: 'الحقول الأساسية: الاسم الكامل، البريد الإلكتروني، رقم الجوال، وتفاصيل الرسالة. اسم الشركة ونوع المشروع اختياريان.',
+      ar: 'الحقول الأساسية: الاسم الكامل، البريد الإلكتروني، رقم الجوال، وتفاصيل الرسالة. اسم الشركة ونوع المشروع اختياري.',
     },
     contact_form_intro: { en: 'The clearer the project details, the easier it is for us to point you to the right next step.', ar: 'كل ما كانت تفاصيل المشروع أوضح، كان أسهل علينا نوجّهك للخطوة المناسبة.' },
     contact_form_send: { en: 'Send Project Details', ar: 'أرسل تفاصيل المشروع' },
