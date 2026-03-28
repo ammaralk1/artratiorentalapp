@@ -590,6 +590,7 @@
     gallery_card_subtitle: { en: 'View Large', ar: 'عرض بالحجم الكبير' },
     nav_portfolio_details: { en: 'Portfolio Details', ar: 'تفاصيل الأعمال' },
     side_header_contact_title: { en: 'Contact Us', ar: 'تواصل معنا' },
+    side_header_region: { en: 'Saudi Arabia', ar: 'المملكة العربية السعودية' },
     side_header_portal_title: { en: 'Portal Access', ar: 'الدخول للبوابة' },
     side_header_login_link: { en: 'Login to Dashboard', ar: 'تسجيل الدخول للوحة التحكم' },
     side_header_heading: {
@@ -613,7 +614,7 @@
       ar: 'الاستشارات الإنتاجية',
     },
     footer_contact_title: { en: 'Contact Us', ar: 'تواصل معنا' },
-    footer_copyright: { en: 'Copyright © 2026 Art Ratio.', ar: 'جميع الحقوق محفوظة © 2026 آرت ريشيو.' },
+    footer_copyright: { en: 'Copyright © 2026 Art Ratio · Saudi Arabia', ar: 'جميع الحقوق محفوظة © 2026 آرت ريشيو · المملكة العربية السعودية' },
     home_hero_subtitle: {
       en: 'We turn your concepts into visual masterpieces, crafting every project with a unique blend of artistry and innovation that brings your vision to life.',
       ar: 'نحوّل أفكاركم لروائع بصرية، ونشتغل على كل مشروع بمزيج خاص من الفن والابتكار، عشان نطلع عمل يجسّد رؤيتكم',
@@ -3212,6 +3213,13 @@
       if (contactTitle) {
         contactTitle.dataset.i18nKey = 'side_header_contact_title';
       }
+      if (contactBox && !contactBox.querySelector('.cs-side_header_region')) {
+        const region = document.createElement('p');
+        region.className = 'cs-side_header_region cs-primary_color cs-semi_bold cs-m0';
+        region.dataset.i18nKey = 'side_header_region';
+        region.textContent = 'Saudi Arabia';
+        contactTitle && contactTitle.insertAdjacentElement('afterend', region);
+      }
     }
 
     sideHeader.querySelectorAll('.cs-side_header_box .cs-login-link').forEach((link) => {
@@ -3226,6 +3234,93 @@
         duplicateTitle.remove();
       }
     });
+
+    const sideHeaderIn = sideHeader.querySelector('.cs-side_header_in');
+    const socialBox = sideHeader.querySelector('.cs-social_btns')?.closest('.cs-side_header_box');
+    const loginBox = sideHeader.querySelector('.cs-login-link')?.closest('.cs-side_header_box');
+    if (sideHeaderIn && socialBox && loginBox && socialBox.nextElementSibling !== loginBox) {
+      sideHeaderIn.insertBefore(socialBox, loginBox);
+    }
+  };
+
+  const ensureBusinessPresenceStyles = () => {
+    if (document.getElementById('cs-business-presence-style')) return;
+    const style = document.createElement('style');
+    style.id = 'cs-business-presence-style';
+    style.textContent = `
+      .cs-side_header_region {
+        font-size: 14px;
+        line-height: 1.6;
+        opacity: 0.88;
+        margin: 8px 0 16px;
+      }
+      .cs-whatsapp_float {
+        position: fixed;
+        right: 15px;
+        bottom: 50px;
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #25D366;
+        color: #fff;
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+        z-index: 11;
+        transition: transform 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+      }
+      .cs-whatsapp_float:hover {
+        color: #fff;
+        background: #1fb558;
+        transform: translateY(-2px);
+        box-shadow: 0 14px 28px rgba(0, 0, 0, 0.22);
+      }
+      .cs-whatsapp_float i {
+        font-size: 26px;
+        line-height: 1;
+      }
+      html[dir="rtl"] .cs-whatsapp_float,
+      body.rtl .cs-whatsapp_float {
+        right: auto;
+        left: 15px;
+      }
+      @media (max-width: 991px) {
+        .cs-whatsapp_float {
+          right: 15px;
+          bottom: 50px;
+          width: 50px;
+          height: 50px;
+        }
+        html[dir="rtl"] .cs-whatsapp_float,
+        body.rtl .cs-whatsapp_float {
+          right: auto;
+          left: 15px;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  };
+
+  const injectFloatingWhatsApp = (lang) => {
+    ensureBusinessPresenceStyles();
+    const existingHref =
+      document.querySelector('a[href*="wa.me/966567680152"]')?.getAttribute('href') ||
+      'https://wa.me/966567680152';
+    let button = document.querySelector('.cs-whatsapp_float');
+    if (!button) {
+      button = document.createElement('a');
+      button.className = 'cs-whatsapp_float';
+      button.target = '_blank';
+      button.rel = 'noopener noreferrer';
+      button.innerHTML = '<i class="fab fa-whatsapp" aria-hidden="true"></i>';
+      document.body.appendChild(button);
+    }
+    const label =
+      lang === 'ar' ? 'تواصل معنا عبر واتساب' : 'Contact us on WhatsApp';
+    button.href = existingHref;
+    button.setAttribute('aria-label', label);
+    button.setAttribute('title', label);
   };
 
   const updateToggleLabel = (lang) => {
@@ -3451,6 +3546,7 @@
     syncSeoHead();
     applyTestimonialImageSwap(selected);
     applyResponsiveTextOverrides(selected);
+    injectFloatingWhatsApp(selected);
 
     updateToggleLabel(selected);
     localStorage.setItem(STORAGE_KEY, selected);

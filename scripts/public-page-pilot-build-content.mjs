@@ -795,7 +795,7 @@ export const PILOT_KEYED_TRANSLATIONS = Object.freeze({
     ar: 'نحوّل رؤيتك لصور تنبض بالحياة.<br>من الإعلانات والفعاليات إلى قصص السوشال ميديا، نشتغل بإبداع ودقة عشان نحيي أفكارك.',
   },
   footer_contact_title: { en: 'Contact Us', ar: 'تواصل معنا' },
-  footer_copyright: { en: 'Copyright © 2026 Art Ratio.', ar: 'جميع الحقوق محفوظة © 2026 آرت ريشو.' },
+  footer_copyright: { en: 'Copyright © 2026 Art Ratio · Saudi Arabia', ar: 'جميع الحقوق محفوظة © 2026 آرت ريشيو · المملكة العربية السعودية' },
   footer_service_consultancy: { en: 'Production Consultancy', ar: 'الاستشارات الإنتاجية' },
   footer_service_events: { en: 'Events & Coverage', ar: 'الفعاليات والتغطيات' },
   footer_service_photography: { en: 'Commercial Photography', ar: 'التصوير الفوتوغرافي التجاري' },
