@@ -258,24 +258,11 @@ body.rtl [data-i18n-key="service_intro_title"] {
   font-weight: 500;
 }
 
-/* Blog titles/headings Arabic typography (listing + details + recent posts). */
-html[lang="ar"] .cs-post.cs-style2 .cs-post_title > a,
-html[dir="rtl"] .cs-post.cs-style2 .cs-post_title > a,
-body.rtl .cs-post.cs-style2 .cs-post_title > a,
-html[lang="ar"] .cs-post.cs-style2 .cs-post_title[data-i18n-key^="blog"],
-html[dir="rtl"] .cs-post.cs-style2 .cs-post_title[data-i18n-key^="blog"],
-body.rtl .cs-post.cs-style2 .cs-post_title[data-i18n-key^="blog"],
-html[lang="ar"] .cs-recent_post_title > a[data-i18n-key^="blog"],
-html[dir="rtl"] .cs-recent_post_title > a[data-i18n-key^="blog"],
-body.rtl .cs-recent_post_title > a[data-i18n-key^="blog"],
-html[lang="ar"] .cs-post_details h3[data-i18n-key^="blog"],
-html[dir="rtl"] .cs-post_details h3[data-i18n-key^="blog"],
-body.rtl .cs-post_details h3[data-i18n-key^="blog"],
-html[lang="ar"] .cs-post_details h4[data-i18n-key^="blog"],
-html[dir="rtl"] .cs-post_details h4[data-i18n-key^="blog"],
-body.rtl .cs-post_details h4[data-i18n-key^="blog"] {
-  font-family: "TSKufidia-Normal", "Tajawal", sans-serif !important;
-  font-weight: 400;
+/* Blog listing article titles: use DIN on both EN and AR, while keeping the main page title on Kufidia. */
+body[data-page="blog"] .cs-post.cs-style2 .cs-post_title > a,
+body[data-page="blog"] .cs-recent_post_title > a[data-i18n-key^="blog"] {
+  font-family: "DINNextLTArabic-Medium", "TSKufidia-Normal", "Tajawal", sans-serif !important;
+  font-weight: 500;
 }
 
 /* Portfolio details video titles: Arabic-only new font. */
@@ -1908,6 +1895,37 @@ body[data-page="team"] .cs-team-about-note {
   text-align: center;
 }
 
+body[data-page="blog"] .cs-blog-kufidia-title {
+  font-family: "TSKufidia-Normal", "Tajawal", sans-serif !important;
+  font-weight: 400 !important;
+  font-size: clamp(58px, 8vw, 96px) !important;
+  line-height: 1;
+  text-align: center;
+}
+
+body[data-page="blog"] .cs-blog-intro-lead {
+  font-size: clamp(21px, 2.1vw, 28px) !important;
+  line-height: 1.5;
+  max-width: 980px;
+  margin-inline: auto;
+  text-wrap: pretty;
+  text-align: center !important;
+  color: #fff !important;
+}
+
+body[data-page="blog"] .cs-blog-support-note {
+  max-width: 980px;
+  margin-inline: auto;
+  text-align: center;
+}
+
+body[data-page="blog"] .cs-post.cs-style2 .cs-post_title,
+body[data-page="blog"] .cs-post.cs-style2 .cs-post_title > a,
+body[data-page="blog"] .cs-recent_post_title > a[data-i18n-key^="blog"] {
+  font-family: "DINNextLTArabic-Medium", "TSKufidia-Normal", "Tajawal", sans-serif !important;
+  font-weight: 500 !important;
+}
+
 @media (max-width: 767px) {
   body[data-page="portfolio"] .cs-portfolio-kufidia-title {
     font-size: clamp(42px, 11vw, 64px) !important;
@@ -1943,6 +1961,16 @@ body[data-page="team"] .cs-team-about-note {
   }
 
   body[data-page="team"] .cs-team-intro-lead {
+    max-width: none;
+    font-size: clamp(18px, 5vw, 24px) !important;
+    line-height: 1.45;
+  }
+
+  body[data-page="blog"] .cs-blog-kufidia-title {
+    font-size: clamp(42px, 11vw, 64px) !important;
+  }
+
+  body[data-page="blog"] .cs-blog-intro-lead {
     max-width: none;
     font-size: clamp(18px, 5vw, 24px) !important;
     line-height: 1.45;

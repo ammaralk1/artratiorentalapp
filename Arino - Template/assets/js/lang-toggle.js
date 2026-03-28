@@ -703,7 +703,7 @@
     service_rental_cta_button: { en: 'Ask about packages and pricing', ar: 'اسأل عن البكجات والأسعار' },
     service_consult_cta_title: {
       type: 'html',
-      en: 'Ready to take your idea to the right next stage? <br>Let’s turn your vision into a clear plan. Book your consultation now.',
+      en: 'Need to move the idea forward with more clarity? <br>Let’s turn the vision into a practical plan your team can act on. Book your consultation now.',
       ar: 'جاهز تاخذ فكرتك للمرحلة الصح؟<br>خلّينا نحوّل تصورك لخطة واضحة، احجز استشارتك الآن',
     },
     service_consult_cta_button: { en: 'Book the consultancy', ar: 'احجز الاستشارة' },
@@ -711,19 +711,19 @@
     about_hero_title: { en: 'About Us', ar: 'من نحن' },
     about_intro_subtitle: { en: 'About Art Ratio', ar: 'عن آرت ريشو' },
     about_intro_title: {
-      en: 'A Saudi production house built for sharp ideas, strong visuals, and work that lands.',
+      en: 'A production house based in Saudi Arabia, built for sharp ideas, strong visuals, and work that lands.',
       ar: 'بيت إنتاج سعودي يشتغل على الفكرة الصح، والصورة القوية، والنتيجة اللي توصل.',
     },
     about_intro_p1: {
-      en: 'Art Ratio is a Saudi production house working across commercials, cinematic storytelling, and brand-led visual production.',
+      en: 'Art Ratio is a Saudi production house built for commercials, visual storytelling, and brand work that needs strong execution from idea to final result.',
       ar: 'آرت ريشيو بيت إنتاج سعودي يشتغل على الإعلانات، والسرد البصري، والمشاريع اللي تحتاج تنفيذ مضبوط من الفكرة إلى النتيجة.',
     },
     about_intro_p2: {
-      en: 'We take ideas from early direction to final delivery with a team that knows how to balance craft, speed, and market fit.',
+      en: 'We take the idea from early direction to final delivery with a team that knows how to balance craft, speed, and what the market actually needs.',
       ar: 'نأخذ الفكرة من أول تصور إلى التسليم النهائي، بفريق يعرف كيف يوازن بين الحرفة، والسرعة، وملاءمة الشغل للسوق.',
     },
     about_local_market_note: {
-      en: 'Because we work from inside the Saudi market, we build each project with a clearer sense of audience, tone, and timing.',
+      en: 'Working from inside the Saudi market gives us a clearer read on audience, tone, and timing for every project.',
       ar: 'وشغلنا من داخل السوق السعودي يعطينا فهم أوضح للجمهور، والنبرة، والتوقيت المناسب لكل مشروع.',
     },
     funfacts_title: { en: 'Our fun fact', ar: 'أرقام تروي قصتنا' },
@@ -742,12 +742,12 @@
       ar: 'ما نطارد الصورة لمجرد الشكل، نبني شغل يخدم البريف ويترك أثر.',
     },
     about_why_p1: {
-      en: 'What clients value with Art Ratio is not only the final look, but the clarity of the process from brief to delivery.',
+      en: 'What clients value with Art Ratio is not only the final look, but the clarity of the road from brief to delivery.',
       ar: 'اللي يميّز العمل مع آرت ريشيو مو بس شكل النتيجة النهائية، بل وضوح الرحلة من البريف إلى التسليم.',
     },
     about_why_p2: {
       type: 'html',
-      en: 'We listen closely, move with flexibility, and build each production around what the project actually needs.<br>That is what helps us deliver work that feels polished, relevant, and ready to perform.',
+      en: 'We listen closely, move with flexibility, and build each production around what the project actually needs.<br>That is what helps us deliver work that feels polished, relevant, and ready to do its job.',
       ar: 'نسمع كويس، ونتحرّك بمرونة، ونبني كل إنتاج على احتياج المشروع فعلًا.<br>وهذا اللي يساعدنا نطلع شغل متقن، مناسب، وجاهز يشتغل بالشكل المطلوب.',
     },
     service_hero_title: { en: 'Explore Our Services', ar: 'استكشف خدماتنا' },
@@ -1078,15 +1078,15 @@
       ar: 'المعدة الصح... نص الشغل.',
     },
     service_rental_details_p2: {
-      en: 'At Art Ratio, equipment rental starts with understanding the shoot, then matching the setup to it. We help you begin with gear that fits the production from the first shot.',
+      en: 'At Art Ratio, equipment rental starts by understanding the job first, then matching the setup to it. We help you start with gear that fits the production from the first shot.',
       ar: 'في آرت ريشيو، تأجير المعدات يبدأ من فهم الشغل أولًا، ثم مطابقة التجهيزات عليه. نساعدك تبدأ بمعدة تناسب مشروعك من أول لقطة.',
     },
     service_rental_details_p3: {
-      en: 'Whether you are shooting an ad, an interview, branded content, event coverage, or digital material, we guide the setup around the job, not around random gear.',
+      en: 'Whether you are shooting an ad, an interview, branded content, event coverage, or digital material, we shape the setup around the job itself, not just a random pile of gear.',
       ar: 'سواء كنت تصور إعلان، مقابلة، محتوى براند، تغطية فعالية، أو مادة رقمية، نوجّه التجهيزات حسب طبيعة الشغل... مو بس معدات عشوائية.',
     },
     service_rental_details_p4: {
-      en: 'Because the real problem is not availability alone. It is losing time on set because the setup was wrong from the start.',
+      en: 'Because the real issue is not gear availability on its own. It is losing shoot time because the setup was wrong from the start.',
       ar: 'لأن المشكلة مو في توفر المعدة فقط... المشكلة لما يضيع وقت التصوير لأن التجهيزات من البداية ما كانت صح.',
     },
     service_rental_heading: {
@@ -1126,7 +1126,7 @@
       ar: 'إذا كان البريف ما زال عام، نساعدك تختار التجهيزات حسب المشروع، والموقع، وحجم الفريق، والمخرجات اللي تحتاجها.',
     },
     service_rental_details_p7: {
-      en: 'And if you want to review what is currently available before you call, you can browse the equipment list and come back with a clearer starting point.',
+      en: 'And if you want to review what is currently available before you reach out, you can browse the equipment list and come back with a clearer starting point.',
       ar: 'وإذا تحب تشوف المتوفر حاليًا قبل التواصل، تقدر تتصفح قائمة المعدات وترجع بنقطة بداية أوضح.',
     },
     service_rental_details_p8: {
@@ -1134,7 +1134,7 @@
       ar: 'دورنا بسيط: نخلي جانب المعدات في مشروعك أوضح، وأهدأ، وأكثر اعتمادية.',
     },
     service_equipment_list_note: {
-      en: 'If you want to see what is currently available, here is a direct link to the equipment list.',
+      en: 'If you want a clearer starting point before you reach out, here is a direct link to the equipment list.',
       ar: 'إذا حاب تشوف المتوفر حاليًا، هذا رابط مباشر لقائمة المعدات.',
     },
     service_equipment_list_button: { en: 'Browse the equipment list', ar: 'تصفح قائمة المعدات' },
@@ -1143,7 +1143,7 @@
       ar: 'مو كل مشروع يحتاج كاميرا أول شيء... أحيانًا يحتاج رؤية واضحة قبل ما يبدأ.',
     },
     service_consult_details_p2: {
-      en: 'At Art Ratio, we provide specialized consultancy in cinematography and film production, helping you plan correctly from day one and avoid costly decisions later.',
+      en: 'At Art Ratio, we provide specialized consultancy in cinematography and film production that helps you set the project up right from day one and avoid expensive decisions later.',
       ar: 'في آرت ريشيو، نقدم استشارات متخصصة في التصوير والإنتاج السينمائي تساعدك ترتب المشروع صح من البداية، وتتجنب قرارات تكلّف وقت وميزانية بعدين.',
     },
     service_consult_details_p3: {
@@ -1195,15 +1195,15 @@
       ar: 'تقييم مشاريع قائمة واقتراح تحسينات احترافية',
     },
     service_consult_details_p6: {
-      en: 'Whether you are a company preparing a campaign, a creator looking to raise production quality, or an organization planning execution more professionally, we support you at the decision stage.',
+      en: 'Whether you are a company preparing a campaign, a creator trying to raise production quality, or a team planning execution more professionally, we stay with you at the decision stage.',
       ar: 'سواء كنت شركة تستعد لإطلاق حملة، أو صانع محتوى يسعى يرفع مستوى إنتاجه، أو جهة تبي تخطط للتنفيذ بشكل احترافي... إحنا نكون معك في مرحلة القرار.',
     },
     service_consult_details_p7: {
-      en: 'Because the right decision before production saves half the journey later.',
+      en: 'Because the right decision before production can save you half the road later.',
       ar: 'لأن القرار الصح قبل التنفيذ يوفر عليك نصف الطريق لاحقًا.',
     },
     service_consult_details_p8: {
-      en: 'At Art Ratio, we take the idea from a broad concept to a production plan your team can move on with confidence.',
+      en: 'At Art Ratio, we take the idea from a broad concept to a clear production plan your team can move on with confidence.',
       ar: 'في آرت ريشيو، نحول الفكرة من تصور عام إلى خطة إنتاج واضحة يقدر فريقك يتحرك عليها بثقة.',
     },
     service_consult_faq_subtitle: { en: "FAQ's", ar: 'الأسئلة الشائعة' },
@@ -1298,8 +1298,8 @@
     contact_hero_title: { en: 'Contact Us', ar: 'تواصل معنا' },
     contact_breadcrumb: { en: 'Contact', ar: 'تواصل' },
     contact_intro_subtitle: { en: 'Let’s Start Our Journey Together', ar: 'يلا نبدأ رحلتنا سوا' },
-    contact_intro_title: { type: 'html', en: 'Got a project in mind? <br>Share it with us and we’ll help you take the right next step.', ar: 'عندك مشروع في بالك؟<br>شاركنا فكرته ونرتب معك الخطوة الجاية.' },
-    contact_intro_copy: { en: 'If you already have the project details, send them from the start so we can reply faster and clearer.', ar: 'إذا عندك تفاصيل المشروع، شاركنا فيها من البداية حتى نرد عليك بسرعة ووضوح.' },
+    contact_intro_title: { type: 'html', en: 'Got a project in mind? <br>Share the idea with us, and we’ll help you line up the right next step.', ar: 'عندك مشروع في بالك؟<br>شاركنا فكرته ونرتب معك الخطوة الجاية.' },
+    contact_intro_copy: { en: 'If you already have the project details, send them through from the start so we can reply with more clarity and speed.', ar: 'إذا عندك تفاصيل المشروع، شاركنا فيها من البداية حتى نرد عليك بسرعة ووضوح.' },
     contact_region_label: { en: 'Kingdom of Saudi Arabia', ar: 'المملكة العربية السعودية' },
     contact_channels_title: { en: 'Contact Channels', ar: 'قنوات التواصل' },
     contact_form_name: { en: 'Full Name*', ar: 'الاسم الكامل*' },
@@ -1313,7 +1313,7 @@
       en: 'Required fields: full name, email, mobile, and message. Company name and project type are optional.',
       ar: 'الحقول الأساسية: الاسم الكامل، البريد الإلكتروني، رقم الجوال، وتفاصيل الرسالة. اسم الشركة ونوع المشروع اختياريان.',
     },
-    contact_form_intro: { en: 'The clearer the project details, the easier it is for us to guide you to the right next step.', ar: 'كل ما كانت تفاصيل المشروع أوضح، كان أسهل علينا نوجّهك للخطوة المناسبة.' },
+    contact_form_intro: { en: 'The clearer the project details, the easier it is for us to point you to the right next step.', ar: 'كل ما كانت تفاصيل المشروع أوضح، كان أسهل علينا نوجّهك للخطوة المناسبة.' },
     contact_form_send: { en: 'Send Project Details', ar: 'أرسل تفاصيل المشروع' },
     contact_form_sending: { en: 'Sending your message...', ar: 'جاري إرسال رسالتك...' },
     contact_form_success: {
@@ -2113,6 +2113,12 @@
     blog4_breadcrumb: { en: 'Professional Event Coverage', ar: 'تغطية الفعاليات الاحترافية' },
     blog_breadcrumb: { en: 'Blog', ar: 'كشكولنا' },
     blog_intro_title: { en: 'From the Journal', ar: 'من الكشكول' },
+    blog_intro_copy: {
+      en: 'Practical reads from the Art Ratio way of working, built to help clients see the picture more clearly and make sharper production decisions.',
+      ar: 'مقالات عملية من طريقة آرت ريشيو في الشغل، تساعد العميل يفهم الصورة أكثر ويتخذ قرارات إنتاجية أوضح.',
+    },
+    blog_support_link_note: { en: 'Found an idea that feels close to your project?', ar: 'إذا لقيت فكرة قريبة من مشروعك،' },
+    blog_support_link_button: { en: 'Explore Our Services', ar: 'استكشف خدماتنا' },
     blog4_date: { en: '22 Feb 2026', ar: '22 فبراير 2026' },
     blog4_meta_category: { en: 'Event Coverage', ar: 'تغطية الفعاليات' },
     blog4_title: { en: 'Professional Event Coverage: How to Document Your Event and Maximize Its Impact?', ar: 'تغطية الفعاليات الاحترافية: كيف توثق الحدث وتُبرز تأثيره؟' },

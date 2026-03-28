@@ -1,20 +1,20 @@
 export const PILOT_KEYED_TRANSLATIONS = Object.freeze({
   about_hero_title: { en: 'About Us', ar: 'من نحن' },
   about_intro_p1: {
-    en: 'Art Ratio is a Saudi production house working across commercials, cinematic storytelling, and brand-led visual production.',
+    en: 'Art Ratio is a Saudi production house built for commercials, visual storytelling, and brand work that needs strong execution from idea to final result.',
     ar: 'آرت ريشيو بيت إنتاج سعودي يشتغل على الإعلانات، والسرد البصري، والمشاريع اللي تحتاج تنفيذ مضبوط من الفكرة إلى النتيجة.',
   },
   about_intro_p2: {
-    en: 'We take ideas from early direction to final delivery with a team that knows how to balance craft, speed, and market fit.',
+    en: 'We take the idea from early direction to final delivery with a team that knows how to balance craft, speed, and what the market actually needs.',
     ar: 'نأخذ الفكرة من أول تصور إلى التسليم النهائي، بفريق يعرف كيف يوازن بين الحرفة، والسرعة، وملاءمة الشغل للسوق.',
   },
   about_intro_subtitle: { en: 'About Art Ratio', ar: 'عن آرت ريشو' },
   about_intro_title: {
-    en: 'A Saudi production house built for sharp ideas, strong visuals, and work that lands.',
+    en: 'A production house based in Saudi Arabia, built for sharp ideas, strong visuals, and work that lands.',
     ar: 'بيت إنتاج سعودي يشتغل على الفكرة الصح، والصورة القوية، والنتيجة اللي توصل.',
   },
   about_local_market_note: {
-    en: 'Because we work from inside the Saudi market, we build each project with a clearer sense of audience, tone, and timing.',
+    en: 'Working from inside the Saudi market gives us a clearer read on audience, tone, and timing for every project.',
     ar: 'وشغلنا من داخل السوق السعودي يعطينا فهم أوضح للجمهور، والنبرة، والتوقيت المناسب لكل مشروع.',
   },
   about_page_title: {
@@ -22,12 +22,12 @@ export const PILOT_KEYED_TRANSLATIONS = Object.freeze({
     ar: 'من نحن | آرت ريشيو',
   },
   about_why_p1: {
-    en: 'What clients value with Art Ratio is not only the final look, but the clarity of the process from brief to delivery.',
+    en: 'What clients value with Art Ratio is not only the final look, but the clarity of the road from brief to delivery.',
     ar: 'اللي يميّز العمل مع آرت ريشيو مو بس شكل النتيجة النهائية، بل وضوح الرحلة من البريف إلى التسليم.',
   },
   about_why_p2: {
     type: 'html',
-    en: 'We listen closely, move with flexibility, and build each production around what the project actually needs.<br>That is what helps us deliver work that feels polished, relevant, and ready to perform.',
+    en: 'We listen closely, move with flexibility, and build each production around what the project actually needs.<br>That is what helps us deliver work that feels polished, relevant, and ready to do its job.',
     ar: 'نسمع كويس، ونتحرّك بمرونة، ونبني كل إنتاج على احتياج المشروع فعلًا.<br>وهذا اللي يساعدنا نطلع شغل متقن، مناسب، وجاهز يشتغل بالشكل المطلوب.',
   },
   about_why_subtitle: { en: 'Why Art Ratio?', ar: 'ليش آرت ريشيو؟' },
@@ -102,11 +102,15 @@ export const PILOT_KEYED_TRANSLATIONS = Object.freeze({
   blog1_sidebar_tag_8: { en: 'Event Coverage', ar: 'تغطية الفعاليات' },
   blog_breadcrumb: { en: 'Blog', ar: 'كشكولنا' },
   blog_intro_title: { en: 'From the Journal', ar: 'من الكشكول' },
-  blog_support_link_note: {
-    type: 'html',
-    en: 'Want to connect these ideas to real work? Explore our <a href="service.html">Services</a> or browse selected projects in our <a href="portfolio.html">Portfolio</a>.',
-    ar: 'إذا كنت تريد ربط هذه الأفكار بأعمال حقيقية، فتصفح <a href="service.html">خدماتنا</a> أو استعرض نماذج مختارة في <a href="portfolio.html">أعمالنا</a>.',
+  blog_intro_copy: {
+    en: 'Practical reads from the Art Ratio way of working, built to help clients see the picture more clearly and make sharper production decisions.',
+    ar: 'مقالات عملية من طريقة آرت ريشيو في الشغل، تساعد العميل يفهم الصورة أكثر ويتخذ قرارات إنتاجية أوضح.',
   },
+  blog_support_link_note: {
+    en: 'Found an idea that feels close to your project?',
+    ar: 'إذا لقيت فكرة قريبة من مشروعك،',
+  },
+  blog_support_link_button: { en: 'Explore Our Services', ar: 'استكشف خدماتنا' },
   blog_read_more: { en: 'See More', ar: 'اقرأ المزيد' },
   funfacts_body: {
     type: 'html',
@@ -829,18 +833,18 @@ export const PILOT_KEYED_TRANSLATIONS = Object.freeze({
     ar: 'الحقول الأساسية: الاسم الكامل، البريد الإلكتروني، رقم الجوال، وتفاصيل الرسالة. اسم الشركة ونوع المشروع اختياريان.',
   },
   contact_form_intro: {
-    en: 'The clearer the project details, the easier it is for us to guide you to the right next step.',
+    en: 'The clearer the project details, the easier it is for us to point you to the right next step.',
     ar: 'كل ما كانت تفاصيل المشروع أوضح، كان أسهل علينا نوجّهك للخطوة المناسبة.',
   },
   contact_form_send: { en: 'Send Project Details', ar: 'أرسل تفاصيل المشروع' },
   contact_intro_subtitle: { en: 'Let’s Start Our Journey Together', ar: 'يلا نبدأ رحلتنا سوا' },
   contact_intro_title: {
     type: 'html',
-    en: 'Got a project in mind? <br>Share it with us and we’ll help you take the right next step.',
+    en: 'Got a project in mind? <br>Share the idea with us, and we’ll help you line up the right next step.',
     ar: 'عندك مشروع في بالك؟<br>شاركنا فكرته ونرتب معك الخطوة الجاية.',
   },
   contact_intro_copy: {
-    en: 'If you already have the project details, send them from the start so we can reply faster and clearer.',
+    en: 'If you already have the project details, send them through from the start so we can reply with more clarity and speed.',
     ar: 'إذا عندك تفاصيل المشروع، شاركنا فيها من البداية حتى نرد عليك بسرعة ووضوح.',
   },
   contact_services_link_note: {

@@ -191,8 +191,8 @@ export const PUBLIC_PAGE_LOCALES = Object.freeze({
         selector: '[data-i18n-key="about_intro_title"]',
         type: 'text',
         values: {
-          en: 'Cinematic artistry shaped by precision, passion, and purpose.',
-          ar: 'حسّ سينمائي تصوغه الدقة، والشغف، والغاية.',
+          en: 'A production house based in Saudi Arabia, built for sharp ideas, strong visuals, and work that lands.',
+          ar: 'بيت إنتاج سعودي يشتغل على الفكرة الصح، والصورة القوية، والنتيجة اللي توصل.',
         },
       },
       {
@@ -200,8 +200,8 @@ export const PUBLIC_PAGE_LOCALES = Object.freeze({
         selector: '[data-i18n-key="about_intro_p1"]',
         type: 'text',
         values: {
-          en: 'We are ART RATIO, and we are a motion picture & commercial production company.',
-          ar: 'نحن آرت ريشيو، بيت إنتاج يجمع بين الصورة المتحركة والعمل التجاري برؤية واحدة.',
+          en: 'Art Ratio is a Saudi production house built for commercials, visual storytelling, and brand work that needs strong execution from idea to final result.',
+          ar: 'آرت ريشيو بيت إنتاج سعودي يشتغل على الإعلانات، والسرد البصري، والمشاريع اللي تحتاج تنفيذ مضبوط من الفكرة إلى النتيجة.',
         },
       },
       {
@@ -209,8 +209,8 @@ export const PUBLIC_PAGE_LOCALES = Object.freeze({
         selector: '[data-i18n-key="about_intro_p2"]',
         type: 'text',
         values: {
-          en: 'We take concepts and turn them into impactful visual content that connects with people, backed by state-of-the-art technology and a highly-skilled team of creatives.',
-          ar: 'نأخذ الفكرة ونحوّلها إلى محتوى بصري مؤثر يتصل بالناس، مستندين إلى أدوات حديثة وفريق إبداعي عالي الكفاءة.',
+          en: 'We take the idea from early direction to final delivery with a team that knows how to balance craft, speed, and what the market actually needs.',
+          ar: 'نأخذ الفكرة من أول تصور إلى التسليم النهائي، بفريق يعرف كيف يوازن بين الحرفة، والسرعة، وملاءمة الشغل للسوق.',
         },
       },
       {
