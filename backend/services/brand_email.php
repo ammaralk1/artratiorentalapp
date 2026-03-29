@@ -63,7 +63,7 @@ function resolveBrandEmailSocialLinks(): array
         [
             'label' => 'Snapchat',
             'icon_url' => resolveBrandEmailAssetUrl('assets/img/email-social/snapchat.svg'),
-            'url' => 'https://www.snapchat.com/add/art_ratio',
+            'url' => 'https://snapchat.com/t/J5tv4Szx',
         ],
         [
             'label' => 'LinkedIn',
