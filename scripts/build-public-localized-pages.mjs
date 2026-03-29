@@ -283,14 +283,26 @@ const normalizePath = (rawPath) => {
   return value || '/';
 };
 
-const toDirectArabicPath = (rawPath) => {
+const normalizeComparablePath = (rawPath) => {
   const normalized = normalizePath(rawPath);
-  if (normalized === '/ar') return '/';
-  if (normalized.startsWith('/ar/')) {
-    const direct = normalized.slice(3);
+  if (normalized === '/en') return '/en/';
+  if (normalized === '/ar') return '/ar/';
+  if (normalized === '/') return '/';
+  return `${normalized}/`;
+};
+
+const toDirectArabicPath = (rawPath) => {
+  let value = rawPath || '/';
+  if (!value.startsWith('/')) {
+    value = `/${value}`;
+  }
+  value = value.replace(/\/{2,}/g, '/');
+  if (value === '/ar' || value === '/ar/') return '/';
+  if (value.startsWith('/ar/')) {
+    const direct = value.slice(3);
     return direct || '/';
   }
-  return normalized;
+  return value || '/';
 };
 
 const APPROVED_PERFORMANCE_ASSET_REWRITES = Object.freeze([
@@ -413,15 +425,15 @@ const localizeInternalLinks = (document, locale) => {
     const localizedPath = pathForFileLocale(targetFile, locale);
     if (!localizedPath) return;
 
-    const normalizedTarget = normalizePath(localizedPath);
+    const canonicalTarget = localizedPath;
     const nextHref =
-      normalizedTarget +
+      canonicalTarget +
       (parsed.search || '') +
       (parsed.hash || '');
 
     // Preserve same-page anchors as relative-only links when possible.
-    if (currentPath && normalizePath(currentPath) === normalizedTarget && !parsed.search) {
-      anchor.setAttribute('href', parsed.hash || normalizedTarget);
+    if (currentPath && normalizeComparablePath(currentPath) === normalizeComparablePath(canonicalTarget) && !parsed.search) {
+      anchor.setAttribute('href', parsed.hash || canonicalTarget);
       return;
     }
 

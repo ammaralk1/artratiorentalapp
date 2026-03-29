@@ -76,7 +76,6 @@ export const GLOBAL_SCHEMA_FOUNDATION = Object.freeze({
       '@type': 'Country',
       name: 'Saudi Arabia',
     },
-    availableLanguage: ['en', 'ar'],
     parentOrganization: { '@id': ORGANIZATION_ID },
   },
 });
