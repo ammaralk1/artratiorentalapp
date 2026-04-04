@@ -11,212 +11,229 @@ Primary goal: improve and unify the UI without breaking existing behavior, workf
 
 | Phase | Description | Status |
 |-------|-------------|--------|
-| A | Security hardening | Not started |
-| B | CSS token / brand finish | Not started |
-| C | DB migration tracking | Not started |
-| D | Test coverage (unit tests) | **Tier 1 + Tier 2 complete** — Tier 3 (DOM/E2E) deferred |
-| E | JS refactoring (monolith splits) | **3 largest files done**; 16 files remain |
-| F | PHP service layer (SQL → repositories) | **Next major phase** |
-| G | TypeScript migration | Future |
+| A | Security hardening | ✅ Done |
+| B | CSS token / brand finish | ⚠️ Partial — Tailwind v4 upgrade remaining |
+| C | DB migration tracking | ✅ Done |
+| D | JS test coverage | ✅ Done |
+| E | JS refactoring (monolith splits) | ⚠️ Partial — 4 large files remaining |
+| F | PHP service layer (SQL → repositories) | ✅ Done |
+| G | TypeScript migration | ✅ Foundation set — incremental going forward |
 
-Full audit doc: `memory/project_master_plan_2026.md`
+Full audit and phased plan: `memory/project_master_plan_2026.md`
 
----
-
-## Phase E — JS Refactoring Completed
-
-### File 1: `src/scripts/reservations/reservationPdf.js`
-Split into modules under `src/scripts/reservations/pdf/`:
-- `state.js` — shared mutable state object
-- `config.js` — section/field defs, quote config
-- `financial.js` — formatMoney, formatCurrencyValue, companyShare helpers, getProjectExpensesTotal
-- `toggle-prefs.js` — quote toggle preferences (localStorage)
-- `builder.js` — PDF HTML assembly
-- `renderer.js` — PDF rendering entry
-
-### File 2: `src/scripts/reservations/createForm.js` (3,662 → 147 lines)
-Split into modules under `src/scripts/reservations/create/`:
-- `state.js` — 10 mutable module-level variables as `export const state = { ... }`
-- `draft.js` — draft persistence: collect, persist, clear, restore
-- `customer-project.js` — customer/project DOM helpers, autocomplete, option maps, tax state sync
-- `equipment.js` — equipment search/description/barcode/status/selection
-- `packages-items.js` — package population/add/conflict, renderReservationItems, renderDraftReservationSummary
-- `submit.js` — form submit, recover-after-abort, finalizeReservationCreate, reset, button setup
-
-The thin entry `createForm.js` re-exports all 15 public exports and contains `initCreateReservationForm`, `refreshCreateReservationForm`, and event listeners.
-
-### File 3: `src/scripts/reservationsService.js` (3,282 → 8 lines)
-Split into modules under `src/scripts/reservations/service/`:
-- `utils.js` — pure utilities: sanitizePriceValue, toNumber, toPositiveInt, normalizeStatusValue, normalisePaidStatus, normalizeReservationItemType, normalizeBarcodeValueLoose, normalizePackageIdentifier, resolveEquipmentIdValue
-- `cache.js` — 3 cache systems (packages, crew, item-cost)
-- `payment.js` — payment history: normalizePaymentHistoryCollection, normalizePaymentType, extractPaymentHistoryFromCandidates
-- `packages.js` — all package normalization: dedupePackages, mergePackageCollections, mergePackageRecords, normalizePackageItemRecord, mapReservationPackagesFromSource, normalizeItemsWithPackages, etc.
-- `mapping.js` — data mapping: normalizeCrewAssignmentEntry, mapReservationItem, toInternalReservation, mapLegacyReservation, mapReservationFromApi, buildReservationPayload
-- `api.js` — reservationsState, getReservationsState, setReservationsState, all CRUD ops
-
-The thin entry `reservationsService.js` re-exports everything.
+Current branch: `phase-0-environment-control`
 
 ---
 
-## Phase E — Remaining Large Files (not yet split)
+## Phase A — Security Hardening ✅ Done
 
-These files are over 1,000 lines but were deferred. Do them in Phase E continuation before Phase F if desired:
+Commit: `a7f5c67e`
 
-| File | Lines |
-|------|-------|
-| `src/scripts/projects/templatesTab.js` | ~3,787 |
-| `src/scripts/projects/projectDetails.js` | ~2,556 |
-| `src/scripts/equipment.js` | ~2,365 |
-| `src/scripts/projectsReports.js` | ~2,051 |
-| `src/scripts/reservationsEdit.js` | ~1,824 |
-| `src/scripts/reservations/editForm.js` | ~1,578 |
-| `src/scripts/projects/form.js` | ~1,555 |
-| `src/scripts/maintenance.js` | ~1,508 |
-| `src/scripts/customerPage.js` | ~1,492 |
-| `src/scripts/customerDetails.js` | ~1,461 |
-| `src/scripts/technicians.js` | ~1,456 |
-| `src/scripts/technicianPage.js` | ~1,402 |
-| `src/scripts/notifications.js` | ~1,379 |
-| `src/scripts/reservations/list/details.js` | ~1,345 |
-| `src/scripts/reservationsTechnicians.js` | ~1,322 |
-| `src/scripts/projects/view.js` | ~1,261 |
+All five audit findings resolved:
+
+- **Exception detail stripped** from all ~30 API 500 responses — `error_log()` only, nothing in the JSON response body
+- **`health.php` secured** — `requireAuthenticated()` added; DB error detail removed from response
+- **Telegram webhook** — `secret_token` is now mandatory; all requests rejected if not configured in `config.php`
+- **SameSite** — changed from `Lax` to `Strict` in `backend/bootstrap/environment.php`
+- **X-Forwarded-For** — only trusted when `REMOTE_ADDR` matches `security.trusted_proxy_ips` in config; default is no trusted proxies
+- **Rate limiting** — added to public form endpoints (contact, feedback, equipment-requests) via `backend/bootstrap/ratelimit.php`
 
 ---
 
-## Phase D — Tests Added This Session
+## Phase B — CSS ⚠️ Partial
 
-**Test count progression:**
-- Session start: 334 tests
-- After Tier 1: 617 tests
-- After Tier 2: 779 tests
-
-**New test files created:**
-
-### Tier 1 (pure functions, no DOM)
-
-| File | Tests | What is tested |
-|------|-------|----------------|
-| `tests/reservations/service/utils.test.js` | 20 | sanitizePriceValue, toNumber, toPositiveInt, normalizeStatusValue, normalisePaidStatus, normalizeReservationItemType, normalizeBarcodeValueLoose, normalizePackageIdentifier |
-| `tests/reservations/service/payment.test.js` | 35 | normalizePaymentType, extractPaymentHistorySource, extractPaymentHistoryFromCandidates, normalizePaymentHistoryCollection |
-| `tests/reservations/service/packages.test.js` | 69 | dedupePackages, derivePackageMergeKey, mergePackageItemCollections, mergePackageCollections, normalizePackageItemRecord, mergePackageRecords, resolvePackageMergeKey |
-| `tests/reservations/service/mapping.test.js` | 35 | normalizeCrewAssignmentEntry, mapReservationItem, toInternalReservation, mapLegacyReservation |
-| `tests/reservations/reservationsShared.test.js` | 38 | parsePriceValue, sanitizePriceValue, normalizeText, groupReservationItems, resolveReservationItemGroupKey, resolveEquipmentIdentifier |
-| `tests/reservations/pdf/financial.test.js` | 39 | formatMoney, formatCurrencyValue, formatPercentageValue, isCompanyShareEnabledForState, isTaxEnabledForShare, resolveCompanySharePercentFromState, getProjectExpensesTotal, calculateProjectDurationDays |
-
-### Tier 2 (slightly more complex, still unit-testable)
-
-| File | Tests | What is tested |
-|------|-------|----------------|
-| `tests/technicians/techniciansService.test.js` | 29 | getTechniciansState, setTechniciansState, mapTechnicianFromApi, mapLegacyTechnician, buildTechnicianPayload, isApiError |
-| `tests/reservations/service/cache.test.js` | 23 | hasRichCrewData, inferPackagesFromItems, getCachedReservationCrew, getCachedReservationPackages, getCachedReservationItemCosts, syncReservationItemCostCache |
-| `tests/reservations/pdf/toggle-prefs.test.js` | 21 | getTogglePrefsStorageKey, collectSelectionIds, serializeQuoteToggleState, clearLegacyQuotePreferences |
-| `tests/reservations/pdf/config.test.js` | 43 | getQuoteSectionDefs, getQuoteFieldDefs, getQuoteSectionIdSet, buildDefaultFieldSelections, cloneFieldSelections, getFieldSelectionSet, isFieldEnabledInSelections, buildDefaultSectionExpansions, isSectionExpanded, ensureSectionExpansionState, getQuoteStatusMessage, getQuoteConfig |
-| `tests/reservations/summary.test.js` | 51 | calculateReservationTotal (existing), calculateReservationDays, calculatePaymentProgress, determinePaymentStatus, calculateDraftFinancialBreakdown (all expanded) |
-
-**Current suite:** 779 passing, 6 skipped (integration tests requiring env vars), 0 failing — 38 test files total.
+- ✅ All 5 remaining `#4c6ef5` color literals replaced
+- ❌ **DaisyUI v5 / Tailwind v3 mismatch** — still on `tailwindcss@^3.4.14`; DaisyUI v5 requires Tailwind v4. This is the only remaining item in Phase B. Do it on its own branch with full UI regression testing after.
 
 ---
 
-## Key Architectural Patterns Established
+## Phase C — DB Migration Tracking ✅ Done
 
-### 1. Shared mutable state pattern
-All module-level variables are grouped into a single `export const state = { ... }` object. Sub-modules import `{ state }` from `./state.js` and mutate via `state.xxx = ...`. This avoids ES module live-binding issues when splitting monoliths.
+Commit: `9e8c13b7`
 
+**Migration runner:** `backend/tools/migrate.php`
+
+```bash
+php backend/tools/migrate.php --status     # show applied vs pending
+php backend/tools/migrate.php              # apply all pending
+php backend/tools/migrate.php --dry-run    # preview without running
+php backend/tools/migrate.php --baseline   # mark all existing files applied (first-time setup on existing DB)
+```
+
+- Tracks applied migrations in a `schema_migrations` table (auto-created)
+- Runs SQL files in `backend/sql/` in alphabetical order
+- Safety guard: if table is empty and >5 files are pending, stops and prompts for `--baseline` or `--force`
+- **Naming convention for new migrations:** `YYYYMMDD_description.sql` (e.g. `20260404_add_equipment_status_column.sql`)
+
+**Seed data separation:**
+- `backend/seeds/dev_sample_data.sql` — uses `DROP TABLE`, local dev only, never a tracked migration
+- Docker stack mounts `backend/seeds/` separately so the init script still finds it
+
+---
+
+## Phase D — JS Test Coverage ✅ Done
+
+**Test counts:** 785 total — **779 passing, 6 skipped** (integration tests requiring Docker env — pre-existing skip)
+
+Test directories covering all previously-untested modules:
+
+| Directory | What it covers |
+|-----------|---------------|
+| `tests/apiClient/` | apiClient request/retry/error handling |
+| `tests/auth/` | auth session checks |
+| `tests/customers/` | pagination helpers |
+| `tests/equipment/` | status sync, pagination |
+| `tests/maintenance/` | maintenanceService |
+| `tests/projects/` | projectsService |
+| `tests/technicians/` | techniciansService, pagination |
+| `tests/reservations/service/` | utils, cache, payment, packages, mapping |
+| `tests/reservations/pdf/` | financial, config, toggle-prefs |
+| `tests/reservations/` | summary, pdf, shared, editForm, list |
+| `tests/reports/` | calculations, maintenance-and-breakdowns |
+
+---
+
+## Phase E — JS Refactoring ⚠️ Partial
+
+### Completed splits
+
+**`src/scripts/reservations/reservationPdf.js`** (7,069 lines) → `src/scripts/reservations/pdf/`:
+`state.js`, `config.js`, `constants.js`, `financial.js`, `toggle-prefs.js`, `assets.js`,
+`data-collection.js`, `layout.js`, `html-builder.js`, `renderer.js`, `modal.js`, `utils.js`, `checklist.js`
+
+**`src/scripts/reservations/createForm.js`** (3,662 lines) → `src/scripts/reservations/create/`:
+`state.js`, `draft.js`, `customer-project.js`, `equipment.js`, `packages-items.js`, `submit.js`, `debug.js`
+
+**`src/scripts/reservationsService.js`** → `src/scripts/reservations/service/`:
+`utils.js`, `cache.js`, `payment.js`, `packages.js`, `mapping.js`, `api.js`
+
+### Remaining large files (not yet split)
+
+| File | Lines | Notes |
+|------|-------|-------|
+| `src/scripts/projects/templatesTab.js` | 3,787 | Biggest remaining file |
+| `src/scripts/projects/projectDetails.js` | 2,556 | |
+| `src/scripts/equipment.js` | 2,365 | |
+| `src/scripts/maintenance.js` | 1,508 | |
+
+### Key patterns established during Phase E splits
+
+**Shared mutable state:** module-level variables grouped into a single exported object to avoid ES module live-binding issues:
 ```js
 // create/state.js
-export const state = {
-  afterSubmitCallback: null,
-  cachedProjects: [],
-  customerOptionMap: new Map(),
-  // ...
-};
+export const state = { afterSubmitCallback: null, cachedProjects: [], ... };
+// sub-modules mutate via: state.xxx = ...
 ```
 
-### 2. Import path depth
-Files in `create/` or `service/` subdirectories need `../../` to reach `src/scripts/` level:
-- `../../storage.js` (not `../storage.js`)
-- `../../reservationsTechnicians.js` (not `../reservationsTechnicians.js`)
-- `../../reservationsShared.js`
-
-### 3. `setMappingStateGetter(fn)` — circular dependency pattern
-`service/mapping.js` needs access to `reservationsState` owned by `service/api.js`. Direct import would create a circular init-time dependency. Solution: `api.js` calls `setMappingStateGetter(getReservationsState)` after declaring the state variable. `mapping.js` uses the injected getter.
-
+**Circular dependency injection:** when `mapping.js` needs state owned by `api.js`, use a setter rather than a direct import:
 ```js
-// In mapping.js
+// mapping.js
 let _getState = () => [];
 export function setMappingStateGetter(fn) { _getState = fn; }
-
-// In api.js (after declaring reservationsState)
-import { setMappingStateGetter } from './mapping.js';
-setMappingStateGetter(getReservationsState);
+// api.js calls setMappingStateGetter(getReservationsState) after declaring state
 ```
 
-### 4. Vitest mocking conventions
-- All `vi.mock()` calls must be at the top of the file (Vitest hoists them)
-- For modules with module-level cache (like `config.js`), use `vi.resetModules()` in `beforeEach` and dynamic `await import()` per test
-- Mock `normalizeItemsWithPackages` to return `{ items: items || [], packages: [] }`, NOT just the array
+**Import path depth:** files inside `create/` or `service/` need `../../` to reach `src/scripts/`:
+- `../../storage.js`, `../../reservationsTechnicians.js`, `../../reservationsShared.js`
 
 ---
 
-## Known Gotchas
+## Phase F — PHP Service Layer ✅ Done
 
-### Import paths in sub-modules
-`getSelectedCrewAssignments` is always in `../../reservationsTechnicians.js` — never in `../state.js` (reservations/state.js). This caught a runtime error during the createForm split.
+Commits: `bb7a8f04`, `25fbd6fc`
 
-### `toInternalReservation(null)` throws
-Default parameter `= {}` only applies to `undefined`, not `null`. Don't test with `null` input.
+### Repositories (`backend/repositories/`)
 
-### `formatPercentageValue(null)` returns `'0.00%'`
-`Number(null)` = 0, which is finite, so the function formats it as `'0.00%'`. Only `undefined`/`NaN`/non-numeric strings return `'0%'`.
+All extend `BaseRepository` (shared PDO constructor, `lastInsertId`, `tableExists`):
 
-### `mapTechnicianFromApi` vs `mapLegacyTechnician`
-`mapTechnicianFromApi` only reads `raw.full_name` (snake_case). `mapLegacyTechnician` also handles `raw.fullName` (camelCase) because it passes the full raw object through. Tests for `fullName` resolution must use `mapLegacyTechnician`, not `mapTechnicianFromApi`.
+| Repository | Key methods beyond CRUD |
+|------------|------------------------|
+| `CustomerRepository` | `exists` |
+| `EquipmentRepository` | `findByBarcode`, `bulkCreate`, `deleteAll` |
+| `ProjectRepository` | `generateCode`, `codeExists`, `syncTechnicians`, `syncEquipment`, `syncExpenses`, `syncPayments` |
+| `ReservationRepository` | `generateCode`, `codeExists`, `syncTechnicians`, `syncItems`, `syncPackages`, `syncPayments` |
+| `TechnicianRepository` | `exists` |
 
-### `sanitizePriceValue` floating-point
-`Number(42.555).toFixed(2)` returns `"42.55"` (not `"42.56"`) due to IEEE 754. Test with clean values like `42.55`.
+**PHP test suite:** `tests/php/repositories/` — **101 tests, 207 assertions, all passing**
 
-### Config cache isolation
-`QUOTE_CONFIG_CACHE` is a module-level Map in `pdf/config.js`. Each test that needs a cold cache must call `QUOTE_CONFIG_CACHE.clear()` in `beforeEach`, OR use `vi.resetModules()` with dynamic `await import()`.
+Run with: `php vendor/bin/phpunit`
+
+### Endpoint wiring
+
+Write path goes through repositories. Complex read/schema-detection logic stays with PDO:
+
+| Endpoint | Repo used | PDO kept for |
+|----------|-----------|-------------|
+| `backend/api/customers/index.php` | `CustomerRepository` | — |
+| `backend/api/equipment/index.php` | `EquipmentRepository` | SHOW COLUMNS detection in GET |
+| `backend/api/projects/index.php` | `ProjectRepository` | fetchProject*, tableColumnExists, customer/tech/equipment exists checks |
+| `backend/api/reservations/index.php` | `ReservationRepository` | upsertReservationItems/Packages, fetchReservation*, decorateReservation |
+| `backend/api/technicians/index.php` | `TechnicianRepository` | SHOW COLUMNS + telegram link detection in GET |
+
+### Router and AuthMiddleware
+
+`backend/Router.php` — lightweight regex router, loaded globally via `bootstrap/autoload.php`
+`backend/middleware/AuthMiddleware.php` — wraps `requireAuthenticated()` / `requireRole()`
+
+All 5 wired endpoints now use:
+```php
+AuthMiddleware::authenticated();
+(new Router($_SERVER['REQUEST_METHOD'] ?? 'GET', $_SERVER['REQUEST_URI'] ?? '/'))
+    ->get('/api/xxx',    fn() => handleXxxGet(...))
+    ->post('/api/xxx',   fn() => handleXxxCreate(...))
+    ->put('/api/xxx',    fn() => handleXxxUpdate(...))
+    ->patch('/api/xxx',  fn() => handleXxxUpdate(...))
+    ->delete('/api/xxx', fn() => handleXxxDelete(...))
+    ->dispatch();
+```
+
+The remaining ~25 backend API files still use `switch ($method)` — they can be migrated opportunistically when next touched.
 
 ---
 
-## Phase F — Next Steps (PHP Service Layer)
+## Phase G — TypeScript Foundation ✅ Set
 
-Goal: extract raw SQL from API endpoint files into repository classes; add lightweight router with auth middleware.
+Commit: `4b02f9ae`
 
-Files to target:
-- `backend/api/customers/index.php`
-- `backend/api/equipment/index.php`
-- `backend/api/projects/index.php`
-- `backend/api/reservations/index.php`
-- `backend/api/technicians/index.php`
+- `typescript@^6` installed as dev dependency
+- `tsconfig.json` added: `strict: true` for `.ts` files, `allowJs: true` + `checkJs: false` so all existing `.js` files are unaffected
+- `tsc --noEmit` passes clean (zero errors baseline)
+- **Rule in `CLAUDE.md`:** any new `src/scripts/` file must be `.ts`; existing `.js` converts when next touched for a real change; no implicit `any`; API response shapes need explicit types
 
-Pattern to introduce:
-- `backend/repositories/CustomerRepository.php` (findAll, findById, create, update, delete)
-- `backend/repositories/ReservationRepository.php`
-- etc.
-- `backend/Router.php` — simple regex router
-- `backend/middleware/AuthMiddleware.php` — session/token check
+---
+
+## What Remains
+
+| Phase | Item | Effort |
+|-------|------|--------|
+| B | Tailwind v3 → v4 upgrade (DaisyUI v5 requires it) | ~1 day |
+| E | Split 4 remaining large JS files (templatesTab, projectDetails, equipment, maintenance) | ~1 week |
+| G | TypeScript migration — incremental, no dedicated sprint | ongoing |
+
+**Recommended order:** Phase E first (low breakage risk), then Phase B on its own branch (CSS pipeline change, needs full UI regression test after).
 
 ---
 
 ## Running Tests
 
 ```bash
-# All tests
+# JS tests
 npx vitest run
 
-# Specific file
-npx vitest run tests/reservations/service/utils.test.js
+# PHP tests
+php vendor/bin/phpunit
 
-# Watch mode
-npx vitest
+# TypeScript type check
+npx tsc --noEmit
+
+# Migration status (requires config.php)
+php backend/tools/migrate.php --status
 ```
 
 ---
 
 ## Memory Files
 
-- `memory/project_master_plan_2026.md` — full audit + phased plan A–G
+- `memory/project_master_plan_2026.md` — full audit + phased plan A–G with current status
 - `memory/project_ui_refactor_plan.md` — earlier 8-phase CSS plan (superseded)
 - `memory/project_brand_state.md` — brand rollout state
