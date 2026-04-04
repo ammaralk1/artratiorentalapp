@@ -4,7 +4,7 @@
 UPDATE reservation_technicians rt
 LEFT JOIN technician_positions tp ON (
     (rt.position_id IS NOT NULL AND tp.id = rt.position_id)
-    OR (rt.position_id IS NULL AND rt.position_key IS NOT NULL AND tp.name = rt.position_key)
+    OR (rt.position_id IS NULL AND rt.position_key IS NOT NULL AND tp.name COLLATE utf8mb4_unicode_ci = rt.position_key COLLATE utf8mb4_unicode_ci)
 )
 SET
     rt.position_cost = CASE

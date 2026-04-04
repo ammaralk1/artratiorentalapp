@@ -1,28 +1,31 @@
 <?php
 require_once __DIR__ . '/../../bootstrap.php';
 
+use ArtRatio\Repositories\ReservationRepository;
+
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
 // Only run the HTTP dispatcher when this file is the direct entrypoint.
 // When included from another endpoint (e.g. to use helper functions), skip dispatch.
 if (!defined('API_INCLUDE_MODE')) {
     try {
-        $pdo = getDatabaseConnection();
+        $pdo  = getDatabaseConnection();
         requireAuthenticated();
+        $repo = new ReservationRepository($pdo);
 
         switch ($method) {
             case 'GET':
-                handleReservationsGet($pdo);
+                handleReservationsGet($pdo, $repo);
                 break;
             case 'POST':
-                handleReservationsCreate($pdo);
+                handleReservationsCreate($pdo, $repo);
                 break;
             case 'PUT':
             case 'PATCH':
-                handleReservationsUpdate($pdo);
+                handleReservationsUpdate($pdo, $repo);
                 break;
             case 'DELETE':
-                handleReservationsDelete($pdo);
+                handleReservationsDelete($pdo, $repo);
                 break;
             default:
                 respondError('Method not allowed', 405);
@@ -30,14 +33,15 @@ if (!defined('API_INCLUDE_MODE')) {
     } catch (InvalidArgumentException $exception) {
         respondError($exception->getMessage(), 400);
     } catch (Throwable $exception) {
-        respondError('Unexpected server error', 500, [
-            'details' => $exception->getMessage(),
-        ]);
+        error_log('API error: ' . $exception->getMessage());
+        respondError('Unexpected server error', 500);
     }
 }
 
-function handleReservationsGet(PDO $pdo): void
+function handleReservationsGet(PDO $pdo, ReservationRepository $repo): void
 {
+    assertReservationRuntimeSchemaReady($pdo);
+
     $id = isset($_GET['id']) ? (int) $_GET['id'] : null;
 
     if ($id) {
@@ -165,8 +169,9 @@ function handleReservationsGet(PDO $pdo): void
     );
 }
 
-function handleReservationsCreate(PDO $pdo): void
+function handleReservationsCreate(PDO $pdo, ReservationRepository $repo): void
 {
+    requireRole(['admin', 'manager']);
     $reqId = bin2hex(random_bytes(4));
     $clientReqId = $_SERVER['HTTP_X_REQUEST_ID'] ?? 'none';
     $t0 = microtime(true);
@@ -175,23 +180,15 @@ function handleReservationsCreate(PDO $pdo): void
         error_log(sprintf('[reservations:create:%s] %s +%.1fms (client=%s)', $reqId, $label, $elapsed, $clientReqId));
     };
 
-    ensureReservationProjectColumn($pdo);
-    $mark('ensureReservationProjectColumn');
-    ensureReservationEquipmentCostColumn($pdo);
-    $mark('ensureReservationEquipmentCostColumn');
-    ensureReservationPaymentColumns($pdo);
-    $mark('ensureReservationPaymentColumns');
-    ensureReservationPackagesTable($pdo);
-    $mark('ensureReservationPackagesTable');
-    ensureReservationPackagesTable($pdo);
-    $mark('ensureReservationPackagesTable (repeat)');
+    assertReservationRuntimeSchemaReady($pdo);
+    $mark('assertReservationRuntimeSchemaReady');
 
     try {
         $payloadSize = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
         $mark('requestContentLength=' . $payloadSize);
     } catch (Throwable $_) {}
 
-    [$data, $errors] = validateReservationPayload(readJsonPayload(), false, $pdo);
+    [$data, $errors] = validateReservationPayload(readJsonPayload(), false, $pdo, $repo);
     $mark('validateReservationPayload');
 
     if ($errors) {
@@ -202,7 +199,7 @@ function handleReservationsCreate(PDO $pdo): void
     $pdo->beginTransaction();
 
     try {
-        $reservationId = insertReservation($pdo, $data);
+        $reservationId = insertReservation($repo, $data);
         $mark('insertReservation');
         upsertReservationItems($pdo, $reservationId, $data['items'] ?? []);
         $mark('upsertReservationItems');
@@ -210,10 +207,10 @@ function handleReservationsCreate(PDO $pdo): void
             upsertReservationPackages($pdo, $reservationId, $data['packages']);
             $mark('upsertReservationPackages');
         }
-        upsertReservationTechnicians($pdo, $reservationId, $data['technicians'] ?? []);
+        $repo->syncTechnicians($reservationId, normalizeReservationTechniciansPayload($data['technicians'] ?? []));
         $mark('upsertReservationTechnicians');
         if (array_key_exists('payments', $data)) {
-            upsertReservationPayments($pdo, $reservationId, $data['payments']);
+            $repo->syncPayments($reservationId, $data['payments']);
             $mark('upsertReservationPayments');
         }
 
@@ -260,15 +257,14 @@ function handleReservationsCreate(PDO $pdo): void
     } catch (Throwable $exception) {
         $pdo->rollBack();
         error_log(sprintf('[reservations:create:%s] failed after +%.1fms: %s', $reqId, (microtime(true) - $t0) * 1000, $exception->getMessage()));
-        respondError('reservations.errors.createFailed', 500, [
-            'details' => $exception->getMessage(),
-        ]);
+        respondError('reservations.errors.createFailed', 500);
         return;
     }
 }
 
-function handleReservationsUpdate(PDO $pdo): void
+function handleReservationsUpdate(PDO $pdo, ReservationRepository $repo): void
 {
+    requireRole(['admin', 'manager']);
     $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 
     if ($id <= 0) {
@@ -276,11 +272,9 @@ function handleReservationsUpdate(PDO $pdo): void
         return;
     }
 
-    ensureReservationProjectColumn($pdo);
-    ensureReservationEquipmentCostColumn($pdo);
-    ensureReservationPaymentColumns($pdo);
+    assertReservationRuntimeSchemaReady($pdo);
 
-    [$data, $errors] = validateReservationPayload(readJsonPayload(), true, $pdo, $id);
+    [$data, $errors] = validateReservationPayload(readJsonPayload(), true, $pdo, $repo, $id);
 
     if ($errors) {
         respondError('Validation failed', 422, ['errors' => $errors]);
@@ -293,7 +287,10 @@ function handleReservationsUpdate(PDO $pdo): void
     $pdo->beginTransaction();
 
     try {
-        updateReservation($pdo, $id, $data);
+        $coreFields = array_diff_key($data, array_flip(['items', 'packages', 'technicians', 'payments']));
+        if ($coreFields) {
+            $repo->update($id, $coreFields);
+        }
 
         if (array_key_exists('items', $data)) {
             upsertReservationItems($pdo, $id, $data['items']);
@@ -304,11 +301,11 @@ function handleReservationsUpdate(PDO $pdo): void
         }
 
         if (array_key_exists('technicians', $data)) {
-            upsertReservationTechnicians($pdo, $id, $data['technicians']);
+            $repo->syncTechnicians($id, normalizeReservationTechniciansPayload($data['technicians']));
         }
 
         if (array_key_exists('payments', $data)) {
-            upsertReservationPayments($pdo, $id, $data['payments']);
+            $repo->syncPayments($id, $data['payments']);
         }
 
         $pdo->commit();
@@ -360,14 +357,12 @@ function handleReservationsUpdate(PDO $pdo): void
     } catch (Throwable $exception) {
         $pdo->rollBack();
         error_log(sprintf('Reservation update failed (id=%d): %s', $id, $exception->getMessage()));
-        respondError('reservations.errors.updateFailed', 500, [
-            'details' => $exception->getMessage(),
-        ]);
+        respondError('reservations.errors.updateFailed', 500);
         return;
     }
 }
 
-function handleReservationsDelete(PDO $pdo): void
+function handleReservationsDelete(PDO $pdo, ReservationRepository $repo): void
 {
     requireRole('admin');
     $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
@@ -377,38 +372,17 @@ function handleReservationsDelete(PDO $pdo): void
         return;
     }
 
-    $pdo->beginTransaction();
-
-    try {
-        $statement = $pdo->prepare('DELETE FROM reservation_technicians WHERE reservation_id = :id');
-        $statement->execute(['id' => $id]);
-
-        $statement = $pdo->prepare('DELETE FROM reservation_equipment WHERE reservation_id = :id');
-        $statement->execute(['id' => $id]);
-
-        $statement = $pdo->prepare('DELETE FROM reservations WHERE id = :id');
-        $statement->execute(['id' => $id]);
-
-        if ($statement->rowCount() === 0) {
-            $pdo->rollBack();
-            respondError('Reservation not found', 404);
-            return;
-        }
-
-        $pdo->commit();
-
-        logActivity($pdo, 'RESERVATION_DELETE', [
-            'reservation_id' => $id,
-        ]);
-
-        respond(null);
-    } catch (Throwable $exception) {
-        $pdo->rollBack();
-        throw $exception;
+    if (!$repo->delete($id)) {
+        respondError('Reservation not found', 404);
+        return;
     }
+
+    logActivity($pdo, 'RESERVATION_DELETE', ['reservation_id' => $id]);
+
+    respond(null);
 }
 
-function validateReservationPayload(array $payload, bool $isUpdate, PDO $pdo, ?int $reservationId = null): array
+function validateReservationPayload(array $payload, bool $isUpdate, PDO $pdo, ReservationRepository $repo, ?int $reservationId = null): array
 {
     $errors = [];
 
@@ -433,7 +407,7 @@ function validateReservationPayload(array $payload, bool $isUpdate, PDO $pdo, ?i
                 if ($normalizedCode === null) {
                     $errors['reservation_code'] = 'Reservation code is invalid';
                 } else {
-                    if ($reservationId !== null && reservationCodeExists($pdo, $normalizedCode, $reservationId)) {
+                    if ($reservationId !== null && $repo->codeExists($normalizedCode, $reservationId)) {
                         $errors['reservation_code'] = 'Reservation code already exists';
                     }
                     $reservationCode = $normalizedCode;
@@ -954,157 +928,42 @@ function normalizeReservationCode(?string $code): ?string
     return sprintf('RSV-%04d', $sequence);
 }
 
-function reservationCodeExists(PDO $pdo, string $code, ?int $ignoreId = null): bool
-{
-    $sql = 'SELECT 1 FROM reservations WHERE reservation_code = :code';
-    $params = ['code' => $code];
 
-    if ($ignoreId !== null) {
-        $sql .= ' AND id <> :ignore_id';
-        $params['ignore_id'] = $ignoreId;
-    }
-
-    $sql .= ' LIMIT 1';
-
-    $statement = $pdo->prepare($sql);
-    $statement->execute($params);
-    return (bool) $statement->fetchColumn();
-}
-
-function generateReservationCode(PDO $pdo): string
-{
-    $statement = $pdo->query(
-        "SELECT reservation_code FROM reservations WHERE reservation_code REGEXP '^RSV-[0-9]+$' ORDER BY CAST(SUBSTRING(reservation_code, 5) AS UNSIGNED) DESC LIMIT 1"
-    );
-
-    $lastCode = $statement ? $statement->fetchColumn() : null;
-    $nextSequence = 1;
-
-    if ($lastCode && preg_match('/^RSV-(\d+)$/', $lastCode, $matches)) {
-        $nextSequence = ((int) $matches[1]) + 1;
-    }
-
-    // Ensure uniqueness in case of concurrent inserts
-    do {
-        $candidate = sprintf('RSV-%04d', $nextSequence);
-        $nextSequence++;
-    } while (reservationCodeExists($pdo, $candidate));
-
-    return $candidate;
-}
-
-function insertReservation(PDO $pdo, array $data): int
+function insertReservation(ReservationRepository $repo, array $data): int
 {
     $reservationCode = normalizeReservationCode($data['reservation_code'] ?? null);
-    if (!$reservationCode) {
-        $reservationCode = generateReservationCode($pdo);
-    } elseif (reservationCodeExists($pdo, $reservationCode)) {
-        $reservationCode = generateReservationCode($pdo);
+    if (!$reservationCode || $repo->codeExists($reservationCode)) {
+        $reservationCode = $repo->generateCode();
     }
 
-    $sql = 'INSERT INTO reservations (
-        reservation_code,
-        customer_id,
-        title,
-        start_datetime,
-        end_datetime,
-        status,
-        location,
-        notes,
-        total_amount,
-        project_id,
-        discount,
-        discount_type,
-        apply_tax,
-        paid_status,
-        paid_amount,
-        paid_percentage,
-        payment_progress_type,
-        payment_progress_value,
-        confirmed
-    ) VALUES (
-        :reservation_code,
-        :customer_id,
-        :title,
-        :start_datetime,
-        :end_datetime,
-        :status,
-        :location,
-        :notes,
-        :total_amount,
-        :project_id,
-        :discount,
-        :discount_type,
-        :apply_tax,
-        :paid_status,
-        :paid_amount,
-        :paid_percentage,
-        :payment_progress_type,
-        :payment_progress_value,
-        :confirmed
-    )';
-
-    $statement = $pdo->prepare($sql);
-    $statement->execute([
-        'reservation_code' => $reservationCode,
-        'customer_id' => $data['customer_id'],
-        'title' => $data['title'] ?? null,
-        'start_datetime' => $data['start_datetime'],
-        'end_datetime' => $data['end_datetime'],
-        'status' => $data['status'] ?? 'pending',
-        'location' => $data['location'] ?? null,
-        'notes' => $data['notes'] ?? null,
-        'total_amount' => $data['total_amount'] ?? 0,
-        'project_id' => $data['project_id'] ?? null,
-        'discount' => $data['discount'] ?? 0,
-        'discount_type' => $data['discount_type'] ?? 'percent',
-        'apply_tax' => !empty($data['apply_tax']) ? 1 : 0,
-        'paid_status' => normalisePaidStatus($data['paid_status'] ?? 'unpaid') ?? 'unpaid',
-        'paid_amount' => isset($data['paid_amount']) ? (float) $data['paid_amount'] : 0,
-        'paid_percentage' => isset($data['paid_percentage']) ? (float) $data['paid_percentage'] : 0,
-        'payment_progress_type' => $data['payment_progress_type'] ?? null,
-        'payment_progress_value' => $data['payment_progress_value'] ?? null,
-        'confirmed' => isset($data['confirmed']) ? (int) !empty($data['confirmed']) : 0,
+    $created = $repo->create([
+        'reservation_code'        => $reservationCode,
+        'customer_id'             => $data['customer_id'],
+        'title'                   => $data['title'] ?? null,
+        'start_datetime'          => $data['start_datetime'],
+        'end_datetime'            => $data['end_datetime'],
+        'status'                  => $data['status'] ?? 'pending',
+        'location'                => $data['location'] ?? null,
+        'notes'                   => $data['notes'] ?? null,
+        'total_amount'            => $data['total_amount'] ?? 0,
+        'project_id'              => $data['project_id'] ?? null,
+        'discount'                => $data['discount'] ?? 0,
+        'discount_type'           => $data['discount_type'] ?? 'percent',
+        'apply_tax'               => !empty($data['apply_tax']) ? 1 : 0,
+        'paid_status'             => normalisePaidStatus($data['paid_status'] ?? 'unpaid') ?? 'unpaid',
+        'paid_amount'             => isset($data['paid_amount']) ? (float) $data['paid_amount'] : 0,
+        'paid_percentage'         => isset($data['paid_percentage']) ? (float) $data['paid_percentage'] : 0,
+        'payment_progress_type'   => $data['payment_progress_type'] ?? null,
+        'payment_progress_value'  => $data['payment_progress_value'] ?? null,
+        'confirmed'               => isset($data['confirmed']) ? (int) !empty($data['confirmed']) : 0,
     ]);
 
-    return (int) $pdo->lastInsertId();
+    return (int) $created['id'];
 }
 
-function updateReservation(PDO $pdo, int $id, array $data): void
-{
-    if (!$data) {
-        return;
-    }
-
-    $fields = [];
-    $params = ['id' => $id];
-
-    foreach ($data as $column => $value) {
-        if (in_array($column, ['items', 'packages', 'technicians', 'payments'], true)) {
-            continue;
-        }
-        $fields[] = sprintf('%s = :%s', $column, $column);
-        $params[$column] = $value;
-    }
-
-    if (!$fields) {
-        return;
-    }
-
-    $sql = 'UPDATE reservations SET ' . implode(', ', $fields) . ' WHERE id = :id';
-    $statement = $pdo->prepare($sql);
-    $statement->execute($params);
-
-    if ($statement->rowCount() === 0) {
-        if (!fetchReservationById($pdo, $id)) {
-            respondError('Reservation not found', 404);
-        }
-    }
-}
 
 function upsertReservationItems(PDO $pdo, int $reservationId, array $items): void
 {
-    ensureReservationEquipmentCostColumn($pdo);
     $hasUnitCostColumn = true; // assume present; fallback handled below
 
     $pdo->prepare('DELETE FROM reservation_equipment WHERE reservation_id = :id')->execute(['id' => $reservationId]);
@@ -1170,11 +1029,10 @@ function upsertReservationItems(PDO $pdo, int $reservationId, array $items): voi
         try {
             $statement->execute($params);
         } catch (PDOException $error) {
-            // If unit_cost is unknown, retry without it after ensuring the column
+            // Degrade to the legacy insert shape only if the schema assertion was skipped upstream.
             $message = strtolower($error->getMessage());
             if ($hasUnitCostColumn && (str_contains($message, 'unit_cost') || str_contains($message, 'unknown column'))) {
                 $hasUnitCostColumn = false;
-                ensureReservationEquipmentCostColumn($pdo);
                 $statement = $pdo->prepare($sqlWithoutCost);
                 unset($params['unit_cost']);
                 $statement->execute($params);
@@ -1187,8 +1045,6 @@ function upsertReservationItems(PDO $pdo, int $reservationId, array $items): voi
 
 function upsertReservationPackages(PDO $pdo, int $reservationId, array $packages): void
 {
-    ensureReservationPackagesTable($pdo);
-
     $existingCostByKey = [];
     try {
         $existingPackages = fetchReservationPackages($pdo, $reservationId);
@@ -1387,13 +1243,10 @@ function upsertReservationPackages(PDO $pdo, int $reservationId, array $packages
         } catch (PDOException $error) {
             $message = strtolower($error->getMessage());
             if (str_contains($message, 'unit_cost') || str_contains($message, 'items_json') || str_contains($message, 'unknown column')) {
-                ensureReservationPackagesTable($pdo);
-                $statement = $pdo->prepare(
-                    'INSERT INTO reservation_packages (reservation_id, package_id, package_code, package_name, name, quantity, unit_price, unit_cost, items_json, package_metadata)
-                     VALUES (:reservation_id, :package_id, :package_code, :package_name, :name, :quantity, :unit_price, :unit_cost, :items_json, :package_metadata)'
+                throw buildReservationSchemaRuntimeException(
+                    'reservation package write',
+                    ['reservation_packages.package_id', 'reservation_packages.package_name', 'reservation_packages.unit_cost', 'reservation_packages.items_json', 'reservation_packages.package_metadata']
                 );
-                $statement->execute($params);
-                continue;
             }
             throw $error;
         }
@@ -1417,146 +1270,53 @@ function normalizeReservationPackageKey(array $package): ?string
     return null;
 }
 
-function upsertReservationTechnicians(PDO $pdo, int $reservationId, array $technicians): void
+/**
+ * Normalize the raw technicians payload into the shape expected by
+ * ReservationRepository::syncTechnicians().
+ */
+function normalizeReservationTechniciansPayload(array $technicians): array
 {
-    $pdo->prepare('DELETE FROM reservation_technicians WHERE reservation_id = :id')->execute(['id' => $reservationId]);
-
-    if (!$technicians) {
-        return;
-    }
-
-    $sql = 'INSERT INTO reservation_technicians (
-        reservation_id,
-        technician_id,
-        role,
-        notes,
-        position_id,
-        position_key,
-        position_name,
-        position_label_ar,
-        position_label_en,
-        position_cost,
-        position_client_price,
-        assignment_id
-    ) VALUES (
-        :reservation_id,
-        :technician_id,
-        :role,
-        :notes,
-        :position_id,
-        :position_key,
-        :position_name,
-        :position_label_ar,
-        :position_label_en,
-        :position_cost,
-        :position_client_price,
-        :assignment_id
-    )';
-
-    $statement = $pdo->prepare($sql);
+    $result = [];
 
     foreach ($technicians as $technician) {
         if (is_array($technician)) {
-            $technicianId = (int) ($technician['id'] ?? $technician['technician_id'] ?? 0);
-            $role = $technician['role'] ?? null;
-            $notes = $technician['notes'] ?? null;
-
-            $positionId = isset($technician['position_id']) ? (int) $technician['position_id']
+            $positionId = isset($technician['position_id'])
+                ? (int) $technician['position_id']
                 : (isset($technician['positionId']) ? (int) $technician['positionId'] : null);
-            $positionKey = $technician['position_key'] ?? ($technician['positionKey'] ?? ($technician['position_code'] ?? null));
-            $positionName = $technician['position_name'] ?? ($technician['positionName'] ?? ($technician['position_label'] ?? null));
-            $positionLabelAr = $technician['position_label_ar'] ?? ($technician['positionLabelAr'] ?? null);
-            $positionLabelEn = $technician['position_label_en'] ?? ($technician['positionLabelEn'] ?? null);
 
-            // pricing fallbacks
-            $positionCost = $technician['position_cost']
-                ?? $technician['positionCost']
-                ?? $technician['cost']
-                ?? $technician['daily_wage']
-                ?? $technician['dailyWage']
-                ?? 0;
-            $positionClientPrice = $technician['position_client_price']
-                ?? $technician['positionClientPrice']
-                ?? $technician['client_price']
-                ?? $technician['customer_price']
-                ?? $technician['position_price']
-                ?? $technician['daily_total']
-                ?? $technician['dailyTotal']
-                ?? $technician['total']
-                ?? 0;
-
-            $assignmentId = $technician['assignment_id'] ?? ($technician['assignmentId'] ?? null);
+            $result[] = [
+                'technician_id'         => (int) ($technician['id'] ?? $technician['technician_id'] ?? 0),
+                'role'                  => $technician['role'] ?? null,
+                'notes'                 => $technician['notes'] ?? null,
+                'position_id'           => $positionId,
+                'position_key'          => $technician['position_key'] ?? $technician['positionKey'] ?? $technician['position_code'] ?? null,
+                'position_name'         => $technician['position_name'] ?? $technician['positionName'] ?? $technician['position_label'] ?? null,
+                'position_label_ar'     => $technician['position_label_ar'] ?? $technician['positionLabelAr'] ?? null,
+                'position_label_en'     => $technician['position_label_en'] ?? $technician['positionLabelEn'] ?? null,
+                'position_cost'         => (float) ($technician['position_cost'] ?? $technician['positionCost'] ?? $technician['cost'] ?? $technician['daily_wage'] ?? $technician['dailyWage'] ?? 0),
+                'position_client_price' => (float) ($technician['position_client_price'] ?? $technician['positionClientPrice'] ?? $technician['client_price'] ?? $technician['customer_price'] ?? $technician['position_price'] ?? $technician['daily_total'] ?? $technician['dailyTotal'] ?? $technician['total'] ?? 0),
+                'assignment_id'         => $technician['assignment_id'] ?? $technician['assignmentId'] ?? null,
+            ];
         } else {
-            $technicianId = (int) $technician;
-            $role = null;
-            $notes = null;
-            $positionId = null;
-            $positionKey = null;
-            $positionName = null;
-            $positionLabelAr = null;
-            $positionLabelEn = null;
-            $positionCost = 0;
-            $positionClientPrice = 0;
-            $assignmentId = null;
+            $result[] = [
+                'technician_id'         => (int) $technician,
+                'role'                  => null,
+                'notes'                 => null,
+                'position_id'           => null,
+                'position_key'          => null,
+                'position_name'         => null,
+                'position_label_ar'     => null,
+                'position_label_en'     => null,
+                'position_cost'         => 0.0,
+                'position_client_price' => 0.0,
+                'assignment_id'         => null,
+            ];
         }
-
-        $statement->execute([
-            'reservation_id' => $reservationId,
-            'technician_id' => $technicianId,
-            'role' => $role,
-            'notes' => $notes,
-            'position_id' => $positionId,
-            'position_key' => $positionKey,
-            'position_name' => $positionName,
-            'position_label_ar' => $positionLabelAr,
-            'position_label_en' => $positionLabelEn,
-            'position_cost' => (float) $positionCost,
-            'position_client_price' => (float) $positionClientPrice,
-            'assignment_id' => $assignmentId,
-        ]);
     }
+
+    return $result;
 }
 
-function upsertReservationPayments(PDO $pdo, int $reservationId, array $payments): void
-{
-    $pdo->prepare('DELETE FROM reservation_payments WHERE reservation_id = :id')->execute(['id' => $reservationId]);
-
-    if (!$payments) {
-        return;
-    }
-
-    $sql = 'INSERT INTO reservation_payments (
-        reservation_id,
-        payment_type,
-        value,
-        amount,
-        percentage,
-        note,
-        recorded_at
-    ) VALUES (
-        :reservation_id,
-        :payment_type,
-        :value,
-        :amount,
-        :percentage,
-        :note,
-        :recorded_at
-    )';
-
-    $statement = $pdo->prepare($sql);
-
-    foreach ($payments as $payment) {
-        $statement->execute([
-            'reservation_id' => $reservationId,
-            'payment_type' => $payment['payment_type'] ?? $payment['type'],
-            'value' => $payment['value'],
-            'amount' => $payment['amount'],
-            'percentage' => $payment['percentage'],
-            'note' => $payment['note'] ?? null,
-            'recorded_at' => $payment['recorded_at'] ?? null,
-        ]);
-    }
-}
 
 function fetchReservationById(PDO $pdo, int $id): array|false
 {
@@ -1615,7 +1375,6 @@ function decorateReservation(PDO $pdo, array $reservation): array
 
 function fetchReservationItems(PDO $pdo, int $reservationId): array
 {
-    ensureReservationEquipmentCostColumn($pdo);
     $statement = null;
     $fallback = false;
 
@@ -1689,8 +1448,6 @@ function fetchReservationItems(PDO $pdo, int $reservationId): array
 
 function fetchReservationPackages(PDO $pdo, int $reservationId): array
 {
-    ensureReservationPackagesTable($pdo);
-
     $sqlWithCost = 'SELECT id, package_id, package_code, package_name, name, quantity, unit_price, unit_cost, items_json, package_metadata
          FROM reservation_packages
          WHERE reservation_id = :id';
@@ -1709,13 +1466,10 @@ function fetchReservationPackages(PDO $pdo, int $reservationId): array
     } catch (PDOException $error) {
         $message = strtolower($error->getMessage());
         if (str_contains($message, 'unit_cost') || str_contains($message, 'items_json') || str_contains($message, 'unknown column')) {
-            ensureReservationPackagesTable($pdo);
-            try {
-                $statement = $pdo->prepare($sqlWithCost);
-            } catch (PDOException $_prep) {
-                $statement = $pdo->prepare($sqlWithoutCost);
-            }
-            $statement->execute(['id' => $reservationId]);
+            throw buildReservationSchemaRuntimeException(
+                'reservation package read',
+                ['reservation_packages.package_id', 'reservation_packages.package_name', 'reservation_packages.unit_cost', 'reservation_packages.items_json', 'reservation_packages.package_metadata']
+            );
         } else {
             throw $error;
         }
@@ -1765,7 +1519,7 @@ function fetchReservationTechnicians(PDO $pdo, int $reservationId): array
             $joinConditionParts[] = 'tp.id = rt.position_id';
         }
         if ($hasRtPositionKey) {
-            $joinConditionParts[] = '(rt.position_id IS NULL AND rt.position_key IS NOT NULL AND tp.name = rt.position_key)';
+            $joinConditionParts[] = "(rt.position_id IS NULL AND rt.position_key IS NOT NULL AND tp.name COLLATE utf8mb4_unicode_ci = rt.position_key COLLATE utf8mb4_unicode_ci)";
         }
         $joinCondition = implode(' OR ', $joinConditionParts);
 
@@ -1918,7 +1672,7 @@ function isValidDateTime(string $dateTime): bool
     return $timestamp !== false;
 }
 
-function ensureReservationProjectColumn(PDO $pdo): void
+function assertReservationRuntimeSchemaReady(PDO $pdo): void
 {
     static $checked = false;
 
@@ -1926,119 +1680,57 @@ function ensureReservationProjectColumn(PDO $pdo): void
         return;
     }
 
-    try {
-        $statement = $pdo->query("SHOW COLUMNS FROM reservations LIKE 'project_id'");
-        $columnExists = $statement && $statement->fetch();
+    $missing = [];
+    $requiredColumns = [
+        ['reservations', 'project_id'],
+        ['reservations', 'paid_amount'],
+        ['reservations', 'paid_percentage'],
+        ['reservations', 'payment_progress_type'],
+        ['reservations', 'payment_progress_value'],
+        ['reservation_equipment', 'unit_cost'],
+        ['reservation_technicians', 'notes'],
+        ['reservation_technicians', 'position_id'],
+        ['reservation_technicians', 'position_key'],
+        ['reservation_technicians', 'position_name'],
+        ['reservation_technicians', 'position_label_ar'],
+        ['reservation_technicians', 'position_label_en'],
+        ['reservation_technicians', 'position_cost'],
+        ['reservation_technicians', 'position_client_price'],
+        ['reservation_technicians', 'assignment_id'],
+    ];
 
-        if ($columnExists) {
-            $checked = true;
-            return;
+    foreach ($requiredColumns as [$table, $column]) {
+        if (!tableColumnExists($pdo, $table, $column)) {
+            $missing[] = sprintf('%s.%s', $table, $column);
         }
-
-        $pdo->exec('ALTER TABLE reservations ADD COLUMN project_id BIGINT UNSIGNED NULL DEFAULT NULL AFTER total_amount');
-        $pdo->exec('ALTER TABLE reservations ADD INDEX idx_reservations_project_id (project_id)');
-        $checked = true;
-        error_log('Added project_id column to reservations table automatically.');
-    } catch (Throwable $error) {
-        $checked = true;
-        error_log('Failed to ensure project_id column on reservations table: ' . $error->getMessage());
     }
+
+    if (!tableExists($pdo, 'reservation_packages')) {
+        $missing[] = 'reservation_packages';
+    } else {
+        foreach (['package_id', 'package_code', 'package_name', 'name', 'unit_cost', 'items_json', 'package_metadata'] as $column) {
+            if (!tableColumnExists($pdo, 'reservation_packages', $column)) {
+                $missing[] = 'reservation_packages.' . $column;
+            }
+        }
+    }
+
+    if ($missing) {
+        throw buildReservationSchemaRuntimeException('reservation runtime', $missing);
+    }
+
+    $checked = true;
 }
 
-function ensureReservationEquipmentCostColumn(PDO $pdo): void
+function buildReservationSchemaRuntimeException(string $operation, array $missing): RuntimeException
 {
-    static $checked = false;
-
-    if ($checked) {
-        return;
-    }
-
-    try {
-        $statement = $pdo->query("SHOW COLUMNS FROM reservation_equipment LIKE 'unit_cost'");
-        $columnExists = $statement && $statement->fetch();
-
-        if ($columnExists) {
-            $checked = true;
-            return;
-        }
-
-        $pdo->exec('ALTER TABLE reservation_equipment ADD COLUMN unit_cost DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER unit_price');
-        $checked = true;
-        error_log('Added unit_cost column to reservation_equipment table automatically.');
-    } catch (Throwable $error) {
-        // Do not flip $checked so we retry later; log once per request.
-        error_log('Failed to ensure unit_cost column on reservation_equipment table: ' . $error->getMessage());
-    }
-}
-
-function ensureReservationPaymentColumns(PDO $pdo): void
-{
-    static $checked = false;
-
-    if ($checked) {
-        return;
-    }
-
-    try {
-        if (!tableColumnExists($pdo, 'reservations', 'paid_amount')) {
-            try { $pdo->exec('ALTER TABLE reservations ADD COLUMN paid_amount DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER paid_status'); } catch (Throwable $_) {}
-        }
-        if (!tableColumnExists($pdo, 'reservations', 'paid_percentage')) {
-            try { $pdo->exec('ALTER TABLE reservations ADD COLUMN paid_percentage DECIMAL(8,2) NOT NULL DEFAULT 0 AFTER paid_amount'); } catch (Throwable $_) {}
-        }
-        if (!tableColumnExists($pdo, 'reservations', 'payment_progress_type')) {
-            try { $pdo->exec('ALTER TABLE reservations ADD COLUMN payment_progress_type VARCHAR(20) DEFAULT NULL AFTER paid_percentage'); } catch (Throwable $_) {}
-        }
-        if (!tableColumnExists($pdo, 'reservations', 'payment_progress_value')) {
-            try { $pdo->exec('ALTER TABLE reservations ADD COLUMN payment_progress_value DECIMAL(12,2) DEFAULT NULL AFTER payment_progress_type'); } catch (Throwable $_) {}
-        }
-        $checked = true;
-    } catch (Throwable $error) {
-        // Do not flip $checked so we retry later; log once per request.
-        error_log('Failed to ensure reservation payment columns: ' . $error->getMessage());
-    }
-}
-
-function ensureReservationPackagesTable(PDO $pdo): void
-{
-    static $checked = false;
-
-    if ($checked) {
-        return;
-    }
-
-    try {
-        $pdo->exec('
-            CREATE TABLE IF NOT EXISTS reservation_packages (
-                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                reservation_id BIGINT UNSIGNED NOT NULL,
-                package_id BIGINT UNSIGNED DEFAULT NULL,
-                package_code VARCHAR(100) DEFAULT NULL,
-                package_name VARCHAR(255) DEFAULT NULL,
-                name VARCHAR(255) DEFAULT NULL,
-                quantity INT NOT NULL DEFAULT 1,
-                unit_price DECIMAL(12,2) NOT NULL DEFAULT 0,
-                unit_cost DECIMAL(12,2) NOT NULL DEFAULT 0,
-                items_json LONGTEXT DEFAULT NULL,
-                package_metadata LONGTEXT DEFAULT NULL,
-                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                INDEX idx_reservation_packages_reservation_id (reservation_id),
-                FOREIGN KEY (reservation_id) REFERENCES reservations(id) ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-        ');
-        // Backfill columns in case table exists without new fields
-        try { if (!tableColumnExists($pdo, 'reservation_packages', 'package_id')) { $pdo->exec("ALTER TABLE reservation_packages ADD COLUMN package_id BIGINT UNSIGNED DEFAULT NULL AFTER reservation_id"); } } catch (Throwable $_) {}
-        try { if (!tableColumnExists($pdo, 'reservation_packages', 'package_name')) { $pdo->exec("ALTER TABLE reservation_packages ADD COLUMN package_name VARCHAR(255) DEFAULT NULL AFTER package_code"); } } catch (Throwable $_) {}
-        try { if (!tableColumnExists($pdo, 'reservation_packages', 'unit_cost')) { $pdo->exec("ALTER TABLE reservation_packages ADD COLUMN unit_cost DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER unit_price"); } } catch (Throwable $_) {}
-        try { if (!tableColumnExists($pdo, 'reservation_packages', 'items_json')) { $pdo->exec("ALTER TABLE reservation_packages ADD COLUMN items_json LONGTEXT DEFAULT NULL AFTER unit_cost"); } } catch (Throwable $_) {}
-        try { if (!tableColumnExists($pdo, 'reservation_packages', 'package_metadata')) { $pdo->exec("ALTER TABLE reservation_packages ADD COLUMN package_metadata LONGTEXT DEFAULT NULL AFTER items_json"); } } catch (Throwable $_) {}
-        try { if (!tableColumnExists($pdo, 'reservation_packages', 'package_code')) { $pdo->exec("ALTER TABLE reservation_packages ADD COLUMN package_code VARCHAR(100) DEFAULT NULL AFTER reservation_id"); } } catch (Throwable $_) {}
-        try { if (!tableColumnExists($pdo, 'reservation_packages', 'name')) { $pdo->exec("ALTER TABLE reservation_packages ADD COLUMN name VARCHAR(255) DEFAULT NULL AFTER package_name"); } } catch (Throwable $_) {}
-        $checked = true;
-    } catch (Throwable $error) {
-        error_log('Failed to ensure reservation_packages table: ' . $error->getMessage());
-    }
+    return new RuntimeException(
+        sprintf(
+            'Reservation schema is outdated for %s. Run `php backend/tools/apply_phase4_schema_updates.php` before using reservations. Missing: %s',
+            $operation,
+            implode(', ', array_values(array_unique($missing)))
+        )
+    );
 }
 
 /**
@@ -2047,9 +1739,30 @@ function ensureReservationPackagesTable(PDO $pdo): void
 function tableColumnExists(PDO $pdo, string $table, string $column): bool
 {
     try {
-        $stmt = $pdo->prepare("SHOW COLUMNS FROM `{$table}` LIKE :col");
-        $stmt->execute(['col' => $column]);
-        return (bool) $stmt->fetch();
+        $stmt = $pdo->prepare(
+            'SELECT 1
+             FROM information_schema.columns
+             WHERE table_schema = DATABASE()
+               AND table_name = :table
+               AND column_name = :column
+             LIMIT 1'
+        );
+        $stmt->execute([
+            'table' => $table,
+            'column' => $column,
+        ]);
+        return (bool) $stmt->fetchColumn();
+    } catch (Throwable $_) {
+        return false;
+    }
+}
+
+function tableExists(PDO $pdo, string $table): bool
+{
+    try {
+        $stmt = $pdo->prepare('SELECT 1 FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = :table LIMIT 1');
+        $stmt->execute(['table' => $table]);
+        return (bool) $stmt->fetchColumn();
     } catch (Throwable $_) {
         return false;
     }

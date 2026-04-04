@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../bootstrap.php';
 // For phone normalization when checking Telegram links
 require_once __DIR__ . '/../../services/telegram.php';
 
+use ArtRatio\Repositories\TechnicianRepository;
 use InvalidArgumentException;
 use PDO;
 use RuntimeException;
@@ -13,20 +14,21 @@ $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 try {
     $pdo = getDatabaseConnection();
     requireAuthenticated();
+    $repo = new TechnicianRepository($pdo);
 
     switch ($method) {
         case 'GET':
             handleTechniciansGet($pdo);
             break;
         case 'POST':
-            handleTechniciansCreate($pdo);
+            handleTechniciansCreate($pdo, $repo);
             break;
         case 'PUT':
         case 'PATCH':
-            handleTechniciansUpdate($pdo);
+            handleTechniciansUpdate($pdo, $repo);
             break;
         case 'DELETE':
-            handleTechniciansDelete($pdo);
+            handleTechniciansDelete($pdo, $repo);
             break;
         default:
             respondError('Method not allowed', 405);
@@ -34,9 +36,8 @@ try {
 } catch (InvalidArgumentException $exception) {
     respondError($exception->getMessage(), 400);
 } catch (Throwable $exception) {
-    respondError('Unexpected server error', 500, [
-        'details' => $exception->getMessage(),
-    ]);
+    error_log('API error: ' . $exception->getMessage());
+    respondError('Unexpected server error', 500);
 }
 
 function handleTechniciansGet(PDO $pdo): void
@@ -179,8 +180,9 @@ function handleTechniciansGet(PDO $pdo): void
     );
 }
 
-function handleTechniciansCreate(PDO $pdo): void
+function handleTechniciansCreate(PDO $pdo, TechnicianRepository $repo): void
 {
+    requireRole(['admin', 'manager']);
     [$data, $errors] = validateTechnicianPayload(readJsonPayload(), false);
 
     if ($errors) {
@@ -188,57 +190,21 @@ function handleTechniciansCreate(PDO $pdo): void
         return;
     }
 
-    $sql = 'INSERT INTO technicians (
-        full_name,
-        phone,
-        email,
-        specialization,
-        department,
-        daily_wage,
-        daily_total,
-        status,
-        notes,
-        active
-    ) VALUES (
-        :full_name,
-        :phone,
-        :email,
-        :specialization,
-        :department,
-        :daily_wage,
-        :daily_total,
-        :status,
-        :notes,
-        :active
-    )';
-
-    $statement = $pdo->prepare($sql);
-    $statement->execute([
-        'full_name' => $data['full_name'],
-        'phone' => $data['phone'],
-        'email' => $data['email'],
-        'specialization' => $data['specialization'],
-        'department' => $data['department'],
-        'daily_wage' => $data['daily_wage'],
-        'daily_total' => $data['daily_total'] ?? $data['daily_wage'],
-        'status' => $data['status'],
-        'notes' => $data['notes'],
-        'active' => $data['active'],
-    ]);
-
-    $id = (int) $pdo->lastInsertId();
-    $technician = fetchTechnicianById($pdo, $id);
+    $data['daily_total'] ??= $data['daily_wage'] ?? 0;
+    $row = $repo->create($data);
+    $id = (int) ($row['id'] ?? 0);
 
     logActivity($pdo, 'TECHNICIAN_CREATE', [
         'technician_id' => $id,
         'payload' => $data,
     ]);
 
-    respond($technician, 201);
+    respond(mapTechnicianRow($row), 201);
 }
 
-function handleTechniciansUpdate(PDO $pdo): void
+function handleTechniciansUpdate(PDO $pdo, TechnicianRepository $repo): void
 {
+    requireRole(['admin', 'manager']);
     $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 
     if ($id <= 0) {
@@ -258,36 +224,22 @@ function handleTechniciansUpdate(PDO $pdo): void
         return;
     }
 
-    $fields = [];
-    $params = ['id' => $id];
-
-    foreach ($data as $column => $value) {
-        $fields[] = sprintf('%s = :%s', $column, $column);
-        $params[$column] = $value;
+    if (!$repo->exists($id)) {
+        respondError('Technician not found', 404);
+        return;
     }
 
-    $sql = 'UPDATE technicians SET ' . implode(', ', $fields) . ' WHERE id = :id';
-    $statement = $pdo->prepare($sql);
-    $statement->execute($params);
-
-    if ($statement->rowCount() === 0) {
-        if (!fetchTechnicianById($pdo, $id)) {
-            respondError('Technician not found', 404);
-            return;
-        }
-    }
-
-    $technician = fetchTechnicianById($pdo, $id);
+    $row = $repo->update($id, $data);
 
     logActivity($pdo, 'TECHNICIAN_UPDATE', [
         'technician_id' => $id,
         'changes' => array_keys($data),
     ]);
 
-    respond($technician);
+    respond(mapTechnicianRow($row ?? []));
 }
 
-function handleTechniciansDelete(PDO $pdo): void
+function handleTechniciansDelete(PDO $pdo, TechnicianRepository $repo): void
 {
     requireRole('admin');
     $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
@@ -297,10 +249,7 @@ function handleTechniciansDelete(PDO $pdo): void
         return;
     }
 
-    $statement = $pdo->prepare('DELETE FROM technicians WHERE id = :id');
-    $statement->execute(['id' => $id]);
-
-    if ($statement->rowCount() === 0) {
+    if (!$repo->delete($id)) {
         respondError('Technician not found', 404);
         return;
     }

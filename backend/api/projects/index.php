@@ -3,10 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../bootstrap.php';
 
-use InvalidArgumentException;
-use PDO;
-use RuntimeException;
-use Throwable;
+use ArtRatio\Repositories\ProjectRepository;
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
@@ -24,22 +21,23 @@ function projectsTimingLog(string $message): void
 // Guard: only dispatch when this file is the direct entrypoint
 if (!defined('API_INCLUDE_MODE')) {
     try {
-        $pdo = getDatabaseConnection();
+        $pdo  = getDatabaseConnection();
         requireAuthenticated();
+        $repo = new ProjectRepository($pdo);
 
         switch ($method) {
             case 'GET':
-                handleProjectsGet($pdo);
+                handleProjectsGet($pdo, $repo);
                 break;
             case 'POST':
-                handleProjectsCreate($pdo);
+                handleProjectsCreate($pdo, $repo);
                 break;
             case 'PUT':
             case 'PATCH':
-                handleProjectsUpdate($pdo);
+                handleProjectsUpdate($pdo, $repo);
                 break;
             case 'DELETE':
-                handleProjectsDelete($pdo);
+                handleProjectsDelete($pdo, $repo);
                 break;
             default:
                 respondError('Method not allowed', 405);
@@ -47,13 +45,12 @@ if (!defined('API_INCLUDE_MODE')) {
     } catch (InvalidArgumentException $exception) {
         respondError($exception->getMessage(), 400);
     } catch (Throwable $exception) {
-        respondError('Unexpected server error', 500, [
-            'details' => $exception->getMessage(),
-        ]);
+        error_log('API error: ' . $exception->getMessage());
+        respondError('Unexpected server error', 500);
     }
 }
 
-function handleProjectsGet(PDO $pdo): void
+function handleProjectsGet(PDO $pdo, ProjectRepository $repo): void
 {
     $id = isset($_GET['id']) ? (int) $_GET['id'] : null;
 
@@ -178,8 +175,9 @@ function handleProjectsGet(PDO $pdo): void
     );
 }
 
-function handleProjectsCreate(PDO $pdo): void
+function handleProjectsCreate(PDO $pdo, ProjectRepository $repo): void
 {
+    requireRole(['admin', 'manager']);
     $reqId = bin2hex(random_bytes(4));
     $clientReqId = $_SERVER['HTTP_X_REQUEST_ID'] ?? 'none';
     $requestUri = $_SERVER['REQUEST_URI'] ?? 'unknown';
@@ -202,17 +200,13 @@ function handleProjectsCreate(PDO $pdo): void
         projectsTimingLog($message);
     };
     $mark('start');
-    // Ensure schema supports project status/cancelled flags
-    ensureProjectCancellationColumns($pdo);
-    $mark('ensureProjectCancellationColumns');
-    // Ensure expenses 'note' column exists when possible
-    ensureProjectExpensesNotesColumn($pdo);
-    $mark('ensureProjectExpensesNotesColumn');
+    assertProjectWriteSchemaReady($pdo);
+    $mark('assertProjectWriteSchemaReady');
     try {
         $payloadSize = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
         $mark('requestContentLength=' . $payloadSize);
     } catch (Throwable $_) {}
-    [$result, $errors] = validateProjectPayload(readJsonPayload(), false, $pdo);
+    [$result, $errors] = validateProjectPayload(readJsonPayload(), false, $pdo, $repo);
     $mark('validateProjectPayload');
 
     if ($errors) {
@@ -223,33 +217,34 @@ function handleProjectsCreate(PDO $pdo): void
     $payload = $result['fields'];
 
     if (empty($payload['project_code'])) {
-        $payload['project_code'] = generateProjectCode($pdo);
+        $payload['project_code'] = $repo->generateCode();
     }
     $mark('generateProjectCode');
 
     $pdo->beginTransaction();
 
     try {
-        $projectId = insertProject($pdo, $payload);
+        $created   = $repo->create($payload);
+        $projectId = (int) $created['id'];
         $mark('insertProject');
 
         if (!empty($result['technicians'])) {
-            syncProjectTechnicians($pdo, $projectId, $result['technicians']);
+            $repo->syncTechnicians($projectId, $result['technicians']);
             $mark('syncProjectTechnicians');
         }
 
         if (!empty($result['equipment'])) {
-            syncProjectEquipment($pdo, $projectId, $result['equipment']);
+            $repo->syncEquipment($projectId, $result['equipment']);
             $mark('syncProjectEquipment');
         }
 
         if (!empty($result['expenses'])) {
-            syncProjectExpenses($pdo, $projectId, $result['expenses']);
+            $repo->syncExpenses($projectId, $result['expenses']);
             $mark('syncProjectExpenses');
         }
 
         if (!empty($result['payments'])) {
-            syncProjectPayments($pdo, $projectId, $result['payments']);
+            $repo->syncPayments($projectId, $result['payments']);
             $mark('syncProjectPayments');
         }
 
@@ -308,8 +303,9 @@ function handleProjectsCreate(PDO $pdo): void
     }
 }
 
-function handleProjectsUpdate(PDO $pdo): void
+function handleProjectsUpdate(PDO $pdo, ProjectRepository $repo): void
 {
+    requireRole(['admin', 'manager']);
     $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 
     if ($id <= 0) {
@@ -317,17 +313,14 @@ function handleProjectsUpdate(PDO $pdo): void
         return;
     }
 
-    if (!projectExists($pdo, $id)) {
+    if (!$repo->exists($id)) {
         respondError('Project not found', 404);
         return;
     }
 
-    // Ensure schema supports project status/cancelled flags
-    ensureProjectCancellationColumns($pdo);
-    // Ensure expenses 'note' column exists when possible
-    ensureProjectExpensesNotesColumn($pdo);
+    assertProjectWriteSchemaReady($pdo);
 
-    [$result, $errors] = validateProjectPayload(readJsonPayload(), true, $pdo, $id);
+    [$result, $errors] = validateProjectPayload(readJsonPayload(), true, $pdo, $repo, $id);
 
     if ($errors) {
         respondError('Validation failed', 422, ['errors' => $errors]);
@@ -339,30 +332,30 @@ function handleProjectsUpdate(PDO $pdo): void
     $existingTechs = fetchProjectTechnicians($pdo, $id);
 
     if (array_key_exists('project_code', $payload) && empty($payload['project_code'])) {
-        $payload['project_code'] = generateProjectCode($pdo);
+        $payload['project_code'] = $repo->generateCode();
     }
 
     $pdo->beginTransaction();
 
     try {
         if ($payload) {
-            updateProject($pdo, $id, $payload);
+            $repo->update($id, $payload);
         }
 
         if ($result['technicians'] !== null) {
-            syncProjectTechnicians($pdo, $id, $result['technicians']);
+            $repo->syncTechnicians($id, $result['technicians']);
         }
 
         if ($result['equipment'] !== null) {
-            syncProjectEquipment($pdo, $id, $result['equipment']);
+            $repo->syncEquipment($id, $result['equipment']);
         }
 
         if ($result['expenses'] !== null) {
-            syncProjectExpenses($pdo, $id, $result['expenses']);
+            $repo->syncExpenses($id, $result['expenses']);
         }
 
         if ($result['payments'] !== null) {
-            syncProjectPayments($pdo, $id, $result['payments']);
+            $repo->syncPayments($id, $result['payments']);
         }
 
         $pdo->commit();
@@ -412,7 +405,7 @@ function handleProjectsUpdate(PDO $pdo): void
     }
 }
 
-function handleProjectsDelete(PDO $pdo): void
+function handleProjectsDelete(PDO $pdo, ProjectRepository $repo): void
 {
     requireRole('admin');
     $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
@@ -422,46 +415,17 @@ function handleProjectsDelete(PDO $pdo): void
         return;
     }
 
-    if (!projectExists($pdo, $id)) {
+    if (!$repo->delete($id)) {
         respondError('Project not found', 404);
         return;
     }
 
-    $pdo->beginTransaction();
+    logActivity($pdo, 'PROJECT_DELETE', ['project_id' => $id]);
 
-    try {
-        $statement = $pdo->prepare('UPDATE reservations SET project_id = NULL WHERE project_id = :id');
-        $statement->execute(['id' => $id]);
-
-        $statement = $pdo->prepare('DELETE FROM project_technicians WHERE project_id = :id');
-        $statement->execute(['id' => $id]);
-
-        $statement = $pdo->prepare('DELETE FROM project_equipment WHERE project_id = :id');
-        $statement->execute(['id' => $id]);
-
-        $statement = $pdo->prepare('DELETE FROM project_expenses WHERE project_id = :id');
-        $statement->execute(['id' => $id]);
-
-        $statement = $pdo->prepare('DELETE FROM project_payments WHERE project_id = :id');
-        $statement->execute(['id' => $id]);
-
-        $statement = $pdo->prepare('DELETE FROM projects WHERE id = :id');
-        $statement->execute(['id' => $id]);
-
-        $pdo->commit();
-
-        logActivity($pdo, 'PROJECT_DELETE', [
-            'project_id' => $id,
-        ]);
-
-        respond(null);
-    } catch (Throwable $exception) {
-        $pdo->rollBack();
-        throw $exception;
-    }
+    respond(null);
 }
 
-function validateProjectPayload(array $payload, bool $isUpdate, PDO $pdo, ?int $projectId = null): array
+function validateProjectPayload(array $payload, bool $isUpdate, PDO $pdo, ProjectRepository $repo, ?int $projectId = null): array
 {
     $errors = [];
 
@@ -820,7 +784,7 @@ function validateProjectPayload(array $payload, bool $isUpdate, PDO $pdo, ?int $
     if ($projectCodeExists && $projectCode !== '') {
         if (mb_strlen($projectCode) > 50) {
             $errors['project_code'] = 'Project code must be 50 characters or fewer';
-        } elseif (projectCodeExists($pdo, $projectCode, $projectId)) {
+        } elseif ($repo->codeExists($projectCode, $projectId)) {
             $errors['project_code'] = 'Project code already exists';
         }
     }
@@ -944,167 +908,6 @@ function validateProjectPayload(array $payload, bool $isUpdate, PDO $pdo, ?int $
     ];
 }
 
-function insertProject(PDO $pdo, array $data): int
-{
-    $columns = array_keys($data);
-    $placeholders = array_map(static fn($column) => ':' . $column, $columns);
-
-    $sql = sprintf(
-        'INSERT INTO projects (%s) VALUES (%s)',
-        implode(', ', $columns),
-        implode(', ', $placeholders)
-    );
-
-    $statement = $pdo->prepare($sql);
-    $statement->execute($data);
-
-    return (int) $pdo->lastInsertId();
-}
-
-function updateProject(PDO $pdo, int $id, array $data): void
-{
-    if (!$data) {
-        return;
-    }
-
-    $assignments = [];
-    foreach ($data as $column => $value) {
-        $assignments[] = sprintf('%s = :%s', $column, $column);
-    }
-
-    $sql = sprintf('UPDATE projects SET %s WHERE id = :id', implode(', ', $assignments));
-
-    $data['id'] = $id;
-    $statement = $pdo->prepare($sql);
-    $statement->execute($data);
-}
-
-function syncProjectTechnicians(PDO $pdo, int $projectId, array $technicians): void
-{
-    $statement = $pdo->prepare('DELETE FROM project_technicians WHERE project_id = :project_id');
-    $statement->execute(['project_id' => $projectId]);
-
-    if (!$technicians) {
-        return;
-    }
-
-    $insert = $pdo->prepare('INSERT INTO project_technicians (project_id, technician_id) VALUES (:project_id, :technician_id)');
-    foreach ($technicians as $technicianId) {
-        $insert->execute([
-            'project_id' => $projectId,
-            'technician_id' => $technicianId,
-        ]);
-    }
-}
-
-function syncProjectEquipment(PDO $pdo, int $projectId, array $equipment): void
-{
-    $statement = $pdo->prepare('DELETE FROM project_equipment WHERE project_id = :project_id');
-    $statement->execute(['project_id' => $projectId]);
-
-    if (!$equipment) {
-        return;
-    }
-
-    $insert = $pdo->prepare('INSERT INTO project_equipment (project_id, equipment_id, quantity) VALUES (:project_id, :equipment_id, :quantity)');
-    foreach ($equipment as $item) {
-        $insert->execute([
-            'project_id' => $projectId,
-            'equipment_id' => (int) $item['equipment_id'],
-            'quantity' => (int) $item['quantity'],
-        ]);
-    }
-}
-
-function syncProjectExpenses(PDO $pdo, int $projectId, array $expenses): void
-{
-    $statement = $pdo->prepare('DELETE FROM project_expenses WHERE project_id = :project_id');
-    $statement->execute(['project_id' => $projectId]);
-
-    if (!$expenses) {
-        return;
-    }
-
-    // Build robust inserter that tries (note) then (notes) then (no note) without relying on SHOW COLUMNS permissions
-    $mode = null; // 'note' | 'notes' | 'none'
-    $insert = null;
-
-    $prepareForMode = static function (PDO $pdo, string $mode) {
-        if ($mode === 'note') {
-            return $pdo->prepare('INSERT INTO project_expenses (project_id, label, amount, sale_price, note) VALUES (:project_id, :label, :amount, :sale_price, :note)');
-        }
-        if ($mode === 'notes') {
-            return $pdo->prepare('INSERT INTO project_expenses (project_id, label, amount, sale_price, notes) VALUES (:project_id, :label, :amount, :sale_price, :note)');
-        }
-        // none
-        return $pdo->prepare('INSERT INTO project_expenses (project_id, label, amount, sale_price) VALUES (:project_id, :label, :amount, :sale_price)');
-    };
-
-    // Try to prepare with note then notes; if both fail, fall back to none
-    foreach (['note', 'notes', 'none'] as $candidate) {
-        try {
-            $insert = $prepareForMode($pdo, $candidate);
-            $mode = $candidate;
-            break;
-        } catch (\Throwable $_) {
-            $insert = null;
-            $mode = null;
-            continue;
-        }
-    }
-
-    foreach ($expenses as $expense) {
-        $params = [
-            'project_id' => $projectId,
-            'label' => $expense['label'],
-            'amount' => $expense['amount'],
-            'sale_price' => $expense['sale_price'] ?? 0,
-        ];
-        $noteValue = $expense['note'] ?? ($expense['notes'] ?? null);
-
-        // Attempt execution with current mode; if unknown column error occurs at runtime, fall through to next mode
-        $modesToTry = $mode ? [$mode] : [];
-        if (!$modesToTry) {
-            $modesToTry = ['note', 'notes', 'none'];
-        }
-
-        $executed = false;
-        foreach ($modesToTry as $tryMode) {
-            try {
-                // Re-prepare if mode differs from current prepared statement
-                if ($insert === null || $tryMode !== $mode) {
-                    $insert = $prepareForMode($pdo, $tryMode);
-                    $mode = $tryMode;
-                }
-                $execParams = $params;
-                if ($tryMode === 'note' || $tryMode === 'notes') {
-                    $execParams['note'] = $noteValue;
-                }
-                $insert->execute($execParams);
-                $executed = true;
-                break;
-            } catch (\PDOException $e) {
-                $message = strtolower($e->getMessage());
-                $unknownColumn = (strpos($message, "unknown column 'note'") !== false) || (strpos($message, 'unknown column \"note\"') !== false) || (strpos($message, "unknown column 'notes'") !== false) || (strpos($message, 'unknown column \"notes\"') !== false);
-                if ($unknownColumn) {
-                    // Try next mode
-                    $insert = null;
-                    $mode = null;
-                    continue;
-                }
-                // Re-throw other DB errors
-                throw $e;
-            }
-        }
-
-        if (!$executed) {
-            // As a last resort, insert without note
-            $insert = $prepareForMode($pdo, 'none');
-            $insert->execute($params);
-            $mode = 'none';
-        }
-    }
-}
 
 function fetchProjectById(PDO $pdo, int $id): ?array
 {
@@ -1217,46 +1020,6 @@ function fetchProjectPayments(PDO $pdo, int $projectId): array
     return $payments;
 }
 
-function syncProjectPayments(PDO $pdo, int $projectId, array $payments): void
-{
-    $pdo->prepare('DELETE FROM project_payments WHERE project_id = :id')->execute(['id' => $projectId]);
-
-    if (!$payments) {
-        return;
-    }
-
-    $insert = $pdo->prepare(
-        'INSERT INTO project_payments (
-            project_id,
-            payment_type,
-            value,
-            amount,
-            percentage,
-            note,
-            recorded_at
-        ) VALUES (
-            :project_id,
-            :payment_type,
-            :value,
-            :amount,
-            :percentage,
-            :note,
-            :recorded_at
-        )'
-    );
-
-    foreach ($payments as $payment) {
-        $insert->execute([
-            'project_id' => $projectId,
-            'payment_type' => $payment['payment_type'],
-            'value' => $payment['value'],
-            'amount' => $payment['amount'],
-            'percentage' => $payment['percentage'],
-            'note' => $payment['note'] ?? null,
-            'recorded_at' => $payment['recorded_at'] ?? date('Y-m-d H:i:s'),
-        ]);
-    }
-}
 
 function normaliseProjectPaymentsPayload(mixed $payload, array &$errors): array
 {
@@ -1353,9 +1116,19 @@ function normaliseProjectPaymentsPayload(mixed $payload, array &$errors): array
 function tableColumnExists(PDO $pdo, string $table, string $column): bool
 {
     try {
-        $stmt = $pdo->prepare("SHOW COLUMNS FROM `{$table}` LIKE :col");
-        $stmt->execute(['col' => $column]);
-        return (bool) $stmt->fetch();
+        $stmt = $pdo->prepare(
+            'SELECT 1
+             FROM information_schema.columns
+             WHERE table_schema = DATABASE()
+               AND table_name = :table
+               AND column_name = :column
+             LIMIT 1'
+        );
+        $stmt->execute([
+            'table' => $table,
+            'column' => $column,
+        ]);
+        return (bool) $stmt->fetchColumn();
     } catch (Throwable $_) {
         return false;
     }
@@ -1491,97 +1264,60 @@ function normaliseProjectStatus(?string $status): ?string
     };
 }
 
-/**
- * Ensure projects table has columns for status/cancelled. Best-effort and cached per request.
- */
-function ensureProjectCancellationColumns(PDO $pdo): void
+function assertProjectWriteSchemaReady(PDO $pdo): void
 {
     static $checked = false;
     if ($checked) {
         return;
     }
 
-    try {
-        $statusExists = false;
-        $cancelledExists = false;
-
-        try {
-            $stmt = $pdo->query("SHOW COLUMNS FROM projects LIKE 'status'");
-            $statusExists = (bool) ($stmt && $stmt->fetch());
-        } catch (Throwable $_) { $statusExists = false; }
-
-        try {
-            $stmt2 = $pdo->query("SHOW COLUMNS FROM projects LIKE 'cancelled'");
-            $cancelledExists = (bool) ($stmt2 && $stmt2->fetch());
-        } catch (Throwable $_) { $cancelledExists = false; }
-
-        if (!$statusExists) {
-            try {
-                $pdo->exec("ALTER TABLE projects ADD COLUMN status VARCHAR(50) NULL DEFAULT NULL AFTER end_datetime");
-            } catch (Throwable $_) { /* ignore add failure */ }
-        }
-        if (!$cancelledExists) {
-            try {
-                $pdo->exec("ALTER TABLE projects ADD COLUMN cancelled TINYINT(1) NOT NULL DEFAULT 0 AFTER status");
-            } catch (Throwable $_) { /* ignore add failure */ }
-        }
-    } catch (Throwable $e) {
-        // Log and continue; cancellation linkage will still be handled at reservation level
-        error_log('ensureProjectCancellationColumns failed: ' . $e->getMessage());
-    } finally {
-        $checked = true;
+    $missing = [];
+    if (!tableColumnExists($pdo, 'projects', 'status')) {
+        $missing[] = 'projects.status';
     }
+    if (!tableColumnExists($pdo, 'projects', 'cancelled')) {
+        $missing[] = 'projects.cancelled';
+    }
+    if (!tableColumnExists($pdo, 'projects', 'services_client_price')) {
+        $missing[] = 'projects.services_client_price';
+    }
+    if (!tableColumnExists($pdo, 'project_expenses', 'sale_price')) {
+        $missing[] = 'project_expenses.sale_price';
+    }
+    if (!projectExpensesHasColumn($pdo, 'note')) {
+        $missing[] = 'project_expenses.note';
+    }
+
+    if ($missing) {
+        throw new RuntimeException(
+            'Project write schema is outdated. Run `php backend/tools/apply_phase4_schema_updates.php` before using project writes. Missing: '
+            . implode(', ', $missing)
+        );
+    }
+    $checked = true;
 }
 
-// Check if a column exists on project_expenses table
 function projectExpensesHasColumn(PDO $pdo, string $column): bool
 {
     try {
-        $stmt = $pdo->prepare('SHOW COLUMNS FROM project_expenses LIKE :col');
-        $stmt->execute(['col' => $column]);
+        $stmt = $pdo->prepare(
+            'SELECT 1
+             FROM information_schema.columns
+             WHERE table_schema = DATABASE()
+               AND table_name = :table
+               AND column_name = :column
+             LIMIT 1'
+        );
+        $stmt->execute([
+            'table' => 'project_expenses',
+            'column' => $column,
+        ]);
         return (bool) $stmt->fetchColumn();
     } catch (Throwable $_) {
         return false;
     }
 }
 
-// Ensure project_expenses has an optional notes column
-function ensureProjectExpensesNotesColumn(PDO $pdo): void
-{
-    static $checked = false;
-    if ($checked) return;
-    try {
-        if (!projectExpensesHasColumn($pdo, 'note')) {
-            $pdo->exec("ALTER TABLE project_expenses ADD COLUMN note TEXT NULL DEFAULT NULL AFTER sale_price");
-        }
-    } catch (Throwable $_) {
-        // best-effort only
-    } finally {
-        $checked = true;
-    }
-}
-
-function projectExists(PDO $pdo, int $id): bool
-{
-    $statement = $pdo->prepare('SELECT id FROM projects WHERE id = :id');
-    $statement->execute(['id' => $id]);
-    return (bool) $statement->fetchColumn();
-}
-
-function projectCodeExists(PDO $pdo, string $code, ?int $excludeId = null): bool
-{
-    $sql = 'SELECT id FROM projects WHERE project_code = :code';
-    $params = ['code' => $code];
-
-    if ($excludeId) {
-        $sql .= ' AND id <> :exclude';
-        $params['exclude'] = $excludeId;
-    }
-
-    $statement = $pdo->prepare($sql);
-    $statement->execute($params);
-    return (bool) $statement->fetchColumn();
-}
 
 function customerExists(PDO $pdo, int $id): bool
 {
@@ -1604,26 +1340,6 @@ function equipmentExists(PDO $pdo, int $id): bool
     return (bool) $statement->fetchColumn();
 }
 
-function generateProjectCode(PDO $pdo): string
-{
-    $statement = $pdo->query(
-        "SELECT project_code FROM projects WHERE project_code REGEXP '^PRJ-[0-9]+$' ORDER BY CAST(SUBSTRING(project_code, 5) AS UNSIGNED) DESC LIMIT 1"
-    );
-
-    $lastCode = $statement ? $statement->fetchColumn() : null;
-    $sequence = 1;
-
-    if ($lastCode && preg_match('/^PRJ-(\d+)$/', $lastCode, $matches)) {
-        $sequence = ((int) $matches[1]) + 1;
-    }
-
-    do {
-        $candidate = sprintf('PRJ-%04d', $sequence);
-        $sequence++;
-    } while (projectCodeExists($pdo, $candidate));
-
-    return $candidate;
-}
 
 function isValidDateTime(string $dateTime): bool
 {

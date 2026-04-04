@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../../bootstrap.php';
 
+use ArtRatio\Repositories\CustomerRepository;
 use InvalidArgumentException;
 use PDO;
 use RuntimeException;
@@ -9,22 +10,23 @@ use Throwable;
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
 try {
-    $pdo = getDatabaseConnection();
+    $pdo  = getDatabaseConnection();
     requireAuthenticated();
+    $repo = new CustomerRepository($pdo);
 
     switch ($method) {
         case 'GET':
-            handleGetCustomers($pdo);
+            handleGetCustomers($repo);
             break;
         case 'POST':
-            handleCreateCustomer($pdo);
+            handleCreateCustomer($pdo, $repo);
             break;
         case 'PUT':
         case 'PATCH':
-            handleUpdateCustomer($pdo);
+            handleUpdateCustomer($pdo, $repo);
             break;
         case 'DELETE':
-            handleDeleteCustomer($pdo);
+            handleDeleteCustomer($pdo, $repo);
             break;
         default:
             respondError('Method not allowed', 405);
@@ -32,19 +34,16 @@ try {
 } catch (InvalidArgumentException $exception) {
     respondError($exception->getMessage(), 400);
 } catch (Throwable $exception) {
-    respondError('Unexpected server error', 500, [
-        'details' => $exception->getMessage(),
-    ]);
+    error_log('API error: ' . $exception->getMessage());
+    respondError('Unexpected server error', 500);
 }
 
-function handleGetCustomers(PDO $pdo): void
+function handleGetCustomers(CustomerRepository $repo): void
 {
     $id = isset($_GET['id']) ? (int)$_GET['id'] : null;
 
     if ($id) {
-        $statement = $pdo->prepare('SELECT * FROM customers WHERE id = :id LIMIT 1');
-        $statement->execute(['id' => $id]);
-        $customer = $statement->fetch();
+        $customer = $repo->findById($id);
 
         if (!$customer) {
             respondError('Customer not found', 404);
@@ -56,54 +55,28 @@ function handleGetCustomers(PDO $pdo): void
     }
 
     $search = trim($_GET['search'] ?? '');
-    $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 50;
+    $limit  = isset($_GET['limit'])  ? (int)$_GET['limit']  : 50;
     $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
 
     if ($limit < 1 || $limit > 200) {
         $limit = 50;
     }
-
     if ($offset < 0) {
         $offset = 0;
     }
 
-    $params = [];
-    $where = '';
+    $customers = array_map('formatCustomerRecord', $repo->findAll($search, $limit, $offset));
 
-    if ($search !== '') {
-        $params['search'] = '%' . $search . '%';
-        $where = 'WHERE full_name LIKE :search OR phone LIKE :search OR company LIKE :search';
-    }
-
-    $query = sprintf(
-        'SELECT * FROM customers %s ORDER BY created_at DESC LIMIT %d OFFSET %d',
-        $where,
-        $limit,
-        $offset
-    );
-
-    $statement = $pdo->prepare($query);
-
-    foreach ($params as $key => $value) {
-        $statement->bindValue(':' . $key, $value, PDO::PARAM_STR);
-    }
-
-    $statement->execute();
-    $customers = array_map('formatCustomerRecord', $statement->fetchAll());
-
-    respond(
-        $customers,
-        200,
-        [
-            'limit' => $limit,
-            'offset' => $offset,
-            'count' => count($customers),
-        ]
-    );
+    respond($customers, 200, [
+        'limit'  => $limit,
+        'offset' => $offset,
+        'count'  => count($customers),
+    ]);
 }
 
-function handleCreateCustomer(PDO $pdo): void
+function handleCreateCustomer(PDO $pdo, CustomerRepository $repo): void
 {
+    requireRole(['admin', 'manager']);
     $payload = readJsonPayload();
     [$data, $errors] = validateCustomerPayload($payload, false);
 
@@ -112,34 +85,20 @@ function handleCreateCustomer(PDO $pdo): void
         return;
     }
 
-    $columns = array_keys($data);
-    $placeholders = array_map(static fn($column) => ':' . $column, $columns);
-
-    $sql = sprintf(
-        'INSERT INTO customers (%s) VALUES (%s)',
-        implode(', ', $columns),
-        implode(', ', $placeholders)
-    );
-
-    $statement = $pdo->prepare($sql);
-    $statement->execute($data);
-
-    $newId = (int) $pdo->lastInsertId();
-
-    $statement = $pdo->prepare('SELECT * FROM customers WHERE id = :id LIMIT 1');
-    $statement->execute(['id' => $newId]);
-    $customer = $statement->fetch();
+    $customer = $repo->create($data);
+    $newId    = (int) ($customer['id'] ?? 0);
 
     logActivity($pdo, 'CUSTOMER_CREATE', [
         'customer_id' => $newId,
-        'payload' => $data,
+        'payload'     => $data,
     ]);
 
     respond(formatCustomerRecord($customer), 201);
 }
 
-function handleUpdateCustomer(PDO $pdo): void
+function handleUpdateCustomer(PDO $pdo, CustomerRepository $repo): void
 {
+    requireRole(['admin', 'manager']);
     $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
     if ($id <= 0) {
@@ -160,41 +119,23 @@ function handleUpdateCustomer(PDO $pdo): void
         return;
     }
 
-    $fields = [];
-    foreach ($data as $column => $_value) {
-        $fields[] = sprintf('%s = :%s', $column, $column);
+    if (!$repo->exists($id)) {
+        respondError('Customer not found', 404);
+        return;
     }
 
-    $data['id'] = $id;
-
-    $sql = 'UPDATE customers SET ' . implode(', ', $fields) . ' WHERE id = :id';
-    $statement = $pdo->prepare($sql);
-    $statement->execute($data);
-
-    if ($statement->rowCount() === 0) {
-        $check = $pdo->prepare('SELECT id FROM customers WHERE id = :id LIMIT 1');
-        $check->execute(['id' => $id]);
-        if (!$check->fetch()) {
-            respondError('Customer not found', 404);
-            return;
-        }
-    }
-
-    $statement = $pdo->prepare('SELECT * FROM customers WHERE id = :id LIMIT 1');
-    $statement->execute(['id' => $id]);
-    $customer = $statement->fetch();
-
-    $changedColumns = array_values(array_filter(array_keys($data), static fn($column) => $column !== 'id'));
+    $customer       = $repo->update($id, $data);
+    $changedColumns = array_keys($data);
 
     logActivity($pdo, 'CUSTOMER_UPDATE', [
         'customer_id' => $id,
-        'changes' => $changedColumns,
+        'changes'     => $changedColumns,
     ]);
 
     respond(formatCustomerRecord($customer));
 }
 
-function handleDeleteCustomer(PDO $pdo): void
+function handleDeleteCustomer(PDO $pdo, CustomerRepository $repo): void
 {
     requireRole('admin');
     $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -204,17 +145,12 @@ function handleDeleteCustomer(PDO $pdo): void
         return;
     }
 
-    $statement = $pdo->prepare('DELETE FROM customers WHERE id = :id LIMIT 1');
-    $statement->execute(['id' => $id]);
-
-    if ($statement->rowCount() === 0) {
+    if (!$repo->delete($id)) {
         respondError('Customer not found', 404);
         return;
     }
 
-    logActivity($pdo, 'CUSTOMER_DELETE', [
-        'customer_id' => $id,
-    ]);
+    logActivity($pdo, 'CUSTOMER_DELETE', ['customer_id' => $id]);
 
     respond(null);
 }

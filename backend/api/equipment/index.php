@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../../bootstrap.php';
 
+use ArtRatio\Repositories\EquipmentRepository;
 use InvalidArgumentException;
 use PDO;
 use RuntimeException;
@@ -9,22 +10,23 @@ use Throwable;
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
 try {
-    $pdo = getDatabaseConnection();
+    $pdo  = getDatabaseConnection();
     requireAuthenticated();
+    $repo = new EquipmentRepository($pdo);
 
     switch ($method) {
         case 'GET':
-            handleEquipmentGet($pdo);
+            handleEquipmentGet($pdo, $repo);
             break;
         case 'POST':
-            handleEquipmentCreate($pdo);
+            handleEquipmentCreate($pdo, $repo);
             break;
         case 'PUT':
         case 'PATCH':
-            handleEquipmentUpdate($pdo);
+            handleEquipmentUpdate($pdo, $repo);
             break;
         case 'DELETE':
-            handleEquipmentDelete($pdo);
+            handleEquipmentDelete($pdo, $repo);
             break;
         default:
             respondError('Method not allowed', 405);
@@ -32,19 +34,16 @@ try {
 } catch (InvalidArgumentException $exception) {
     respondError($exception->getMessage(), 400);
 } catch (Throwable $exception) {
-    respondError('Unexpected server error', 500, [
-        'details' => $exception->getMessage(),
-    ]);
+    error_log('API error: ' . $exception->getMessage());
+    respondError('Unexpected server error', 500);
 }
 
-function handleEquipmentGet(PDO $pdo): void
+function handleEquipmentGet(PDO $pdo, EquipmentRepository $repo): void
 {
     $id = isset($_GET['id']) ? (int) $_GET['id'] : null;
 
     if ($id) {
-        $statement = $pdo->prepare('SELECT * FROM equipment WHERE id = :id LIMIT 1');
-        $statement->execute(['id' => $id]);
-        $equipment = $statement->fetch();
+        $equipment = $repo->findById($id);
 
         if (!$equipment) {
             respondError('Equipment item not found', 404);
@@ -55,79 +54,46 @@ function handleEquipmentGet(PDO $pdo): void
         return;
     }
 
-    $search = trim($_GET['search'] ?? '');
-    $status = trim($_GET['status'] ?? '');
+    $search   = trim($_GET['search'] ?? '');
+    $status   = trim($_GET['status'] ?? '');
     $category = trim($_GET['category'] ?? '');
-    $all = isset($_GET['all']) ? filter_var($_GET['all'], FILTER_VALIDATE_BOOLEAN) : false;
-    $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 100;
-    $offset = isset($_GET['offset']) ? (int) $_GET['offset'] : 0;
+    $all      = isset($_GET['all']) ? filter_var($_GET['all'], FILTER_VALIDATE_BOOLEAN) : false;
+    $limit    = isset($_GET['limit'])  ? (int) $_GET['limit']  : 100;
+    $offset   = isset($_GET['offset']) ? (int) $_GET['offset'] : 0;
 
     if ($all) {
-        $limitClause = '';
-        $offset = 0;
+        $repoLimit = null;
+        $offset    = 0;
     } else {
-        if ($limit < 1) {
-            $limit = 100;
-        } elseif ($limit > 1000) {
-            $limit = 1000;
-        }
-
-        if ($offset < 0) {
-            $offset = 0;
-        }
-
-        $limitClause = sprintf(' LIMIT %d OFFSET %d', $limit, $offset);
+        if ($limit < 1) { $limit = 100; } elseif ($limit > 1000) { $limit = 1000; }
+        if ($offset < 0) { $offset = 0; }
+        $repoLimit = $limit;
     }
 
-    $where = [];
-    $params = [];
-
-    if ($search !== '') {
-        $where[] = '(description LIKE :search OR name LIKE :search OR barcode LIKE :search OR category LIKE :search OR subcategory LIKE :search)';
-        $params['search'] = '%' . $search . '%';
-    }
-
+    $filters = [];
+    if ($search !== '') { $filters['search'] = $search; }
     if ($status !== '') {
         $normalizedStatus = normalizeStatus($status);
-        if ($normalizedStatus) {
-            $where[] = 'status = :status';
-            $params['status'] = $normalizedStatus;
-        }
+        if ($normalizedStatus) { $filters['status'] = $normalizedStatus; }
     }
+    if ($category !== '') { $filters['category'] = $category; }
 
-    if ($category !== '') {
-        $where[] = 'category = :category';
-        $params['category'] = $category;
-    }
+    $items = $repo->findAll($filters, $repoLimit, $offset);
 
-    $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
-
-    $query = 'SELECT * FROM equipment ' . $whereClause . ' ORDER BY created_at DESC' . $limitClause;
-
-    $statement = $pdo->prepare($query);
-    foreach ($params as $key => $value) {
-        $statement->bindValue(':' . $key, $value);
-    }
-    $statement->execute();
-    $items = $statement->fetchAll();
-
-    $meta = [
-        'count' => count($items),
-    ];
-
+    $meta = ['count' => count($items)];
     if (!$all) {
-        $meta['limit'] = $limit;
+        $meta['limit']  = $limit;
         $meta['offset'] = $offset;
     } else {
-        $totalStatement = $pdo->query('SELECT COUNT(*) FROM equipment');
-        $meta['total'] = (int) $totalStatement->fetchColumn();
+        $meta['total'] = $repo->count();
     }
 
     respond($items, 200, $meta);
 }
 
-function handleEquipmentCreate(PDO $pdo): void
+function handleEquipmentCreate(PDO $pdo, EquipmentRepository $repo): void
 {
+    requireRole(['admin', 'manager']);
     $payload = readJsonPayload();
 
     if (isset($_GET['bulk']) || (is_array($payload) && array_is_list($payload)) || (is_array($payload) && isset($payload['items']) && array_is_list($payload['items']))) {
@@ -141,37 +107,28 @@ function handleEquipmentCreate(PDO $pdo): void
             return;
         }
 
-        handleEquipmentBulkCreate($pdo, $items);
+        handleEquipmentBulkCreate($pdo, $repo, $items);
         return;
     }
 
-    [$data, $errors] = validateEquipmentPayload($payload, false, $pdo);
+    [$data, $errors] = validateEquipmentPayload($payload, false, $repo);
 
     if ($errors) {
         respondError('Validation failed', 422, ['errors' => $errors]);
         return;
     }
 
-    $sql = 'INSERT INTO equipment (category, subcategory, name, description, quantity, unit_price, unit_cost, barcode, status, image_url, lessor) 
-        VALUES (:category, :subcategory, :name, :description, :quantity, :unit_price, :unit_cost, :barcode, :status, :image_url, :lessor)';
-
-    $statement = $pdo->prepare($sql);
-    $statement->execute($data);
-
-    $id = (int) $pdo->lastInsertId();
-    $statement = $pdo->prepare('SELECT * FROM equipment WHERE id = :id LIMIT 1');
-    $statement->execute(['id' => $id]);
-    $created = $statement->fetch();
+    $created = $repo->create($data);
 
     logActivity($pdo, 'EQUIPMENT_CREATE', [
-        'equipment_id' => $id,
+        'equipment_id' => $created['id'] ?? 0,
         'payload' => $data,
     ]);
 
     respond($created, 201);
 }
 
-function handleEquipmentBulkCreate(PDO $pdo, array $items): void
+function handleEquipmentBulkCreate(PDO $pdo, EquipmentRepository $repo, array $items): void
 {
     requireRole('admin');
     if (!array_is_list($items)) {
@@ -196,81 +153,70 @@ function handleEquipmentBulkCreate(PDO $pdo, array $items): void
         if (!is_array($item)) {
             $errors[] = [
                 'index' => $index,
-                'errors' => [
-                    'payload' => 'Each item must be an object',
-                ],
+                'errors' => ['payload' => 'Each item must be an object'],
             ];
             continue;
         }
 
-        [$data, $itemErrors] = validateEquipmentPayload($item, false, $pdo);
+        [$data, $itemErrors] = validateEquipmentPayload($item, false, $repo);
 
         if ($itemErrors) {
             $dupError = isset($itemErrors['barcode']) && $itemErrors['barcode'] === 'Barcode already exists';
+
             if ($dupError && $updateExisting) {
-                // Prepare update for existing record
                 $barcodeValue = isset($item['barcode']) ? trim((string) $item['barcode']) : (isset($item['باركود']) ? trim((string) $item['باركود']) : null);
                 if ($barcodeValue === null || $barcodeValue === '') {
-                    $errors[] = [ 'index' => $index, 'errors' => $itemErrors ];
+                    $errors[] = ['index' => $index, 'errors' => $itemErrors];
                     continue;
                 }
-                $existingStmt = $pdo->prepare('SELECT * FROM equipment WHERE barcode = :barcode LIMIT 1');
-                $existingStmt->execute(['barcode' => $barcodeValue]);
-                $existing = $existingStmt->fetch();
+                $existingIdRow = $repo->findByBarcode($barcodeValue);
+                if (!$existingIdRow) {
+                    $errors[] = ['index' => $index, 'errors' => $itemErrors];
+                    continue;
+                }
+                $existing = $repo->findById((int) $existingIdRow['id']);
                 if (!$existing) {
-                    // fallback
-                    $errors[] = [ 'index' => $index, 'errors' => $itemErrors ];
+                    $errors[] = ['index' => $index, 'errors' => $itemErrors];
                     continue;
                 }
 
-                // Validate as update against existing id
-                [$updateData, $updateErrors] = validateEquipmentPayload($item, true, $pdo, (int) $existing['id']);
+                [$updateData, $updateErrors] = validateEquipmentPayload($item, true, $repo, (int) $existing['id']);
                 if ($updateErrors) {
-                    $errors[] = [ 'index' => $index, 'errors' => $updateErrors ];
+                    $errors[] = ['index' => $index, 'errors' => $updateErrors];
                     continue;
                 }
-                // Never update status via bulk import
-                unset($updateData['status']);
-                // Never change barcode via this flow
-                unset($updateData['barcode']);
+                // Never update status or barcode via bulk import
+                unset($updateData['status'], $updateData['barcode']);
                 if (!$updateData) {
                     $skippedDuplicates++;
                     continue;
                 }
-                // Compute only changed fields
                 $changed = [];
                 foreach ($updateData as $col => $val) {
                     $currentVal = $existing[$col] ?? null;
-                    // Normalize numeric comparisons
                     if (is_numeric($val) && is_numeric($currentVal)) {
                         if ((string) (0 + $val) !== (string) (0 + $currentVal)) {
                             $changed[$col] = $val;
                         }
-                    } else {
-                        if ((string) $val !== (string) $currentVal) {
-                            $changed[$col] = $val;
-                        }
+                    } elseif ((string) $val !== (string) $currentVal) {
+                        $changed[$col] = $val;
                     }
                 }
 
                 if ($changed) {
-                    $updates[] = [ 'id' => (int) $existing['id'], 'data' => $changed ];
+                    $updates[] = ['id' => (int) $existing['id'], 'data' => $changed];
                 } else {
                     $skippedDuplicates++;
                 }
                 continue;
             }
 
-            // If only duplication-related errors and skipDuplicates is enabled, silently skip
             if ($skipDuplicates && $dupError) {
                 $skippedDuplicates++;
                 continue;
             }
 
-            $errors[] = [
-                'index' => $index,
-                'errors' => $itemErrors,
-            ];
+            $errors[] = ['index' => $index, 'errors' => $itemErrors];
             continue;
         }
 
@@ -282,9 +228,7 @@ function handleEquipmentBulkCreate(PDO $pdo, array $items): void
             }
             $errors[] = [
                 'index' => $index,
-                'errors' => [
-                    'barcode' => 'Barcode duplicated within upload batch',
-                ],
+                'errors' => ['barcode' => 'Barcode duplicated within upload batch'],
             ];
             continue;
         }
@@ -302,51 +246,29 @@ function handleEquipmentBulkCreate(PDO $pdo, array $items): void
     }
 
     if (!$prepared && !$updates) {
-        // Nothing to insert or update
         respond([], 201, ['count' => 0, 'updated' => 0, 'skipped_duplicates' => $skippedDuplicates]);
         return;
     }
 
-    $sql = 'INSERT INTO equipment (category, subcategory, name, description, quantity, unit_price, unit_cost, barcode, status, image_url, lessor) 
-        VALUES (:category, :subcategory, :name, :description, :quantity, :unit_price, :unit_cost, :barcode, :status, :image_url, :lessor)';
-
     $insertedIds = [];
+    $updatedCount = 0;
 
     try {
         $pdo->beginTransaction();
-        // Inserts
         if ($prepared) {
-            $statement = $pdo->prepare($sql);
-            foreach ($prepared as $data) {
-                $statement->execute($data);
-                $insertedIds[] = (int) $pdo->lastInsertId();
-            }
+            $insertedIds = $repo->bulkCreate($prepared);
         }
-        // Updates
-        $updatedCount = 0;
-        if ($updates) {
-            foreach ($updates as $entry) {
-                $id = $entry['id'];
-                $data = $entry['data'];
-                if (!$data) continue;
-                $fields = [];
-                foreach ($data as $col => $_v) {
-                    $fields[] = sprintf('%s = :%s', $col, $col);
-                }
-                if ($fields) {
-                    $data['id'] = $id;
-                    $upd = $pdo->prepare('UPDATE equipment SET ' . implode(', ', $fields) . ' WHERE id = :id');
-                    $upd->execute($data);
-                    $updatedCount += $upd->rowCount() >= 0 ? 1 : 0; // count item as processed
-                }
-            }
+        foreach ($updates as $entry) {
+            $repo->update($entry['id'], $entry['data']);
+            $updatedCount++;
         }
         $pdo->commit();
     } catch (Throwable $exception) {
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
         }
-        respondError('Failed to import equipment', 500, ['details' => $exception->getMessage()]);
+        error_log('API error: ' . $exception->getMessage());
+        respondError('Failed to import equipment', 500);
         return;
     }
 
@@ -355,13 +277,7 @@ function handleEquipmentBulkCreate(PDO $pdo, array $items): void
         return;
     }
 
-    $placeholders = implode(',', array_fill(0, count($insertedIds), '?'));
-    $created = [];
-    if ($insertedIds) {
-        $statement = $pdo->prepare('SELECT * FROM equipment WHERE id IN (' . $placeholders . ') ORDER BY id ASC');
-        $statement->execute($insertedIds);
-        $created = $statement->fetchAll();
-    }
+    $created = array_values(array_filter(array_map(fn($id) => $repo->findById($id), $insertedIds)));
 
     logActivity($pdo, 'EQUIPMENT_BULK_CREATE', [
         'count' => count($insertedIds),
@@ -370,14 +286,15 @@ function handleEquipmentBulkCreate(PDO $pdo, array $items): void
 
     respond($created, 201, [
         'count' => count($created),
-        'updated' => isset($updatedCount) ? $updatedCount : 0,
+        'updated' => $updatedCount,
         'skipped_duplicates' => $skippedDuplicates,
         'errors' => $errors ?: null,
     ]);
 }
 
-function handleEquipmentUpdate(PDO $pdo): void
+function handleEquipmentUpdate(PDO $pdo, EquipmentRepository $repo): void
 {
+    requireRole(['admin', 'manager']);
     $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 
     if ($id <= 0) {
@@ -385,7 +302,7 @@ function handleEquipmentUpdate(PDO $pdo): void
         return;
     }
 
-    [$data, $errors] = validateEquipmentPayload(readJsonPayload(), true, $pdo, $id);
+    [$data, $errors] = validateEquipmentPayload(readJsonPayload(), true, $repo, $id);
 
     if ($errors) {
         respondError('Validation failed', 422, ['errors' => $errors]);
@@ -397,76 +314,32 @@ function handleEquipmentUpdate(PDO $pdo): void
         return;
     }
 
-    $fields = [];
-    foreach ($data as $column => $_value) {
-        $fields[] = sprintf('%s = :%s', $column, $column);
+    if (!$repo->exists($id)) {
+        respondError('Equipment item not found', 404);
+        return;
     }
 
-    $data['id'] = $id;
-    $sql = 'UPDATE equipment SET ' . implode(', ', $fields) . ' WHERE id = :id';
-    $statement = $pdo->prepare($sql);
-    $statement->execute($data);
-
-    if ($statement->rowCount() === 0) {
-        $check = $pdo->prepare('SELECT id FROM equipment WHERE id = :id LIMIT 1');
-        $check->execute(['id' => $id]);
-        if (!$check->fetch()) {
-            respondError('Equipment item not found', 404);
-            return;
-        }
-    }
-
-    $statement = $pdo->prepare('SELECT * FROM equipment WHERE id = :id LIMIT 1');
-    $statement->execute(['id' => $id]);
-    $updated = $statement->fetch();
-
-    $changedColumns = array_values(array_filter(array_keys($data), static fn($column) => $column !== 'id'));
+    $updated = $repo->update($id, $data);
 
     logActivity($pdo, 'EQUIPMENT_UPDATE', [
         'equipment_id' => $id,
-        'changes' => $changedColumns,
+        'changes' => array_keys($data),
     ]);
 
     respond($updated);
 }
 
-function handleEquipmentDelete(PDO $pdo): void
+function handleEquipmentDelete(PDO $pdo, EquipmentRepository $repo): void
 {
     requireRole('admin');
     $deleteAll = isset($_GET['all']) ? filter_var($_GET['all'], FILTER_VALIDATE_BOOLEAN) : false;
 
     if ($deleteAll) {
-        try {
-            $pdo->beginTransaction();
-            $countStatement = $pdo->query('SELECT COUNT(*) FROM equipment');
-            $total = (int) $countStatement->fetchColumn();
-            if ($total > 0) {
-                // Clean related records first to honour foreign key constraints.
-                $dependentTables = [
-                    'reservation_equipment',
-                    'project_equipment',
-                    'maintenance_requests',
-                ];
+        $total = $repo->deleteAll();
 
-                foreach ($dependentTables as $table) {
-                    $pdo->exec('DELETE FROM ' . $table);
-                }
+        logActivity($pdo, 'EQUIPMENT_CLEAR_ALL', ['count' => $total]);
 
-                $pdo->exec('DELETE FROM equipment');
-            }
-            $pdo->commit();
-
-            logActivity($pdo, 'EQUIPMENT_CLEAR_ALL', [
-                'count' => $total,
-            ]);
-
-            respond(null, 200, ['deleted' => $total]);
-        } catch (Throwable $exception) {
-            if ($pdo->inTransaction()) {
-                $pdo->rollBack();
-            }
-            respondError('Failed to clear equipment list', 500, ['details' => $exception->getMessage()]);
-        }
+        respond(null, 200, ['deleted' => $total]);
         return;
     }
 
@@ -477,55 +350,17 @@ function handleEquipmentDelete(PDO $pdo): void
         return;
     }
 
-    try {
-        $pdo->beginTransaction();
-
-        $check = $pdo->prepare('SELECT id FROM equipment WHERE id = :id LIMIT 1');
-        $check->execute(['id' => $id]);
-        if (!$check->fetchColumn()) {
-            $pdo->rollBack();
-            respondError('Equipment item not found', 404);
-            return;
-        }
-
-        // Clean related records first to honour foreign key constraints.
-        $dependentTables = [
-            'reservation_equipment',
-            'project_equipment',
-            'maintenance_requests',
-        ];
-
-        foreach ($dependentTables as $table) {
-            $cleanup = $pdo->prepare('DELETE FROM ' . $table . ' WHERE equipment_id = :id');
-            $cleanup->execute(['id' => $id]);
-        }
-
-        $statement = $pdo->prepare('DELETE FROM equipment WHERE id = :id LIMIT 1');
-        $statement->execute(['id' => $id]);
-
-        if ($statement->rowCount() === 0) {
-            $pdo->rollBack();
-            respondError('Equipment item not found', 404);
-            return;
-        }
-
-        $pdo->commit();
-    } catch (Throwable $exception) {
-        if ($pdo->inTransaction()) {
-            $pdo->rollBack();
-        }
-        respondError('Failed to delete equipment item', 500, ['details' => $exception->getMessage()]);
+    if (!$repo->delete($id)) {
+        respondError('Equipment item not found', 404);
         return;
     }
 
-    logActivity($pdo, 'EQUIPMENT_DELETE', [
-        'equipment_id' => $id,
-    ]);
+    logActivity($pdo, 'EQUIPMENT_DELETE', ['equipment_id' => $id]);
 
     respond(null);
 }
 
-function validateEquipmentPayload(array $payload, bool $isUpdate, PDO $pdo, ?int $currentId = null): array
+function validateEquipmentPayload(array $payload, bool $isUpdate, EquipmentRepository $repo, ?int $currentId = null): array
 {
     $errors = [];
 
@@ -561,7 +396,7 @@ function validateEquipmentPayload(array $payload, bool $isUpdate, PDO $pdo, ?int
         } elseif (mb_strlen($barcode) > 100) {
             $errors['barcode'] = 'Barcode is too long (max 100 characters)';
         } else {
-            $duplicate = findEquipmentByBarcode($pdo, $barcode, $currentId);
+            $duplicate = $repo->findByBarcode($barcode, $currentId);
             if ($duplicate) {
                 $errors['barcode'] = 'Barcode already exists';
             }
@@ -682,20 +517,6 @@ function validateEquipmentPayload(array $payload, bool $isUpdate, PDO $pdo, ?int
     return [$data, $errors];
 }
 
-function findEquipmentByBarcode(PDO $pdo, string $barcode, ?int $ignoreId = null): array|false
-{
-    $sql = 'SELECT id FROM equipment WHERE barcode = :barcode';
-    $params = ['barcode' => $barcode];
-
-    if ($ignoreId !== null) {
-        $sql .= ' AND id <> :ignoreId';
-        $params['ignoreId'] = $ignoreId;
-    }
-
-    $statement = $pdo->prepare($sql . ' LIMIT 1');
-    $statement->execute($params);
-    return $statement->fetch();
-}
 
 function readJsonPayload(): array
 {

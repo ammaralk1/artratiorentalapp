@@ -1,0 +1,28 @@
+{
+    "name": "art-ratio/backend",
+    "description": "Art Ratio back-office PHP backend",
+    "type": "project",
+    "require": {
+        "php": ">=8.1"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "ArtRatio\\Repositories\\": "backend/repositories/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "ArtRatio\\Tests\\": "tests/php/"
+        }
+    },
+    "scripts": {
+        "test:php": "phpunit --configuration phpunit.xml"
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true
+    }
+}

@@ -1,0 +1,29 @@
+-- Align reservation_packages with the shape expected by the back-office reservation editor.
+CREATE TABLE IF NOT EXISTS reservation_packages (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  reservation_id BIGINT UNSIGNED NOT NULL,
+  package_id BIGINT UNSIGNED DEFAULT NULL,
+  package_code VARCHAR(100) DEFAULT NULL,
+  package_name VARCHAR(255) DEFAULT NULL,
+  name VARCHAR(255) DEFAULT NULL,
+  quantity INT NOT NULL DEFAULT 1,
+  unit_price DECIMAL(12,2) NOT NULL DEFAULT 0,
+  unit_cost DECIMAL(12,2) NOT NULL DEFAULT 0,
+  items_json LONGTEXT DEFAULT NULL,
+  package_metadata LONGTEXT DEFAULT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_reservation_packages_reservation_id (reservation_id),
+  FOREIGN KEY (reservation_id) REFERENCES reservations(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE reservation_packages
+  ADD COLUMN IF NOT EXISTS package_id BIGINT UNSIGNED DEFAULT NULL AFTER reservation_id,
+  ADD COLUMN IF NOT EXISTS package_code VARCHAR(100) DEFAULT NULL AFTER package_id,
+  ADD COLUMN IF NOT EXISTS package_name VARCHAR(255) DEFAULT NULL AFTER package_code,
+  ADD COLUMN IF NOT EXISTS name VARCHAR(255) DEFAULT NULL AFTER package_name,
+  ADD COLUMN IF NOT EXISTS quantity INT NOT NULL DEFAULT 1 AFTER name,
+  ADD COLUMN IF NOT EXISTS unit_price DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER quantity,
+  ADD COLUMN IF NOT EXISTS unit_cost DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER unit_price,
+  ADD COLUMN IF NOT EXISTS items_json LONGTEXT DEFAULT NULL AFTER unit_cost,
+  ADD COLUMN IF NOT EXISTS package_metadata LONGTEXT DEFAULT NULL AFTER items_json;
