@@ -71,5 +71,6 @@ try {
         'note' => $deepLink ? 'Share this link with the user to link their Telegram.' : 'Could not resolve bot username; construct link as https://t.me/<BOT_USERNAME>?start=' . $token,
     ]);
 } catch (Throwable $e) {
-    respondError('Failed to generate link', 500, [ 'details' => $e->getMessage() ]);
+    error_log('API error: ' . $e->getMessage());
+    respondError('Failed to generate link', 500);
 }

@@ -14,6 +14,7 @@ if (!defined('API_INCLUDE_MODE')) {
         }
 
         $pdo = getDatabaseConnection();
+        checkPublicFormRateLimit($pdo, 'contact');
         ensureContactInquiryTables($pdo);
         ensureContactInquiryWorkflowColumns($pdo);
         ensureContactInquiryActivitiesTable($pdo);
@@ -21,9 +22,8 @@ if (!defined('API_INCLUDE_MODE')) {
     } catch (InvalidArgumentException $exception) {
         respondError($exception->getMessage(), 422);
     } catch (Throwable $exception) {
-        respondError('Unexpected server error', 500, [
-            'details' => $exception->getMessage(),
-        ]);
+        error_log('API error: ' . $exception->getMessage());
+        respondError('Unexpected server error', 500);
     }
 }
 

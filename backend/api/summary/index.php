@@ -21,9 +21,8 @@ try {
     $data = buildSummaryResponse($pdo);
     respond($data);
 } catch (Throwable $exception) {
-    respondError('Unexpected server error', 500, [
-        'details' => $exception->getMessage(),
-    ]);
+    error_log('API error: ' . $exception->getMessage());
+    respondError('Unexpected server error', 500);
 }
 
 function buildSummaryResponse(PDO $pdo): array

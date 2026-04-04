@@ -10,6 +10,7 @@ $bootstrapFiles = [
     __DIR__ . '/translation.php',
     __DIR__ . '/response.php',
     __DIR__ . '/auth.php',
+    __DIR__ . '/ratelimit.php',
     __DIR__ . '/environment.php',
 ];
 

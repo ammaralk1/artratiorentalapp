@@ -184,9 +184,8 @@ try {
     exit;
 } catch (Throwable $exception) {
     debugNotifLogs('fatal: ' . $exception->getMessage());
-    respondError('Unexpected server error', 500, [
-        'details' => $exception->getMessage(),
-    ]);
+    error_log('API error: ' . $exception->getMessage());
+    respondError('Unexpected server error', 500);
 }
 
 function buildRecipientDisplay(PDO $pdo, string $type, string $identifier, string $channel): string

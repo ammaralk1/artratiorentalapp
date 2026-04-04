@@ -16,3 +16,6 @@ backups/mysql/*.sql.gz
 
 # Deployment SSH key
 .github/deploy/gh_actions_deploy*
+
+# Composer binary
+composer

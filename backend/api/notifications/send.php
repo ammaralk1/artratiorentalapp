@@ -438,7 +438,6 @@ try {
     respondError($exception->getMessage(), 400);
 } catch (Throwable $exception) {
     debugNotifLog('error: ' . $exception->getMessage());
-    respondError('Unexpected server error', 500, [
-        'details' => $exception->getMessage(),
-    ]);
+    error_log('API error: ' . $exception->getMessage());
+    respondError('Unexpected server error', 500);
 }

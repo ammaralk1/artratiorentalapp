@@ -44,7 +44,8 @@ try {
             $stmt = $pdo->prepare($sql);
             $stmt->execute(['from' => $from, 'to' => $to]);
         } catch (Throwable $e) {
-            respondError('Query failed', 500, [ 'details' => $e->getMessage() ]);
+            error_log('API error: ' . $e->getMessage());
+            respondError('Query failed', 500);
             exit;
         }
         while ($row = $stmt->fetch()) {
@@ -86,5 +87,6 @@ try {
 
     respond([ 'processed' => $processed, 'timezone' => $tz, 'window_minutes' => $window ]);
 } catch (Throwable $e) {
-    respondError('Unexpected server error', 500, [ 'details' => $e->getMessage() ]);
+    error_log('API error: ' . $e->getMessage());
+    respondError('Unexpected server error', 500);
 }

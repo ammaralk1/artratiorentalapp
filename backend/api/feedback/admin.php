@@ -28,9 +28,8 @@ try {
 } catch (InvalidArgumentException $exception) {
     respondError($exception->getMessage(), 422);
 } catch (Throwable $exception) {
-    respondError('Unexpected server error', 500, [
-        'details' => $exception->getMessage(),
-    ]);
+    error_log('API error: ' . $exception->getMessage());
+    respondError('Unexpected server error', 500);
 }
 
 function handleFeedbackAdminGet(PDO $pdo): void

@@ -14,15 +14,15 @@ try {
             handleBlogCommentsGet($pdo);
             break;
         case 'POST':
+            checkPublicFormRateLimit($pdo, 'blog-comments');
             handleBlogCommentsPost($pdo);
             break;
         default:
             respondError('Method not allowed', 405);
     }
 } catch (Throwable $exception) {
-    respondError('Unexpected server error', 500, [
-        'details' => $exception->getMessage(),
-    ]);
+    error_log('API error: ' . $exception->getMessage());
+    respondError('Unexpected server error', 500);
 }
 
 function handleBlogCommentsGet(PDO $pdo): void

@@ -16,6 +16,11 @@ return [
             'https://your-production-domain.com'
         ],
         'session_name' => 'art_ratio_session',
+        // IPs of trusted reverse proxies (e.g. Nginx, load balancer).
+        // When set, X-Forwarded-For and X-Real-IP headers are only trusted
+        // when the direct connection comes from one of these IPs.
+        // Leave empty (or omit) to always use REMOTE_ADDR directly.
+        // 'trusted_proxy_ips' => ['127.0.0.1', '10.0.0.1'],
     ],
     'storage' => [
         // Global upload constraints (used by active provider)

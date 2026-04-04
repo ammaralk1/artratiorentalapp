@@ -32,7 +32,7 @@ function initialiseHttpEnvironment(array $config): void
         'lifetime' => 0,
         'path' => '/',
         'httponly' => true,
-        'samesite' => 'Lax',
+        'samesite' => 'Strict',
     ];
 
     if (isSecureRequest()) {

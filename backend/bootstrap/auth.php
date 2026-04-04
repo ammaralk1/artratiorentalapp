@@ -5,25 +5,43 @@ declare(strict_types=1);
 function getClientIpAddress(): string
 {
     $fallback = '0.0.0.0';
+    $remoteAddr = isset($_SERVER['REMOTE_ADDR']) ? (string) $_SERVER['REMOTE_ADDR'] : '';
+
+    // Only trust proxy-injected headers when the direct connection comes from a known trusted proxy.
+    // Configure 'security.trusted_proxy_ips' in config.php to enable this.
+    // Example: 'trusted_proxy_ips' => ['10.0.0.1', '192.168.1.1']
+    $trustedProxies = [];
+    try {
+        $cfg = function_exists('getAppConfig') ? getAppConfig() : ($GLOBALS['app_config'] ?? null);
+        if (is_array($cfg)) {
+            $trustedProxies = $cfg['security']['trusted_proxy_ips'] ?? [];
+        }
+    } catch (Throwable $_) {
+        // Config unavailable — treat as no trusted proxies configured
+    }
+
+    $remoteIsProxy = $remoteAddr !== '' && in_array($remoteAddr, (array) $trustedProxies, true);
 
     $candidates = [];
 
-    if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-        $forwardedFor = explode(',', (string) $_SERVER['HTTP_X_FORWARDED_FOR']);
-        foreach ($forwardedFor as $part) {
-            $trimmed = trim($part);
-            if ($trimmed !== '') {
-                $candidates[] = $trimmed;
+    if ($remoteIsProxy) {
+        if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            $forwardedFor = explode(',', (string) $_SERVER['HTTP_X_FORWARDED_FOR']);
+            foreach ($forwardedFor as $part) {
+                $trimmed = trim($part);
+                if ($trimmed !== '') {
+                    $candidates[] = $trimmed;
+                }
             }
+        }
+
+        if (!empty($_SERVER['HTTP_X_REAL_IP'])) {
+            $candidates[] = (string) $_SERVER['HTTP_X_REAL_IP'];
         }
     }
 
-    if (!empty($_SERVER['HTTP_X_REAL_IP'])) {
-        $candidates[] = (string) $_SERVER['HTTP_X_REAL_IP'];
-    }
-
-    if (!empty($_SERVER['REMOTE_ADDR'])) {
-        $candidates[] = (string) $_SERVER['REMOTE_ADDR'];
+    if ($remoteAddr !== '') {
+        $candidates[] = $remoteAddr;
     }
 
     foreach ($candidates as $candidate) {
@@ -130,6 +148,7 @@ function verifyCredentials(string $username, string $password, ?PDO $pdo = null)
     }
 
     if ($needsUpgrade) {
+        error_log(sprintf('[auth] Legacy password hash detected for user id=%d — upgrading to bcrypt', $user['id']));
         try {
             $newHash = password_hash($password, PASSWORD_DEFAULT);
             if (is_string($newHash) && $newHash !== '') {

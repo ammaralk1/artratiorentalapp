@@ -46,9 +46,8 @@ try {
 } catch (InvalidArgumentException $exception) {
     respondError($exception->getMessage(), 400);
 } catch (Throwable $exception) {
-    respondError('Failed to evaluate availability', 500, [
-        'details' => $exception->getMessage(),
-    ]);
+    error_log('API error: ' . $exception->getMessage());
+    respondError('Failed to evaluate availability', 500);
 }
 
 function evaluateEquipmentAvailability(PDO $pdo, string $identifier, string $start, string $end, ?int $ignoreReservationId = null): array

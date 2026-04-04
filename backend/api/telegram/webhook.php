@@ -11,19 +11,25 @@ function tg_reply_text(string $chatId, string $text): void {
 }
 
 try {
-    // Optional: verify Telegram secret token header if configured
+    // Verify Telegram secret token — reject all requests if secret_token is not configured
     try {
         $cfg = getTelegramConfig();
-        if (!empty($cfg['secret_token'])) {
-            // Header comes as X-Telegram-Bot-Api-Secret-Token (PHP exposes as HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN)
-            $provided = $_SERVER['HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN'] ?? '';
-            if (!hash_equals((string)$cfg['secret_token'], (string)$provided)) {
-                // Silently ignore to not leak details
-                echo 'ok';
-                exit;
-            }
+        if (empty($cfg['secret_token'])) {
+            // secret_token not configured — reject to prevent unauthenticated data injection
+            echo 'ok';
+            exit;
         }
-    } catch (Throwable $_) { /* ignore and proceed */ }
+        // Header: X-Telegram-Bot-Api-Secret-Token (PHP: HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN)
+        $provided = $_SERVER['HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN'] ?? '';
+        if (!hash_equals((string)$cfg['secret_token'], (string)$provided)) {
+            echo 'ok';
+            exit;
+        }
+    } catch (Throwable $_) {
+        // Config unavailable — reject for safety
+        echo 'ok';
+        exit;
+    }
 
     // Telegram sends POST JSON updates
     $raw = file_get_contents('php://input') ?: '';

@@ -66,5 +66,6 @@ try {
 
     respond($diagnostics);
 } catch (Throwable $e) {
-    respondError('Unexpected server error', 500, [ 'details' => $e->getMessage() ]);
+    error_log('API error: ' . $e->getMessage());
+    respondError('Unexpected server error', 500);
 }
