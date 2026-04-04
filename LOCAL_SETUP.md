@@ -83,12 +83,47 @@ The Docker stack provisions:
 
 1. MySQL 8
 2. `backend/sql/auth_schema.sql`
-3. `backend/sql/dev_sample_data.sql`
+3. `backend/seeds/dev_sample_data.sql` (seed data — uses DROP TABLE, never a migration)
 4. `backend/sql/add_technician_positions_table.sql`
-5. `backend/tools/apply_phase4_schema_updates.php`
-6. deterministic admin re-seeding for `integration_admin`
+5. deterministic admin re-seeding for `integration_admin`
 
 That gives a seeded local environment with users, customers, equipment, reservations, projects, and maintenance sample data.
+
+## Database Migrations
+
+Schema changes are tracked in a `schema_migrations` table. The runner lives at `backend/tools/migrate.php`.
+
+### Common commands
+
+```bash
+# Show applied vs pending migrations
+php backend/tools/migrate.php --status
+
+# Apply all pending migrations
+php backend/tools/migrate.php
+
+# Preview what would run (no DB changes)
+php backend/tools/migrate.php --dry-run
+
+# First-time setup on an existing database: mark all SQL files as applied
+# without re-running them (run this once when setting up migrate.php on
+# a database that already has all the tables)
+php backend/tools/migrate.php --baseline
+```
+
+### Adding a new migration
+
+1. Create a `.sql` file in `backend/sql/` named `YYYYMMDD_description.sql`
+   (e.g. `20260404_add_equipment_status_column.sql`).
+2. Write idempotent SQL where possible (`CREATE TABLE IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`).
+3. Run `php backend/tools/migrate.php` to apply it.
+4. Commit both the SQL file and any code that depends on the new schema together.
+
+### Seed data vs migrations
+
+`backend/seeds/` contains data-only scripts that use `DROP TABLE` and are safe to re-run
+on a fresh local database. These are **not** migrations and are never tracked in
+`schema_migrations`. Do not put seed files in `backend/sql/`.
 
 ## Local Shutdown
 

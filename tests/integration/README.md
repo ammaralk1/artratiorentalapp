@@ -32,10 +32,9 @@ The compose stack runs MySQL 8 with the following defaults:
 At startup, the container executes:
 
 1. `backend/sql/auth_schema.sql`
-2. `backend/sql/dev_sample_data.sql`
+2. `backend/seeds/dev_sample_data.sql` (seed data — uses DROP TABLE, not a tracked migration)
 3. `backend/sql/add_technician_positions_table.sql`
-4. `backend/tools/apply_phase4_schema_updates.php`
-5. deterministic admin re-seeding for `integration_admin`
+4. deterministic admin re-seeding for `integration_admin`
 
 This creates the full schema with sample reservations/equipment and an admin user
 (`integration_admin` / `TestPassword123!`).
@@ -50,6 +49,6 @@ $ npm run integration:down
 
 - The PHP container uses the test-specific config in `tests/integration/config.testing.php`.
 - The PHP service is built from `tests/integration/docker/php/Dockerfile`, which enables the `pdo_mysql` extension required by the API.
-- If you make schema changes, update the SQL/tooling inside `backend/sql/` and `backend/tools/`, then rebuild with `npm run integration:down && npm run integration:up`.
+- If you add a migration, create `backend/sql/YYYYMMDD_description.sql` and rebuild the stack. The Docker init mounts `backend/sql/` into the container but does not auto-apply new files — the stack re-seeds from scratch on each `integration:up`.
 - The compose services share the `art_ratio_test_network` network so you can attach
   additional tooling (e.g. MySQL Workbench) by targeting `127.0.0.1:33306`.

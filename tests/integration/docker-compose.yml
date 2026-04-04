@@ -16,6 +16,7 @@ services:
     volumes:
       - ./docker/init:/docker-entrypoint-initdb.d
       - ../../backend/sql:/docker-entrypoint-initdb.d/base:ro
+      - ../../backend/seeds:/docker-entrypoint-initdb.d/seeds:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "art_ratio", "--password=testpassword"]
       interval: 5s
