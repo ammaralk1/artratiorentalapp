@@ -5,7 +5,7 @@ Back-office production management app (Art Ratio).
 
 ## Stack
 - PHP backend
-- Vanilla JavaScript frontend
+- Vanilla JavaScript frontend (migrating to TypeScript — see rule below)
 - Vite build pipeline
 - CSS organized across shared and page-specific stylesheets
 
@@ -73,6 +73,26 @@ are correct before finishing.
 - Call out when a proposed change affects shared UI patterns.
 - For multi-file UI work, group changes by component or surface type, not just by filename.
 - Preserve accessibility basics such as focus visibility, contrast, and usable form states.
+
+## TypeScript migration rule (Phase G)
+
+This project is on an incremental path from JavaScript to TypeScript. The rule is simple:
+
+**New files go in TypeScript. Existing files stay in JS until they are touched for another reason.**
+
+Concretely:
+- Any new `src/scripts/` file must be `.ts`, not `.js`.
+- Any new `src/scripts/*/` module file must be `.ts`.
+- When an existing `.js` file is being substantially modified for a feature or fix, convert it to `.ts` in the same PR — do not do it as a standalone refactor.
+- Do not convert files that are not being changed just to hit a coverage number.
+
+Type expectations for new TS files:
+- API response shapes must have explicit `type` or `interface` definitions.
+- Function parameters and return types must be annotated — no implicit `any`.
+- Use `unknown` instead of `any` at system boundaries (API responses, event data).
+- Keep types co-located with the code that uses them; only extract to a shared `types/` file when the same type is used in 3+ places.
+
+`tsconfig.json` has `"allowJs": true` so existing `.js` files continue to work unchanged alongside new `.ts` files.
 
 ## When unsure
 - Ask whether the task is visual cleanup, design-system cleanup, or functional UX change.

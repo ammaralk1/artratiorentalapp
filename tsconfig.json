@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+
+    // Allow existing .js files to coexist with new .ts files unchanged
+    "allowJs": true,
+    "checkJs": false,
+
+    // Strict type checking for .ts files
+    "strict": true,
+    "noImplicitAny": true,
+    "useUnknownInCatchVariables": true,
+
+    // Emit handled by Vite — tsc is for type-checking only
+    "noEmit": true,
+    "isolatedModules": true,
+
+    "skipLibCheck": true,
+    "resolveJsonModule": true
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.js"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "tests"
+  ]
+}
