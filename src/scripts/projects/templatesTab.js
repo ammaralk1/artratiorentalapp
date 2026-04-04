@@ -4,21 +4,11 @@ import { getProjectsState, refreshProjectsFromApi } from '../projectsService.js'
 import { getReservationsState, refreshReservationsFromApi } from '../reservationsService.js';
 import { getTechniciansState, refreshTechniciansFromApi } from '../techniciansService.js';
 import { ensureTechnicianPositionsLoaded } from '../technicianPositions.js';
-// Avoid heavy cross-imports from view.js; compute locally
-function getReservationsForProjectLocal(projectId) {
-  if (!projectId) return [];
-  const list = getReservationsState();
-  return Array.isArray(list)
-    ? list.filter((r) => String(r?.projectId ?? r?.project_id ?? '') === String(projectId))
-    : [];
-}
 import { ensureHtml2Pdf, loadExternalScript } from '../reports/external.js';
 import { ensureXlsxStyled, exportCallsheetToExcel } from '../templates/excelExport.js';
 // Table interactions are handled via templates/tableInteractions.js; no direct tableTools use here
-import { showTemplatesDebugOverlay } from '../templates/debug.js';
 import { buildCallSheetPage as buildCallSheetPageExt, populateCrewFromReservation as populateCrewFromReservationExt, populateCrewFromReservationIfEmpty as populateCrewFromReservationIfEmptyExt } from '../templates/build/callsheet.js';
 import { buildExpensesPage as buildExpensesPageExt } from '../templates/build/expenses.js';
-import { el } from '../templates/core.js';
 import { pageHasMeaningfulContent } from '../templates/pageUtils.js';
 import { ensureAssetsReady } from '../templates/assets.js';
 import { initHistory, pushHistoryDebounced, undoTemplatesChange, redoTemplatesChange, setupTemplatesHistory, pushTemplatesHistory } from '../templates/history.js';
@@ -40,19 +30,112 @@ import {
 import { PROJECT_TAX_RATE } from './constants.js';
 import { apiRequest } from '../apiClient.js';
 import { showToast } from '../utils.js';
+import { templatesTabState } from './templatesTab/state';
+import {
+  formatIntNoDecimals,
+  getReservationsForProject,
+  getSelectedProject,
+  getSelectedReservations,
+  getTemplateLang,
+  getTemplatesContextKey,
+  normalizeLegacyAssetUrl,
+  normalizeTemplateHtmlLegacyUrls,
+  readHeaderFooterOptions,
+  restoreTplPreferredTypeIfAny,
+  setTemplateLang,
+  writeTplPreferredType,
+} from './templatesTab/context';
+import {
+  autosaveTemplateToServer as autosaveTemplateToServerExt,
+  autosaveToServerDebounced as autosaveToServerDebouncedExt,
+  ensureRemoteAutosaveId as ensureRemoteAutosaveIdExt,
+  readRemoteAutosaveId as readRemoteAutosaveIdExt,
+  sanitizeHtmlForExport as sanitizeHtmlForExportExt,
+  writeRemoteAutosaveId as writeRemoteAutosaveIdExt,
+} from './templatesTab/autosave';
+import {
+  fetchSavedTemplatesForProject as fetchSavedTemplatesForProjectExt,
+  populateSavedTemplatesSelect as populateSavedTemplatesSelectExt,
+  saveTemplateSnapshotRequest as saveTemplateSnapshotRequestExt,
+} from './templatesTab/saved-templates';
+import {
+  buildTemplateExportFilename,
+  createTemplateExportBlob,
+  findDraftTemplate,
+  resolveImportedTemplateRequest,
+} from './templatesTab/io';
+import {
+  createTemplatesCompositionHandlers,
+  createTemplatesFocusHandlers,
+  createTemplatesHostInputHandler,
+  createTemplatesMouseDownHandler,
+  createTemplatesRepopulateController,
+  populateProjectSelectOptions,
+  populateReservationSelectOptions,
+} from './templatesTab/controller';
+import {
+  ensureCrewOnSecondPage as ensureCrewOnSecondPageExt,
+  ensureCrewTableExists as ensureCrewTableExistsExt,
+  ensureSingleCrewTableStrict as ensureSingleCrewTableStrictExt,
+  purgeCrewCallTables as purgeCrewCallTablesExt,
+  unifyCrewCallTables as unifyCrewCallTablesExt,
+} from './templatesTab/crew';
+import {
+  recomputeExpensesSubtotals as recomputeExpensesSubtotalsExt,
+  renumberExpenseCodes as renumberExpenseCodesExt,
+} from './templatesTab/expenses';
+import {
+  attachCallsheetLogoBehaviors as attachCallsheetLogoBehaviorsExt,
+  ensureLogoControls as ensureLogoControlsExt,
+  readPrimaryLogoState,
+  readSecondaryLogoState,
+  writePrimaryLogoState,
+  writeSecondaryLogoState,
+} from './templatesTab/formatting';
+import {
+  clearPdfPageOverrides,
+  ensurePdfTunerUI as ensurePdfTunerUIExt,
+  getPdfPageOverrides,
+  readPdfPref,
+  readPdfPrefForPage,
+  readPdfString,
+  setPdfPageOverride,
+  showPrintPreviewOverlay as showPrintPreviewOverlayExt,
+  writePdfPref,
+} from './templatesTab/pdf';
+import {
+  enforceCallsheetSizing as enforceCallsheetSizingExt,
+  fixCallsheetStructure as fixCallsheetStructureExt,
+  loadSnapshotById as loadSnapshotByIdExt,
+  renderTemplatesPreview as renderTemplatesPreviewExt,
+} from './templatesTab/preview';
+import {
+  applyTemplatesSnapshot as applyTemplatesSnapshotExt,
+  applyTemplatesSnapshotInPlace as applyTemplatesSnapshotInPlaceExt,
+  getTemplatesSnapshot as getTemplatesSnapshotExt,
+  markTemplatesEditingActivity as markTemplatesEditingActivityExt,
+  restoreTemplatesAutosaveIfPresent as restoreTemplatesAutosaveIfPresentExt,
+  saveAutosaveDebounced as saveAutosaveDebouncedExt,
+  saveTemplatesAutosaveToStorage as saveTemplatesAutosaveToStorageExt,
+} from './templatesTab/snapshot';
+import {
+  adjustTemplatesPreviewZoom,
+  applyTemplatesFitZoom,
+  applyTemplatesPreviewZoom,
+  ensureResizeBinding,
+  ensureResizeObserver,
+  ensureTemplatesZoomUI,
+  readTplZoomModePref,
+  readTplZoomPref,
+  setTemplatesPreviewZoom,
+  writeTplZoomModePref,
+} from './templatesTab/zoom';
 
 // Templates A4 preview zoom state and controls
-let TPL_PREVIEW_ZOOM = 1;
-let TPL_USER_ADJUSTED_ZOOM = false;
-let TPL_ZOOM_VALUE_EL = null;
-let TPL_ZOOM_MODE = 'manual'; // 'manual' | 'fit'
-let TPL_ZOOM_FIT_BTN = null;
-let TPL_ZOOM_RESIZE_BOUND = false;
 let TPL_EVENTS_BOUND = false; // avoid duplicate listeners / timers
 let TPL_LISTENERS = { hostInput: null, hostMouseDown: null, hostFocusIn: null, hostFocusOut: null, hostCompStart: null, hostCompEnd: null, projChanged: null, resChanged: null, resUpdated: null, tabClick: null };
 let TPL_HOST_EL = null;
 let TPL_REPOPULATE_TIMER = null;
-let TPL_RESIZE_OBSERVER = null;
 let TPL_TABLE_UNBIND = null;
 let TPL_SUBTOTAL_TIMER = null;
 let TPL_EXPENSES_UNBIND = null;
@@ -62,69 +145,14 @@ let TPL_ENFORCE_TIMER = null; // debounce schedule sizing enforcement during typ
 
 // Enforce sizing for Call Sheet tables regardless of CSS precedence/caching
 function enforceCallsheetSizing(scope) {
-  try {
-    const root = scope || document.querySelector('#templates-preview-host #templates-a4-root');
-    if (!root) return;
-    // Ensure tables live under a callsheet wrapper for consistent styling
-    try { fixCallsheetStructure(root); } catch(_) {}
-    const crews = Array.from(root.querySelectorAll('table.cs-crew'));
-    crews.forEach((t) => {
-      try {
-        t.style.setProperty('width', '90%', 'important');
-        t.style.setProperty('margin-left', 'auto', 'important');
-        t.style.setProperty('margin-right', 'auto', 'important');
-      } catch(_) {}
-    });
-    const scheds = Array.from(root.querySelectorAll('table.cs-schedule'));
-    scheds.forEach((t) => {
-      try {
-        // Apply requested width and margins from design tweak
-        t.style.setProperty('width', 'calc(82% + 120px)', 'important');
-        t.style.setProperty('margin-left', '11mm', 'important');
-        t.style.setProperty('margin-right', '-16mm', 'important');
-        const inner = t.closest('.a4-inner'); if (inner) { inner.style.setProperty('padding-left', '0mm', 'important'); inner.style.setProperty('padding-right', '0mm', 'important'); }
-      } catch(_) {}
-    });
-
-    // Ensure schedule has at least 4 empty rows by default
-    try {
-      const sched = scheds[0];
-      if (sched) {
-        const tbody = sched.tBodies && sched.tBodies[0];
-        if (tbody) {
-          const rows = Array.from(tbody.children);
-          const isSpecial = (tr) => tr.classList?.contains('cs-row-note') || tr.classList?.contains('cs-row-strong');
-          let editableRows = rows.filter((tr) => !isSpecial(tr));
-          const cols = (() => { const h = sched.querySelector('thead tr'); return (h && h.children && h.children.length) ? h.children.length : 12; })();
-          while (editableRows.length < 4) {
-            const tr = document.createElement('tr');
-            for (let c = 0; c < cols; c += 1) { const td = document.createElement('td'); td.setAttribute('data-editable','true'); td.setAttribute('contenteditable','true'); tr.appendChild(td); }
-            tbody.appendChild(tr);
-            editableRows.push(tr);
-          }
-        }
-      }
-    } catch(_) {}
-  } catch(_) {}
+  enforceCallsheetSizingExt(scope);
 }
 // Expose a global hook for toolbar actions to call after row changes
 try { window.__enforceCallsheetSizing = enforceCallsheetSizing; } catch(_) {}
 
 // If cs-crew or cs-schedule are orphaned (not under .callsheet-v1), wrap them correctly
 function fixCallsheetStructure(root) {
-  const base = root || document.getElementById('templates-a4-root');
-  if (!base) return;
-  const tables = Array.from(base.querySelectorAll('table.cs-crew, table.cs-schedule'));
-  tables.forEach((t) => {
-    const inner = t.closest('.a4-inner');
-    if (!inner) return;
-    const wrap = t.closest('.callsheet-v1');
-    if (wrap) return;
-    // Create/locate a wrapper under the same .a4-inner and move the table inside it
-    let host = inner.querySelector(':scope > .callsheet-v1');
-    if (!host) { host = document.createElement('div'); host.className = 'callsheet-v1'; inner.insertBefore(host, t); }
-    try { host.appendChild(t); } catch(_) {}
-  });
+  fixCallsheetStructureExt(root);
 }
 
 function destroyTemplatesTab() {
@@ -154,7 +182,7 @@ function destroyTemplatesTab() {
       if (templatesTabBtn) templatesTabBtn.removeEventListener('click', TPL_LISTENERS.tabClick);
     }
     if (TPL_REPOPULATE_TIMER) { clearTimeout(TPL_REPOPULATE_TIMER); TPL_REPOPULATE_TIMER = null; }
-    if (TPL_RESIZE_OBSERVER) { try { TPL_RESIZE_OBSERVER.disconnect(); } catch (_) {} TPL_RESIZE_OBSERVER = null; }
+    if (templatesTabState.resizeObserver) { try { templatesTabState.resizeObserver.disconnect(); } catch (_) {} templatesTabState.resizeObserver = null; }
   } finally {
     TPL_EVENTS_BOUND = false; TPL_HOST_EL = null; TPL_LISTENERS = { hostInput: null, hostMouseDown: null, hostFocusIn: null, hostFocusOut: null, projChanged: null, resChanged: null, resUpdated: null, tabClick: null };
   }
@@ -173,81 +201,6 @@ function notifyApiError(err, fallback = 'تعذر الاتصال بالخادم'
     } catch (_) { /* ignore */ }
     if (typeof showToast === 'function') showToast(msg, 'error', 7000);
     else alert(msg);
-  } catch (_) { /* ignore */ }
-}
-
-function readTplZoomPref() {
-  try { return Math.max(0.3, Math.min(2.5, Number(localStorage.getItem('templates.preview.zoom') || '1'))); } catch (_) { return 1; }
-}
-function writeTplZoomPref(v) { try { localStorage.setItem('templates.preview.zoom', String(v)); } catch (_) {} }
-function readTplZoomModePref() { try { const m = localStorage.getItem('templates.preview.zoomMode') || 'manual'; return (m === 'fit') ? 'fit' : 'manual'; } catch(_) { return 'manual'; } }
-function writeTplZoomModePref(m) { try { localStorage.setItem('templates.preview.zoomMode', (m === 'fit') ? 'fit' : 'manual'); } catch(_) {} }
-function setTemplatesPreviewZoom(value, { silent = false, markManual = false } = {}) {
-  TPL_PREVIEW_ZOOM = Math.min(Math.max(value, 0.25), 2.5);
-  if (markManual) TPL_USER_ADJUSTED_ZOOM = true;
-  applyTemplatesPreviewZoom(TPL_PREVIEW_ZOOM);
-  writeTplZoomPref(TPL_PREVIEW_ZOOM);
-  if (!silent && TPL_ZOOM_VALUE_EL) {
-    TPL_ZOOM_VALUE_EL.textContent = `${Math.round(TPL_PREVIEW_ZOOM * 100)}%`;
-  }
-}
-function adjustTemplatesPreviewZoom(delta) {
-  // Switching to manual mode on any explicit user zoom change
-  TPL_ZOOM_MODE = 'manual';
-  writeTplZoomModePref(TPL_ZOOM_MODE);
-  setTemplatesPreviewZoom(TPL_PREVIEW_ZOOM + delta, { markManual: true });
-}
-function applyTemplatesPreviewZoom(value) {
-  const root = document.querySelector('#templates-preview-host > #templates-a4-root')
-    || document.querySelector('#templates-preview-host #templates-a4-root');
-  if (!root) return;
-  try { root.style.transformOrigin = 'top center'; } catch (_) {}
-  try { root.style.transform = `scale(${value})`; } catch (_) {}
-}
-
-function computeTemplatesBaseWidth() {
-  try {
-    const page = document.querySelector('#templates-preview-host #templates-a4-root .a4-page');
-    if (page) return page.getBoundingClientRect().width || page.offsetWidth || 794;
-  } catch (_) {}
-  const type = document.getElementById('templates-type')?.value || 'expenses';
-  return (type !== 'expenses') ? 1123 : 794;
-}
-function computeTemplatesAvailableWidth() {
-  const host = document.getElementById('templates-preview-host');
-  if (!host) return null;
-  try {
-    const cs = window.getComputedStyle(host);
-    const pl = parseFloat(cs.paddingLeft || '0') || 0;
-    const pr = parseFloat(cs.paddingRight || '0') || 0;
-    return Math.max(0, host.clientWidth - pl - pr);
-  } catch (_) { return host.clientWidth || null; }
-}
-function computeTemplatesFitZoom() {
-  const base = computeTemplatesBaseWidth();
-  const avail = computeTemplatesAvailableWidth();
-  if (!base || !avail) return 1;
-  return Math.max(0.25, Math.min(2.5, avail / base));
-}
-function applyTemplatesFitZoom() {
-  const z = computeTemplatesFitZoom();
-  setTemplatesPreviewZoom(z, { silent: false });
-}
-function ensureResizeBinding() {
-  if (TPL_ZOOM_RESIZE_BOUND) return;
-  window.addEventListener('resize', () => { if (TPL_ZOOM_MODE === 'fit') applyTemplatesFitZoom(); }, { passive: true });
-  TPL_ZOOM_RESIZE_BOUND = true;
-}
-
-function ensureResizeObserver() {
-  try {
-    if (TPL_RESIZE_OBSERVER) return;
-    const host = document.getElementById('templates-preview-host');
-    if (!host || typeof ResizeObserver === 'undefined') return;
-    TPL_RESIZE_OBSERVER = new ResizeObserver(() => {
-      if (TPL_ZOOM_MODE === 'fit') applyTemplatesFitZoom();
-    });
-    TPL_RESIZE_OBSERVER.observe(host);
   } catch (_) { /* ignore */ }
 }
 
@@ -334,273 +287,26 @@ function recomputeExpensesForCell(targetTd) {
   } catch(_) { /* fallback is full recompute via debounce */ }
 }
 
-// ===== Persist selected template type (expenses/callsheet) =====
-const TPL_TYPE_PREF_KEY = 'projects.templates.type';
-function readTplPreferredType() {
-  try {
-    const v = String(localStorage.getItem(TPL_TYPE_PREF_KEY) || '').trim();
-    if (!v) return '';
-    // Only allow known values
-    return (v === 'expenses' || v === 'callsheet') ? v : '';
-  } catch (_) { return ''; }
-}
-function writeTplPreferredType(type) {
-  try { if (type) localStorage.setItem(TPL_TYPE_PREF_KEY, String(type)); } catch (_) {}
-}
-function restoreTplPreferredTypeIfAny(selectEl) {
-  if (!selectEl) return;
-  // Prefer URL param if present, else localStorage
-  let requested = '';
-  try {
-    const params = new URLSearchParams(window.location.search || '');
-    requested = params.get('tplType') || params.get('templatesType') || '';
-  } catch (_) {}
-  const stored = readTplPreferredType();
-  const preferred = (requested && (requested === 'expenses' || requested === 'callsheet'))
-    ? requested
-    : stored;
-  if (!preferred) return;
-  const hasOption = Array.from(selectEl.options).some((o) => o.value === preferred);
-  if (hasOption) {
-    selectEl.value = preferred;
-  }
-}
-function ensureTemplatesZoomUI() {
-  const actionsRow = document.getElementById('templates-actions');
-  if (!actionsRow || document.getElementById('tpl-zoom-controls')) return;
-  const wrap = document.createElement('div');
-  wrap.id = 'tpl-zoom-controls';
-  wrap.className = 'tpl-zoom-controls';
-  wrap.innerHTML = `
-    <button type=\"button\" class=\"tpl-zoom-btn\" data-tpl-zoom-out title=\"تصغير\">−</button>
-    <span class=\"tpl-zoom-value\" data-tpl-zoom-value>100%</span>
-    <button type=\"button\" class=\"tpl-zoom-btn\" data-tpl-zoom-in title=\"تكبير\">+</button>
-    <button type=\"button\" class=\"tpl-zoom-btn\" data-tpl-zoom-fit title=\"ملء العرض\">↔︎</button>
-    <button type=\"button\" class=\"tpl-zoom-btn\" data-tpl-zoom-reset title=\"1:1\">1:1</button>
-  `;
-  actionsRow.appendChild(wrap);
-  const outBtn = wrap.querySelector('[data-tpl-zoom-out]');
-  const inBtn = wrap.querySelector('[data-tpl-zoom-in]');
-  const resetBtn = wrap.querySelector('[data-tpl-zoom-reset]');
-  const fitBtn = wrap.querySelector('[data-tpl-zoom-fit]');
-  TPL_ZOOM_VALUE_EL = wrap.querySelector('[data-tpl-zoom-value]');
-  outBtn?.addEventListener('click', () => adjustTemplatesPreviewZoom(-0.1));
-  inBtn?.addEventListener('click', () => adjustTemplatesPreviewZoom(0.1));
-  resetBtn?.addEventListener('click', () => { TPL_ZOOM_MODE = 'manual'; writeTplZoomModePref(TPL_ZOOM_MODE); setTemplatesPreviewZoom(1, { markManual: true }); });
-  fitBtn?.addEventListener('click', () => { TPL_ZOOM_MODE = 'fit'; writeTplZoomModePref(TPL_ZOOM_MODE); applyTemplatesFitZoom(); ensureResizeBinding(); ensureResizeObserver(); });
-  TPL_ZOOM_FIT_BTN = fitBtn;
-  // initialize
-  TPL_ZOOM_MODE = readTplZoomModePref();
-  if (TPL_ZOOM_MODE === 'fit') { applyTemplatesFitZoom(); ensureResizeBinding(); ensureResizeObserver(); }
-  else { setTemplatesPreviewZoom(readTplZoomPref(), { silent: false }); }
-}
-
-// Logo controls UI in the actions row (Art Ratio size + Client URL/size)
 function ensureLogoControls(type = 'expenses') {
-  const row = document.getElementById('templates-actions');
-  if (!row) return;
-  // Only show for Call Sheet. Controls go in 2nd row inside container
-  const controls = document.getElementById('templates-controls');
-  const existing = document.getElementById('tpl-logo-controls');
-  const row2 = document.getElementById('tpl-controls-row2') || (() => {
-    const r = document.createElement('div');
-    r.id = 'tpl-controls-row2';
-    Object.assign(r.style, { display: 'flex', flexWrap: 'wrap', gap: '8px', width: '100%', alignItems: 'center', marginTop: '6px' });
-    controls?.appendChild(r);
-    return r;
-  })();
-  if (type !== 'callsheet') { if (existing) existing.remove(); return; }
-  if (existing) return;
-  const box = document.createElement('div');
-  box.id = 'tpl-logo-controls';
-  Object.assign(box.style, { display: 'inline-flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' });
-  box.innerHTML = `
-    <div class="input-group" style="display:inline-flex;gap:6px;align-items:center;">
-      <label class="form-label" style="margin:0 4px 0 0;">لوغو ارت ريشيو</label>
-      <input type="range" id="tpl-logo1-size" min="0.3" max="3" step="0.01" title="حجم لوغو ارت ريشيو">
-      <button type="button" class="btn btn-outline" id="tpl-logo1-reset" title="إعادة تموضع لوغو ارت ريشيو">↺</button>
-      <label class="form-check-label" style="display:inline-flex;align-items:center;gap:6px;margin:0 0 0 8px;">
-        <input type="checkbox" id="tpl-logo1-hide" class="form-check-input">
-        <span>إخفاء اللوغو</span>
-      </label>
-    </div>
-    <div class="input-group" style="display:inline-flex;gap:6px;align-items:center;">
-      <input type="url" id="tpl-logo2-url" class="form-control" placeholder="🔗 رابط لوغو إضافي" style="min-width:220px;max-width:320px;">
-      <input type="range" id="tpl-logo2-size" min="0.3" max="3" step="0.01" title="حجم لوغو العميل">
-      <button type="button" class="btn btn-outline" id="tpl-logo2-apply">تطبيق</button>
-      <button type="button" class="btn btn-outline" id="tpl-logo2-reset">إعادة تموضع</button>
-      <button type="button" class="btn btn-outline btn-danger" id="tpl-logo2-clear">حذف</button>
-    </div>
-    <div class="input-group" id="tpl-font-controls" style="display:inline-flex;gap:6px;align-items:center;">
-      <label class="form-label" style="margin:0 4px 0 0;">حجم الخط</label>
-      <button type="button" class="btn btn-outline" id="tpl-font-down" title="تصغير الخط">A−</button>
-      <button type="button" class="btn btn-outline" id="tpl-font-up" title="تكبير الخط">A+</button>
-      <button type="button" class="btn btn-outline" id="tpl-font-bold" title="تسميك الخط (Bold)"><strong>B</strong></button>
-    </div>
-    <div class="input-group" id="tpl-shade-controls" style="display:inline-flex;gap:6px;align-items:center;">
-      <label class="form-label" style="margin:0 4px 0 0;">تظليل</label>
-      <input type="color" id="tpl-shade-color" value="#fff59d" title="لون التظليل">
-      <input type="range" id="tpl-shade-opacity" min="0" max="100" step="1" value="40" title="الشفافية %">
-      <select id="tpl-shade-target" class="form-select" style="height:32px;">
-        <option value="cell">خلية</option>
-        <option value="row">صف</option>
-      </select>
-      <button type="button" class="btn btn-outline" id="tpl-shade-apply">تطبيق</button>
-      <button type="button" class="btn btn-outline btn-danger" id="tpl-shade-clear">إزالة</button>
-    </div>
-    <div class="input-group" id="tpl-history-controls" style="display:inline-flex;gap:6px;align-items:center;">
-      <button type="button" class="btn btn-outline" id="tpl-undo" title="تراجع">↶</button>
-      <button type="button" class="btn btn-outline" id="tpl-redo" title="تقديم">↷</button>
-    </div>
-  `;
-  row2.appendChild(box);
-
-  // Seed values
-  try {
-    const st2 = readSecondaryLogoState();
-    const urlEl = document.getElementById('tpl-logo2-url');
-    const szEl2 = document.getElementById('tpl-logo2-size');
-    if (urlEl && st2.url) urlEl.value = st2.url;
-    if (szEl2) szEl2.value = String(st2.s || 1);
-    const st1 = readPrimaryLogoState();
-    const szEl1 = document.getElementById('tpl-logo1-size');
-    if (szEl1) szEl1.value = String(st1.s || 1);
-    const hideEl = document.getElementById('tpl-logo1-hide');
-    if (hideEl) hideEl.checked = !!st1.h;
-  } catch(err) { notifyApiError(err, 'تعذر حفظ القالب'); }
-
-  // Bind actions
-  document.getElementById('tpl-logo2-apply')?.addEventListener('click', () => {
-    const url = document.getElementById('tpl-logo2-url')?.value?.trim() || '';
-    writeSecondaryLogoState({ url });
-    // Re-render preview to apply
-    try { renderTemplatesPreview(); } catch(_) {}
+  ensureLogoControlsExt(type, {
+    getContextKey: getTemplatesContextKey,
+    companyInfo: COMPANY_INFO,
+    renderPreview: () => { try { renderTemplatesPreview(); } catch(_) {} },
+    undoChange: () => { try { undoTemplatesChange(); } catch(_) {} },
+    redoChange: () => { try { redoTemplatesChange(); } catch(_) {} },
+    notifyApiError,
+    pushHistoryDebounced: () => { try { pushHistoryDebounced(); } catch(_) {} },
+    saveAutosaveDebounced: () => { try { saveAutosaveDebounced(); } catch(_) {} },
+    markEditing: () => { try { markTemplatesEditingActivity(); } catch(_) {} },
   });
-  document.getElementById('tpl-logo2-clear')?.addEventListener('click', () => {
-    writeSecondaryLogoState({ url: '', w: 0, x: 0, y: 0 });
-    // Update local autosave snapshot/HTML instead of wiping all data (to keep shading etc.)
-    try {
-      const key = getTemplatesContextKey();
-      const raw = localStorage.getItem(key);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed) {
-          if (parsed.snap && parsed.snap.r) { parsed.snap.r.url = ''; }
-          if (parsed.html && typeof parsed.html === 'string') {
-            try {
-              const tmp = document.createElement('div'); tmp.innerHTML = normalizeTemplateHtmlLegacyUrls(parsed.html);
-              const root = tmp.firstElementChild;
-              const img = root && root.querySelector('.cs-logo--right img');
-              if (img) { img.removeAttribute('src'); const wrap = img.closest('.cs-logo--right'); if (wrap) wrap.setAttribute('data-empty','1'); }
-              parsed.html = root ? root.outerHTML : parsed.html;
-            } catch(_) {}
-          }
-          localStorage.setItem(key, JSON.stringify(parsed));
-        }
-      }
-    } catch(_) {}
-    try { pushHistoryDebounced(); saveAutosaveDebounced(); } catch(_) {}
-    try { renderTemplatesPreview(); } catch(_) {}
-  });
-  document.getElementById('tpl-logo2-reset')?.addEventListener('click', () => {
-    writeSecondaryLogoState({ x: 0, y: 0 });
-    try { renderTemplatesPreview(); } catch(_) {}
-  });
-  // Hide/show primary logo
-  document.getElementById('tpl-logo1-hide')?.addEventListener('change', (e) => {
-    const checked = !!e?.target?.checked;
-    try { writePrimaryLogoState({ h: checked }); } catch(_) {}
-    try { renderTemplatesPreview(); } catch(_) {}
-  });
-  // History controls
-  document.getElementById('tpl-undo')?.addEventListener('click', () => undoTemplatesChange());
-  document.getElementById('tpl-redo')?.addEventListener('click', () => redoTemplatesChange());
-
-  // Font size controls
-  const fontDown = document.getElementById('tpl-font-down');
-  const fontUp = document.getElementById('tpl-font-up');
-  fontDown?.addEventListener('click', (e) => { try { adjustSelectionFont(-1, { times: e && e.shiftKey ? 2 : 1 }); } catch (_) {} });
-  fontUp?.addEventListener('click', (e) => { try { adjustSelectionFont(+1, { times: e && e.shiftKey ? 2 : 1 }); } catch (_) {} });
-  const fontBold = document.getElementById('tpl-font-bold');
-  fontBold?.addEventListener('click', () => { try { toggleSelectionBold(); } catch (_) {} });
-
-  // Shading controls
-  const shadeApply = document.getElementById('tpl-shade-apply');
-  const shadeClear = document.getElementById('tpl-shade-clear');
-  shadeApply?.addEventListener('click', () => { try { applyShadeFromControls(); } catch (_) {} });
-  shadeClear?.addEventListener('click', () => { try { clearShadeFromControls(); } catch (_) {} });
 }
 
-// Re-bind drag and size interactions for Call Sheet logos when restoring from saved HTML
 function attachCallsheetLogoBehaviors(root) {
-  try {
-    if (!root) return;
-    const rightWrap = root.querySelector('.cs-logo--right');
-    const rightImg = rightWrap?.querySelector('img');
-    if (rightWrap && rightImg) {
-      const readMatrix = () => {
-        try {
-          const s = String(rightImg.style.transform || '');
-          const m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\)/.exec(s);
-          const sm = /scale\(([-\d.]+)\)/.exec(s);
-          return { x: Number(m?.[1] || 0) || 0, y: Number(m?.[2] || 0) || 0, s: Number(sm?.[1] || 1) || 1 };
-        } catch (_) { return { x: 0, y: 0, s: 1 }; }
-      };
-      let dragging = false; let sx = 0; let sy = 0; let ox = 0; let oy = 0;
-      const onDown = (ev) => { dragging = true; const m = readMatrix(); ox = m.x; oy = m.y; sx = ev.clientX; sy = ev.clientY; try { ev.preventDefault(); } catch(_) {} };
-      const onMove = (ev) => { if (!dragging) return; const dx = ev.clientX - sx; const dy = ev.clientY - sy; const nx = Math.round(ox + dx); const ny = Math.round(oy + dy); const s = Math.max(0.3, Math.min(3, Number(readSecondaryLogoState().s || 1))); rightImg.style.transform = `scale(${s}) translate(${nx}px, ${ny}px)`; };
-      const onUp = () => { if (!dragging) return; dragging = false; const m = readMatrix(); writeSecondaryLogoState({ x: m.x, y: m.y }); try { pushHistoryDebounced(); saveAutosaveDebounced(); } catch(_) {} markTemplatesEditingActivity(); };
-      rightImg.addEventListener('pointerdown', onDown);
-      window.addEventListener('pointermove', onMove, { passive: true });
-      window.addEventListener('pointerup', onUp, { passive: true });
-      // Hook size slider
-      const sliderR = document.getElementById('tpl-logo2-size');
-      if (sliderR) {
-        const apply = (s) => {
-          const scale = Math.max(0.3, Math.min(3, Number(s || 1)));
-          const m = readMatrix();
-          try { rightImg.style.transform = `scale(${scale}) translate(${m.x}px, ${m.y}px)`; } catch(_) {}
-          writeSecondaryLogoState({ s: scale });
-        };
-        sliderR.oninput = (e) => { try { apply(e?.target?.value); } catch(_) {} markTemplatesEditingActivity(); };
-        sliderR.onchange = () => { try { pushHistoryDebounced(); saveAutosaveDebounced(); } catch(_) {} };
-      }
-    }
-  } catch(_) {}
-
-  try {
-    const leftWrap = root.querySelector('.cs-logo--left');
-    const leftImg = leftWrap?.querySelector('img');
-    if (leftWrap && leftImg) {
-      const readMatrix = () => {
-        try {
-          const s = String(leftImg.style.transform || '');
-          const m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\)/.exec(s);
-          const sm = /scale\(([-\d.]+)\)/.exec(s);
-          return { x: Number(m?.[1] || 0) || 0, y: Number(m?.[2] || 0) || 0, s: Number(sm?.[1] || 1) || 1 };
-        } catch (_) { return { x: 0, y: 0, s: 1 }; }
-      };
-      let dragging = false; let sx = 0; let sy = 0; let ox = 0; let oy = 0;
-      const onDown = (ev) => { dragging = true; const m = readMatrix(); ox = m.x; oy = m.y; sx = ev.clientX; sy = ev.clientY; try { ev.preventDefault(); } catch(_) {} };
-      const onMove = (ev) => { if (!dragging) return; const dx = ev.clientX - sx; const dy = ev.clientY - sy; const nx = Math.round(ox + dx); const ny = Math.round(oy + dy); const s = Math.max(0.3, Math.min(3, Number(readPrimaryLogoState().s || 1))); leftImg.style.transform = `scale(${s}) translate(${nx}px, ${ny}px)`; };
-      const onUp = () => { if (!dragging) return; dragging = false; const m = readMatrix(); writePrimaryLogoState({ x: m.x, y: m.y }); try { pushHistoryDebounced(); saveAutosaveDebounced(); } catch(_) {} markTemplatesEditingActivity(); };
-      leftImg.addEventListener('pointerdown', onDown);
-      window.addEventListener('pointermove', onMove, { passive: true });
-      window.addEventListener('pointerup', onUp, { passive: true });
-      // Hook size slider
-      const sliderL = document.getElementById('tpl-logo1-size');
-      if (sliderL) {
-        const apply = (s) => {
-          const scale = Math.max(0.3, Math.min(3, Number(s || 1)));
-          const m = readMatrix();
-          try { leftImg.style.transform = `scale(${scale}) translate(${m.x}px, ${m.y}px)`; } catch(_) {}
-          writePrimaryLogoState({ s: scale });
-        };
-        sliderL.oninput = (e) => { try { apply(e?.target?.value); } catch(_) {} markTemplatesEditingActivity(); };
-        sliderL.onchange = () => { try { pushHistoryDebounced(); saveAutosaveDebounced(); } catch(_) {} };
-      }
-    }
-  } catch(_) {}
+  attachCallsheetLogoBehaviorsExt(root, {
+    pushHistoryDebounced: () => { try { pushHistoryDebounced(); } catch(_) {} },
+    saveAutosaveDebounced: () => { try { saveAutosaveDebounced(); } catch(_) {} },
+    markEditing: () => { try { markTemplatesEditingActivity(); } catch(_) {} },
+  });
 }
 
 /* moved to ../templates/toolbar.js
@@ -817,87 +523,14 @@ function getCtx2d(canvas) {
 // Delegate to core metaCell
 // Use metaCell directly from core.js (unified)
 
-function getSelectedProject() {
-  const sel = document.getElementById('templates-project');
-  const id = sel?.value || '';
-  return getProjectsState().find((p) => String(p.id) === String(id)) || null;
-}
-
-function getSelectedReservations(projectId) {
-  const sel = document.getElementById('templates-reservation');
-  if (!sel) return [];
-  const value = sel.value || '';
-  const all = getReservationsForProjectLocal(projectId);
-  if (!value) return all;
-  const match = all.find((r) => String(r.id || r.reservationId) === String(value));
-  return match ? [match] : [];
-}
-
 const COMPANY_INFO = {
   logoUrl: quoteLogoUrl,
   companyName: 'شركة فود آرت للدعاية والإعلان (شركة شخص واحد)',
   companyCR: '4030485240',
   companyLicense: '159460'
 };
-
-const LEGACY_SIRV_BASE = 'https://art-ratio.sirv.com';
-const CLOUDFLARE_ASSETS_BASE = 'https://assets.art-ratio.com';
-
-function normalizeLegacyAssetUrl(value = '') {
-  const url = String(value || '').trim();
-  if (!url) return '';
-  if (url.startsWith(LEGACY_SIRV_BASE)) {
-    return `${CLOUDFLARE_ASSETS_BASE}${url.slice(LEGACY_SIRV_BASE.length)}`;
-  }
-  return url;
-}
-
-function normalizeTemplateHtmlLegacyUrls(html = '') {
-  let output = String(html || '');
-  output = output.replaceAll('https://art-ratio.sirv.com/AR-Logo-v3.5-curved.png', COMPANY_INFO.logoUrl);
-  output = output.replaceAll('https://art-ratio.sirv.com/AR%20Logo%20v3.5%20curved%20WH.png', COMPANY_INFO.logoUrl);
-  output = output.replaceAll('https://assets.art-ratio.com/AR-Logo-v3.5-curved.png', COMPANY_INFO.logoUrl);
-  output = output.replaceAll('https://assets.art-ratio.com/AR%20Logo%20v3.5%20curved%20WH.png', COMPANY_INFO.logoUrl);
-  output = output.replaceAll('/AR-Logo-v3.5-curved-WH.png', COMPANY_INFO.logoUrl);
-  return output;
-}
-
-let TEMPLATE_LANG = (typeof localStorage !== 'undefined' && localStorage.getItem('templates.lang')) || 'en';
-function setTemplateLang(lang) {
-  TEMPLATE_LANG = (lang === 'ar') ? 'ar' : 'en';
-  try { localStorage.setItem('templates.lang', TEMPLATE_LANG); } catch (_) {}
-}
-// Delegate i18n helper to core.L for consistency
-// Note: TEMPLATE_LANG still controls dir/labels locally; core.L reads localStorage
-// so setTemplateLang() below keeps both in sync.
-// eslint-disable-next-line no-shadow
-// Using L from core.js directly
-
-// Format numbers with thousand separators and no decimals (preview + export)
-function formatIntNoDecimals(value) {
-  try {
-    const n = Math.round(Number(value) || 0);
-    const locale = (TEMPLATE_LANG === 'ar') ? 'ar-SA' : 'en-US';
-    return n.toLocaleString(locale, { maximumFractionDigits: 0, minimumFractionDigits: 0, useGrouping: true });
-  } catch (_) {
-    const n = Math.round(Number(value) || 0);
-    return String(n);
-  }
-}
-
 // Removed temporary preview padding adjustment logic per request
 
-function readHeaderFooterOptions() {
-  // Simplified: always use fixed company info and no external header/footer overlay
-  return {
-    headerFooter: false,
-    logoUrl: COMPANY_INFO.logoUrl,
-    companyName: COMPANY_INFO.companyName,
-    companyCR: COMPANY_INFO.companyCR,
-    companyLicense: COMPANY_INFO.companyLicense
-  };
-}
-
  
 
 
@@ -905,529 +538,85 @@ function readHeaderFooterOptions() {
  
 
  
-
-// ===== Secondary logo state (persisted in localStorage) =====
-function readSecondaryLogoState() {
-  try {
-    const rawUrl = localStorage.getItem('templates.callsheet.logo2.url') || '';
-    const normalizedUrl = normalizeLegacyAssetUrl(rawUrl);
-    if (rawUrl && normalizedUrl && rawUrl !== normalizedUrl) {
-      localStorage.setItem('templates.callsheet.logo2.url', normalizedUrl);
-    }
-    return {
-      url: normalizedUrl,
-      s: Number(localStorage.getItem('templates.callsheet.logo2.s') || '1') || 1,
-      x: Number(localStorage.getItem('templates.callsheet.logo2.x') || '0') || 0,
-      y: Number(localStorage.getItem('templates.callsheet.logo2.y') || '0') || 0,
-    };
-  } catch(_) { return { url: '', w: 0, x: 0, y: 0 }; }
-}
-function writeSecondaryLogoState(patch = {}) {
-  try {
-    const cur = readSecondaryLogoState();
-    const nx = { ...cur, ...patch };
-    if (typeof nx.url === 'string') localStorage.setItem('templates.callsheet.logo2.url', normalizeLegacyAssetUrl(nx.url));
-    if (Number.isFinite(nx.s)) localStorage.setItem('templates.callsheet.logo2.s', String(nx.s));
-    if (Number.isFinite(nx.x)) localStorage.setItem('templates.callsheet.logo2.x', String(nx.x));
-    if (Number.isFinite(nx.y)) localStorage.setItem('templates.callsheet.logo2.y', String(nx.y));
-  } catch(_) {}
-}
-
-function enableSecondaryLogoInteractions(wrap, img) {
-  if (!wrap || !img) return;
-  // Drag to move (translate) within the logo cell
-  let dragging = false; let sx = 0; let sy = 0; let ox = 0; let oy = 0;
-  const readMatrix = () => {
-    try {
-      const st = getComputedStyle(img).transform;
-      if (!st || st === 'none') return { x: 0, y: 0 };
-      const m = new DOMMatrix(st); return { x: m.m41 || 0, y: m.m42 || 0 };
-    } catch(_) { return { x: 0, y: 0 }; }
-  };
-  const onDown = (ev) => {
-    dragging = true; wrap.setAttribute('data-empty', '0');
-    const m = readMatrix(); ox = m.x; oy = m.y; sx = ev.clientX; sy = ev.clientY;
-    ev.preventDefault();
-  };
-  const onMove = (ev) => {
-    if (!dragging) return; const dx = ev.clientX - sx; const dy = ev.clientY - sy;
-    const nx = Math.round(ox + dx); const ny = Math.round(oy + dy);
-    const s = Math.max(0.3, Math.min(3, Number(readSecondaryLogoState().s || 1)));
-    img.style.transform = `scale(${s}) translate(${nx}px, ${ny}px)`;
-  };
-  const onUp = () => {
-    if (!dragging) return; dragging = false; const m = readMatrix(); writeSecondaryLogoState({ x: m.x, y: m.y });
-    try { pushHistoryDebounced(); saveAutosaveDebounced(); } catch(_) {}
-    markTemplatesEditingActivity();
-  };
-  img.addEventListener('pointerdown', onDown);
-  window.addEventListener('pointermove', onMove, { passive: true });
-  window.addEventListener('pointerup', onUp, { passive: true });
-
-  // Listen to size slider (if present)
-  try {
-    const slider = document.getElementById('tpl-logo2-size');
-    if (slider) {
-      const apply = (v) => { const s = Math.max(0.3, Math.min(3, Number(v)||1)); const m = readMatrix(); img.style.transform = `scale(${s}) translate(${m.x}px, ${m.y}px)`; writeSecondaryLogoState({ s }); };
-      slider.addEventListener('input', (e) => { apply(e.target.value); markTemplatesEditingActivity(); });
-      slider.addEventListener('change', () => { try { pushHistoryDebounced(); saveAutosaveDebounced(); } catch(_) {} });
-      const st = readSecondaryLogoState(); slider.value = String(st.s || 1); apply(slider.value);
-    }
-  } catch(_) {}
-}
-
-// ===== Primary (Art Ratio) logo: size + drag, persisted =====
-function readPrimaryLogoState() {
-  try {
-    return {
-      s: Number(localStorage.getItem('templates.callsheet.logo1.s') || '1') || 1,
-      x: Number(localStorage.getItem('templates.callsheet.logo1.x') || '0') || 0,
-      y: Number(localStorage.getItem('templates.callsheet.logo1.y') || '0') || 0,
-      h: localStorage.getItem('templates.callsheet.logo1.h') === '1',
-    };
-  } catch(_) { return { s: 1, x: 0, y: 0, h: false }; }
-}
-function writePrimaryLogoState(patch = {}) {
-  try {
-    const cur = readPrimaryLogoState();
-    const nx = { ...cur, ...patch };
-    if (Number.isFinite(nx.s)) localStorage.setItem('templates.callsheet.logo1.s', String(nx.s));
-    if (Number.isFinite(nx.x)) localStorage.setItem('templates.callsheet.logo1.x', String(nx.x));
-    if (Number.isFinite(nx.y)) localStorage.setItem('templates.callsheet.logo1.y', String(nx.y));
-    if (typeof nx.h === 'boolean') localStorage.setItem('templates.callsheet.logo1.h', nx.h ? '1' : '0');
-  } catch(_) {}
-}
-function enablePrimaryLogoInteractions(wrap, img) {
-  if (!wrap || !img) return;
-  let dragging = false; let sx = 0; let sy = 0; let ox = 0; let oy = 0;
-  const readMatrix = () => {
-    try { const st = getComputedStyle(img).transform; if (!st || st === 'none') return { x: 0, y: 0 }; const m = new DOMMatrix(st); return { x: m.m41 || 0, y: m.m42 || 0 }; } catch(_) { return { x: 0, y: 0 }; }
-  };
-  const onDown = (ev) => { dragging = true; const m = readMatrix(); ox = m.x; oy = m.y; sx = ev.clientX; sy = ev.clientY; ev.preventDefault(); };
-  const onMove = (ev) => { if (!dragging) return; const dx = ev.clientX - sx; const dy = ev.clientY - sy; const nx = Math.round(ox + dx); const ny = Math.round(oy + dy); const s = Math.max(0.3, Math.min(3, Number(readPrimaryLogoState().s || 1))); img.style.transform = `scale(${s}) translate(${nx}px, ${ny}px)`; };
-  const onUp = () => {
-    if (!dragging) return; dragging = false; const m = readMatrix();
-    writePrimaryLogoState({ x: m.x, y: m.y });
-    try { pushHistoryDebounced(); saveAutosaveDebounced(); } catch(_) {}
-    markTemplatesEditingActivity();
-  };
-  img.addEventListener('pointerdown', onDown);
-  window.addEventListener('pointermove', onMove, { passive: true });
-  window.addEventListener('pointerup', onUp, { passive: true });
-  // Bind size slider
-  try {
-    const slider = document.getElementById('tpl-logo1-size');
-    if (slider) {
-      const apply = (v) => { const s = Math.max(0.3, Math.min(3, Number(v)||1)); const m = readMatrix(); img.style.transform = `scale(${s}) translate(${m.x}px, ${m.y}px)`; writePrimaryLogoState({ s }); };
-      slider.addEventListener('input', (e) => { apply(e.target.value); markTemplatesEditingActivity(); });
-      slider.addEventListener('change', () => { try { pushHistoryDebounced(); saveAutosaveDebounced(); } catch(_) {} });
-      const st = readPrimaryLogoState(); slider.value = String(st.s || 1); apply(slider.value);
-    }
-    document.getElementById('tpl-logo1-reset')?.addEventListener('click', () => { const s = (readPrimaryLogoState().s||1); writePrimaryLogoState({ x: 0, y: 0 }); try { img.style.transform = `scale(${s}) translate(0px, 0px)`; } catch(_) {} });
-  } catch(_) {}
-}
-
-// ===== Simple undo/redo for Templates preview =====
-let TPL_EDITING = false;
-let TPL_EDITING_TIMER = null;
-let TPL_AUTOSAVE_TIMER = null;
-let TPL_REMOTE_AUTOSAVE_TIMER = null;
 
 function markTemplatesEditingActivity() {
-  TPL_EDITING = true;
-  clearTimeout(TPL_EDITING_TIMER);
-  // Consider user idle if no edits for 1200ms
-  TPL_EDITING_TIMER = setTimeout(() => {
-    TPL_EDITING = false;
-    // Autosave to backend when user becomes idle — no automatic repopulate to avoid flicker
-    try { autosaveToServerDebounced(); } catch(_) {}
-  }, 1200);
-}
-
-// Adjust font size for current selection or current editable cell (doubling/halving per press, capped at 5x/min)
-function adjustSelectionFont(direction = 0, { times = 1 } = {}) {
-  try {
-    const root = document.getElementById('templates-a4-root');
-    const dir = direction > 0 ? 1 : direction < 0 ? -1 : 0;
-    times = Math.max(1, Math.min(5, Number(times) || 1));
-    if (!root || dir === 0) return;
-    const sel = window.getSelection();
-
-    // Find nearest editable container for anchor/caret
-    const nearestEditable = () => {
-      let node = (sel && sel.anchorNode) || document.activeElement;
-      if (!node) return null;
-      if (node.nodeType === 3) node = node.parentElement; // text -> element
-      let el = (node instanceof Element) ? node : null;
-      while (el && el !== document.body) {
-        if (el.hasAttribute && el.hasAttribute('contenteditable')) return el;
-        el = el.parentElement;
-      }
-      return null;
-    };
-
-    const target = nearestEditable();
-    if (!target) return;
-
-    // Current base size from target (persist baseline per editable so we can cap at 5x / 1/5x)
-    const computed = Number.parseFloat(getComputedStyle(target).fontSize || '11') || 11;
-    const base = (() => {
-      const stored = Number.parseFloat(target.dataset.fontBase || '0');
-      return Number.isFinite(stored) && stored > 0 ? stored : computed;
-    })();
-    try { target.dataset.fontBase = String(base); } catch (_) {}
-    const capMax = base * 5;
-    const capMin = base / 5;
-    const stepOnce = () => {
-      const focusNode = (sel && sel.rangeCount && sel.getRangeAt(0)) ? sel.getRangeAt(0).commonAncestorContainer : target;
-      const sample = (focusNode instanceof Element) ? focusNode : focusNode?.parentElement || target;
-      const current = Number.parseFloat(getComputedStyle(sample).fontSize || String(base)) || base;
-      const next = dir > 0 ? Math.min(capMax, current * 2) : Math.max(capMin, current * 0.5);
-      const applyToEditable = (el) => { try { el.style.fontSize = next + 'px'; } catch (_) {} };
-
-      if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
-        const range = sel.getRangeAt(0);
-        // Ensure selection is inside the same editable container
-        if (target.contains(range.commonAncestorContainer)) {
-          try {
-            const span = document.createElement('span');
-            span.style.fontSize = next + 'px';
-            span.appendChild(range.extractContents());
-            range.insertNode(span);
-            // Preserve visible selection on the updated text
-            sel.removeAllRanges();
-            const nr = document.createRange();
-            nr.selectNodeContents(span);
-            sel.addRange(nr);
-          } catch (_) {
-            applyToEditable(target);
-          }
-        } else {
-          applyToEditable(target);
-        }
-      } else {
-        // No selection: apply to entire editable cell
-        applyToEditable(target);
-      }
-    };
-
-    for (let i = 0; i < times; i += 1) stepOnce();
-
-    try { pushHistoryDebounced(); saveAutosaveDebounced(); } catch (_) {}
-    markTemplatesEditingActivity();
-  } catch (_) {}
-}
-
-// Toggle bold (font-weight) for current selection or editable cell
-function toggleSelectionBold() {
-  try {
-    const root = document.getElementById('templates-a4-root');
-    if (!root) return;
-    const sel = window.getSelection();
-
-    const nearestEditable = () => {
-      let node = (sel && sel.anchorNode) || document.activeElement;
-      if (!node) return null;
-      if (node.nodeType === 3) node = node.parentElement;
-      let el = (node instanceof Element) ? node : null;
-      while (el && el !== document.body) {
-        if (el.hasAttribute && el.hasAttribute('contenteditable')) return el;
-        el = el.parentElement;
-      }
-      return null;
-    };
-
-    const target = nearestEditable();
-    if (!target) return;
-
-    // Determine current bold state from computed style of target
-    const w = Number.parseInt(getComputedStyle(target).fontWeight || '400', 10);
-    const nextBold = !(w >= 600);
-
-    const applyToEditable = (el) => { try { el.style.fontWeight = nextBold ? '700' : '400'; } catch (_) {} };
-
-    if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
-      const range = sel.getRangeAt(0);
-      if (target.contains(range.commonAncestorContainer)) {
-        try {
-          const span = document.createElement('span');
-          span.style.fontWeight = nextBold ? '700' : '400';
-          const frag = range.extractContents();
-          span.appendChild(frag);
-          range.insertNode(span);
-          sel.removeAllRanges();
-          const nr = document.createRange();
-          nr.setStartAfter(span); nr.setEndAfter(span);
-          sel.addRange(nr);
-        } catch (_) { applyToEditable(target); }
-      } else {
-        applyToEditable(target);
-      }
-    } else {
-      applyToEditable(target);
-    }
-
-    try { pushHistoryDebounced(); saveAutosaveDebounced(); } catch (_) {}
-    markTemplatesEditingActivity();
-  } catch (_) {}
-}
-
-// ===== Cell shading helpers =====
-function hexToRgb(hex) {
-  try {
-    let h = (hex || '').trim();
-    if (h.startsWith('#')) h = h.slice(1);
-    if (h.length === 3) h = h.split('').map((c) => c + c).join('');
-    const num = parseInt(h, 16);
-    const r = (num >> 16) & 255; const g = (num >> 8) & 255; const b = num & 255;
-    return { r, g, b };
-  } catch (_) { return { r: 255, g: 255, b: 0 }; }
-}
-function nearestCellInCallsheet() {
-  try {
-    const root = document.getElementById('templates-a4-root');
-    if (!root) return null;
-    const sel = window.getSelection();
-    let node = (sel && sel.anchorNode) || document.activeElement;
-    if (!node) return null;
-    if (node.nodeType === 3) node = node.parentElement;
-    let el = (node instanceof Element) ? node : null;
-    while (el && el !== document.body) {
-      if ((el.tagName === 'TD' || el.tagName === 'TH') && root.contains(el)) return el;
-      el = el.parentElement;
-    }
-    return null;
-  } catch (_) { return null; }
-}
-function applyShadeToCell(cell, rgba) {
-  if (!cell) return;
-  try {
-    cell.setAttribute('data-shaded', '1');
-    cell.style.setProperty('--shade', rgba);
-    cell.style.setProperty('background', 'var(--shade)', 'important');
-    cell.style.setProperty('background-color', 'var(--shade)', 'important');
-  } catch (_) {}
-}
-function clearShadeOnCell(cell) {
-  if (!cell) return;
-  try {
-    cell.removeAttribute('data-shaded');
-    cell.style.removeProperty('--shade');
-    cell.style.removeProperty('background');
-    cell.style.removeProperty('background-color');
-  } catch (_) {}
-}
-function applyShadeFromControls() {
-  const colorEl = document.getElementById('tpl-shade-color');
-  const opacityEl = document.getElementById('tpl-shade-opacity');
-  const targetEl = document.getElementById('tpl-shade-target');
-  const { r, g, b } = hexToRgb(colorEl?.value || '#fff59d');
-  const a = Math.max(0, Math.min(100, Number(opacityEl?.value || 40))) / 100;
-  const rgba = `rgba(${r}, ${g}, ${b}, ${a})`;
-  const cell = nearestCellInCallsheet();
-  if (!cell) return;
-  const target = (targetEl?.value || 'cell');
-  if (target === 'row') {
-    const tr = cell.closest('tr');
-    if (!tr) { applyShadeToCell(cell, rgba); } else {
-      Array.from(tr.children).forEach((c) => applyShadeToCell(c, rgba));
-    }
-  } else {
-    applyShadeToCell(cell, rgba);
-  }
-  try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); } catch (_) {}
-}
-function clearShadeFromControls() {
-  const cell = nearestCellInCallsheet();
-  if (!cell) return;
-  const targetEl = document.getElementById('tpl-shade-target');
-  const target = (targetEl?.value || 'cell');
-  if (target === 'row') {
-    const tr = cell.closest('tr');
-    if (!tr) { clearShadeOnCell(cell); } else { Array.from(tr.children).forEach((c) => clearShadeOnCell(c)); }
-  } else { clearShadeOnCell(cell); }
-  try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); } catch (_) {}
-}
-
-function getTemplatesContextKey() {
-  try {
-    const project = getSelectedProject();
-    const typeSel = document.getElementById('templates-type');
-    const type = typeSel ? typeSel.value : 'expenses';
-    const reservationSel = document.getElementById('templates-reservation');
-    const reservationId = reservationSel && reservationSel.value ? String(reservationSel.value) : 'all';
-    const pid = project?.id != null ? String(project.id) : 'no-project';
-    return `templates.callsheet.autosave.${pid}.${type}.${reservationId}`;
-  } catch(_) { return 'templates.callsheet.autosave'; }
+  markTemplatesEditingActivityExt({
+    autosaveToServerDebounced: () => {
+      try { autosaveToServerDebounced(); } catch(_) {}
+    },
+  });
 }
 
 function saveTemplatesAutosaveToStorage() {
-  try {
-    const snap = getTemplatesSnapshot();
-    if (!snap) return;
-    // Also persist full HTML of the current template root so structural changes
-    // (added/removed rows/cells) are preserved across refresh, especially for Call Sheet
-    let html = '';
-    try {
-      const root = document.getElementById('templates-a4-root');
-      if (root) html = root.outerHTML;
-    } catch(_) {}
-    const payload = { v: 1, ts: Date.now(), snap, html };
-    localStorage.setItem(getTemplatesContextKey(), JSON.stringify(payload));
-  } catch(_) {}
+  saveTemplatesAutosaveToStorageExt({
+    getContextKey: getTemplatesContextKey,
+    getSnapshot: getTemplatesSnapshot,
+  });
 }
 function saveAutosaveDebounced() {
-  clearTimeout(TPL_AUTOSAVE_TIMER); TPL_AUTOSAVE_TIMER = setTimeout(saveTemplatesAutosaveToStorage, 250);
+  saveAutosaveDebouncedExt({
+    getContextKey: getTemplatesContextKey,
+    getSnapshot: getTemplatesSnapshot,
+  });
 }
 function restoreTemplatesAutosaveIfPresent() {
-  try {
-    const raw = localStorage.getItem(getTemplatesContextKey());
-    if (!raw) return;
-    const parsed = JSON.parse(raw);
-    const host = document.getElementById('templates-preview-host');
-    // If we have a full HTML snapshot, prefer restoring it to preserve structure
-    if (parsed && parsed.html && host) {
-      try {
-        host.innerHTML = '';
-        const wrap = document.createElement('div');
-        wrap.innerHTML = normalizeTemplateHtmlLegacyUrls(parsed.html);
-        const root = wrap.firstElementChild;
-        if (root) {
-          host.appendChild(root);
-          try { root.setAttribute('data-restored-autosave', '1'); } catch(_) {}
-        }
-        // Re-apply transforms/shading/text if available to keep in sync with logo state
-        if (parsed.snap) applyTemplatesSnapshotInPlace(parsed.snap);
-        // Recreate the inline toolbar if it was cleared
-        try {
-          ensureCellToolbarExt({
-            onAfterChange: () => {
-              try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); } catch (_) {}
-              try { setTimeout(() => { paginateGenericTplTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl, isLandscape: true }); pruneEmptyA4PagesExt(); }, 30); } catch(_) {}
-            },
-          });
-        } catch(_) {}
-        // Re-bind logo gestures so drag/size continues to work after restore
-        try { attachCallsheetLogoBehaviors(root); } catch(_) {}
-        // Ensure a single standard Crew Call table if present and drop duplicates
-        try { unifyCrewCallTables(); ensureSingleCrewTableStrict(); enforceCallsheetSizing(root); pruneEmptyA4PagesExt(); } catch(_) {}
-        // Re-apply the current zoom to the new root
-        try { applyTemplatesPreviewZoom(TPL_PREVIEW_ZOOM); } catch(_) {}
-      } catch(_) {
-        // Fallback to in-place snapshot application
-        if (parsed && parsed.snap) applyTemplatesSnapshotInPlace(parsed.snap);
-      }
-      // Seed history with restored state so undo works from there
-      try { if (parsed.snap) pushTemplatesHistory(); } catch(_) {}
-      return;
-    }
-    // Legacy path: only edits/shading/logos snapshot available
-    if (parsed && parsed.snap) {
-      applyTemplatesSnapshotInPlace(parsed.snap);
-      try { const root = document.getElementById('templates-a4-root'); if (root) root.setAttribute('data-restored-autosave','1'); } catch(_) {}
-      try { pushTemplatesHistory(); } catch(_) {}
-    }
-  } catch(_) {}
+  restoreTemplatesAutosaveIfPresentExt({
+    getContextKey: getTemplatesContextKey,
+    companyInfo: COMPANY_INFO,
+    normalizeTemplateHtmlLegacyUrls,
+    ensureCellToolbar: ensureCellToolbarExt,
+    onToolbarAfterChange: () => {
+      try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); } catch (_) {}
+      try { setTimeout(() => { paginateGenericTplTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl, isLandscape: true }); pruneEmptyA4PagesExt(); }, 30); } catch(_) {}
+    },
+    attachCallsheetLogoBehaviors,
+    unifyCrewCallTables,
+    ensureSingleCrewTableStrict,
+    enforceCallsheetSizing,
+    pruneEmptyA4Pages: pruneEmptyA4PagesExt,
+    pushTemplatesHistory: () => { try { pushTemplatesHistory(); } catch(_) {} },
+    applyTemplatesPreviewZoom,
+    writePrimaryLogoState,
+    writeSecondaryLogoState,
+    applyShadingSnapshot,
+  });
 }
 
 function getTemplatesSnapshot() {
-  const root = document.getElementById('templates-a4-root');
-  if (!root) return null;
-  const edits = Array.from(root.querySelectorAll('[data-editable="true"]')).map((el) => el.innerHTML);
-  const sh = snapshotShading(root);
-  return { edits, l: readPrimaryLogoState(), r: readSecondaryLogoState(), sh };
+  return getTemplatesSnapshotExt({
+    snapshotShading,
+    readPrimaryLogoState,
+    readSecondaryLogoState,
+  });
 }
 function applyTemplatesSnapshotInPlace(snap) {
-  if (!snap) return;
-  const root = document.getElementById('templates-a4-root');
-  if (!root) return;
-  // Apply editable content in order
-  try {
-    const nodes = Array.from(root.querySelectorAll('[data-editable="true"]'));
-    nodes.forEach((el, i) => { if (i < snap.edits.length) el.innerHTML = snap.edits[i]; });
-  } catch(_) {}
-  // Apply logo transforms directly on current DOM without re-render
-  try {
-    writePrimaryLogoState(snap.l || {});
-    const left = root.querySelector('.cs-logo--left img');
-    if (left && snap.l) {
-      const s = Math.max(0.3, Math.min(3, Number(snap.l.s || 1)));
-      const x = Number(snap.l.x || 0) || 0; const y = Number(snap.l.y || 0) || 0;
-      left.style.transform = `scale(${s}) translate(${x}px, ${y}px)`;
-    }
-  } catch(_) {}
-  try {
-    writeSecondaryLogoState(snap.r || {});
-    const right = root.querySelector('.cs-logo--right img');
-    if (right && snap.r) {
-      if (snap.r.url) { try { right.setAttribute('src', snap.r.url); } catch(_) {} }
-      else { try { right.removeAttribute('src'); right.closest('.cs-logo--right')?.setAttribute('data-empty','1'); } catch(_) {} }
-      const s2 = Math.max(0.3, Math.min(3, Number(snap.r.s || 1)));
-      const x2 = Number(snap.r.x || 0) || 0; const y2 = Number(snap.r.y || 0) || 0;
-      right.style.transform = `scale(${s2}) translate(${x2}px, ${y2}px)`;
-    }
-  } catch(_) {}
-  // Apply shading marks
-  try { if (snap.sh) applyShadingSnapshot(root, snap.sh); } catch(_) {}
+  applyTemplatesSnapshotInPlaceExt({
+    snap,
+    writePrimaryLogoState,
+    writeSecondaryLogoState,
+    applyShadingSnapshot,
+  });
 }
 function applyTemplatesSnapshot(snap) {
-  if (!snap) return;
-  const host = document.getElementById('templates-preview-host');
-  if (!host) return;
-  try {
-    writePrimaryLogoState(snap.l || {});
-    writeSecondaryLogoState(snap.r || {});
-    // Apply content edits in order
-    const root = document.getElementById('templates-a4-root');
-    if (root && Array.isArray(snap.edits)) {
-      const nodes = Array.from(root.querySelectorAll('[data-editable="true"]'));
-      nodes.forEach((el, i) => { if (i < snap.edits.length) el.innerHTML = snap.edits[i]; });
-    }
-  } finally {
-    // Re-render to reflect logo states
-    try { renderTemplatesPreview(); } catch(_) {}
-  }
+  applyTemplatesSnapshotExt({
+    snap,
+    writePrimaryLogoState,
+    writeSecondaryLogoState,
+    renderPreview: () => { try { renderTemplatesPreview(); } catch(_) {} },
+  });
 }
 
 // ===== Backend autosave (persist full HTML per project/type/reservation) =====
 function readRemoteAutosaveId() {
-  try {
-    const key = `remoteAutosaveId:${getTemplatesContextKey()}`;
-    const v = localStorage.getItem(key);
-    return v ? Number(v) : null;
-  } catch(_) { return null; }
+  return readRemoteAutosaveIdExt(getTemplatesContextKey());
 }
 function writeRemoteAutosaveId(id) {
-  try { const key = `remoteAutosaveId:${getTemplatesContextKey()}`; if (id) localStorage.setItem(key, String(id)); } catch(_) {}
+  writeRemoteAutosaveIdExt(getTemplatesContextKey(), id);
 }
 function sanitizeHtmlForExport(html) {
-  try {
-    const tmp = document.createElement('div');
-    tmp.innerHTML = normalizeTemplateHtmlLegacyUrls(String(html || ''));
-    // Remove script tags entirely
-    tmp.querySelectorAll('script').forEach((s) => s.parentElement?.removeChild(s));
-    // Remove inline event handlers (on*) but keep style attributes (needed for transforms)
-    Array.from(tmp.querySelectorAll('*')).forEach((el) => {
-      try {
-        const attrs = Array.from(el.attributes || []);
-        attrs.forEach((a) => {
-          if (/^on/i.test(a.name)) el.removeAttribute(a.name);
-        });
-      } catch (_) {}
-    });
-    return tmp.innerHTML;
-  } catch (_) { return html; }
+  return sanitizeHtmlForExportExt(html, COMPANY_INFO);
 }
 async function ensureRemoteAutosaveId() {
-  let id = readRemoteAutosaveId();
-  if (id) return id;
-  const items = await fetchSavedTemplatesForCurrent();
-  const draft = (items || []).find((it) => {
-    const t = String(it?.title || '').toLowerCase();
-    return t.includes('autosave') || t.includes('draft') || t.includes('مسودة');
-  });
-  if (draft && draft.id) { writeRemoteAutosaveId(draft.id); return draft.id; }
-  // Create once
   const project = getSelectedProject();
   if (!project) return null;
   const typeSel = document.getElementById('templates-type');
@@ -1436,35 +625,31 @@ async function ensureRemoteAutosaveId() {
   const reservationId = reservationSel && reservationSel.value ? Number(reservationSel.value) : null;
   const host = document.querySelector('#templates-preview-host #templates-a4-root');
   if (!host) return null;
-  const payload = { html: sanitizeHtmlForExport(host.outerHTML) };
-  try {
-    await apiRequest('/project-templates/', {
-      method: 'POST',
-      body: {
-        project_id: Number(project.id),
-        reservation_id: reservationId,
-        type,
-        title: `Autosave - ${type}`,
-        data: payload,
-      },
-    });
-    const after = await fetchSavedTemplatesForCurrent();
-    const created = (after || []).find((it) => String(it?.title || '').toLowerCase().includes(`autosave`));
-    if (created && created.id) { writeRemoteAutosaveId(created.id); return created.id; }
-  } catch(_) {}
-  return null;
+  return ensureRemoteAutosaveIdExt({
+    contextKey: getTemplatesContextKey(),
+    fetchSavedTemplates: fetchSavedTemplatesForCurrent,
+    projectId: Number(project.id),
+    type,
+    reservationId,
+    hostHtml: host.outerHTML,
+    companyInfo: COMPANY_INFO,
+    apiRequestFn: apiRequest,
+  });
 }
 async function autosaveTemplateToServer() {
   const host = document.querySelector('#templates-preview-host #templates-a4-root');
   if (!host) return;
-  const id = await ensureRemoteAutosaveId();
-  if (!id) return;
-  const payload = { html: sanitizeHtmlForExport(host.outerHTML) };
-  try { await apiRequest(`/project-templates/?id=${encodeURIComponent(id)}`, { method: 'PATCH', body: { data: payload } }); } catch(err) { notifyApiError(err, 'تعذر الحفظ التلقائي'); }
+  return autosaveTemplateToServerExt({
+    contextKey: getTemplatesContextKey(),
+    hostHtml: host.outerHTML,
+    companyInfo: COMPANY_INFO,
+    ensureId: ensureRemoteAutosaveId,
+    apiRequestFn: apiRequest,
+    onError: (err) => notifyApiError(err, 'تعذر الحفظ التلقائي'),
+  });
 }
 function autosaveToServerDebounced() {
-  clearTimeout(TPL_REMOTE_AUTOSAVE_TIMER);
-  TPL_REMOTE_AUTOSAVE_TIMER = setTimeout(() => { void autosaveTemplateToServer(); }, 800);
+  autosaveToServerDebouncedExt(() => autosaveTemplateToServer(), 800);
 }
 
 // Snapshot/restore shading by table,row,cell indices for Call Sheet
@@ -1473,161 +658,44 @@ function autosaveToServerDebounced() {
  
 
 function renderTemplatesPreview() {
-  const host = document.getElementById('templates-preview-host');
-  if (!host) return;
-  // Hide preview while constructing to avoid showing placeholder/flicker
-  try { host.style.visibility = 'hidden'; } catch(_) {}
-  const project = getSelectedProject();
-  const oldRoot = host.querySelector('#templates-a4-root');
-  if (!project) {
-    host.innerHTML = '';
-    const msg = el('div', { class: 'text-muted', text: t('projects.templates.empty', 'اختر مشروعاً لبدء إنشاء القوالب.') });
-    host.appendChild(msg);
-    try { host.style.visibility = ''; } catch(_) {}
-    return;
-  }
-  const reservations = getSelectedReservations(project.id);
-  const type = document.getElementById('templates-type')?.value || 'expenses';
-  const hf = readHeaderFooterOptions();
-  ensureLogoControls(type);
-  let pageRoot = null;
-  if (!pageRoot) {
-    if (type === 'callsheet') pageRoot = buildCallSheetPageExt(project, reservations, hf);
-    else pageRoot = buildExpensesPageExt(project, reservations, hf);
-  }
-  // Diff-like replace to avoid losing event handlers on host
-  const newRoot = pageRoot;
-  if (oldRoot && newRoot && oldRoot.tagName === newRoot.tagName) {
-    const oldPages = oldRoot.querySelector('[data-a4-pages]');
-    const newPages = newRoot.querySelector('[data-a4-pages]');
-    if (oldPages && newPages) {
-      try { oldPages.replaceWith(newPages); } catch (_) { oldRoot.innerHTML = newRoot.innerHTML; }
-    } else {
-      oldRoot.innerHTML = newRoot.innerHTML;
-    }
-    pageRoot = oldRoot;
-  } else {
-    host.innerHTML = '';
-    host.appendChild(newRoot);
-    pageRoot = newRoot;
-  }
-  // Enforce table sizing immediately after DOM placement
-  try { enforceCallsheetSizing(pageRoot); } catch(_) {}
-  // Bind history listeners and seed snapshot
-  try { setupTemplatesHistory(pageRoot, type); } catch(_) {}
-  try {
-    ensureCellToolbarExt({
-      onAfterChange: () => {
-        try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); } catch (_) {}
-        try { setTimeout(() => { paginateGenericTplTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl, isLandscape: true }); pruneEmptyA4PagesExt(); }, 30); } catch(_) {}
-      },
-    });
-  } catch(_) {}
-  // Keep schedule header tidy and centered within cells
-  try { shrinkScheduleHeaderLabelsExt(); } catch(_) {}
-  // Ensure Crew Call table exists for fresh callsheet
-  try { if (type === 'callsheet') { purgeCrewCallTables(); ensureCrewTableExists(); ensureCrewOnSecondPage(); unifyCrewCallTables(); ensureSingleCrewTableStrict(); } } catch(_) {}
-  // Normalize editable cells markup for robust caret behavior: wrap inner contenteditable DIV inside TD
-  try { ensureEditableWrappers(); } catch(_) {}
-  // Do not auto-restore any autosave by default; user can load from "محفوظات" أو زر المسودة
-  try { ensureEditableWrappers(); } catch(_) {}
-  // لا تحميل تلقائي من الخادم؛ يقرر المستخدم من قائمة "محفوظات" أو زر "تحميل المسودة"
-  // Ensure technicians are loaded, then auto-fill crew if table is empty
-  try {
-    if (type === 'callsheet') {
-      const selectedRes = getSelectedReservations(project.id)?.[0] || null;
-      const fill = () => populateCrewFromReservationIfEmptyExt(selectedRes);
-      // Ensure positions cache is loaded to resolve readable position labels
-      Promise.resolve(ensureTechnicianPositionsLoaded())
-        .catch(() => {})
-        .finally(() => {
-          if (!getTechniciansState()?.length) {
-            refreshTechniciansFromApi().then(fill).catch(() => fill());
-          } else {
-            fill();
-          }
-        });
-    }
-  } catch (_) {}
-  // If crew table is still mostly empty, auto-fill from selected reservation
-  try { if (type === 'callsheet') populateCrewFromReservationIfEmptyExt(getSelectedReservations(project.id)?.[0] || null); } catch(_) {}
-  // Prune pages with no visible content (avoid phantom pages)
-  try { Array.from(pageRoot.querySelectorAll('.a4-page')).forEach((pg) => { if (!pageHasMeaningfulContent(pg)) pg.parentElement?.removeChild(pg); }); } catch (_) {}
-  try { renumberExpenseCodes(); } catch (_) {}
-  // Update computed totals where applicable
-  recomputeExpensesSubtotals();
-  try { autoPaginateTemplatesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl }); } catch (_) {}
-  try { paginateExpDetailsTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl }); } catch (_) {}
-  // Prune again after pagination
-  try { Array.from(pageRoot.querySelectorAll('.a4-page')).forEach((pg) => { if (!pageHasMeaningfulContent(pg)) pg.parentElement?.removeChild(pg); }); } catch (_) {}
-  // Ensure crew remains placed on dedicated second page after any pagination
-  try { if (type === 'callsheet') { ensureCrewOnSecondPage(); } } catch(_) {}
-  // After pagination, ensure nothing recreated extra tables
-  try { if (type === 'callsheet') { purgeCrewCallTables(); ensureCrewTableExists(); ensureCrewOnSecondPage(); unifyCrewCallTables(); ensureSingleCrewTableStrict(); enforceCallsheetSizing(pageRoot); pruneEmptyA4PagesExt(); } } catch(_) {}
-  try { renumberExpenseCodes(); } catch (_) {}
-  try { paginateGenericTplTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl, isLandscape: true }); } catch (_) {}
-  try { if (type === 'callsheet') enforceCallsheetSizing(pageRoot); } catch(_) {}
-  try { ensurePdfTunerUI(); } catch (_) {}
-  try { if (type === 'callsheet' && localStorage.getItem('templates.debugOverlay') === '1') showTemplatesDebugOverlay(pageRoot, getSelectedReservations(project.id)?.[0] || null); } catch(_) {}
-  // Re-enforce sizing one last time after all DOM/layout adjustments
-  try { if (type === 'callsheet') enforceCallsheetSizing(pageRoot); } catch(_) {}
-  // Reveal preview now that layout is final
-  try { host.style.visibility = ''; } catch(_) {}
-
-  // Debug toggle utility for quiet consoles in production
-  function isTemplatesDebugEnabled() {
-    try {
-      const params = new URLSearchParams(window.location.search || '');
-      if (params.get('debugTemplates') === '1') return true;
-      const ls = window.localStorage?.getItem('__DEBUG_TEMPLATES__');
-      if (ls && ['1','true','on','yes'].includes(String(ls).toLowerCase())) return true;
-    } catch (_) { /* ignore */ }
-    return false;
-  }
-  // Apply saved zoom after render
-  try {
-    // Re-sync zoom mode from storage each render to keep it sticky
-    TPL_ZOOM_MODE = readTplZoomModePref();
-    if (TPL_ZOOM_MODE === 'fit') {
-      applyTemplatesFitZoom();
-    } else {
-      const saved = readTplZoomPref();
-      TPL_PREVIEW_ZOOM = saved;
-      setTemplatesPreviewZoom(saved, { silent: true });
-    }
-    if (TPL_ZOOM_VALUE_EL) TPL_ZOOM_VALUE_EL.textContent = `${Math.round(TPL_PREVIEW_ZOOM * 100)}%`;
-  } catch (_) {}
-}
-
-// Unify editing model with Call Sheet: make TDs themselves contenteditable.
-// If older autosaves had inner DIV[contenteditable], lift content up to TD.
-function ensureEditableWrappers() {
-  const root = document.getElementById('templates-a4-root');
-  if (!root) return;
-  const tds = Array.from(root.querySelectorAll('table.exp-details td'));
-  tds.forEach((td) => {
-    try {
-      const isLast = td === td.parentElement?.lastElementChild; // totals
-      if (isLast) {
-        td.removeAttribute('contenteditable');
-        td.removeAttribute('data-editable');
-        return;
-      }
-      const shouldEdit = td.getAttribute('data-editable') === 'true' || td.getAttribute('contenteditable') === 'true' || !!td.querySelector('[contenteditable="true"]');
-      if (!shouldEdit) return;
-      const inner = td.querySelector('[contenteditable="true"]');
-      if (inner) {
-        // Lift inner content to TD and remove wrapper
-        const html = inner.innerHTML;
-        td.innerHTML = html;
-      }
-      td.setAttribute('data-editable', 'true');
-      td.setAttribute('contenteditable', 'true');
-      td.setAttribute('autocapitalize', 'off');
-      td.setAttribute('autocorrect', 'off');
-      td.setAttribute('autocomplete', 'off');
-      td.setAttribute('spellcheck', 'false');
-    } catch (_) {}
+  renderTemplatesPreviewExt({
+    companyInfo: COMPANY_INFO,
+    emptyMessage: t('projects.templates.empty', 'اختر مشروعاً لبدء إنشاء القوالب.'),
+    getSelectedProject,
+    getSelectedReservations,
+    getTemplateType: () => document.getElementById('templates-type')?.value || 'expenses',
+    readHeaderFooterOptions,
+    ensureLogoControls,
+    buildCallSheetPage: buildCallSheetPageExt,
+    buildExpensesPage: buildExpensesPageExt,
+    setupTemplatesHistory,
+    ensureCellToolbar: ensureCellToolbarExt,
+    onToolbarAfterChange: () => {
+      try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); } catch (_) {}
+      try { setTimeout(() => { paginateGenericTplTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl, isLandscape: true }); pruneEmptyA4PagesExt(); }, 30); } catch(_) {}
+    },
+    shrinkScheduleHeaderLabels: shrinkScheduleHeaderLabelsExt,
+    purgeCrewCallTables,
+    ensureCrewTableExists,
+    ensureCrewOnSecondPage,
+    unifyCrewCallTables,
+    ensureSingleCrewTableStrict,
+    populateCrewFromReservationIfEmpty: populateCrewFromReservationIfEmptyExt,
+    ensureTechnicianPositionsLoaded,
+    getTechniciansState,
+    refreshTechniciansFromApi,
+    renumberExpenseCodes,
+    recomputeExpensesSubtotals,
+    autoPaginateTemplates: autoPaginateTemplatesExt,
+    paginateExpDetailsTables: paginateExpDetailsTablesExt,
+    pruneEmptyA4Pages: pruneEmptyA4PagesExt,
+    paginateGenericTplTables: paginateGenericTplTablesExt,
+    ensurePdfTunerUI,
+    readTplZoomModePref,
+    readTplZoomPref,
+    applyTemplatesFitZoom,
+    setTemplatesPreviewZoom,
+    zoomValueEl: templatesTabState.zoomValueEl,
   });
 }
 
@@ -2060,50 +1128,9 @@ async function printTemplatesPdf() {
 }
 
 function showPrintPreviewOverlay() {
-  try {
-    const host = document.querySelector('#templates-preview-host > #templates-a4-root');
-    if (!host) { alert('لا يوجد محتوى للمعاينة'); return; }
-    const overlay = document.createElement('div');
-    Object.assign(overlay.style, { position:'fixed', inset:'0', background:'rgba(15,23,42,0.6)', zIndex:'9998', display:'flex', alignItems:'center', justifyContent:'center', padding:'20px' });
-    const panel = document.createElement('div');
-    Object.assign(panel.style, { background:'#fff', borderRadius:'12px', maxWidth:'92vw', maxHeight:'88vh', width:'min(1200px,92vw)', padding:'12px', boxShadow:'0 12px 30px rgba(0,0,0,0.25)', display:'flex', flexDirection:'column', gap:'12px' });
-    const head = document.createElement('div'); head.textContent = 'معاينة الطباعة'; head.style.cssText = 'font-weight:800;font-size:16px';
-    const scroller = document.createElement('div'); Object.assign(scroller.style, { overflow:'auto', flex:'1 1 auto', border:'1px solid #e5e7eb', borderRadius:'8px', padding:'10px', background:'#f8fafc' });
-    const actions = document.createElement('div'); Object.assign(actions.style, { display:'flex', gap:'8px', justifyContent:'flex-start' });
-    const closeBtn = document.createElement('button'); closeBtn.className = 'btn btn-outline'; closeBtn.textContent = 'إغلاق'; closeBtn.onclick = () => overlay.remove();
-    const printBtn = document.createElement('button'); printBtn.className = 'btn btn-primary'; printBtn.textContent = 'طباعة الآن'; printBtn.onclick = async () => { overlay.remove(); try { await printTemplatesPdf(); } catch(_) {} };
-    actions.appendChild(printBtn); actions.appendChild(closeBtn);
-
-    // Build preview content by cloning and pruning blank pages
-    const rootClone = host.cloneNode(true);
-    const wrap = rootClone.querySelector('[data-a4-pages]') || rootClone;
-    const pages = Array.from(wrap.querySelectorAll('.a4-page'));
-    const pageHasContent = (pg) => {
-      try {
-        const hasTop = !!pg.querySelector('#expenses-top-sheet');
-        const hasDetailsRow = !!pg.querySelector('table.exp-details tbody tr[data-row="item"]');
-        const hasTplRows = !!Array.from(pg.querySelectorAll('table.tpl-table tbody tr')).find((tr) => Array.from(tr.querySelectorAll('td')).some((td)=>((td.textContent||'').trim().length>0)));
-        const hasCrew = !!Array.from(pg.querySelectorAll('.callsheet-v1 table.cs-crew tbody tr')).find((tr) => Array.from(tr.querySelectorAll('td')).some((td)=>((td.textContent||'').trim().length>0)));
-        const hasCallsheet = !!pg.querySelector('.callsheet-v1 .cs-header, .callsheet-v1 .cs-info td, .callsheet-v1 .cs-cast td');
-        return hasTop || hasDetailsRow || hasTplRows || hasCrew || hasCallsheet;
-      } catch(_) { return true; }
-    };
-    pages.forEach((pg) => { if (!pageHasContent(pg)) pg.parentElement?.removeChild(pg); });
-
-    const pages2 = Array.from(wrap.querySelectorAll('.a4-page'));
-    const info = document.createElement('div'); info.textContent = `عدد الصفحات: ${pages2.length}`; info.style.cssText = 'font-size:12px;color:#475569';
-    const grid = document.createElement('div'); Object.assign(grid.style, { display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(360px, 1fr))', gap:'14px' });
-    pages2.forEach((pg) => {
-      const card = document.createElement('div'); Object.assign(card.style, { background:'#fff', border:'1px solid #e5e7eb', borderRadius:'8px', padding:'6px', display:'flex', justifyContent:'center', alignItems:'center' });
-      const ph = pg.cloneNode(true); Object.assign(ph.style, { transform:'scale(0.45)', transformOrigin:'top left', width: pg.clientWidth+'px', height: pg.clientHeight+'px' });
-      card.appendChild(ph); grid.appendChild(card);
-    });
-    scroller.appendChild(info); scroller.appendChild(grid);
-
-    panel.appendChild(head); panel.appendChild(scroller); panel.appendChild(actions);
-    overlay.appendChild(panel);
-    document.body.appendChild(overlay);
-  } catch (_) { alert('تعذر إنشاء المعاينة'); }
+  showPrintPreviewOverlayExt({
+    onPrint: () => printTemplatesPdf(),
+  });
 }
 
 async function fetchCrewFromReservation(force = false) {
@@ -2125,44 +1152,6 @@ async function fetchCrewFromReservation(force = false) {
 }
 
 // ============== PDF Live Tuner ==============
-// ============== PDF Prefs (namespaced per template type) ==============
-function __pdfNsKeyBase() {
-  try { const type = document.getElementById('templates-type')?.value || 'expenses'; return `templatesPdf.${type}`; } catch(_) { return 'templatesPdf.expenses'; }
-}
-function __pdfResolve(key) {
-  const clean = String(key || '').replace(/^templatesPdf[.:]/, '');
-  const base = __pdfNsKeyBase();
-  return { ns: `${base}.${clean}`, legacy: `templatesPdf.${clean}` };
-}
-function readPdfPref(key, def) {
-  try {
-    const { ns, legacy } = __pdfResolve(key);
-    let v = localStorage.getItem(ns);
-    if (v == null) v = localStorage.getItem(legacy);
-    if (v == null) return def;
-    const n = Number(v);
-    return Number.isFinite(n) ? n : def;
-  } catch (_) { return def; }
-}
-function readPdfString(key, def) {
-  try { const { ns, legacy } = __pdfResolve(key); const v = localStorage.getItem(ns) ?? localStorage.getItem(legacy); return (v == null) ? def : String(v); } catch(_) { return def; }
-}
-function writePdfPref(key, val) {
-  try { const { ns } = __pdfResolve(key); localStorage.setItem(ns, String(val)); } catch (_) {}
-}
-// Per-page overrides helpers (namespaced)
-function __pdfPageOverridesKey() { return `${__pdfNsKeyBase()}.pageOverrides`; }
-function getPdfPageOverrides() {
-  try { const raw = localStorage.getItem(__pdfPageOverridesKey()); return raw ? JSON.parse(raw) : {}; } catch(_) { return {}; }
-}
-function setPdfPageOverride(pageIndex, key, val) {
-  try { const obj = getPdfPageOverrides(); const idx = String(pageIndex); obj[idx] = obj[idx] || {}; obj[idx][key] = Number(val); localStorage.setItem(__pdfPageOverridesKey(), JSON.stringify(obj)); } catch(_) {}
-}
-function readPdfPrefForPage(key, pageIndex, defWhenMissing) {
-  try { const obj = getPdfPageOverrides(); const page = obj[String(pageIndex)]; if (page && page[key] != null && Number.isFinite(Number(page[key]))) return Number(page[key]); return readPdfPref(key, defWhenMissing); } catch(_) { return readPdfPref(key, defWhenMissing); }
-}
-function clearPdfPageOverrides() { try { localStorage.removeItem(__pdfPageOverridesKey()); } catch(_) {}
-}
 
 async function renderPdfLivePreview() {
   const host = document.querySelector('#templates-preview-host > #templates-a4-root');
@@ -2322,374 +1311,33 @@ async function renderPdfLivePreview() {
 }
 
 function ensurePdfTunerUI() {
-  const controls = document.getElementById('templates-controls');
-  if (!controls || document.getElementById('templates-pdf-tuner-toggle')) return;
-  const actionsRow = controls.querySelector('.ms-auto') || controls;
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.id = 'templates-pdf-tuner-toggle';
-  btn.className = 'btn btn-outline';
-  btn.textContent = '🛠️ ضبط PDF';
-  actionsRow.appendChild(btn);
-
-  const panel = document.createElement('div');
-  panel.id = 'templates-pdf-tuner';
-  panel.style.display = 'none';
-  panel.style.marginTop = '10px';
-  panel.style.border = '1px solid #e5e7eb';
-  panel.style.borderRadius = '10px';
-  panel.style.padding = '10px';
-  panel.innerHTML = `
-    <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:flex-end;">
-      <label style=\"display:flex; flex-direction:column; gap:4px;\">
-        <span>الصفحة</span>
-        <select id=\"pdftun-page\" style=\"width:110px;\"></select>
-      </label>
-      <label style="display:flex; flex-direction:column; gap:4px;">
-        <span>Top Offset (All)</span>
-        <input id="pdftun-globalY" type="number" step="0.5" min="-1000" max="1000" style="width:90px;" />
-      </label>
-      <label style="display:flex; flex-direction:column; gap:4px;">
-        <span>Right Shift (All)</span>
-        <input id="pdftun-globalX" type="number" step="0.5" min="-1000" max="1000" style="width:90px;" />
-      </label>
-      <label style="display:flex; flex-direction:column; gap:4px;">
-        <span>Top Trim (mm)</span>
-        <input id="pdftun-extraTrim" type="number" step="0.5" min="0" max="40" style="width:90px;" />
-      </label>
-      <label style="display:flex; flex-direction:column; gap:4px;">
-        <span>Safe Margin (mm)</span>
-        <input id="pdftun-safeMargin" type="number" step="0.1" min="0" max="10" style="width:90px;" />
-      </label>
-      <label style="display:flex; flex-direction:column; gap:4px;">
-        <span>Top Offset (mm)</span>
-        <input id="pdftun-tightFudge" type="number" step="0.5" min="-40" max="40" style="width:90px;" />
-      </label>
-      <label style="display:flex; flex-direction:column; gap:4px;">
-        <span>Right Shift (mm)</span>
-        <input id="pdftun-right" type="number" step="0.5" min="-40" max="40" style="width:90px;" />
-      </label>
-      <label style="display:flex; flex-direction:column; gap:4px;">
-        <span>Scale (%)</span>
-        <input id="pdftun-scale" type="number" step="1" min="90" max="110" style="width:90px;" />
-      </label>
-      <span style="flex:1 1 auto"></span>
-      <button type="button" class="btn btn-outline" id="pdftun-preset">تطبيق القيم</button>
-      <button type="button" class="btn btn-outline" id="pdftun-reset">الافتراضيات</button>
-      <button type="button" class="btn btn-primary" id="pdftun-print">🖨️ طباعة</button>
-    </div>
-  `;
-  controls.parentElement?.appendChild(panel);
-
-  // Init values from current prefs
-  const refreshPagesList = () => {
-    const sel = panel.querySelector('#pdftun-page');
-    const pages = Array.from(document.querySelectorAll('#templates-preview-host #templates-a4-root .a4-page'));
-    const cur = sel.value || '0';
-    const opts = [];
-    pages.forEach((_, idx) => { opts.push(`<option value="${idx}">الصفحة ${idx+1}</option>`); });
-    if (!opts.length) {
-      sel.innerHTML = '<option value="0">الصفحة 1</option>';
-      setTimeout(() => { try { refreshPagesList(); } catch(_) {} }, 120);
-    } else {
-      sel.innerHTML = opts.join('');
-    }
-    if (Array.from(sel.options).some((o) => o.value === cur)) sel.value = cur; else sel.value = '0';
-  };
-  const loadValuesForSelected = () => {
-    const sel = panel.querySelector('#pdftun-page');
-    const pageIndex = Math.max(0, Number(sel.value || '0'));
-    const extraTrimVal = readPdfPrefForPage('templatesPdf.extraTrimMm', pageIndex, readPdfPref('templatesPdf.extraTrimMm', 14));
-    const safeMarginVal = readPdfPrefForPage('templatesPdf.safeMarginMm', pageIndex, readPdfPref('templatesPdf.safeMarginMm', 0.5));
-    document.getElementById('pdftun-extraTrim').value = String(extraTrimVal);
-    document.getElementById('pdftun-safeMargin').value = String(safeMarginVal);
-    const defaultFudge = (pageIndex === 0 ? -144.5 : 0);
-    const fudgeVal = readPdfPrefForPage('templatesPdf.tightFudgeMm', pageIndex, defaultFudge);
-    const rightVal = readPdfPrefForPage('templatesPdf.shiftRightMm', pageIndex, readPdfPref('templatesPdf.shiftRightMm', 40));
-    document.getElementById('pdftun-tightFudge').value = String(fudgeVal);
-    document.getElementById('pdftun-right').value = String(rightVal);
-    document.getElementById('pdftun-scale').value = String(readPdfPref('templatesPdf.scalePct', 100));
-    try { document.getElementById('pdftun-globalY').value = String(readPdfPref('templatesPdf.globalAllYmm', -1)); } catch(_) {}
-    try { document.getElementById('pdftun-globalX').value = String(readPdfPref('templatesPdf.globalAllRightMm', 0)); } catch(_) {}
-  };
-  const init = () => { refreshPagesList(); loadValuesForSelected(); };
-  init();
-
-  btn.addEventListener('click', () => {
-    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-    if (panel.style.display === 'block') {
-      try { refreshPagesList(); loadValuesForSelected(); } catch(_) {}
-      // Seed preset once if there are no overrides at all
-      try {
-        const ov = getPdfPageOverrides();
-        if (ov && Object.keys(ov).length === 0 && !localStorage.getItem('templatesPdf.presetSeeded.v4')) {
-          const pages = Array.from(document.querySelectorAll('#templates-preview-host #templates-a4-root .a4-page'));
-          if (pages.length) {
-            const right = 61, safe = 0.5;
-            const offsets = [-145, -290, -435, -580, -725];
-            const trims =   [  14,   14,   14,   14,   14];
-            const stepAfter = -145;
-            pages.forEach((_, idx) => {
-              const off = (idx < offsets.length) ? offsets[idx] : (offsets[offsets.length - 1] + stepAfter * (idx - (offsets.length - 1)));
-              const trim = (idx < trims.length) ? trims[idx] : trims[trims.length - 1];
-              setPdfPageOverride(idx, 'templatesPdf.shiftRightMm', right);
-              setPdfPageOverride(idx, 'templatesPdf.tightFudgeMm', off);
-              setPdfPageOverride(idx, 'templatesPdf.extraTrimMm', trim);
-              setPdfPageOverride(idx, 'templatesPdf.safeMarginMm', safe);
-            });
-            localStorage.setItem('templatesPdf.presetSeeded.v4', '1');
-            try { localStorage.setItem('templatesPdf.globalAllYmm', '-1'); } catch(_) {}
-            loadValuesForSelected();
-          }
-        }
-      } catch(_) {}
-      try {
-        if (window.__pdfTunerMO) { try { window.__pdfTunerMO.disconnect(); } catch(_) {} }
-        const wrap = document.querySelector('#templates-preview-host #templates-a4-root [data-a4-pages]') || document.querySelector('#templates-preview-host #templates-a4-root');
-        if (wrap) {
-          const mo = new MutationObserver(() => { try { refreshPagesList(); } catch(_) {} });
-          mo.observe(wrap, { childList: true, subtree: true });
-          window.__pdfTunerMO = mo;
-        }
-      } catch(_) {}
-      renderPdfLivePreview();
-    } else {
-      try { if (window.__pdfTunerMO) { window.__pdfTunerMO.disconnect(); window.__pdfTunerMO = null; } } catch(_) {}
-    }
+  ensurePdfTunerUIExt({
+    onPrint: () => printTemplatesPdf(),
+    onRenderPreview: () => renderPdfLivePreview(),
   });
-  panel.querySelector('#pdftun-page').addEventListener('change', () => { loadValuesForSelected(); });
-  const bind = (id, key, perPage = true) => {
-    const input = document.getElementById(id);
-    input.addEventListener('input', () => {
-      const v = input.value;
-      if (perPage) {
-        const sel = panel.querySelector('#pdftun-page').value || '0';
-        setPdfPageOverride(Number(sel), key, v);
-      } else {
-        writePdfPref(key, v);
-      }
-      // no live preview
-    });
-    input.addEventListener('change', () => {
-      const v = input.value;
-      if (perPage) {
-        const sel = panel.querySelector('#pdftun-page').value || '0';
-        setPdfPageOverride(Number(sel), key, v);
-      } else {
-        writePdfPref(key, v);
-      }
-      // no live preview
-  });
-  };
-  bind('pdftun-extraTrim', 'templatesPdf.extraTrimMm', true);
-  bind('pdftun-safeMargin', 'templatesPdf.safeMarginMm', true);
-  bind('pdftun-tightFudge', 'templatesPdf.tightFudgeMm', true);
-  bind('pdftun-right', 'templatesPdf.shiftRightMm', true);
-  bind('pdftun-scale', 'templatesPdf.scalePct', false);
-  bind('pdftun-globalY', 'templatesPdf.globalAllYmm', false);
-  bind('pdftun-globalX', 'templatesPdf.globalAllRightMm', false);
-
-  // Apply recommended per-page alignment from provided screenshots
-  const applyPreset = () => {
-    const pages = Array.from(document.querySelectorAll('#templates-preview-host #templates-a4-root .a4-page'));
-    const right = 61; const safe = 0.5;
-    // New series from latest screenshots
-    const offsets = [-145, -290, -435, -580, -725]; // pages 1..5
-    const trims =   [  14,   14,   14,   14,   14]; // 14 for all
-    const stepAfter = -145; // for pages >5, keep same step
-    pages.forEach((_, idx) => {
-      const off = (idx < offsets.length) ? offsets[idx] : (offsets[offsets.length - 1] + stepAfter * (idx - (offsets.length - 1)));
-      const trim = (idx < trims.length) ? trims[idx] : trims[trims.length - 1];
-      setPdfPageOverride(idx, 'templatesPdf.shiftRightMm', right);
-      setPdfPageOverride(idx, 'templatesPdf.tightFudgeMm', off);
-      setPdfPageOverride(idx, 'templatesPdf.extraTrimMm', trim);
-      setPdfPageOverride(idx, 'templatesPdf.safeMarginMm', safe);
-    });
-    try { localStorage.setItem('templatesPdf.globalAllYmm', '-1'); } catch (_) {}
-    loadValuesForSelected();
-    // no live preview
-  };
-  document.getElementById('pdftun-preset').addEventListener('click', applyPreset);
-
-  document.getElementById('pdftun-reset').addEventListener('click', () => {
-    try {
-      ['templatesPdf.extraTrimMm','templatesPdf.safeMarginMm','templatesPdf.tightFudgeMm','templatesPdf.shiftRightMm','templatesPdf.scalePct','templatesPdf.globalYmm','templatesPdf.globalAllYmm','templatesPdf.globalAllRightMm'].forEach((k) => localStorage.removeItem(k));
-      clearPdfPageOverrides();
-    } catch (_) {}
-    init();
-  });
-  document.getElementById('pdftun-print').addEventListener('click', printTemplatesPdf);
-  // Expose refreshers for external calls after pages rebuild
-  try { window.__pdfTunerRefreshPages = refreshPagesList; window.__pdfTunerLoadValues = loadValuesForSelected; } catch (_) {}
 }
 
 function populateProjectSelect() {
   const sel = document.getElementById('templates-project');
-  if (!sel) return;
-  const opts = getProjectsState().map((p) => ({ id: p.id, title: p.title || `#${p.id}` }));
-  sel.innerHTML = '<option value="">— اختر —</option>' + opts.map((o) => `<option value="${String(o.id)}">${o.title}</option>`).join('');
+  if (!(sel instanceof HTMLSelectElement)) return;
+  populateProjectSelectOptions(sel, getProjectsState());
 }
 
 function populateReservationSelect(projectId) {
   const sel = document.getElementById('templates-reservation');
-  if (!sel) return;
-  const list = projectId ? getReservationsForProjectLocal(projectId) : [];
-  const options = ['<option value="" selected>— بدون ربط —</option>'];
-  list.forEach((r) => {
-    const id = r.id ?? r.reservationId;
-    const label = (r.title || '').trim() || `#${id}`;
-    options.push(`<option value="${String(id)}">${label}</option>`);
-  });
-  sel.innerHTML = options.join('');
+  if (!(sel instanceof HTMLSelectElement)) return;
+  populateReservationSelectOptions(sel, projectId ? getReservationsForProject(projectId) : []);
 }
 
 function recomputeExpensesSubtotals() {
-  const multi = Array.from(document.querySelectorAll('#templates-preview-host table.exp-details'));
-  const table = document.querySelector('#templates-preview-host #expenses-table');
-  const tables = multi.length ? multi : (table ? [table] : []);
-  if (!tables.length) return;
-
-  // New exp-table calculation (supports multi-table)
-  if (tables[0].classList.contains('exp-table')) {
-    const number = (txt, def = 0) => {
-      const s = String(txt || '');
-      // Convert Arabic/Persian digits and separators to ASCII without mutating the DOM
-      const mapped = s
-        .replace(/[\u0660-\u0669]/g, (d) => '0123456789'[d.charCodeAt(0) - 0x0660]) // Arabic-Indic
-        .replace(/[\u06F0-\u06F9]/g, (d) => '0123456789'[d.charCodeAt(0) - 0x06F0]) // Eastern Arabic-Indic
-        .replace(/[\u066B]/g, '.') // Arabic decimal separator
-        .replace(/[\u066C]/g, '')  // Arabic thousands separator
-        .replace(/[\u200f\u200e]/g, '') // remove RTL/LTR marks if any
-        .replace(/[^\d.\-]/g, '');
-      const n = Number(mapped);
-      return Number.isFinite(n) ? n : def;
-    };
-    const groupTotals = { atl: 0, prod: 0, post: 0 };
-    let grand = 0;
-    const subgroupTotals = {}; // code -> subtotal
-    const subgroupCounts = {}; // code -> count of filled items
-
-    // For each subgroup header across all tables
-    const headers = tables.flatMap((t) => Array.from(t.querySelectorAll('tbody tr[data-subgroup-header]')));
-    headers.forEach((hdr) => {
-      const code = hdr.getAttribute('data-subgroup');
-      let subtotal = 0;
-      let count = 0;
-      let tr = hdr.nextElementSibling;
-      while (tr && !tr.hasAttribute('data-subgroup-header') && !tr.hasAttribute('data-subgroup-subtotal')) {
-        if (tr.getAttribute('data-row') === 'item') {
-          const tds = tr.children;
-          // Revert to previous mapping while we stabilize layout:
-          // rate ~ tds[2], amount ~ tds[3], x ~ tds[4], total -> tds[6]
-          const rate = number(tds[2]?.textContent, 0);
-          const amount = number(tds[3]?.textContent, 1);
-          const x = number(tds[4]?.textContent, 1);
-          const total = amount * x * rate;
-          if (tds[6]) { tds[6].textContent = formatIntNoDecimals(total); try { tds[6].setAttribute('data-num','1'); } catch(_) {} }
-          subtotal += total;
-          const hasContent = String(tds[1]?.textContent || '').trim().length || number(tds[2]?.textContent, 0) || number(tds[3]?.textContent, 0);
-          if (hasContent) count += 1;
-        }
-        tr = tr.nextElementSibling;
-      }
-      // write subgroup subtotal
-      const subCell = document.querySelector(`#templates-preview-host [data-subtotal="${CSS.escape(code)}"]`);
-      if (subCell) subCell.textContent = formatIntNoDecimals(subtotal);
-      subgroupTotals[code] = subtotal;
-      subgroupCounts[code] = count;
-      grand += subtotal;
-      // map to parent group
-      const marker = document.querySelector(`#templates-preview-host tr[data-subgroup-marker="${CSS.escape(code)}"]`);
-      const parent = marker?.getAttribute('data-parent-group') || null;
-      if (parent && groupTotals[parent] != null) groupTotals[parent] += subtotal;
-    });
-
-    // group totals
-    Object.entries(groupTotals).forEach(([key, val]) => {
-      const cell = document.querySelector(`#templates-preview-host [data-total-group="${CSS.escape(key)}"]`);
-      if (cell) cell.textContent = formatIntNoDecimals(val);
-    });
-    const gcell = document.querySelector('#templates-preview-host [data-grand-total]');
-    if (gcell) gcell.textContent = formatIntNoDecimals(grand);
-
-    // Update Top Sheet summary figures
-    try {
-      Object.entries(subgroupTotals).forEach(([code, val]) => {
-        const cnt = subgroupCounts[code] || 0;
-        const cntEl = document.querySelector(`#templates-preview-host #expenses-top-sheet [data-top-count="${CSS.escape(code)}"]`);
-        const totEl = document.querySelector(`#templates-preview-host #expenses-top-sheet [data-top-total="${CSS.escape(code)}"]`);
-        if (cntEl) cntEl.textContent = formatIntNoDecimals(cnt);
-        if (totEl) totEl.textContent = formatIntNoDecimals(val);
-      });
-      Object.entries(groupTotals).forEach(([key, val]) => {
-        const el2 = document.querySelector(`#templates-preview-host #expenses-top-sheet [data-top-total-group="${CSS.escape(key)}"]`);
-        if (el2) el2.textContent = formatIntNoDecimals(val);
-      });
-      const g2 = document.querySelector('#templates-preview-host #expenses-top-sheet [data-top-grand]');
-      if (g2) g2.textContent = formatIntNoDecimals(grand);
-    } catch(_) {}
-
-    // Summary footer
-    const project = getSelectedProject();
-    const currencyLabel = t('reservations.create.summary.currency', 'SR');
-    const applyTax = Boolean(project?.applyTax);
-    const taxAmount = applyTax ? Math.round(grand * PROJECT_TAX_RATE) : 0;
-    const totalWithTax = Math.round(grand + taxAmount);
-    const subEl = document.querySelector('#expenses-summary [data-summary-subtotal]');
-    const taxEl = document.querySelector('#expenses-summary [data-summary-tax]');
-    const totalEl = document.querySelector('#expenses-summary [data-summary-total]');
-    if (subEl) subEl.textContent = `${formatIntNoDecimals(grand)} ${currencyLabel}`;
-    if (taxEl) taxEl.textContent = applyTax ? `${formatIntNoDecimals(taxAmount)} ${currencyLabel}` : `0 ${currencyLabel}`;
-    if (totalEl) totalEl.textContent = `${formatIntNoDecimals(totalWithTax)} ${currencyLabel}`;
-    // Avoid repagination while the user is typing inside an expenses editable cell
-    try {
-      const ae = document.activeElement;
-      const isEditing = !!(ae && (ae.getAttribute('contenteditable') === 'true' || ae.closest('[contenteditable="true"]')) && ae.closest('#templates-a4-root table.exp-details'));
-      if (!isEditing) {
-        requestAnimationFrame(() => { try { autoPaginateTemplatesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl }); } catch (_) {} });
-      }
-    } catch (_) {}
-    return;
-  }
-
-  // Legacy table fallback
-  let running = 0;
-  let grand = 0;
-  const rows = Array.from(table.querySelectorAll('tbody tr'));
-  rows.forEach((tr) => {
-    if (tr.matches('[data-section-bar]')) { running = 0; return; }
-    if (tr.classList.contains('tpl-subtotal-row')) {
-      const cell = tr.querySelector('[data-subtotal]') || tr.children[5];
-      if (cell) cell.textContent = formatIntNoDecimals(running || 0);
-      return;
-    }
-    const qty = Number(String(tr.children[3]?.textContent || '1').replace(/[^\d.\-]/g, '')) || 1;
-    const rate = Number(String(tr.children[4]?.textContent || '0').replace(/[^\d.\-]/g, '')) || 0;
-    const total = qty * rate;
-    if (tr.children[5]) tr.children[5].textContent = formatIntNoDecimals(total);
-    running += total;
-    grand += total;
+  recomputeExpensesSubtotalsExt({
+    formatIntNoDecimals,
+    getSelectedProject,
+    projectTaxRate: PROJECT_TAX_RATE,
+    translate: t,
+    autoPaginateTemplates: () => autoPaginateTemplatesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl }),
+    paginateExpDetailsTables: () => paginateExpDetailsTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl }),
   });
-  const project = getSelectedProject();
-  const currencyLabel = t('reservations.create.summary.currency', 'SR');
-  const applyTax = Boolean(project?.applyTax);
-  const taxAmount = applyTax ? Math.round(grand * PROJECT_TAX_RATE) : 0;
-  const totalWithTax = Math.round(grand + taxAmount);
-  const subEl = document.querySelector('#expenses-summary [data-summary-subtotal]');
-  const taxEl = document.querySelector('#expenses-summary [data-summary-tax]');
-  const totalEl = document.querySelector('#expenses-summary [data-summary-total]');
-  if (subEl) subEl.textContent = `${formatIntNoDecimals(grand)} ${currencyLabel}`;
-  if (taxEl) taxEl.textContent = applyTax ? `${formatIntNoDecimals(taxAmount)} ${currencyLabel}` : `0 ${currencyLabel}`;
-  if (totalEl) totalEl.textContent = `${formatIntNoDecimals(totalWithTax)} ${currencyLabel}`;
-  // Avoid repagination while typing in expenses cells
-  try {
-    const ae = document.activeElement;
-    const isEditing = !!(ae && (ae.getAttribute('contenteditable') === 'true' || ae.closest('[contenteditable="true"]')) && ae.closest('#templates-a4-root table.exp-details'));
-    if (!isEditing) {
-      requestAnimationFrame(() => { try { autoPaginateTemplatesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl }); } catch (_) {} });
-      requestAnimationFrame(() => { try { paginateExpDetailsTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl }); } catch (_) {} });
-    }
-  } catch (_) {}
 }
 
  
@@ -2728,44 +1376,7 @@ function handleTableActionClick(e) {
 // Auto-generate/renumber codes within each subgroup:
 // If subgroup header is e.g. 01-00, then items become 01-01, 01-02, ...
 function renumberExpenseCodes() {
-  const root = document.querySelector('#templates-preview-host #templates-a4-root');
-  if (!root) return;
-  const tables = Array.from(root.querySelectorAll('table.exp-details'));
-  if (!tables.length) return;
-  const counters = new Map(); // subgroupCode -> count assigned so far
-
-  const isHeader = (tr) => tr?.hasAttribute('data-subgroup-header');
-  const isSubtotal = (tr) => tr?.hasAttribute('data-subgroup-subtotal');
-  const isItem = (tr) => tr?.getAttribute('data-row') === 'item';
-  const getPrefix = (subCode) => String(subCode || '').split('-')[0] || '';
-
-  tables.forEach((table) => {
-    const rows = Array.from(table.querySelectorAll('tbody > tr'));
-    let activeSubCode = null;
-    let prefix = '';
-    let count = 0;
-    rows.forEach((tr) => {
-      if (isHeader(tr)) {
-        activeSubCode = tr.getAttribute('data-subgroup');
-        prefix = getPrefix(activeSubCode);
-        count = counters.get(activeSubCode) || 0;
-        return;
-      }
-      if (isSubtotal(tr)) {
-        counters.set(activeSubCode, count);
-        activeSubCode = null; prefix = ''; return;
-      }
-      if (isItem(tr) && prefix) {
-        count += 1;
-        const codeCell = tr.children[0];
-        if (codeCell && codeCell.hasAttribute('contenteditable')) {
-          const serial = String(count).padStart(2, '0');
-          codeCell.textContent = `${prefix}-${serial}`;
-        }
-      }
-    });
-    if (activeSubCode) counters.set(activeSubCode, count);
-  });
+  renumberExpenseCodesExt();
 }
 
 /* moved to ../templates/tableInteractions.js
@@ -2833,234 +1444,33 @@ function handleTablePaste(e) {
 
 // Ensure Crew Call table exists (for older autosaves that predate this table)
 function ensureCrewTableExists() {
-  const root = document.getElementById('templates-a4-root');
-  if (!root) return;
-  const pagesWrap = root.querySelector('[data-a4-pages]');
-  if (!pagesWrap) return;
-  // If any Crew table exists anywhere, do nothing (builder already created it)
-  const existingAnywhere = root.querySelector('table.cs-crew');
-  if (existingAnywhere) return;
-
-  // Build a fresh crew table and place it on its own second page
-  const page = document.createElement('section');
-  page.className = 'a4-page a4-page--landscape';
-  const inner = document.createElement('div'); inner.className = 'a4-inner';
-  const wrap = document.createElement('div'); wrap.className = 'callsheet-v1';
-  page.appendChild(inner); inner.appendChild(wrap);
-
-  const crew = document.createElement('table');
-  crew.className = 'tpl-table cs-crew';
-  crew.setAttribute('data-editable-table', 'crew');
-  const cols = [30, 34, 20, 16];
-  const cg = document.createElement('colgroup');
-  cols.forEach((w) => { const c = document.createElement('col'); c.setAttribute('style', `width:${w}%`); cg.appendChild(c); });
-  crew.appendChild(cg);
-  const thead = document.createElement('thead');
-  const titleRow = document.createElement('tr');
-  const titleTh = document.createElement('th'); titleTh.setAttribute('colspan', String(cols.length)); titleTh.className = 'cs-crew-title'; titleTh.textContent = 'Crew Call';
-  titleRow.appendChild(titleTh); thead.appendChild(titleRow);
-  const trh = document.createElement('tr');
-  ['Position', 'Name', 'Phone', 'Time'].forEach((label, i) => {
-    const th = document.createElement('th'); th.textContent = label; th.setAttribute('style', `width:${cols[i]}%`); trh.appendChild(th);
+  ensureCrewTableExistsExt({
+    onAfterCreate: () => {
+      try { setTimeout(() => { paginateGenericTplTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl, isLandscape: true }); pruneEmptyA4PagesExt(); }, 20); } catch(_) {}
+    },
   });
-  thead.appendChild(trh); crew.appendChild(thead);
-  const tbody = document.createElement('tbody');
-  for (let i = 0; i < 18; i += 1) {
-    const tr = document.createElement('tr');
-    for (let c = 0; c < 4; c += 1) {
-      const td = document.createElement('td'); td.setAttribute('data-editable','true'); td.setAttribute('contenteditable','true');
-      if (c === 2) { td.setAttribute('dir','ltr'); td.style.direction = 'ltr'; }
-      tr.appendChild(td);
-    }
-    tbody.appendChild(tr);
-  }
-  crew.appendChild(tbody);
-  wrap.appendChild(crew);
-  pagesWrap.insertBefore(page, pagesWrap.children[1] || null);
-
-  try { setTimeout(() => { paginateGenericTplTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl, isLandscape: true }); pruneEmptyA4PagesExt(); }, 20); } catch(_) {}
 }
 
 // Forcefully remove all Crew Call tables and rebuild the standard 4-column grid
 function purgeCrewCallTables() {
-  const root = document.getElementById('templates-a4-root');
-  if (!root) return;
-  const wrappers = Array.from(root.querySelectorAll('.callsheet-v1'));
-  if (!wrappers.length) return;
-  try {
-    const all = [];
-    wrappers.forEach((w) => { all.push(...Array.from(w.getElementsByTagName('table'))); });
-    const isStandard = (t) => !!(t.classList && t.classList.contains('cs-crew'));
-    const isCrewish = (t) => {
-      try {
-        if (isStandard(t)) return true;
-        const txt = ((t.querySelector('thead')?.textContent || t.textContent || '') + '').toLowerCase();
-        return txt.includes('crew call');
-      } catch (_) { return false; }
-    };
-    const candidates = all.filter(isCrewish);
-    if (!candidates.length) return;
-    // Prefer keeping the last standard instance (freshly built). Otherwise keep the first crewish table.
-    let keep = null;
-    const standards = candidates.filter(isStandard);
-    if (standards.length) keep = standards[standards.length - 1];
-    else keep = candidates[0];
-    candidates.forEach((t) => { if (t !== keep) { try { t.parentElement?.removeChild(t); } catch (_) {} } });
-  } catch (_) {}
+  purgeCrewCallTablesExt();
 }
 
 // Ensure Crew table lives on the second page, separate from schedule
 function ensureCrewOnSecondPage() {
-  try {
-    const root = document.getElementById('templates-a4-root');
-    if (!root) return;
-    const pagesWrap = root.querySelector('[data-a4-pages]');
-    if (!pagesWrap) return;
-    const crew = root.querySelector('table.cs-crew');
-    if (!crew) return;
-    const crewPage = crew.closest('.a4-page');
-    const pages = Array.from(pagesWrap.querySelectorAll('.a4-page'));
-    // Move crew page to index 1 (second page)
-    if (crewPage && pages.indexOf(crewPage) !== 1) {
-      pagesWrap.insertBefore(crewPage, pagesWrap.children[1] || null);
-    }
-    // If schedule ended up on the same page as crew, move schedule to its own page after crew
-    const sched = crewPage ? crewPage.querySelector('table.cs-schedule') : null;
-    if (sched) {
-      const newPage = document.createElement('section'); newPage.className = 'a4-page a4-page--landscape';
-      const inner = document.createElement('div'); inner.className = 'a4-inner';
-      const wrap = document.createElement('div'); wrap.className = 'callsheet-v1';
-      newPage.appendChild(inner); inner.appendChild(wrap); wrap.appendChild(sched);
-      pagesWrap.insertBefore(newPage, pagesWrap.children[2] || null);
-    }
-  } catch (_) {}
+  ensureCrewOnSecondPageExt();
 }
 
 // Keep one Crew Call table only: move filled rows from duplicates to the primary and remove the rest.
 function unifyCrewCallTables() {
-  const root = document.getElementById('templates-a4-root');
-  if (!root) return;
-  const tables = Array.from(root.querySelectorAll('.callsheet-v1 table.cs-crew'));
-  if (tables.length <= 1) return;
-  // Prefer the standard grid Crew Call (our builder): it has a THEAD with a cell '.cs-crew-title'
-  const isStandardGrid = (t) => {
-    try { return !!t.querySelector('thead .cs-crew-title'); } catch(_) { return false; }
-  };
-  // Fallback heuristic: table with the most filled cells
-  const score = (t) => {
-    try {
-      const tds = Array.from(t.querySelectorAll('tbody td'));
-      return tds.reduce((n, td) => n + (((td.textContent || '').trim().length > 0) ? 1 : 0), 0);
-    } catch (_) { return 0; }
-  };
-  let primary = null;
-  const standard = tables.filter(isStandardGrid);
-  if (standard.length) {
-    // Keep the last standard grid instance (the one we just built)
-    primary = standard[standard.length - 1];
-  } else {
-    // Fallback to the one with most content
-    primary = tables[0];
-    let best = score(primary);
-    tables.slice(1).forEach((t) => { const s = score(t); if (s > best) { primary = t; best = s; } });
-  }
-
-  const pBody = primary.tBodies && primary.tBodies[0];
-  if (!pBody) return;
-  // Ensure at least 10 empty rows exist in primary to accept merges
-  const ensureRows = (need) => {
-    for (let i = 0; i < need; i += 1) {
-      const tr = document.createElement('tr');
-      for (let c = 0; c < 4; c += 1) { const td = document.createElement('td'); td.setAttribute('data-editable','true'); td.setAttribute('contenteditable','true'); tr.appendChild(td); }
-      pBody.appendChild(tr);
-    }
-  };
-  // Collect content rows from the other tables
-  const rowsToMerge = [];
-  // Only merge from other standard-grid tables; drop legacy/odd shapes entirely
-  tables.forEach((t) => {
-    if (t === primary) return;
-    if (!isStandardGrid(t)) return; // legacy layout -> delete without merging
-    const body = t.tBodies && t.tBodies[0]; if (!body) return;
-    Array.from(body.children).forEach((tr) => {
-      const cells = Array.from(tr.children);
-      const hasAny = cells.some((td) => ((td.textContent || '').trim().length > 0));
-      if (hasAny) rowsToMerge.push(cells.map((td) => td.textContent || ''));
-    });
-  });
-  if (rowsToMerge.length) ensureRows(Math.max(0, rowsToMerge.length - (pBody.children?.length || 0)));
-  // Fill primary with merged rows: append to first empty slots
-  const isEmptyRow = (tr) => Array.from(tr.children).every((td) => !((td.textContent || '').trim().length));
-  let idx = 0;
-  Array.from(pBody.children).forEach((tr) => {
-    if (idx >= rowsToMerge.length) return;
-    if (!isEmptyRow(tr)) return;
-    const values = rowsToMerge[idx++];
-    const tds = Array.from(tr.children);
-    for (let i = 0; i < Math.min(tds.length, values.length); i += 1) { tds[i].textContent = values[i] || ''; }
-  });
-  // Remove all duplicates
-  tables.forEach((t) => { if (t !== primary) { try { t.parentElement?.removeChild(t); } catch (_) {} } });
+  unifyCrewCallTablesExt();
 }
 
 // Strict single-crew enforcement: detect any crew-like tables (Arabic/English),
 // keep one canonical table (prefer cs-crew on page 2), merge rows from other
 // standard cs-crew tables, and remove the rest.
 function ensureSingleCrewTableStrict() {
-  try {
-    const root = document.getElementById('templates-a4-root');
-    if (!root) return;
-    const pagesWrap = root.querySelector('[data-a4-pages]');
-    const pages = pagesWrap ? Array.from(pagesWrap.querySelectorAll('.a4-page')) : [];
-    const pageIndex = (el) => { const p = el?.closest?.('.a4-page'); return p ? pages.indexOf(p) : -1; };
-    const allTables = Array.from(root.getElementsByTagName('table'));
-    const isStandard = (t) => !!(t.classList && t.classList.contains('cs-crew'));
-    const markers = ['crew call','crewcall','crew','طاقم','طاقم العمل','كرو','كرو كول'];
-    const isCrewish = (t) => {
-      try {
-        if (isStandard(t)) return true;
-        const txt = ((t.querySelector('thead')?.textContent || t.textContent || '') + '').toLowerCase();
-        return markers.some((m) => txt.includes(m));
-      } catch (_) { return false; }
-    };
-    const crewish = allTables.filter(isCrewish);
-    if (crewish.length <= 1) return;
-    // Choose primary: cs-crew on page index 1 if possible, else last cs-crew, else first crewish
-    let primary = null;
-    const standards = crewish.filter(isStandard);
-    primary = standards.find((t) => pageIndex(t) === 1) || standards[standards.length - 1] || crewish[0];
-    // Move rows from other standard cs-crew into primary and delete
-    const pBody = primary.tBodies && primary.tBodies[0];
-    const ensureRows = (need) => { for (let i = 0; i < need; i += 1) { const tr = document.createElement('tr'); for (let c = 0; c < 4; c += 1) { const td = document.createElement('td'); td.setAttribute('data-editable','true'); td.setAttribute('contenteditable','true'); tr.appendChild(td); } pBody.appendChild(tr); } };
-    crewish.forEach((t) => {
-      if (t === primary) return;
-      if (isStandard(t)) {
-        const body = t.tBodies && t.tBodies[0]; if (!body) { try { t.remove(); } catch(_) {} return; }
-        const rows = Array.from(body.children);
-        const payload = rows.map((tr) => Array.from(tr.children).map((td) => td.textContent || ''))
-                            .filter((arr) => arr.some((v) => (v || '').trim().length > 0));
-        if (payload.length) ensureRows(Math.max(0, payload.length - (pBody?.children?.length || 0)));
-        let idx = 0;
-        Array.from(pBody.children).forEach((tr) => {
-          if (idx >= payload.length) return;
-          const cells = Array.from(tr.children);
-          const isEmpty = cells.every((td) => !((td.textContent || '').trim().length));
-          if (!isEmpty) return;
-          const values = payload[idx++];
-          for (let i = 0; i < Math.min(cells.length, values.length); i += 1) { cells[i].textContent = values[i] || ''; }
-        });
-      }
-      try { t.parentElement?.removeChild(t); } catch(_) {}
-    });
-    // Place the primary on the second page if possible
-    try {
-      const pg = primary.closest('.a4-page');
-      if (pg && pagesWrap) {
-        const current = Array.from(pagesWrap.children).indexOf(pg);
-        if (current !== 1) pagesWrap.insertBefore(pg, pagesWrap.children[1] || null);
-      }
-    } catch(_) {}
-  } catch (_) {}
+  ensureSingleCrewTableStrictExt();
 }
 
 /* moved to ../templates/tableInteractions.js
@@ -3123,96 +1533,64 @@ async function saveTemplateSnapshot({ copy = false } = {}) {
     alert('لا يوجد محتوى للحفظ');
     throw new Error('No template root to save');
   }
-  const payload = { html: sanitizeHtmlForExport(root.outerHTML) };
   const nameInput = document.getElementById('templates-save-title');
   const customTitle = nameInput && nameInput.value ? String(nameInput.value).trim() : '';
-  await apiRequest('/project-templates/', {
-    method: 'POST',
-    body: {
-      project_id: Number(project.id),
-      reservation_id: reservationId,
-      type,
-      title: customTitle || `${project.title || 'Template'} - ${type}`,
-      data: payload,
+  await saveTemplateSnapshotRequestExt({
+    apiRequestFn: apiRequest,
+    project,
+    type,
+    reservationId,
+    rootHtml: root.outerHTML,
+    customTitle,
+    sanitizedHtml: sanitizeHtmlForExport(root.outerHTML),
+    contextKey: getTemplatesContextKey(),
+    clearLocalAutosave: (contextKey) => {
+      try { localStorage.removeItem(contextKey); } catch (_) {}
     },
   });
   alert('تم حفظ القالب');
-  try { localStorage.removeItem(getTemplatesContextKey()); } catch(_) {}
 }
 
 async function fetchSavedTemplatesForCurrent() {
   const project = getSelectedProject();
   if (!project) return [];
   const typeSel = document.getElementById('templates-type');
-  let type = typeSel ? typeSel.value : 'expenses';
-  // Legacy compatibility: only query by project_id with a few type variants
-  const variants = (() => {
-    if (type === 'callsheet') return ['callsheet', 'call-sheet', 'callsheet_v1', 'callsheetv1', 'callsheet-v1'];
-    return [type];
-  })();
-  const seen = new Set(); const items = [];
-  const normalize = (res) => (Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : (Array.isArray(res?.items) ? res.items : [])));
-  for (const v of variants) {
-    try {
-      // eslint-disable-next-line no-await-in-loop
-      const res = await apiRequest(`/project-templates/?project_id=${encodeURIComponent(project.id)}&type=${encodeURIComponent(v)}`);
-      normalize(res).forEach((it) => { const id = String(it?.id ?? ''); if (!id || seen.has(id)) return; seen.add(id); items.push(it); });
-    } catch (_) { /* ignore */ }
-  }
-  if (!items.length) {
-    try {
-      const res = await apiRequest(`/project-templates/?project_id=${encodeURIComponent(project.id)}`);
-      normalize(res).forEach((it) => { const id = String(it?.id ?? ''); if (!id || seen.has(id)) return; seen.add(id); items.push(it); });
-    } catch (_) { /* ignore */ }
-  }
-  return items;
+  const type = typeSel ? typeSel.value : 'expenses';
+  return fetchSavedTemplatesForProjectExt({
+    apiRequestFn: apiRequest,
+    projectId: project.id,
+    type,
+  });
 }
 
 async function populateSavedTemplates() {
   const select = document.getElementById('templates-saved');
   if (!select) return;
-  const prev = select.value || '';
   const before = Array.from(select.options).slice(1).map((o) => ({ id: o.value, title: o.textContent }));
   const items = await fetchSavedTemplatesForCurrent();
-  // إذا رجع الخادم قائمة فارغة مؤقتاً، احتفظ بالقائمة السابقة لتفادي الوميض
-  const list = (Array.isArray(items) && items.length) ? items : before;
-  select.innerHTML = '<option value="">— محفوظات —</option>' + (list || []).map((it) => `<option value="${String(it.id)}">${(it.title || `#${it.id}`)}</option>`).join('');
-  // try to keep previous selection if still present
-  if (prev && Array.from(select.options).some(o => o.value === String(prev))) {
-    select.value = String(prev);
-  }
+  populateSavedTemplatesSelectExt(select, items, before);
 }
 
 async function loadSnapshotById(id) {
-  if (!id) return;
-  const host = document.getElementById('templates-preview-host');
-  if (!host) return;
-  try { host.style.visibility = 'hidden'; } catch(_) {}
-  let res = null; try { res = await apiRequest(`/project-templates/?id=${encodeURIComponent(id)}`); }
-  catch(err) { notifyApiError(err, 'تعذر تحميل القالب'); return; }
-  const payload = (res && typeof res === 'object' && 'data' in res) ? res.data : res;
-  const item = Array.isArray(payload) ? payload[0] : payload;
-  if (!item) { try { host.style.visibility = ''; } catch(_) {} return; }
-  host.innerHTML = '';
-  try {
-    const data = typeof item.data === 'string' ? JSON.parse(item.data) : item.data;
-    if (data?.html) {
-      const wrap = document.createElement('div');
-      wrap.innerHTML = normalizeTemplateHtmlLegacyUrls(data.html);
-      const root = wrap.firstElementChild;
-      if (root) host.appendChild(root);
-      // Keep loaded HTML as-is when restoring a saved template
-      try { /* no normalization on restore */ } catch(_) {}
-      // Apply structure fixes and enforced sizing for Call Sheet V1
-      try { fixCallsheetStructure(root); } catch(_) {}
-      try { unifyCrewCallTables(); ensureSingleCrewTableStrict(); ensureCrewOnSecondPage(); } catch(_) {}
-      try { enforceCallsheetSizing(root); } catch(_) {}
-      try { shrinkScheduleHeaderLabelsExt(); } catch(_) {}
-      try { pruneEmptyA4PagesExt(); } catch(_) {}
-      try { ensureCellToolbarExt({ onAfterChange: () => { try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); } catch(_) {} } }); } catch(_) {}
-    }
-  } catch (_) {}
-  try { host.style.visibility = ''; } catch(_) {}
+  await loadSnapshotByIdExt({
+    id,
+    apiRequestFn: apiRequest,
+    notifyApiError,
+    companyInfo: COMPANY_INFO,
+    normalizeTemplateHtmlLegacyUrls,
+    fixCallsheetStructure,
+    unifyCrewCallTables,
+    ensureSingleCrewTableStrict,
+    ensureCrewOnSecondPage,
+    enforceCallsheetSizing,
+    shrinkScheduleHeaderLabels: shrinkScheduleHeaderLabelsExt,
+    pruneEmptyA4Pages: pruneEmptyA4PagesExt,
+    attachCallsheetLogoBehaviors,
+    ensureCellToolbar: ensureCellToolbarExt,
+    onToolbarAfterChange: () => {
+      try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); } catch(_) {}
+    },
+  });
 }
 
 export function initTemplatesTab() {
@@ -3351,10 +1729,7 @@ export function initTemplatesTab() {
               await loadSnapshotById(id);
             } else {
               const items = await fetchSavedTemplatesForCurrent();
-              const draft = (items || []).find((it) => {
-                const t = String(it?.title || '').toLowerCase();
-                return t.includes('autosave') || t.includes('draft') || t.includes('مسودة');
-              }) || (items || [])[0];
+              const draft = findDraftTemplate(items || []);
               if (draft && draft.id) await loadSnapshotById(draft.id);
             }
             try { showToast('تم تحميل المسودة', 'success', 2000); } catch(_) {}
@@ -3410,10 +1785,10 @@ export function initTemplatesTab() {
   }
   const langBtn = document.getElementById('templates-lang-toggle');
   if (langBtn) {
-    const updateBtn = () => { langBtn.textContent = TEMPLATE_LANG === 'ar' ? '🌐 AR' : '🌐 EN'; langBtn.title = `Language: ${TEMPLATE_LANG.toUpperCase()}`; };
+    const updateBtn = () => { langBtn.textContent = getTemplateLang() === 'ar' ? '🌐 AR' : '🌐 EN'; langBtn.title = `Language: ${getTemplateLang().toUpperCase()}`; };
     updateBtn();
     langBtn.addEventListener('click', () => {
-      setTemplateLang(TEMPLATE_LANG === 'ar' ? 'en' : 'ar');
+      setTemplateLang(getTemplateLang() === 'ar' ? 'en' : 'ar');
       updateBtn();
       renderTemplatesPreview();
     });
@@ -3423,8 +1798,8 @@ export function initTemplatesTab() {
   document.addEventListener('keydown', (e) => {
     if (e.altKey && !e.shiftKey && !e.ctrlKey && !e.metaKey && (e.code === 'KeyL' || e.key.toLowerCase() === 'l')) {
       e.preventDefault();
-      setTemplateLang(TEMPLATE_LANG === 'ar' ? 'en' : 'ar');
-      if (langBtn) { langBtn.textContent = TEMPLATE_LANG === 'ar' ? '🌐 AR' : '🌐 EN'; langBtn.title = `Language: ${TEMPLATE_LANG.toUpperCase()}`; }
+      setTemplateLang(getTemplateLang() === 'ar' ? 'en' : 'ar');
+      if (langBtn) { langBtn.textContent = getTemplateLang() === 'ar' ? '🌐 AR' : '🌐 EN'; langBtn.title = `Language: ${getTemplateLang().toUpperCase()}`; }
       renderTemplatesPreview();
     }
   }, true);
@@ -3500,16 +1875,11 @@ export function initTemplatesTab() {
       const payload = (res && typeof res === 'object' && 'data' in res) ? res.data : res;
       const item = Array.isArray(payload) ? payload[0] : payload;
       if (!item) { alert('تعذر جلب المحفوظ'); return; }
-      const data = typeof item.data === 'string' ? JSON.parse(item.data) : item.data;
-      const blob = new Blob([JSON.stringify({
-        meta: { id: item.id, title: item.title, type: item.type, project_id: item.project_id },
-        data
-      }, null, 2)], { type: 'application/json' });
+      const blob = createTemplateExportBlob(item);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      const safeTitle = (item.title || `template-${id}`).replace(/[^\w\-\s]/g, '').trim() || `template-${id}`;
-      a.download = `${safeTitle}.json`;
+      a.download = buildTemplateExportFilename(item, id);
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -3549,16 +1919,16 @@ export function initTemplatesTab() {
       const type = typeSelEl ? typeSelEl.value : (json?.meta?.type || 'expenses');
       const reservationSelEl = document.getElementById('templates-reservation');
       const reservationId = reservationSelEl?.value ? Number(reservationSelEl.value) : null;
-      const payload = json?.data?.html ? json.data : { html: document.querySelector('#templates-preview-host')?.innerHTML || '' };
+      const payload = resolveImportedTemplateRequest({
+        json,
+        project,
+        type,
+        reservationId,
+        fallbackHtml: document.querySelector('#templates-preview-host')?.innerHTML || '',
+      });
       try { await apiRequest('/project-templates/', {
         method: 'POST',
-        body: {
-          project_id: Number(project.id),
-          reservation_id: reservationId,
-          type,
-          title: json?.meta?.title || `Imported - ${type}`,
-          data: payload,
-        },
+        body: payload,
       }); }
       catch(err) { notifyApiError(err, 'تعذر الاستيراد'); return; }
       await populateSavedTemplates();
@@ -3583,73 +1953,39 @@ export function initTemplatesTab() {
         },
       });
     } catch (_) {}
-    // Normalize compute path only (do not mutate text) and recompute on edits
-    const onHostInput = (e) => {
-      const el = e && e.target;
-      if (!(el instanceof HTMLElement)) return;
-      if (!el.isContentEditable) return;
-      if (TPL_IS_COMPOSING) return; // Avoid interfering with Arabic/IME composition
-      try { markTemplatesEditingActivity(); } catch(_) {}
-      // Ultra-light path while typing: only update this row's last cell, avoid touching subtotals/groups now.
-      try {
-        const td = el.closest('td');
-        const tr = td && td.closest('tr');
-        const table = tr && tr.closest('table.exp-details');
-        if (tr && table && tr.getAttribute('data-row') === 'item') {
-          const cells = Array.from(tr.children);
-          const num = (s, d=0) => { try { const t=String(s||'').replace(/[\u0660-\u0669]/g,(d)=>'0123456789'[d.charCodeAt(0)-0x0660]).replace(/[\u06F0-\u06F9]/g,(d)=>'0123456789'[d.charCodeAt(0)-0x06F0]).replace(/[\u066B]/g,'.').replace(/[\u066C]/g,'').replace(/[^\d.\-]/g,''); const n=Number(t); return Number.isFinite(n)?n:d; } catch(_) { return d; } };
-          const rate = num(cells[2]?.textContent, 0);
-          const qty  = num(cells[3]?.textContent, 1);
-          const days = num(cells[4]?.textContent, 1);
-          const total = Math.round(rate * qty * days);
-          const out = cells[6]; if (out) { out.textContent = String(total); try { out.setAttribute('data-num','1'); } catch(_) {} }
-        }
-      } catch(_) {}
-      // After brief idle, recompute subgroup/group/grand totals
-      try { clearTimeout(TPL_INPUT_TIMER); } catch (_) {}
-      TPL_INPUT_TIMER = setTimeout(() => { recomputeExpensesSubtotalsDebounced(420); }, 180);
-      // Also keep Call Sheet schedule sizing stable while editing (debounced)
-      try { clearTimeout(TPL_ENFORCE_TIMER); } catch (_) {}
-      TPL_ENFORCE_TIMER = setTimeout(() => {
+    const onHostInput = createTemplatesHostInputHandler({
+      timers: {
+        get inputTimer() { return TPL_INPUT_TIMER; },
+        set inputTimer(value) { TPL_INPUT_TIMER = value; },
+        get enforceTimer() { return TPL_ENFORCE_TIMER; },
+        set enforceTimer(value) { TPL_ENFORCE_TIMER = value; },
+      },
+      isComposing: () => TPL_IS_COMPOSING,
+      markEditing: () => { markTemplatesEditingActivity(); },
+      recomputeSubtotalsDebounced: (delay) => recomputeExpensesSubtotalsDebounced(delay),
+      enforceCallsheetSizing: () => {
         try { if (typeof window.__enforceCallsheetSizing === 'function') window.__enforceCallsheetSizing(); } catch(_) {}
-      }, 80);
-    };
+      },
+    });
     TPL_LISTENERS.hostInput = onHostInput;
     TPL_HOST_EL?.addEventListener('input', onHostInput);
-    // Handle IME composition (Arabic, etc.) to prevent keystroke loss
-    const onCompStart = (e) => { TPL_IS_COMPOSING = true; };
-    const onCompEnd = (e) => {
-      TPL_IS_COMPOSING = false;
-      // Run a recompute once composition commits
-      try { onHostInput(e); } catch (_) {}
-      // Re-enforce schedule sizing after IME commit
-      try { if (typeof window.__enforceCallsheetSizing === 'function') window.__enforceCallsheetSizing(); } catch(_) {}
-    };
+    const { onCompositionStart: onCompStart, onCompositionEnd: onCompEnd } = createTemplatesCompositionHandlers({
+      setComposing: (value) => { TPL_IS_COMPOSING = value; },
+      handleInput: onHostInput,
+      enforceCallsheetSizing: () => {
+        try { if (typeof window.__enforceCallsheetSizing === 'function') window.__enforceCallsheetSizing(); } catch(_) {}
+      },
+    });
     TPL_LISTENERS.hostCompStart = onCompStart;
     TPL_LISTENERS.hostCompEnd = onCompEnd;
     TPL_HOST_EL?.addEventListener('compositionstart', onCompStart, true);
     TPL_HOST_EL?.addEventListener('compositionend', onCompEnd, true);
-    // Add focus styling to avoid centered-caret glitches on Safari and make caret visible
-    const onFocusInCell = (e) => {
-      const t = e.target;
-      if (!(t instanceof HTMLElement)) return;
-      // Mark the owning TD as editing even if the contenteditable is a child DIV
-      const td = t.closest && t.closest('td');
-      if (td) { try { td.classList.add('editing'); } catch(_) {} }
-    };
-    const onFocusOutCell = (e) => {
-      const t = e.target;
-      if (!(t instanceof HTMLElement)) return;
-      const td = t.closest && t.closest('td');
-      if (td) { try { td.classList.remove('editing'); } catch(_) {} }
-      // Commit full recompute on blur to keep sheet consistent
-      try {
-        const table = td && td.closest && td.closest('table.exp-details');
-        if (table) recomputeExpensesSubtotalsDebounced(120);
-      } catch(_) {}
-      // Keep Call Sheet schedule width enforced after edits
-      try { if (typeof window.__enforceCallsheetSizing === 'function') window.__enforceCallsheetSizing(); } catch(_) {}
-    };
+    const { onFocusIn: onFocusInCell, onFocusOut: onFocusOutCell } = createTemplatesFocusHandlers({
+      recomputeSubtotalsDebounced: (delay) => recomputeExpensesSubtotalsDebounced(delay),
+      enforceCallsheetSizing: () => {
+        try { if (typeof window.__enforceCallsheetSizing === 'function') window.__enforceCallsheetSizing(); } catch(_) {}
+      },
+    });
     TPL_HOST_EL?.addEventListener('focusin', onFocusInCell, true);
     TPL_HOST_EL?.addEventListener('focusout', onFocusOutCell, true);
     TPL_LISTENERS.hostFocusIn = onFocusInCell;
@@ -3664,23 +2000,7 @@ export function initTemplatesTab() {
         onTotalsChange: () => recomputeExpensesSubtotalsDebounced(),
       });
     } catch (_) {}
-    // Ensure clicking a contenteditable cell always focuses caret (helps on Safari/iOS)
-    const onMouseDown = (e) => {
-      // If user clicks inside any contenteditable node, focus it
-      const editable = e.target && e.target.closest && e.target.closest('[contenteditable="true"]');
-      if (editable) {
-        try { setTimeout(() => { if (editable && editable.focus) editable.focus(); }, 0); } catch(_) {}
-        return;
-      }
-      // Otherwise, if clicked a TD that contains an inner editable DIV, focus that DIV
-      const tdHost = e.target && e.target.closest && e.target.closest('td');
-      if (tdHost) {
-        const inner = tdHost.querySelector('[contenteditable="true"]');
-        if (inner) {
-          try { setTimeout(() => { if (inner && inner.focus) inner.focus(); }, 0); } catch(_) {}
-        }
-      }
-    };
+    const onMouseDown = createTemplatesMouseDownHandler();
     TPL_HOST_EL?.addEventListener('mousedown', onMouseDown, true);
     // Store for cleanup
     TPL_LISTENERS.hostMouseDown = onMouseDown;
@@ -3688,60 +2008,27 @@ export function initTemplatesTab() {
 
   // (Row focus highlight removed per latest request)
 
-  // Re-populate when data loads later (debounced + queued to avoid console spam)
-  let repopulating = false;
-  let repopulateQueued = false;
-  // moved to module scope for cleanup: TPL_REPOPULATE_TIMER
-  const REPOPULATE_DEBOUNCE_MS = 420;
-  let lastRepopKey = '';
-
-  const doRepopulate = async () => {
-    if (repopulating || TPL_EDITING) { repopulateQueued = true; return; }
-    repopulating = true;
-    try { if (isTemplatesDebugEnabled()) console.debug('[templatesTab] repopulate start'); } catch(_) {}
-    const before = (projectSel?.value || '');
-    try {
-      if (!getProjectsState()?.length) {
-        await refreshProjectsFromApi();
-      }
-      if (!getReservationsState()?.length) {
-        await refreshReservationsFromApi();
-      }
-    } catch (e) { try { if (isTemplatesDebugEnabled()) console.warn('[templatesTab] fetch fallback failed', e); } catch(_) {} }
-
-    populateProjectSelect();
-    if (!projectSel.value && projectSel.options.length > 1) {
-      projectSel.selectedIndex = 1;
-    } else if (before) {
-      projectSel.value = before;
-    }
-    populateReservationSelect(projectSel.value || '');
-    // Skip redundant rebuilds when target key unchanged
-    const typeSel = document.getElementById('templates-type');
-    const type = typeSel ? typeSel.value : 'expenses';
-    const repKey = `${projectSel.value || ''}|${document.getElementById('templates-reservation')?.value || ''}|${type}`;
-    if (repKey !== lastRepopKey) {
-      lastRepopKey = repKey;
-      renderTemplatesPreview();
-    }
-    try { await populateSavedTemplates(); } catch {}
-    try { if (isTemplatesDebugEnabled()) console.debug('[templatesTab] repopulate done'); } catch(_) {}
-    repopulating = false;
-    if (repopulateQueued) {
-      repopulateQueued = false;
-      scheduleRepopulate();
-    }
-  };
-
-  function scheduleRepopulate(delay = REPOPULATE_DEBOUNCE_MS) {
-    // If currently running, flag a queued run; otherwise debounce
-    if (repopulating || TPL_EDITING) { repopulateQueued = true; return; }
-    if (TPL_REPOPULATE_TIMER) { clearTimeout(TPL_REPOPULATE_TIMER); TPL_REPOPULATE_TIMER = null; }
-    TPL_REPOPULATE_TIMER = setTimeout(() => {
-      TPL_REPOPULATE_TIMER = null;
-      void doRepopulate();
-    }, Math.max(0, delay));
-  }
+  const { scheduleRepopulate } = createTemplatesRepopulateController({
+    timerRef: {
+      get current() { return TPL_REPOPULATE_TIMER; },
+      set current(value) { TPL_REPOPULATE_TIMER = value; },
+    },
+    projectSelect: projectSel,
+    getReservationValue: () => document.getElementById('templates-reservation')?.value || '',
+    getType: () => document.getElementById('templates-type')?.value || 'expenses',
+    isEditing: () => templatesTabState.editing,
+    refreshProjectsIfNeeded: async () => {
+      if (!getProjectsState()?.length) await refreshProjectsFromApi();
+    },
+    refreshReservationsIfNeeded: async () => {
+      if (!getReservationsState()?.length) await refreshReservationsFromApi();
+    },
+    populateProjectSelect: () => populateProjectSelect(),
+    populateReservationSelect: (projectId) => populateReservationSelect(projectId),
+    renderPreview: () => renderTemplatesPreview(),
+    populateSavedTemplates: () => populateSavedTemplates(),
+    isDebugEnabled: () => isTemplatesDebugEnabled(),
+  });
 
     const onProj = () => scheduleRepopulate();
     const onResC = () => scheduleRepopulate();
