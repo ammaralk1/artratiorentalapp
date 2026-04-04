@@ -19,7 +19,7 @@ Repo reality check date: 2026-04-05
 | B | CSS token / brand finish | ⚠️ Partial — Tailwind v4 upgrade still pending; minor brand-color debt remains outside CSS |
 | C | DB migration tracking | ✅ Done |
 | D | JS test coverage | ✅ Done |
-| E | JS refactoring (monolith splits) | ⚠️ Partial — `templatesTab.js` is the main remaining target |
+| E | JS refactoring (monolith splits) | ⚠️ Partial — `templatesTab.js` has been modularized; next hotspots are reports/reservations edit surfaces |
 | F | PHP service layer (SQL → repositories) | ✅ Done |
 | G | TypeScript migration | ✅ Foundation set — incremental going forward |
 
@@ -30,14 +30,20 @@ Important: the older `memory/...` references mentioned in previous notes are not
 ## Verified On This Checkout
 
 ```bash
-npx vitest run        # 823 passing, 6 skipped
+npx vitest run        # 872 passing, 6 skipped
 php vendor/bin/phpunit # 101 passing, 207 assertions
 npx tsc --noEmit      # clean
 ```
 
 Notes:
 - JS integration tests are still skipped without the Docker/integration env (`INTEGRATION_API_BASE_URL`, credentials).
-- The worktree is currently dirty with in-progress Phase E refactors; see "Immediate Recommendation" below before starting another broad change.
+- Current worktree is clean except for untracked `vendor/`, which has been intentionally left out of refactor commits.
+
+Recent local-dev fixes on this branch:
+
+- Vite proxy default restored to `127.0.0.1:8000/api`
+- local browser auth flow now prefers same-origin `/backend/api` instead of mixing `localhost` and `127.0.0.1`
+- backend router now accepts both `/api/foo` and `/api/foo/`, which fixed multiple local `404 Not found` responses
 
 ---
 
@@ -100,14 +106,27 @@ Seed data stays separate:
 
 - `backend/seeds/dev_sample_data.sql` is local-dev only and not a tracked migration
 
+## Local Dev Notes
+
+- Normal browser dev flow:
+  - run PHP API on `127.0.0.1:8000`
+  - run Vite on `localhost:5173`
+  - let Vite proxy `/backend/api/...` to the PHP backend
+- Do not force `VITE_API_BASE_URL` to `http://127.0.0.1:8000/api` when browsing the app on `localhost:5173`; that creates a `localhost` vs `127.0.0.1` session/cookie split and can look like "login succeeds then redirects back to login".
+- If you intentionally run the frontend on `127.0.0.1` too, `npm run backoffice:local:dev` is still valid.
+- Router behavior now tolerates both slash forms:
+  - `/api/projects`
+  - `/api/projects/`
+  This matters because several frontend service modules currently call collection endpoints with a trailing slash.
+
 ---
 
 ## Phase D — JS Test Coverage ✅ Done
 
 Current verified counts on this checkout:
 
-- 829 total
-- 823 passing
+- 878 total
+- 872 passing
 - 6 skipped
 
 Covered areas include:
@@ -124,9 +143,10 @@ Covered areas include:
 - `tests/reservations/`
 - `tests/reports/`
 
-Remaining test gap of note:
+Recent additions closed a major prior gap:
 
-- No direct tests for `src/scripts/projects/templatesTab.js`
+- direct tests now cover `src/scripts/projects/templatesTab/`
+- `templatesTab` coverage includes context, zoom, autosave, saved templates, preview, PDF, IO, controller, expenses, crew, formatting, and snapshot behavior
 
 ---
 
@@ -171,17 +191,34 @@ Remaining test gap of note:
 - `payment.js`
 - `view.js`
 
-### Remaining high-priority refactor target
+`src/scripts/projects/templatesTab.js` → `src/scripts/projects/templatesTab/`
 
-`src/scripts/projects/templatesTab.js` — 3,787 lines
+- `autosave.ts`
+- `context.ts`
+- `controller.ts`
+- `crew.ts`
+- `expenses.ts`
+- `formatting.ts`
+- `io.ts`
+- `pdf.ts`
+- `preview.ts`
+- `saved-templates.ts`
+- `snapshot.ts`
+- `state.ts`
+- `zoom.ts`
 
-This is now the main remaining Phase E target.
+### Remaining high-priority refactor targets
 
-Why it matters:
+- `src/scripts/projectsReports.js`
+- `src/scripts/reservationsEdit.js`
+- `src/scripts/projects/form.js`
+- `src/scripts/reservations/editForm.js`
 
-- It still owns preview rendering, print/PDF flow, autosave, saved-template CRUD, table editing, zoom, language toggle, and repopulation lifecycle in one file
-- It is the largest remaining behavior-heavy frontend file
-- It has no direct tests
+Why these matter:
+
+- they are still behavior-heavy orchestration surfaces
+- they sit on user-facing flows with a lot of DOM and state coupling
+- they are the next places where incremental modularization buys maintainability without reopening already-stabilized template work
 
 ### Important patterns already established in recent splits
 
@@ -237,11 +274,14 @@ Rule from `CLAUDE.md`:
 
 Practical note:
 
-- Recent Phase E splits added new `.js` modules, so either:
-  - continue the split in `.js` for consistency and convert later as one contained follow-up, or
-  - convert the new `templatesTab` modules to `.ts` as part of the split and use that as the clean re-entry point for Phase G
+- Recent Phase E work now uses a mixed approach:
+  - equipment / maintenance / project details remain modularized in `.js`
+  - `templatesTab` modules were introduced as `.ts`
 
-The second option is cleaner if scope is controlled.
+That gives a practical migration path:
+
+- use new extractions as the TypeScript boundary where feasible
+- avoid opportunistic churn in already-stable `.js` entry layers unless they are being actively refactored
 
 ---
 
@@ -249,7 +289,7 @@ The second option is cleaner if scope is controlled.
 
 | Phase | Item | Effort |
 |-------|------|--------|
-| E | Stabilize and finish `templatesTab.js` split | ~2–4 days |
+| E | Refactor next large frontend hotspot (`projectsReports.js` or reservation edit surfaces) | ~1–3 days each |
 | B | Tailwind v3 → v4 upgrade for DaisyUI v5 compatibility | ~1 day plus regression testing |
 | B | Clean remaining hard-coded brand colors in JS/chart surfaces | <0.5 day |
 | G | Incremental TypeScript migration | ongoing |
@@ -258,16 +298,19 @@ The second option is cleaner if scope is controlled.
 
 ## Immediate Recommendation
 
-1. Stabilize and commit the current dirty Phase E work first.
-2. Split `src/scripts/projects/templatesTab.js` next.
-3. Add direct tests around templates behavior during that split.
-4. Only after that, do Tailwind v4 / DaisyUI alignment on its own branch.
+1. Keep Phase E moving away from the templates area; that work is now committed and green.
+2. Choose one next hotspot only:
+   - `src/scripts/projectsReports.js`
+   - `src/scripts/reservationsEdit.js`
+   - `src/scripts/projects/form.js`
+   - `src/scripts/reservations/editForm.js`
+3. Do Tailwind v4 / DaisyUI alignment on its own branch after that, not in the same refactor branch.
 
 Reason:
 
-- The repo already contains uncommitted module splits for equipment, maintenance, and project details.
-- Tests are green now.
-- Starting the Tailwind upgrade before the `templatesTab.js` split would stack two large UI regression surfaces at once.
+- `templatesTab` has already been split and committed (`03d17314`).
+- Tests and typecheck are green on this checkout.
+- Stacking the Tailwind upgrade onto the next frontend refactor would still create two large UI regression surfaces at once.
 
 ---
 
@@ -275,7 +318,8 @@ Reason:
 
 Use this plan for the next session:
 
-- `TEMPLATES_TAB_SPLIT_PLAN.md`
+- `HANDOVER_2026_04.md` for current status
+- `TEMPLATES_TAB_SPLIT_PLAN.md` as historical reference for how the templates split was executed
 
 ---
 
