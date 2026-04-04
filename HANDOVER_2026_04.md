@@ -5,23 +5,39 @@
 Back-office production management app (Art Ratio). PHP backend, vanilla JS frontend, Vite build pipeline.
 Primary goal: improve and unify the UI without breaking existing behavior, workflows, permissions, or data flow.
 
+Current branch: `phase-0-environment-control`
+
+Repo reality check date: 2026-04-05
+
 ---
 
-## Master Plan Status (Phases A–G)
+## Current Status Summary
 
 | Phase | Description | Status |
 |-------|-------------|--------|
 | A | Security hardening | ✅ Done |
-| B | CSS token / brand finish | ⚠️ Partial — Tailwind v4 upgrade remaining |
+| B | CSS token / brand finish | ⚠️ Partial — Tailwind v4 upgrade still pending; minor brand-color debt remains outside CSS |
 | C | DB migration tracking | ✅ Done |
 | D | JS test coverage | ✅ Done |
-| E | JS refactoring (monolith splits) | ⚠️ Partial — 4 large files remaining |
+| E | JS refactoring (monolith splits) | ⚠️ Partial — `templatesTab.js` is the main remaining target |
 | F | PHP service layer (SQL → repositories) | ✅ Done |
 | G | TypeScript migration | ✅ Foundation set — incremental going forward |
 
-Full audit and phased plan: `memory/project_master_plan_2026.md`
+Important: the older `memory/...` references mentioned in previous notes are not present in this checkout. Use `FULL_AUDIT_2026_04.md` plus this file as the current source of truth.
 
-Current branch: `phase-0-environment-control`
+---
+
+## Verified On This Checkout
+
+```bash
+npx vitest run        # 823 passing, 6 skipped
+php vendor/bin/phpunit # 101 passing, 207 assertions
+npx tsc --noEmit      # clean
+```
+
+Notes:
+- JS integration tests are still skipped without the Docker/integration env (`INTEGRATION_API_BASE_URL`, credentials).
+- The worktree is currently dirty with in-progress Phase E refactors; see "Immediate Recommendation" below before starting another broad change.
 
 ---
 
@@ -29,21 +45,34 @@ Current branch: `phase-0-environment-control`
 
 Commit: `a7f5c67e`
 
-All five audit findings resolved:
+Resolved:
 
-- **Exception detail stripped** from all ~30 API 500 responses — `error_log()` only, nothing in the JSON response body
-- **`health.php` secured** — `requireAuthenticated()` added; DB error detail removed from response
-- **Telegram webhook** — `secret_token` is now mandatory; all requests rejected if not configured in `config.php`
-- **SameSite** — changed from `Lax` to `Strict` in `backend/bootstrap/environment.php`
-- **X-Forwarded-For** — only trusted when `REMOTE_ADDR` matches `security.trusted_proxy_ips` in config; default is no trusted proxies
-- **Rate limiting** — added to public form endpoints (contact, feedback, equipment-requests) via `backend/bootstrap/ratelimit.php`
+- Exception detail stripped from API 500 responses; internals go to `error_log()` only
+- `health.php` requires auth and no longer leaks DB error details
+- Telegram webhook `secret_token` is mandatory
+- Session cookie `SameSite` moved from `Lax` to `Strict`
+- `X-Forwarded-For` is only trusted from configured proxies
+- Rate limiting added to public form endpoints
 
 ---
 
-## Phase B — CSS ⚠️ Partial
+## Phase B — CSS / UI Finish ⚠️ Partial
 
-- ✅ All 5 remaining `#4c6ef5` color literals replaced
-- ❌ **DaisyUI v5 / Tailwind v3 mismatch** — still on `tailwindcss@^3.4.14`; DaisyUI v5 requires Tailwind v4. This is the only remaining item in Phase B. Do it on its own branch with full UI regression testing after.
+Completed:
+
+- The specific 5 CSS literals called out in the older audit were replaced
+
+Still open:
+
+- DaisyUI v5 / Tailwind v3 mismatch remains:
+  - `daisyui@^5.1.26`
+  - `tailwindcss@^3.4.14`
+- Minor hard-coded brand blue still exists outside the CSS audit scope, for example in `src/scripts/projectsReports.js`
+
+Recommendation:
+
+- Do the Tailwind v3 → v4 upgrade on its own branch after `templatesTab.js` is stabilized
+- Fold remaining chart/UI color literals into the same cleanup pass so Phase B can actually close
 
 ---
 
@@ -51,45 +80,53 @@ All five audit findings resolved:
 
 Commit: `9e8c13b7`
 
-**Migration runner:** `backend/tools/migrate.php`
+Migration runner: `backend/tools/migrate.php`
 
 ```bash
-php backend/tools/migrate.php --status     # show applied vs pending
-php backend/tools/migrate.php              # apply all pending
-php backend/tools/migrate.php --dry-run    # preview without running
-php backend/tools/migrate.php --baseline   # mark all existing files applied (first-time setup on existing DB)
+php backend/tools/migrate.php --status
+php backend/tools/migrate.php
+php backend/tools/migrate.php --dry-run
+php backend/tools/migrate.php --baseline
 ```
 
-- Tracks applied migrations in a `schema_migrations` table (auto-created)
-- Runs SQL files in `backend/sql/` in alphabetical order
-- Safety guard: if table is empty and >5 files are pending, stops and prompts for `--baseline` or `--force`
-- **Naming convention for new migrations:** `YYYYMMDD_description.sql` (e.g. `20260404_add_equipment_status_column.sql`)
+Implemented:
 
-**Seed data separation:**
-- `backend/seeds/dev_sample_data.sql` — uses `DROP TABLE`, local dev only, never a tracked migration
-- Docker stack mounts `backend/seeds/` separately so the init script still finds it
+- `schema_migrations` table tracking
+- Alphabetical execution from `backend/sql/`
+- Baseline/force safety guard for existing databases
+- Naming convention: `YYYYMMDD_description.sql`
+
+Seed data stays separate:
+
+- `backend/seeds/dev_sample_data.sql` is local-dev only and not a tracked migration
 
 ---
 
 ## Phase D — JS Test Coverage ✅ Done
 
-**Test counts:** 785 total — **779 passing, 6 skipped** (integration tests requiring Docker env — pre-existing skip)
+Current verified counts on this checkout:
 
-Test directories covering all previously-untested modules:
+- 829 total
+- 823 passing
+- 6 skipped
 
-| Directory | What it covers |
-|-----------|---------------|
-| `tests/apiClient/` | apiClient request/retry/error handling |
-| `tests/auth/` | auth session checks |
-| `tests/customers/` | pagination helpers |
-| `tests/equipment/` | status sync, pagination |
-| `tests/maintenance/` | maintenanceService |
-| `tests/projects/` | projectsService |
-| `tests/technicians/` | techniciansService, pagination |
-| `tests/reservations/service/` | utils, cache, payment, packages, mapping |
-| `tests/reservations/pdf/` | financial, config, toggle-prefs |
-| `tests/reservations/` | summary, pdf, shared, editForm, list |
-| `tests/reports/` | calculations, maintenance-and-breakdowns |
+Covered areas include:
+
+- `tests/apiClient/`
+- `tests/auth/`
+- `tests/customers/`
+- `tests/equipment/`
+- `tests/maintenance/`
+- `tests/projects/`
+- `tests/technicians/`
+- `tests/reservations/service/`
+- `tests/reservations/pdf/`
+- `tests/reservations/`
+- `tests/reports/`
+
+Remaining test gap of note:
+
+- No direct tests for `src/scripts/projects/templatesTab.js`
 
 ---
 
@@ -97,44 +134,70 @@ Test directories covering all previously-untested modules:
 
 ### Completed splits
 
-**`src/scripts/reservations/reservationPdf.js`** (7,069 lines) → `src/scripts/reservations/pdf/`:
-`state.js`, `config.js`, `constants.js`, `financial.js`, `toggle-prefs.js`, `assets.js`,
-`data-collection.js`, `layout.js`, `html-builder.js`, `renderer.js`, `modal.js`, `utils.js`, `checklist.js`
+`src/scripts/reservations/reservationPdf.js` → `src/scripts/reservations/pdf/`
 
-**`src/scripts/reservations/createForm.js`** (3,662 lines) → `src/scripts/reservations/create/`:
-`state.js`, `draft.js`, `customer-project.js`, `equipment.js`, `packages-items.js`, `submit.js`, `debug.js`
+`src/scripts/reservations/createForm.js` → `src/scripts/reservations/create/`
 
-**`src/scripts/reservationsService.js`** → `src/scripts/reservations/service/`:
-`utils.js`, `cache.js`, `payment.js`, `packages.js`, `mapping.js`, `api.js`
+`src/scripts/reservationsService.js` → `src/scripts/reservations/service/`
 
-### Remaining large files (not yet split)
+`src/scripts/maintenance.js` → `src/scripts/maintenance/`
 
-| File | Lines | Notes |
-|------|-------|-------|
-| `src/scripts/projects/templatesTab.js` | 3,787 | Biggest remaining file |
-| `src/scripts/projects/projectDetails.js` | 2,556 | |
-| `src/scripts/equipment.js` | 2,365 | |
-| `src/scripts/maintenance.js` | 1,508 | |
+- `actions.js`
+- `api.js`
+- `close-modal.js`
+- `equipment-selector.js`
+- `render.js`
+- `report-modal.js`
+- `state.js`
+- `utils.js`
 
-### Key patterns established during Phase E splits
+`src/scripts/equipment.js` → `src/scripts/equipment/`
 
-**Shared mutable state:** module-level variables grouped into a single exported object to avoid ES module live-binding issues:
+- `api.js`
+- `barcode.js`
+- `events.js`
+- `excel.js`
+- `modal.js`
+- `normalize.js`
+- `render.js`
+- `selection.js`
+- `state.js`
+- `variants.js`
+
+`src/scripts/projects/projectDetails.js` → `src/scripts/projects/projectDetails/`
+
+- `display.js`
+- `edit.js`
+- `payment.js`
+- `view.js`
+
+### Remaining high-priority refactor target
+
+`src/scripts/projects/templatesTab.js` — 3,787 lines
+
+This is now the main remaining Phase E target.
+
+Why it matters:
+
+- It still owns preview rendering, print/PDF flow, autosave, saved-template CRUD, table editing, zoom, language toggle, and repopulation lifecycle in one file
+- It is the largest remaining behavior-heavy frontend file
+- It has no direct tests
+
+### Important patterns already established in recent splits
+
+Shared mutable state:
+
 ```js
-// create/state.js
-export const state = { afterSubmitCallback: null, cachedProjects: [], ... };
-// sub-modules mutate via: state.xxx = ...
+export const state = { ... };
 ```
 
-**Circular dependency injection:** when `mapping.js` needs state owned by `api.js`, use a setter rather than a direct import:
-```js
-// mapping.js
-let _getState = () => [];
-export function setMappingStateGetter(fn) { _getState = fn; }
-// api.js calls setMappingStateGetter(getReservationsState) after declaring state
-```
+Circular dependency handling:
 
-**Import path depth:** files inside `create/` or `service/` need `../../` to reach `src/scripts/`:
-- `../../storage.js`, `../../reservationsTechnicians.js`, `../../reservationsShared.js`
+- Use setter injection instead of direct circular imports
+
+Module placement rule:
+
+- If a helper is only used by one module, keep it in that module instead of forcing a shared bidirectional dependency
 
 ---
 
@@ -142,52 +205,16 @@ export function setMappingStateGetter(fn) { _getState = fn; }
 
 Commits: `bb7a8f04`, `25fbd6fc`
 
-### Repositories (`backend/repositories/`)
+Implemented:
 
-All extend `BaseRepository` (shared PDO constructor, `lastInsertId`, `tableExists`):
+- Repository layer under `backend/repositories/`
+- Shared `BaseRepository`
+- Repository-backed write paths for customers, equipment, projects, reservations, technicians
+- `Router.php` and `AuthMiddleware.php`
 
-| Repository | Key methods beyond CRUD |
-|------------|------------------------|
-| `CustomerRepository` | `exists` |
-| `EquipmentRepository` | `findByBarcode`, `bulkCreate`, `deleteAll` |
-| `ProjectRepository` | `generateCode`, `codeExists`, `syncTechnicians`, `syncEquipment`, `syncExpenses`, `syncPayments` |
-| `ReservationRepository` | `generateCode`, `codeExists`, `syncTechnicians`, `syncItems`, `syncPackages`, `syncPayments` |
-| `TechnicianRepository` | `exists` |
+Verified:
 
-**PHP test suite:** `tests/php/repositories/` — **101 tests, 207 assertions, all passing**
-
-Run with: `php vendor/bin/phpunit`
-
-### Endpoint wiring
-
-Write path goes through repositories. Complex read/schema-detection logic stays with PDO:
-
-| Endpoint | Repo used | PDO kept for |
-|----------|-----------|-------------|
-| `backend/api/customers/index.php` | `CustomerRepository` | — |
-| `backend/api/equipment/index.php` | `EquipmentRepository` | SHOW COLUMNS detection in GET |
-| `backend/api/projects/index.php` | `ProjectRepository` | fetchProject*, tableColumnExists, customer/tech/equipment exists checks |
-| `backend/api/reservations/index.php` | `ReservationRepository` | upsertReservationItems/Packages, fetchReservation*, decorateReservation |
-| `backend/api/technicians/index.php` | `TechnicianRepository` | SHOW COLUMNS + telegram link detection in GET |
-
-### Router and AuthMiddleware
-
-`backend/Router.php` — lightweight regex router, loaded globally via `bootstrap/autoload.php`
-`backend/middleware/AuthMiddleware.php` — wraps `requireAuthenticated()` / `requireRole()`
-
-All 5 wired endpoints now use:
-```php
-AuthMiddleware::authenticated();
-(new Router($_SERVER['REQUEST_METHOD'] ?? 'GET', $_SERVER['REQUEST_URI'] ?? '/'))
-    ->get('/api/xxx',    fn() => handleXxxGet(...))
-    ->post('/api/xxx',   fn() => handleXxxCreate(...))
-    ->put('/api/xxx',    fn() => handleXxxUpdate(...))
-    ->patch('/api/xxx',  fn() => handleXxxUpdate(...))
-    ->delete('/api/xxx', fn() => handleXxxDelete(...))
-    ->dispatch();
-```
-
-The remaining ~25 backend API files still use `switch ($method)` — they can be migrated opportunistically when next touched.
+- `tests/php/repositories/` — 101 passing, 207 assertions
 
 ---
 
@@ -195,22 +222,60 @@ The remaining ~25 backend API files still use `switch ($method)` — they can be
 
 Commit: `4b02f9ae`
 
-- `typescript@^6` installed as dev dependency
-- `tsconfig.json` added: `strict: true` for `.ts` files, `allowJs: true` + `checkJs: false` so all existing `.js` files are unaffected
-- `tsc --noEmit` passes clean (zero errors baseline)
-- **Rule in `CLAUDE.md`:** any new `src/scripts/` file must be `.ts`; existing `.js` converts when next touched for a real change; no implicit `any`; API response shapes need explicit types
+Implemented:
+
+- `typescript@^6`
+- `tsconfig.json`
+- `strict: true` for `.ts`
+- `allowJs: true`
+- `checkJs: false`
+
+Rule from `CLAUDE.md`:
+
+- New `src/scripts/` files should be `.ts`
+- Existing `.js` files convert when touched for real work
+
+Practical note:
+
+- Recent Phase E splits added new `.js` modules, so either:
+  - continue the split in `.js` for consistency and convert later as one contained follow-up, or
+  - convert the new `templatesTab` modules to `.ts` as part of the split and use that as the clean re-entry point for Phase G
+
+The second option is cleaner if scope is controlled.
 
 ---
 
-## What Remains
+## What Is Actually Left
 
 | Phase | Item | Effort |
 |-------|------|--------|
-| B | Tailwind v3 → v4 upgrade (DaisyUI v5 requires it) | ~1 day |
-| E | Split 4 remaining large JS files (templatesTab, projectDetails, equipment, maintenance) | ~1 week |
-| G | TypeScript migration — incremental, no dedicated sprint | ongoing |
+| E | Stabilize and finish `templatesTab.js` split | ~2–4 days |
+| B | Tailwind v3 → v4 upgrade for DaisyUI v5 compatibility | ~1 day plus regression testing |
+| B | Clean remaining hard-coded brand colors in JS/chart surfaces | <0.5 day |
+| G | Incremental TypeScript migration | ongoing |
 
-**Recommended order:** Phase E first (low breakage risk), then Phase B on its own branch (CSS pipeline change, needs full UI regression test after).
+---
+
+## Immediate Recommendation
+
+1. Stabilize and commit the current dirty Phase E work first.
+2. Split `src/scripts/projects/templatesTab.js` next.
+3. Add direct tests around templates behavior during that split.
+4. Only after that, do Tailwind v4 / DaisyUI alignment on its own branch.
+
+Reason:
+
+- The repo already contains uncommitted module splits for equipment, maintenance, and project details.
+- Tests are green now.
+- Starting the Tailwind upgrade before the `templatesTab.js` split would stack two large UI regression surfaces at once.
+
+---
+
+## Next File To Open
+
+Use this plan for the next session:
+
+- `TEMPLATES_TAB_SPLIT_PLAN.md`
 
 ---
 
@@ -229,11 +294,3 @@ npx tsc --noEmit
 # Migration status (requires config.php)
 php backend/tools/migrate.php --status
 ```
-
----
-
-## Memory Files
-
-- `memory/project_master_plan_2026.md` — full audit + phased plan A–G with current status
-- `memory/project_ui_refactor_plan.md` — earlier 8-phase CSS plan (superseded)
-- `memory/project_brand_state.md` — brand rollout state
