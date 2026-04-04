@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
+import { Agent } from 'http';
 
 export default defineConfig(async () => {
   const analyze = process.env.ANALYZE === 'true';
@@ -31,7 +32,47 @@ export default defineConfig(async () => {
     base: './',
     server: {
       port: 5173,
-      open: '/src/pages/dashboard.html'
+      open: '/src/pages/login.html',
+      proxy: {
+        // Proxy API calls to the local PHP dev server so cookies stay same-origin.
+        // Start the PHP server with: php -S 127.0.0.1:8000 -t backend/
+        '/backend/api': {
+          target: 'http://127.0.0.1:8000',
+          rewrite: (path) => path.replace(/^\/backend\/api/, '/api'),
+          changeOrigin: true,
+          secure: false,
+          // PHP built-in server sends Connection: close — disable keep-alive
+          // so Node's http proxy does not attempt to reuse the connection.
+          agent: new Agent({ keepAlive: false }),
+          configure: (proxy) => {
+            // Strip Content-Length from PHP responses — the built-in server
+            // sometimes advertises a wrong length, causing ERR_CONTENT_LENGTH_MISMATCH
+            // in the browser. Without it the browser uses chunked transfer safely.
+            proxy.on('proxyRes', (proxyRes) => {
+              delete proxyRes.headers['content-length'];
+              proxyRes.on('error', () => {});
+            });
+            // Suppress ALL stream errors so PHP built-in server quirks
+            // (Connection: close + extra data) never crash the Vite process.
+            proxy.on('error', (err, req, res) => {
+              console.warn('[proxy] error (suppressed):', err.message);
+              try { req?.on('error', () => {}); } catch (_) {}
+              try { res?.on('error', () => {}); } catch (_) {}
+              try {
+                if (res && !res.headersSent) {
+                  res.writeHead(502, { 'Content-Type': 'application/json' });
+                  res.end('{"error":"proxy error"}');
+                } else {
+                  res?.socket?.destroy();
+                }
+              } catch (_) {}
+            });
+            proxy.on('proxyReq', (proxyReq) => {
+              proxyReq.on('error', () => {});
+            });
+          },
+        },
+      },
     },
     build: {
       outDir: 'dist',

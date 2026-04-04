@@ -13,6 +13,11 @@ import {
 } from "./reservations/equipmentSelection.js";
 import { hasEquipmentConflict, normalizeBarcodeValue } from "./reservations/state.js";
 import { isEquipmentAvailable, normalizeAssetUrl } from "./reservationsEquipment.js";
+import {
+  DEFAULT_EQUIPMENT_PAGE_SIZE,
+  buildEquipmentPageNumbers,
+  getEquipmentPaginationState,
+} from "./equipmentPagination.js";
 
 const initialEquipmentData = loadData() || {};
 let equipmentState = (initialEquipmentData.equipment || []).map(mapLegacyEquipment);
@@ -23,6 +28,11 @@ let activeEquipmentIndex = null;
 let currentEquipmentSnapshot = null;
 let isEquipmentEditMode = false;
 let selectionChangeListenerAttached = false;
+const equipmentPagination = {
+  page: 1,
+  pageSize: DEFAULT_EQUIPMENT_PAGE_SIZE,
+};
+let lastEquipmentFilterSignature = "";
 
 function getBootstrapModal(element) {
   if (!element) return null;
@@ -1520,6 +1530,68 @@ function renderEmptyState(message, { tone = "", icon = "📦" } = {}) {
   `;
 }
 
+function buildEquipmentFilterSignature({ search = "", category = "", sub = "", statusFilter = "" } = {}) {
+  return JSON.stringify([search, category, sub, statusFilter]);
+}
+
+function resetEquipmentPagination() {
+  equipmentPagination.page = 1;
+}
+
+function renderEquipmentPagination(totalItems) {
+  const host = document.getElementById("equipment-list-pagination");
+  if (!host) return;
+
+  const paginationState = getEquipmentPaginationState({
+    totalItems,
+    page: equipmentPagination.page,
+    pageSize: equipmentPagination.pageSize,
+  });
+  equipmentPagination.page = paginationState.currentPage;
+
+  if (totalItems <= 0 || paginationState.totalPages <= 1) {
+    host.hidden = true;
+    host.innerHTML = "";
+    return;
+  }
+
+  const navLabel = t("equipment.pagination.navigation", "التنقل بين صفحات المعدات");
+  const prevLabel = t("equipment.pagination.prev", "السابق");
+  const nextLabel = t("equipment.pagination.next", "التالي");
+  const pageLabelTemplate = t("equipment.pagination.page", "صفحة {page}");
+  const rangeTemplate = t("equipment.pagination.range", "{from}-{to} من {total}");
+  const rangeText = rangeTemplate
+    .replace("{from}", normalizeNumbers(String(paginationState.rangeStart)))
+    .replace("{to}", normalizeNumbers(String(paginationState.rangeEnd)))
+    .replace("{total}", normalizeNumbers(String(totalItems)));
+  const pageNumbers = buildEquipmentPageNumbers(paginationState.currentPage, paginationState.totalPages);
+
+  const buttonsHtml = pageNumbers.map((page) => {
+    const isActive = page === paginationState.currentPage;
+    const pageLabel = pageLabelTemplate.replace("{page}", normalizeNumbers(String(page)));
+    return `<button type="button" class="btn btn-sm ${isActive ? "btn-primary" : "btn-outline-primary"}" data-equipment-page="${page}" aria-label="${escapeHtml(pageLabel)}" ${isActive ? 'aria-current="page"' : ""}>${normalizeNumbers(String(page))}</button>`;
+  }).join("");
+
+  host.hidden = false;
+  host.innerHTML = `
+    <div class="list-pagination__summary text-muted small">${escapeHtml(rangeText)}</div>
+    <div class="list-pagination__controls btn-group" role="group" aria-label="${escapeHtml(navLabel)}">
+      <button type="button" class="btn btn-sm btn-outline-primary" data-equipment-page="${paginationState.currentPage - 1}" ${paginationState.currentPage <= 1 ? "disabled" : ""} aria-label="${escapeHtml(prevLabel)}">‹</button>
+      ${buttonsHtml}
+      <button type="button" class="btn btn-sm btn-outline-primary" data-equipment-page="${paginationState.currentPage + 1}" ${paginationState.currentPage >= paginationState.totalPages ? "disabled" : ""} aria-label="${escapeHtml(nextLabel)}">›</button>
+    </div>
+  `;
+
+  host.querySelectorAll("[data-equipment-page]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const nextPage = Number.parseInt(button.getAttribute("data-equipment-page") || "", 10);
+      if (!Number.isFinite(nextPage)) return;
+      equipmentPagination.page = nextPage;
+      renderEquipment();
+    });
+  });
+}
+
 export function renderEquipment() {
   const container = document.getElementById("equipment-list");
   if (!container) return;
@@ -1587,6 +1659,7 @@ export function renderEquipment() {
     container.innerHTML = renderEmptyState(t("equipment.list.loading", "⏳ جاري تحميل المعدات..."), {
       icon: "⏳",
     });
+    renderEquipmentPagination(0);
     return;
   }
 
@@ -1595,6 +1668,7 @@ export function renderEquipment() {
       tone: "error",
       icon: "⚠️",
     });
+    renderEquipmentPagination(0);
     return;
   }
 
@@ -1627,11 +1701,25 @@ export function renderEquipment() {
     ? t("equipment.list.emptyFiltered", "⚠️ لا توجد معدات مطابقة.")
     : t("equipment.list.empty", "لا توجد معدات مسجلة بعد.");
 
-  const orderedEntries = filteredEntries;
+  const filterSignature = buildEquipmentFilterSignature({ search, category, sub, statusFilter });
+  if (filterSignature !== lastEquipmentFilterSignature) {
+    resetEquipmentPagination();
+    lastEquipmentFilterSignature = filterSignature;
+  }
 
-  container.innerHTML = orderedEntries.length
-    ? orderedEntries.map(renderEquipmentItem).join("")
+  const orderedEntries = filteredEntries;
+  const paginationState = getEquipmentPaginationState({
+    totalItems: orderedEntries.length,
+    page: equipmentPagination.page,
+    pageSize: equipmentPagination.pageSize,
+  });
+  equipmentPagination.page = paginationState.currentPage;
+  const visibleEntries = orderedEntries.slice(paginationState.startIndex, paginationState.endIndex);
+
+  container.innerHTML = visibleEntries.length
+    ? visibleEntries.map(renderEquipmentItem).join("")
     : renderEmptyState(emptyMessage);
+  renderEquipmentPagination(orderedEntries.length);
 
   const countBadge = document.getElementById("equipment-list-count");
   if (countBadge) {
@@ -1854,6 +1942,7 @@ async function editEquipment(index, updatedData) {
 }
 
 function handleEquipmentSearch() {
+  resetEquipmentPagination();
   renderEquipment();
 }
 

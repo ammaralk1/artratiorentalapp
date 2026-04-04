@@ -5,15 +5,15 @@
   --reports-radius-md: var(--radius-md, 14px);
   --reports-shadow: var(--shadow-sm, 0 10px 24px rgba(15, 23, 42, 0.08));
   --reports-transition: var(--transition, all 0.25s ease);
-  --reports-surface: var(--clr-card, #ffffff);
+  --reports-surface: var(--bo-color-content-bg);
   --reports-surface-soft: rgba(244, 246, 251, 0.78);
   --reports-surface-contrast: rgba(238, 242, 255, 0.92);
-  --reports-border: rgba(76, 110, 245, 0.14);
-  --reports-border-strong: rgba(76, 110, 245, 0.2);
+  --reports-border: var(--bo-color-content-border);
+  --reports-border-strong: var(--bo-color-content-muted-border);
   --reports-text: var(--clr-text, #1f2d3d);
   --reports-muted: var(--clr-muted, #667892);
-  --reports-accent: var(--clr-primary, #4c6ef5);
-  --reports-accent-rgb: 76, 110, 245;
+  --reports-accent: var(--bo-color-accent);
+  --reports-accent-rgb: 154, 170, 145;
   --reports-success: var(--clr-success, #2f9e44);
   --reports-success-rgb: 47, 158, 68;
   --reports-warning: var(--clr-warning, #f08c00);
@@ -24,11 +24,11 @@
 
 html.dark-mode,
 body.dark-mode {
-  --reports-surface: rgba(24, 33, 59, 0.92);
+  --reports-surface: var(--bo-color-content-muted-bg);
   --reports-surface-soft: rgba(30, 41, 59, 0.78);
   --reports-surface-contrast: rgba(37, 51, 82, 0.88);
-  --reports-border: rgba(59, 130, 246, 0.32);
-  --reports-border-strong: rgba(59, 130, 246, 0.42);
+  --reports-border: var(--bo-color-content-border);
+  --reports-border-strong: var(--bo-color-content-muted-border);
   --reports-shadow: 0 16px 36px rgba(3, 8, 26, 0.55);
   --reports-text: var(--clr-text, #e2e8f0);
   --reports-muted: rgba(148, 163, 184, 0.78);
@@ -128,9 +128,9 @@ body.dark-mode {
   align-items: flex-end;
   width: 100%;
   max-width: min(100%, 960px);
-  padding: 12px 18px !important;
+  padding: 16px 20px !important;
   box-sizing: border-box;
-  gap: 10px;
+  gap: 14px;
   margin: 0 auto;
 }
 
@@ -188,7 +188,7 @@ body.dark-mode {
 .reports-wrapper--reservations .reports-header-card {
   flex-direction: column;
   align-items: stretch !important;
-  gap: 10px;
+  gap: 14px;
   width: 100% !important;
   max-width: 100% !important;
   margin: 0 !important;
@@ -380,12 +380,14 @@ html[dir="rtl"] .reports-wrapper--reservations .reports-card-title {
 
 .reports-wrapper--reservations .reports-filters {
   flex-direction: column;
-  align-items: center;
-  gap: 6px;
+  align-items: stretch;
+  gap: 12px;
   width: 100%;
   margin-inline: auto;
-  /* reduce container padding to remove extra "حشو" */
-  padding: 8px 10px;
+  padding: 16px 18px;
+  background: var(--bo-color-content-muted-bg);
+  border-color: var(--bo-color-content-border);
+  box-shadow: inset 0 0 0 1px rgba(154, 170, 145, 0.06);
 }
 
 body[dir="rtl"] .reports-filters {
@@ -496,19 +498,24 @@ body[dir="rtl"] .reports-filters {
 .reports-wrapper--reservations .reports-custom-range {
   justify-content: center;
   gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--bo-color-content-border);
+  border-radius: 14px;
+  background: var(--bo-color-content-bg);
 }
 
 .reports-wrapper--reservations .reports-filter-search-row {
   display: flex;
-  justify-content: center;
-  margin-top: 12px;
+  justify-content: stretch;
   width: 100%;
+  padding-top: 2px;
 }
 
 .reports-wrapper--reservations .reports-filter-search-row .reports-filter-field {
-  width: min(720px, 100%);
-  align-items: center;
-  text-align: center;
+  width: 100%;
+  align-items: stretch;
+  text-align: inherit;
 }
 
 .reports-wrapper--reservations .reports-filter-search-row .reports-filter-control {
@@ -519,9 +526,13 @@ body[dir="rtl"] .reports-filters {
 .reports-presets-controls {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 8px;
+  gap: 12px;
   flex-wrap: wrap; /* wrap on small screens */
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--bo-color-content-border);
+  border-radius: 16px;
+  background: var(--bo-color-content-bg);
 }
 
 /* Keep one row on medium+ screens */
@@ -540,33 +551,41 @@ body[dir="rtl"] .reports-filters {
   align-items: center;
   flex-wrap: wrap;
   justify-content: flex-start;
+  flex: 1 1 auto;
 }
 
 /* Unify preset buttons with theme look and feel */
 .reports-presets-actions .reports-preset-btn {
-  border-radius: 12px;
-  min-height: 40px;
-  padding-inline: 12px;
-  border-color: var(--reports-border);
-  color: var(--clr-text);
+  border-radius: 999px;
+  min-height: 42px;
+  padding-inline: 14px;
+  border-color: var(--bo-color-tab-shell-border);
+  background: var(--bo-color-tab-shell-bg);
+  box-shadow: var(--bo-color-tab-shell-shadow);
+  color: var(--bo-color-tab-text);
 }
 
 .reports-presets-actions .reports-preset-btn:hover,
 .reports-presets-actions .reports-preset-btn:focus-visible {
-  border-color: var(--reports-accent);
-  box-shadow: 0 0 0 2px rgba(var(--reports-accent-rgb, 76,110,245), 0.18);
+  border-color: var(--bo-color-tab-hover-border);
+  background: var(--bo-color-tab-hover-bg);
+  box-shadow: var(--bo-color-tab-hover-shadow);
+  color: var(--bo-color-tab-active-fg);
 }
 
 :is(html.dark-mode, body.dark-mode) .reports-presets-actions .reports-preset-btn {
-  border-color: var(--reports-border-strong);
-  color: var(--reports-text);
-  background: rgba(24, 33, 59, 0.5);
+  border-color: var(--bo-color-tab-shell-border);
+  color: var(--bo-color-tab-text);
+  background: var(--bo-color-tab-shell-bg);
+  box-shadow: var(--bo-color-tab-shell-shadow);
 }
 
 :is(html.dark-mode, body.dark-mode) .reports-presets-actions .reports-preset-btn:hover,
 :is(html.dark-mode, body.dark-mode) .reports-presets-actions .reports-preset-btn:focus-visible {
-  border-color: var(--reports-accent);
-  box-shadow: 0 0 0 2px rgba(var(--reports-accent-rgb, 147,197,253), 0.25);
+  border-color: var(--bo-color-tab-hover-border);
+  background: var(--bo-color-tab-hover-bg);
+  box-shadow: var(--bo-color-tab-hover-shadow);
+  color: var(--bo-color-tab-active-fg);
 }
 
 @media (max-width: 640px) {
@@ -618,24 +637,20 @@ body[dir="rtl"] .reports-filters {
 .reports-wrapper--reservations .reports-filters-grid {
   width: 100%;
   margin-inline: auto;
-  /* remove horizontal gaps so the 4 fields sit closer */
-  column-gap: 0 !important;
-  row-gap: 6px;
+  column-gap: 12px !important;
+  row-gap: 12px;
   justify-items: stretch;
 }
 
-/* Stronger rule: for the primary four filters row, remove any gap entirely */
 .reports-wrapper--reservations #reservations-reports-filters .reports-filters-grid--primary {
-  gap: 6px 0 !important; /* row-gap 6px, column-gap 0 */
-  column-gap: 0 !important;
-  /* Constrain width so the 4 fields sit closer مع جعلها أقرب */
-  width: min(100%, 760px);
+  gap: 10px 12px !important;
+  column-gap: 12px !important;
+  width: 100%;
   margin-inline: auto;
 }
 
-/* قلل المسافة بين عنوان الحقل والمدخل */
 .reports-wrapper--reservations #reservations-reports-filters .reports-filters-grid--primary .reports-filter-field {
-  gap: 2px;
+  gap: 4px;
 }
 
 /* Ensure each select/input stretches to fill its grid cell fully */
@@ -656,10 +671,12 @@ body[dir="rtl"] .reports-filters {
 
 .reports-wrapper--reservations .reports-filter-control {
   min-width: 0; /* allow shrink to balance columns */
-  /* slightly smaller to tighten the filter boxes */
-  min-height: 44px;
-  padding: 8px 12px;
+  min-height: 46px;
+  padding: 10px 14px;
   width: 100%;
+  background: var(--bo-color-control-bg);
+  border-color: var(--bo-color-control-border);
+  box-shadow: var(--bo-color-control-shadow);
 }
 
 /* Ensure consistent control width across all four filters */
@@ -696,7 +713,7 @@ body[dir="rtl"] .reports-filters {
 
 .reports-filter-control {
   border-radius: 14px;
-  border: 1px solid rgba(76, 110, 245, 0.2);
+  border: 1px solid var(--bo-color-control-border);
   padding: 10px 14px;
   background: rgba(255, 255, 255, 0.92);
   color: var(--clr-text);
@@ -706,28 +723,31 @@ body[dir="rtl"] .reports-filters {
 
 .reports-filter-control:focus {
   outline: none;
-  border-color: var(--reports-accent);
-  box-shadow: 0 0 0 2px rgba(var(--reports-accent-rgb, 76, 110, 245), 0.25);
+  border-color: var(--bo-color-control-focus-border);
+  box-shadow: 0 0 0 3px var(--bo-color-control-focus-ring);
 }
 
 :is(html.dark-mode, body.dark-mode) .reports-filter-control {
-  background: rgba(24, 33, 59, 0.88);
-  border-color: rgba(93, 133, 255, 0.26);
+  background: var(--bo-color-control-bg);
+  border-color: var(--bo-color-control-border);
   color: var(--clr-text);
 }
 
 .reports-custom-range {
-  margin-top: 12px;
-  gap: 16px;
+  margin-top: 0;
+  gap: 12px;
 }
 
 .reports-filters-footer {
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 18px;
-  margin-top: 22px;
-  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 12px;
+  margin-top: 0;
+  padding-top: 14px;
+  align-items: center;
+  width: 100%;
+  border-top: 1px solid var(--bo-color-content-border);
 }
 
 .reports-column-toggles {
@@ -826,23 +846,44 @@ body[dir="rtl"] .reports-filters {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
+  width: 100%;
+}
+
+.reports-wrapper--reservations .reports-quick-chips {
+  width: 100%;
+  margin-top: 0 !important;
+  padding: 10px 12px;
+  border: 1px solid var(--bo-color-content-border);
+  border-radius: 14px;
+  background: var(--bo-color-content-bg);
 }
 
 /* Quick filter chips */
 .reports-quick-chips .chip {
   border: 1px solid var(--reports-border);
-  background: var(--reports-surface);
-  color: var(--reports-text);
+  background: var(--bo-color-tab-shell-bg);
+  color: var(--bo-color-tab-text);
   border-radius: 999px;
-  padding: 6px 10px;
+  padding: 8px 12px;
   font-size: .85rem;
   line-height: 1;
   display: inline-flex;
   gap: 6px;
+  box-shadow: var(--bo-color-tab-shell-shadow);
 }
 .reports-quick-chips .chip .chip-count { opacity: .8; font-weight: 700; }
-.reports-quick-chips .chip:hover { border-color: rgba(var(--reports-accent-rgb, 76, 110, 245), 0.5); color: var(--reports-accent); }
-.reports-quick-chips .chip.chip-active { background: rgba(var(--reports-accent-rgb, 76, 110, 245), 0.08); border-color: rgba(var(--reports-accent-rgb, 76, 110, 245), 0.66); color: var(--reports-accent); }
+.reports-quick-chips .chip:hover {
+  border-color: var(--bo-color-tab-hover-border);
+  background: var(--bo-color-tab-hover-bg);
+  box-shadow: var(--bo-color-tab-hover-shadow);
+  color: var(--bo-color-tab-active-fg);
+}
+.reports-quick-chips .chip.chip-active {
+  background: var(--bo-color-tab-active-bg);
+  border-color: var(--bo-color-tab-active-border);
+  box-shadow: var(--bo-color-tab-active-shadow);
+  color: var(--bo-color-tab-active-fg);
+}
 
 .reports-actions .btn,
 .reports-action-btn {
@@ -852,7 +893,9 @@ body[dir="rtl"] .reports-filters {
 
 .reports-action-btn {
   font-weight: 600;
-  min-height: 40px;
+  min-height: 46px;
+  min-width: 200px;
+  box-shadow: var(--bo-color-action-shadow);
 }
 
 .reports-actions .btn-outline {
@@ -1047,7 +1090,7 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
   padding: 14px;
 }
 .reports-kpi-card[data-kpi="totalValue"] .reports-kpi-icon { width: 36px; height: 36px; font-size: 1.1rem; }
-.reports-kpi-card[data-kpi="totalValue"] .reports-kpi-value { color: #4c6ef5 !important; }
+.reports-kpi-card[data-kpi="totalValue"] .reports-kpi-value { color: var(--bo-color-action) !important; }
 
 /* Color-code KPI numbers */
 .reports-kpi-card[data-kpi="outstanding"] .reports-kpi-value { color: #ef4444 !important; }
@@ -1057,7 +1100,7 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
 /* Make profit margin percentage green too (to match net profit visual cue) */
 .reports-kpi-card[data-kpi="margin"] .reports-kpi-value { color: #16a34a !important; }
 /* Color for total projects to match other KPI accents */
-.reports-kpi-card[data-kpi="projects"] .reports-kpi-value { color: #4c6ef5 !important; }
+.reports-kpi-card[data-kpi="projects"] .reports-kpi-value { color: var(--bo-color-action) !important; }
 .reports-kpi-card[data-kpi="expenses"] .reports-kpi-label {
   font-size: 0.86rem; /* shrink a bit more to stay inside card */
   line-height: 1;
@@ -1078,7 +1121,7 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
   margin-top: 8px;
   display: grid;
   gap: 6px;
-  border-top: 1px dashed rgba(76, 110, 245, 0.18);
+  border-top: 1px dashed var(--bo-color-content-border);
   padding-top: 8px;
 }
 
@@ -1138,10 +1181,10 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
 
 /* Debug row for projects reports (toggled by ?reportsDebug=1) */
 .reports-debug-row td {
-  background: rgba(76, 110, 245, 0.06);
+  background: var(--bo-color-accent-soft);
   color: #334155;
   padding: 6px 10px;
-  border-top: 1px dashed rgba(76, 110, 245, 0.25);
+  border-top: 1px dashed var(--bo-color-content-muted-border);
 }
 .reports-debug-code {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
@@ -1361,11 +1404,14 @@ body[dir="ltr"] .reports-card-text {
   width: fit-content;
   max-width: 100%;
   margin-inline: auto;
-  padding: 8px 14px;
-  border-radius: 14px;
+  padding: 10px 16px;
+  border-radius: 18px;
   align-self: center;
   gap: 12px;
   flex: 0 0 auto;
+  background: var(--bo-color-shell-bg);
+  border: 1px solid var(--bo-color-shell-border);
+  box-shadow: var(--bo-color-shell-shadow);
 }
 
 .reports-wrapper--reservations .reports-header-leading svg {
@@ -1562,13 +1608,13 @@ body[dir="ltr"] .reports-card-text {
 .reports-table-card .reports-card-header {
   padding: 22px 26px 12px;
   background: linear-gradient(135deg, rgba(248, 250, 255, 0.96), rgba(233, 240, 255, 0.88));
-  border-bottom: 1px solid rgba(76, 110, 245, 0.16);
+  border-bottom: 1px solid var(--bo-color-table-head-border);
 }
 
 :where(html.dark-mode, body.dark-mode) .reports-table-card .reports-card-header {
   background: linear-gradient(140deg, rgba(18, 28, 54, 0.92), rgba(10, 18, 40, 0.9));
   border-bottom: 1px solid rgba(93, 133, 255, 0.32);
-  box-shadow: inset 0 -1px 0 rgba(59, 130, 246, 0.18);
+  box-shadow: inset 0 -1px 0 var(--bo-color-table-head-border);
 }
 
 .reports-table-card .reports-card-title {
@@ -1595,8 +1641,8 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
 .reports-table-card .reports-table-wrapper {
   position: relative;
   border-radius: 18px;
-  border: 1px solid rgba(76, 110, 245, 0.12);
-  background: linear-gradient(135deg, rgba(76, 110, 245, 0.12), rgba(238, 243, 255, 0.95));
+  border: 1px solid var(--bo-color-content-border);
+  background: var(--bo-color-content-muted-bg);
   box-shadow: var(--shadow-sm);
   padding: 0;
   overflow: hidden;
@@ -1622,11 +1668,11 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
 }
 
 .reports-table-card .reports-table thead th {
-  background: linear-gradient(135deg, rgba(76, 110, 245, 0.18), rgba(59, 91, 220, 0.22));
+  background: var(--bo-color-table-head-bg);
   color: rgba(29, 41, 72, 0.98);
   font-weight: 700;
   padding: 1rem 1.25rem;
-  border: 1px solid rgba(76, 110, 245, 0.22);
+  border: 1px solid var(--bo-color-table-head-border);
   text-align: center;
   letter-spacing: 0.01em;
   text-transform: none;
@@ -1634,7 +1680,7 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
 
 .reports-table-card .reports-table tbody td {
   padding: 0.9rem 1.25rem;
-  border: 1px solid rgba(76, 110, 245, 0.12);
+  border: 1px solid var(--bo-color-table-row-border);
   background: transparent;
   color: var(--clr-text);
   font-weight: 500;
@@ -1670,12 +1716,12 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
 }
 
 .reports-table-card .reports-table tbody tr:hover {
-  background: rgba(76, 110, 245, 0.08);
+  background: var(--bo-color-table-row-edit-bg);
 }
 
 :is(html.dark-mode, body.dark-mode) .reports-table-card .reports-table-wrapper {
   border-color: rgba(93, 133, 255, 0.24);
-  background: rgba(24, 33, 59, 0.92);
+  background: var(--bo-color-content-muted-bg);
   box-shadow: 0 12px 24px rgba(15, 23, 42, 0.25);
 }
 
@@ -1689,10 +1735,10 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
 }
 
 :is(html.dark-mode, body.dark-mode) .reports-table-card .reports-table thead th {
-  background: linear-gradient(135deg, rgba(36, 53, 104, 0.95), rgba(21, 37, 78, 0.92));
-  border-color: rgba(93, 133, 255, 0.35);
-  color: rgba(226, 232, 240, 0.96);
-  box-shadow: inset 0 -1px 0 rgba(15, 23, 42, 0.45);
+  background: var(--bo-color-table-head-bg);
+  border-color: var(--bo-color-table-head-border);
+  color: var(--bo-color-table-head-fg);
+  box-shadow: inset 0 -1px 0 rgba(21, 32, 27, 0.38);
 }
 
 :is(html.dark-mode, body.dark-mode) .reports-table-card .reports-table tbody td {
@@ -1872,8 +1918,10 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
     background: var(--reports-surface-contrast, rgba(248, 250, 255, 0.85));
     backdrop-filter: blur(6px);
   }
-  :is(html.dark, body.dark) .reports-table thead th {
-    background: rgba(24, 33, 59, 0.85);
+  :is(html.dark-mode, body.dark-mode) .reports-table thead th {
+    background: var(--bo-color-table-head-bg);
+    color: var(--bo-color-table-head-fg);
+    border-color: var(--bo-color-table-head-border);
   }
   .reports-table th.sortable {
     cursor: pointer;
@@ -1885,7 +1933,12 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 6px;
+  margin-top: 0;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--bo-color-content-border);
+  border-radius: 14px;
+  background: var(--bo-color-content-bg);
 }
 .reports-active-filters .filter-chip {
   display: inline-flex;
@@ -1893,13 +1946,13 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
   gap: 6px;
   padding: 6px 12px;
   border-radius: 999px;
-  border: 1px solid var(--reports-border, rgba(148, 163, 184, 0.32));
-  background: rgba(248, 250, 255, 0.8);
+  border: 1px solid var(--bo-color-content-border);
+  background: var(--bo-color-tab-shell-bg);
   font-weight: 600;
 }
 :is(html.dark, body.dark) .reports-active-filters .filter-chip {
-  background: rgba(24, 33, 59, 0.7);
-  border-color: rgba(93, 133, 255, 0.26);
+  background: var(--bo-color-tab-shell-bg);
+  border-color: var(--bo-color-tab-shell-border);
 }
 .filter-chip button {
   border: 0;
@@ -1928,8 +1981,8 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
   padding: 16px;
   background: rgba(248, 250, 255, 0.6);
 }
-:is(html.dark, body.dark) .skeleton-card {
-  background: rgba(24, 33, 59, 0.6);
+:is(html.dark-mode, body.dark-mode) .skeleton-card {
+  background: var(--bo-color-content-muted-bg);
 }
 .skeleton-line { height: 14px; border-radius: 10px; background: linear-gradient(90deg, rgba(0,0,0,0.06), rgba(0,0,0,0.12), rgba(0,0,0,0.06)); animation: skeleton 1.2s infinite; }
 .skeleton-line.w-40 { width: 10rem; margin-bottom: 8px; }
@@ -1984,8 +2037,8 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
   padding: 6px 10px;
   border-radius: 10px;
 }
-:is(html.dark, body.dark) .reports-table-pagination .pager button {
-  background: rgba(24, 33, 59, 0.7);
+:is(html.dark-mode, body.dark-mode) .reports-table-pagination .pager button {
+  background: var(--bo-color-content-muted-bg);
   border-color: rgba(93, 133, 255, 0.26);
 }
 }

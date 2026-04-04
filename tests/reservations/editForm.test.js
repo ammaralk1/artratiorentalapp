@@ -27,12 +27,14 @@ const normalizeBarcodeValueMock = vi.fn();
 const combineDateTimeMock = vi.fn();
 const hasEquipmentConflictMock = vi.fn();
 const hasTechnicianConflictMock = vi.fn();
+const getEquipmentConflictingReservationCodesMock = vi.fn(() => []);
 const findEquipmentByDescriptionMock = vi.fn();
 const updatePaymentStatusAppearanceMock = vi.fn();
 const ensureCustomerChoicesMock = vi.fn();
 const ensureProjectChoicesMock = vi.fn();
 const ensureCompanyShareEnabledMock = vi.fn();
 const getCompanySharePercentMock = vi.fn(() => 0);
+const buildEquipmentConflictToastMessageMock = vi.fn((codes, base) => base);
 
 vi.mock('../../src/scripts/storage.js', () => ({ loadData: loadDataMock }));
 vi.mock('../../src/scripts/language.js', () => ({ t: tMock }));
@@ -72,6 +74,7 @@ vi.mock('../../src/scripts/reservations/state.js', () => ({
   combineDateTime: combineDateTimeMock,
   hasEquipmentConflict: hasEquipmentConflictMock,
   hasTechnicianConflict: hasTechnicianConflictMock,
+  getEquipmentConflictingReservationCodes: getEquipmentConflictingReservationCodesMock,
   splitDateTime: vi.fn()
 }));
 const getEquipmentUnavailableMessageMock = vi.fn((status) => `غير متاح (${status})`);
@@ -84,7 +87,8 @@ vi.mock('../../src/scripts/reservations/createForm.js', () => ({
   ensureProjectChoices: ensureProjectChoicesMock,
   ensureCompanyShareEnabled: ensureCompanyShareEnabledMock,
   getCompanySharePercent: getCompanySharePercentMock,
-  getEquipmentUnavailableMessage: getEquipmentUnavailableMessageMock
+  getEquipmentUnavailableMessage: getEquipmentUnavailableMessageMock,
+  buildEquipmentConflictToastMessage: buildEquipmentConflictToastMessageMock
 }));
 vi.mock('../../src/scripts/reservations/controller.js', () => ({
   renderReservations: vi.fn(),
@@ -125,12 +129,14 @@ describe('reservations/editForm module', () => {
     normalizeBarcodeValueMock.mockReset().mockImplementation((value) => String(value || '').trim().toUpperCase());
     combineDateTimeMock.mockReset().mockImplementation((date, time) => `${date}T${time}`);
     hasEquipmentConflictMock.mockReset().mockReturnValue(false);
+    getEquipmentConflictingReservationCodesMock.mockReset().mockReturnValue([]);
     findEquipmentByDescriptionMock.mockReset();
     updatePaymentStatusAppearanceMock.mockReset();
     ensureCustomerChoicesMock.mockReset();
     ensureProjectChoicesMock.mockReset();
     ensureCompanyShareEnabledMock.mockReset();
     getCompanySharePercentMock.mockReset().mockReturnValue(0);
+    buildEquipmentConflictToastMessageMock.mockReset().mockImplementation((codes, base) => base);
     getEquipmentUnavailableMessageMock.mockReset().mockImplementation((status) => `غير متاح (${status})`);
     tMock.mockImplementation((key, fallback) => fallback ?? key);
     loadDataMock.mockReturnValue({ reservations: [], technicians: [] });
@@ -161,7 +167,7 @@ describe('reservations/editForm module', () => {
 
     start.value = '';
     const fallback = module.getEditReservationDateRange();
-    expect(fallback).toEqual({ start: null, end: null });
+    expect(fallback).toEqual({ start: '2024-01-02T09:30', end: '2024-01-05T18:15' });
   });
 
   it('renderEditReservationItems renders rows and empty state', async () => {

@@ -7,7 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="color-scheme" content="light dark">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' https://cdn.jsdelivr.net https://img1.wsimg.com https://static.cloudflareinsights.com; connect-src 'self' http://127.0.0.1:8000 http://localhost:8000 https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://csp.secureserver.net https://cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://assets.art-ratio.com; font-src 'self' https://fonts.gstatic.com data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'self' https://assets.art-ratio.com; worker-src 'self' blob:; upgrade-insecure-requests;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' https://cdn.jsdelivr.net https://img1.wsimg.com https://static.cloudflareinsights.com; connect-src 'self' http://127.0.0.1:8000 http://localhost:8000 http://127.0.0.1:8080 http://localhost:8080 https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://csp.secureserver.net https://cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://assets.art-ratio.com; font-src 'self' https://fonts.gstatic.com data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'self' https://assets.art-ratio.com; worker-src 'self' blob:; upgrade-insecure-requests;">
 
   <script src="/js/godaddy-monitor.js" defer></script>
   <script src="/js/page-boot.js"></script>
@@ -259,6 +259,7 @@
                 <div class="flex flex-wrap items-center justify-between gap-4">
                   <div class="space-y-1 text-start">
                     <p class="text-sm text-base-content/60" data-i18n data-i18n-key="dashboard.header.greeting">👋 أهلاً بك في لوحة التحكم</p>
+                    <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="dashboard.header.workspaceHint">هذه الصفحة للعمليات اليومية مثل الحجوزات، المعدات، الصيانة، والعملاء. استخدم صفحة المشاريع للتخطيط، التقارير، والقوالب.</p>
                   </div>
                   <div class="flex flex-wrap items-center gap-2">
                     <a href="projects.html" class="add-project-btn">
@@ -493,6 +494,7 @@
             </tbody>
           </table>
         </div>
+        <div id="customers-list-pagination" class="list-pagination" hidden></div>
       
       </div> <!-- نهاية تبويب العملاء -->
 
@@ -623,10 +625,11 @@
                 <tr>
                   <td colspan="8" data-i18n data-i18n-key="technicians.table.loading">جاري التحميل...</td>
                 </tr>
-              </tbody>
-            </table>
-          </div>
+            </tbody>
+          </table>
         </div>
+        <div id="technicians-list-pagination" class="list-pagination" hidden></div>
+      </div>
 
         <div class="tech-subtab-panel sub-tab" id="technicians-positions-panel" data-tech-tab-panel="technicians-positions" role="tabpanel" aria-labelledby="tech-subtab-trigger-positions" hidden>
           <!-- ✅ إدارة المناصب -->
@@ -921,6 +924,7 @@
             <span class="equipment-list-count" id="equipment-list-count">—</span>
           </div>
           <div id="equipment-list" class="equipment-grid" role="list"></div>
+          <div id="equipment-list-pagination" class="list-pagination" hidden></div>
         </div>
       </div> <!-- نهاية تبويب المعدات -->
 
@@ -2424,12 +2428,10 @@
     </div>
   </div>
 
-  <!-- ✅ سكربت رئيسي لتشغيل النظام -->
+  <!-- ✅ Dashboard bootstrap owner -->
   <script type="module" src="/src/scripts/language.js"></script>
   <script type="module" src="/src/scripts/translations/common.js"></script>
   <script type="module" src="/src/scripts/translations/dashboard.js"></script>
   <script type="module" src="/src/main.js"></script>
-  <script type="module" src="/src/scripts/customers.js"></script>
-  <script type="module" src="/src/scripts/technicians.js"></script>
 </body>
 </html>

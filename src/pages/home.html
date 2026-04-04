@@ -7,7 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="color-scheme" content="light dark">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' https://cdn.jsdelivr.net https://img1.wsimg.com https://static.cloudflareinsights.com; connect-src 'self' http://127.0.0.1:8000 http://localhost:8000 https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://csp.secureserver.net https://cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://assets.art-ratio.com; font-src 'self' https://fonts.gstatic.com data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'self' https://assets.art-ratio.com; worker-src 'self' blob:; upgrade-insecure-requests;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' https://cdn.jsdelivr.net https://img1.wsimg.com https://static.cloudflareinsights.com; connect-src 'self' http://127.0.0.1:8000 http://localhost:8000 http://127.0.0.1:8080 http://localhost:8080 https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://csp.secureserver.net https://cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://assets.art-ratio.com; font-src 'self' https://fonts.gstatic.com data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'self' https://assets.art-ratio.com; worker-src 'self' blob:; upgrade-insecure-requests;">
 
   <script src="/js/godaddy-monitor.js" defer></script>
   <script src="/js/page-boot.js"></script>
@@ -254,11 +254,28 @@
             </div>
           </section>
 
+          <section class="glass-card space-y-4">
+            <div class="surface-heading-stack">
+              <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="home.workspace.title">اختر مساحة العمل المناسبة</h3>
+              <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="home.workspace.subtitle">لوحة التحكم للعمليات اليومية، ولوحة المشاريع للتخطيط والتقارير والقوالب.</p>
+            </div>
+            <div class="grid gap-4 md:grid-cols-2">
+              <a href="dashboard.html" class="box block space-y-2 text-decoration-none">
+                <h4 class="text-lg font-semibold text-base-content mb-0" data-i18n data-i18n-key="home.bookings.title">📅 إدارة الحجوزات</h4>
+                <p class="text-sm text-base-content/70 mb-0" data-i18n data-i18n-key="home.bookings.description">الوصول إلى لوحة التحكم الكاملة لإدارة الحجوزات، المعدات، الصيانة، والطاقم.</p>
+              </a>
+              <a href="projects.html" class="box block space-y-2 text-decoration-none">
+                <h4 class="text-lg font-semibold text-base-content mb-0" data-i18n data-i18n-key="home.projects.title">🏗️ إدارة المشاريع</h4>
+                <p class="text-sm text-base-content/70 mb-0" data-i18n data-i18n-key="home.projects.description">إنشاء ومتابعة المشاريع، توزيع الطاقم والمعدات، وتتبع المصروفات المرتبطة بكل مشروع.</p>
+              </a>
+            </div>
+          </section>
+
           <div class="glass-card dashboard-tabbar hidden lg:block home-main-tabbar">
             <div class="tab-buttons tab-buttons-horizontal" role="tablist">
               <a class="tab-button" href="dashboard.html" data-i18n data-i18n-key="home.bookings.title">📅 إدارة الحجوزات</a>
               <a class="tab-button" href="projects.html" data-i18n data-i18n-key="home.projects.title">🏗️ إدارة المشاريع</a>
-              <a class="tab-button hidden" href="/equipment-requests-portal.html" data-manager-card data-i18n data-i18n-key="home.equipmentRequests.title">🧰 طلبات المعدات</a>
+              <a class="tab-button hidden" href="/Arino%20-%20Template/equipment-requests-portal.html" data-manager-card data-i18n data-i18n-key="home.equipmentRequests.title">🧰 طلبات المعدات</a>
               <a class="tab-button hidden" href="site-analytics.html" data-manager-card data-i18n data-i18n-key="home.analytics.title">📈 إحصائيات الموقع</a>
               <a class="tab-button hidden" href="contact-inquiries.html" data-manager-card data-i18n data-i18n-key="home.contactInquiries.title">📨 رسائل التواصل</a>
               <a class="tab-button hidden" href="feedback-submissions.html" data-manager-card data-i18n data-i18n-key="home.feedback.title">⭐ آراء العملاء</a>
@@ -273,7 +290,7 @@
                 <div class="tab-buttons tab-buttons-horizontal" role="tablist">
                   <a class="tab-button" href="dashboard.html" data-i18n data-i18n-key="home.bookings.title">📅 إدارة الحجوزات</a>
                   <a class="tab-button" href="projects.html" data-i18n data-i18n-key="home.projects.title">🏗️ إدارة المشاريع</a>
-                  <a class="tab-button hidden" href="/equipment-requests-portal.html" data-manager-card data-i18n data-i18n-key="home.equipmentRequests.title">🧰 طلبات المعدات</a>
+                  <a class="tab-button hidden" href="/Arino%20-%20Template/equipment-requests-portal.html" data-manager-card data-i18n data-i18n-key="home.equipmentRequests.title">🧰 طلبات المعدات</a>
                   <a class="tab-button hidden" href="site-analytics.html" data-manager-card data-i18n data-i18n-key="home.analytics.title">📈 إحصائيات الموقع</a>
                   <a class="tab-button hidden" href="contact-inquiries.html" data-manager-card data-i18n data-i18n-key="home.contactInquiries.title">📨 رسائل التواصل</a>
                   <a class="tab-button hidden" href="feedback-submissions.html" data-manager-card data-i18n data-i18n-key="home.feedback.title">⭐ آراء العملاء</a>
@@ -286,9 +303,9 @@
 
           <section class="glass-card space-y-4">
             <div class="flex items-center justify-between flex-wrap gap-3">
-              <div>
+              <div class="surface-heading-stack">
                 <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="home.summary.title">📊 ملخص سريع</h3>
-                <p class="text-sm text-base-content/70" data-i18n data-i18n-key="home.summary.subtitle">أرقام مختصرة تساعدك على اتخاذ القرار بسرعة.</p>
+                <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="home.summary.subtitle">أرقام مختصرة تساعدك على اتخاذ القرار بسرعة.</p>
               </div>
               <button type="button" class="btn btn-outline btn-sm" id="home-refresh-summary" data-i18n data-i18n-key="actions.refresh">🔄 تحديث البيانات</button>
             </div>

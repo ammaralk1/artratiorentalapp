@@ -7,7 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="color-scheme" content="light dark">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' https://cdn.jsdelivr.net https://img1.wsimg.com https://static.cloudflareinsights.com; connect-src 'self' http://127.0.0.1:8000 http://localhost:8000 https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://csp.secureserver.net https://cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://assets.art-ratio.com; font-src 'self' https://fonts.gstatic.com data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'self' https://assets.art-ratio.com; worker-src 'self' blob:; upgrade-insecure-requests;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' https://cdn.jsdelivr.net https://img1.wsimg.com https://static.cloudflareinsights.com; connect-src 'self' http://127.0.0.1:8000 http://localhost:8000 http://127.0.0.1:8080 http://localhost:8080 https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://csp.secureserver.net https://cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://assets.art-ratio.com; font-src 'self' https://fonts.gstatic.com data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'self' https://assets.art-ratio.com; worker-src 'self' blob:; upgrade-insecure-requests;">
   <script src="/js/godaddy-monitor.js" defer></script>
   <script src="/js/page-boot.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -58,7 +58,7 @@
         <a class="tab-button" href="projects.html" data-close-sidebar data-i18n data-i18n-key="dashboard.quickLinks.projects">
           <span class="tab-button__content">🏗️ <span data-i18n data-i18n-key="dashboard.quickLinks.projects">المشاريع</span></span>
         </a>
-        <a class="tab-button hidden" href="/equipment-requests-portal.html" data-manager-card>
+        <a class="tab-button hidden" href="/Arino%20-%20Template/equipment-requests-portal.html" data-manager-card>
           <span class="tab-button__content">🧰 <span data-i18n data-i18n-key="home.equipmentRequests.title">طلبات المعدات</span></span>
         </a>
         <a class="tab-button active hidden" href="site-analytics.html" data-manager-card aria-current="page">
@@ -230,9 +230,9 @@
 
           <section class="grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(320px,.7fr)]">
             <article class="glass-card space-y-4" id="site-analytics-top-pages">
-              <div>
+              <div class="surface-heading-stack">
                 <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="siteAnalytics.topPages.title">الصفحات الأكثر زيارة</h3>
-                <p class="text-sm text-base-content/70" data-i18n data-i18n-key="siteAnalytics.topPages.subtitle">الصفحات التي جذبت أكبر عدد من الزيارات خلال الفترة المحددة.</p>
+                <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="siteAnalytics.topPages.subtitle">الصفحات التي جذبت أكبر عدد من الزيارات خلال الفترة المحددة.</p>
               </div>
               <div class="users-table-wrapper overflow-x-auto">
                 <table class="table table-hover align-middle text-nowrap users-table">
@@ -256,34 +256,34 @@
 
             <div class="space-y-6">
               <aside class="glass-card space-y-4">
-                <div>
+                <div class="surface-heading-stack">
                   <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="siteAnalytics.sources.title">مصادر الزيارات</h3>
-                  <p class="text-sm text-base-content/70" data-i18n data-i18n-key="siteAnalytics.sources.subtitle">من أين يصل الزوار إلى الموقع.</p>
+                  <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="siteAnalytics.sources.subtitle">من أين يصل الزوار إلى الموقع.</p>
                 </div>
                 <div class="space-y-3" id="site-analytics-sources-list">
-                  <div class="rounded-2xl border border-dashed border-base-300 p-5 text-center text-base-content/60" data-i18n data-i18n-key="siteAnalytics.loading">⏳ جارٍ تحميل الإحصائيات...</div>
+                  <div class="surface-empty-state p-5" data-i18n data-i18n-key="siteAnalytics.loading">⏳ جارٍ تحميل الإحصائيات...</div>
                 </div>
               </aside>
 
               <aside class="glass-card space-y-4">
-                <div>
+                <div class="surface-heading-stack">
                   <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="siteAnalytics.devices.title">الأجهزة</h3>
-                  <p class="text-sm text-base-content/70" data-i18n data-i18n-key="siteAnalytics.devices.subtitle">توزيع الزيارات بين الجوال، التابلت، وسطح المكتب.</p>
+                  <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="siteAnalytics.devices.subtitle">توزيع الزيارات بين الجوال، التابلت، وسطح المكتب.</p>
                 </div>
                 <div class="grid gap-3 sm:grid-cols-3" id="site-analytics-devices-grid">
-                  <div class="rounded-2xl border border-dashed border-base-300 p-5 text-center text-base-content/60 sm:col-span-3" data-i18n data-i18n-key="siteAnalytics.loading">⏳ جارٍ تحميل الإحصائيات...</div>
+                  <div class="surface-empty-state p-5 sm:col-span-3" data-i18n data-i18n-key="siteAnalytics.loading">⏳ جارٍ تحميل الإحصائيات...</div>
                 </div>
               </aside>
             </div>
           </section>
 
           <section class="glass-card space-y-4" id="site-analytics-daily-card">
-            <div>
+            <div class="surface-heading-stack">
               <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="siteAnalytics.daily.title">الزيارات اليومية</h3>
-              <p class="text-sm text-base-content/70" data-i18n data-i18n-key="siteAnalytics.daily.subtitle">مخطط مبسط يوضح نشاط الموقع يومًا بيوم.</p>
+              <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="siteAnalytics.daily.subtitle">مخطط مبسط يوضح نشاط الموقع يومًا بيوم.</p>
             </div>
             <div class="space-y-3" id="site-analytics-daily-list">
-              <div class="rounded-2xl border border-dashed border-base-300 p-5 text-center text-base-content/60" data-i18n data-i18n-key="siteAnalytics.loading">⏳ جارٍ تحميل الإحصائيات...</div>
+              <div class="surface-empty-state p-5" data-i18n data-i18n-key="siteAnalytics.loading">⏳ جارٍ تحميل الإحصائيات...</div>
             </div>
           </section>
         </div>

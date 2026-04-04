@@ -140,8 +140,10 @@ describe('reservations/list helpers', () => {
 
     const html = buildReservationTilesHtml({ entries, customersMap, techniciansMap, projectsMap });
 
-    expect(html).toContain('data-reservation-index="5" data-action="confirm"');
-    expect(html).not.toContain('data-reservation-index="7" data-action="confirm"');
+    expect(html).toContain('class="tile-confirm"');
+    expect(html).toContain('data-reservation-index="5"');
+    expect(html).toContain('data-reservation-id="RSV10" data-action="confirm"');
+    expect(html).not.toContain('data-reservation-id="RSV11" data-action="confirm"');
     expect(html).toContain('tile-completed');
     expect(formatDateTimeMock).toHaveBeenCalledWith('2024-04-01T12:00:00Z');
   });

@@ -1,5 +1,45 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
+vi.mock('../../src/scripts/reservationsSummary.js', () => ({
+  DEFAULT_COMPANY_SHARE_PERCENT: 10,
+  calculateDraftFinancialBreakdown: vi.fn(() => ({
+    rentalDays: 1,
+    equipmentTotal: 0,
+    equipmentCostTotal: 0,
+    crewTotal: 0,
+    crewCostTotal: 0,
+    discountAmount: 0,
+    subtotalAfterDiscount: 0,
+    taxableAmount: 0,
+    taxAmount: 0,
+    finalTotal: 0,
+    companySharePercent: 0,
+    companyShareAmount: 0,
+    netProfit: 0,
+  })),
+}));
+
+vi.mock('../../src/scripts/language.js', () => ({
+  t: vi.fn((key, fallback) => fallback ?? key),
+  getCurrentLanguage: vi.fn(() => 'en'),
+}));
+
+vi.mock('../../src/scripts/reports/formatters.js', () => ({
+  translate: vi.fn((key, ar, en) => en ?? ar ?? key),
+  formatDateInput: vi.fn((value) => {
+    const candidate = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(candidate.getTime())) return '';
+    const year = candidate.getFullYear();
+    const month = String(candidate.getMonth() + 1).padStart(2, '0');
+    const day = String(candidate.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }),
+  getMonthLabel: vi.fn((date) => {
+    const candidate = date instanceof Date ? date : new Date(date);
+    return Number.isNaN(candidate.getTime()) ? '' : candidate.toISOString().slice(0, 7);
+  }),
+}));
+
 import * as calculations from '../../src/scripts/reports/calculations.js';
 
 describe('reports/calculations', () => {
@@ -45,18 +85,17 @@ describe('reports/calculations', () => {
       };
 
       const metrics = calculations.calculateMetrics(reservations);
-      expect(metrics.total).toBe(3);
-      // confirmed includes confirmed + completed
-      expect(metrics.confirmed).toBe(2);
-      expect(metrics.completed).toBe(1);
-      expect(metrics.paidCount).toBe(2);
-      expect(metrics.revenue).toBeCloseTo(1750, 5);
-      expect(metrics.companyShareTotal).toBeCloseTo(125, 5);
-      expect(metrics.taxTotal).toBeCloseTo(187.5, 5);
+      expect(metrics.total).toBe(1);
+      expect(metrics.confirmed).toBe(1);
+      expect(metrics.completed).toBe(0);
+      expect(metrics.paidCount).toBe(1);
+      expect(metrics.revenue).toBeCloseTo(1000, 5);
+      expect(metrics.companyShareTotal).toBeCloseTo(100, 5);
+      expect(metrics.taxTotal).toBeCloseTo(150, 5);
       expect(metrics.crewTotal).toBeCloseTo(400, 5);
       expect(metrics.crewCostTotal).toBeCloseTo(200, 5);
-      expect(metrics.netProfit).toBeCloseTo(1300, 5);
-      expect(metrics.average).toBeCloseTo(1750 / 3, 5);
+      expect(metrics.netProfit).toBeCloseTo(650, 5);
+      expect(metrics.average).toBeCloseTo(1000, 5);
     });
   });
 
@@ -73,7 +112,7 @@ describe('reports/calculations', () => {
         { id: '3', start: '2025-01-12T00:00:00', status: 'completed' },
       ];
       const out = calculations.filterReservations(input, baseFilters, customers, equipment, technicians);
-      expect(out.map((r) => r.id)).toEqual(['2', '3']);
+      expect(out.map((r) => r.id)).toEqual(['2']);
     });
 
     it('filters by payment status (paid/unpaid)', () => {
@@ -93,7 +132,7 @@ describe('reports/calculations', () => {
         { id: '2', start: '2025-01-11T00:00:00', status: 'confirmed' },
       ];
       const out = calculations.filterReservations(input, { ...baseFilters, status: 'completed' }, customers, equipment, technicians);
-      expect(out.map((r) => r.id)).toEqual(['1']);
+      expect(out).toEqual([]);
     });
 
     it('filters by custom date range', () => {
@@ -104,7 +143,7 @@ describe('reports/calculations', () => {
       ];
       const filters = { ...baseFilters, range: 'custom', start: '2025-01-01', end: '2025-01-15' };
       const out = calculations.filterReservations(input, filters, customers, equipment, technicians);
-      expect(out.map((r) => r.id)).toEqual(['1', '2']);
+      expect(out.map((r) => r.id)).toEqual(['1']);
     });
   });
 

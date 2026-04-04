@@ -109,6 +109,7 @@ const KPI_ICONS = Object.freeze({
 
 let ChartLib = null;
 const STATUS_OPTIONS = ['upcoming', 'ongoing', 'completed'];
+let projectsReportsInitPromise = null;
 const CLOSED_STATUS_KEYWORDS = new Set([
   'completed',
   'closed',
@@ -250,7 +251,24 @@ async function initReports() {
   window.addEventListener('storage', handleStorageSync);
 }
 
-document.addEventListener('DOMContentLoaded', initReports);
+export function initProjectsReportsModule() {
+  if (!projectsReportsInitPromise) {
+    projectsReportsInitPromise = initReports().catch((error) => {
+      projectsReportsInitPromise = null;
+      throw error;
+    });
+  }
+
+  return projectsReportsInitPromise;
+}
+
+function bootProjectsReportsModule() {
+  void initProjectsReportsModule().catch((error) => {
+    console.error('❌ [projectsReports] Failed to initialise reports module', error);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', bootProjectsReportsModule);
 
 async function ensureChartLibrary() {
   if (ChartLib) return ChartLib;

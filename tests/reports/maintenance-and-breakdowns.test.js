@@ -1,4 +1,44 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+
+vi.mock('../../src/scripts/reservationsSummary.js', () => ({
+  DEFAULT_COMPANY_SHARE_PERCENT: 10,
+  calculateDraftFinancialBreakdown: vi.fn(() => ({
+    rentalDays: 1,
+    equipmentTotal: 0,
+    equipmentCostTotal: 0,
+    crewTotal: 0,
+    crewCostTotal: 0,
+    discountAmount: 0,
+    subtotalAfterDiscount: 0,
+    taxableAmount: 0,
+    taxAmount: 0,
+    finalTotal: 0,
+    companySharePercent: 0,
+    companyShareAmount: 0,
+    netProfit: 0,
+  })),
+}));
+
+vi.mock('../../src/scripts/language.js', () => ({
+  t: vi.fn((key, fallback) => fallback ?? key),
+  getCurrentLanguage: vi.fn(() => 'en'),
+}));
+
+vi.mock('../../src/scripts/reports/formatters.js', () => ({
+  translate: vi.fn((key, ar, en) => en ?? ar ?? key),
+  formatDateInput: vi.fn((value) => {
+    const candidate = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(candidate.getTime())) return '';
+    const year = candidate.getFullYear();
+    const month = String(candidate.getMonth() + 1).padStart(2, '0');
+    const day = String(candidate.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }),
+  getMonthLabel: vi.fn((date) => {
+    const candidate = date instanceof Date ? date : new Date(date);
+    return Number.isNaN(candidate.getTime()) ? '' : candidate.toISOString().slice(0, 7);
+  }),
+}));
 
 import {
   calculateMaintenanceExpenses,

@@ -741,8 +741,7 @@ async function loadHomeSummary({ silent = false } = {}) {
 
   try {
     const response = await apiRequest('/summary/');
-    summaryState = normalizeSummaryResponse(response?.data ?? null);
-    summaryState = mergeSummaryWithLocalData(summaryState);
+    summaryState = normalizeSummaryResponse(response?.data ?? null) || createEmptySummarySnapshot();
     summaryErrorMessage = '';
   } catch (error) {
     console.error('❌ [home] Failed to load summary data', error);
@@ -758,8 +757,7 @@ async function loadHomeSummary({ silent = false } = {}) {
 
         authResolved = true;
         const retryResponse = await apiRequest('/summary/');
-        summaryState = normalizeSummaryResponse(retryResponse?.data ?? null);
-        summaryState = mergeSummaryWithLocalData(summaryState);
+        summaryState = normalizeSummaryResponse(retryResponse?.data ?? null) || createEmptySummarySnapshot();
         summaryErrorMessage = '';
         return;
       } catch (authError) {

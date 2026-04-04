@@ -5,6 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "backoffice:local:dev": "VITE_API_BASE_URL=http://127.0.0.1:8080/api vite --host 127.0.0.1",
+    "backoffice:local:schema": "php backend/tools/apply_phase4_schema_updates.php",
+    "db:migrate": "php backend/tools/migrate.php",
+    "db:migrate:status": "php backend/tools/migrate.php --status",
+    "db:migrate:baseline": "php backend/tools/migrate.php --baseline",
+    "backoffice:local:smoke": "node scripts/local-backoffice-smoke.mjs",
     "site:local": "node scripts/serve-website-local.mjs",
     "sitemap:generate": "node scripts/generate-sitemap.mjs",
     "build:assets": "vite build",
@@ -21,7 +27,7 @@
     "build:analyze": "ANALYZE=true vite build",
     "test:reservations": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.js",
-    "integration:up": "docker compose -f tests/integration/docker-compose.yml up -d",
+    "integration:up": "node scripts/bootstrap-integration-stack.mjs",
     "integration:down": "docker compose -f tests/integration/docker-compose.yml down -v",
     "predeploy": "npm run test:reservations && npm run build",
     "deploy": "gh-pages -d dist"

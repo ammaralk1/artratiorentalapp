@@ -34,8 +34,8 @@ body[dir="ltr"] .sub-tab-buttons {
 .tab-button,
 .sub-tab-button {
   /* Unified with theme variables */
-  --tab-primary: var(--clr-primary);
-  --tab-primary-soft: var(--clr-primary-soft);
+  --tab-primary: var(--bo-color-action);
+  --tab-primary-soft: var(--bo-color-action-soft);
   --tab-border: color-mix(in srgb, var(--tab-primary) 25%, transparent);
   --tab-bg: linear-gradient(135deg, #f8faff, #e6edff);
   --tab-bg-hover: linear-gradient(135deg, #eff4ff, #d6e1ff);
@@ -85,16 +85,19 @@ body[dir="ltr"] .sub-tab-buttons {
 
 :is(html.dark-mode, body.dark-mode) .tab-button:hover,
 :is(html.dark-mode, body.dark-mode) .sub-tab-button:hover {
-  background: linear-gradient(135deg, rgba(37, 55, 88, 0.95), rgba(30, 48, 82, 0.88));
-  color: #f8fafc;
-  box-shadow: 0 10px 22px rgba(59, 130, 246, 0.3), 0 0 0 4px rgba(96, 165, 250, 0.25);
+  background: var(--bo-color-tab-hover-bg);
+  border-color: var(--bo-color-tab-hover-border);
+  color: var(--bo-color-tab-active-fg);
+  box-shadow: var(--bo-color-tab-hover-shadow);
 }
 
 :is(html.dark-mode, body.dark-mode) .tab-button.active,
 :is(html.dark-mode, body.dark-mode) .sub-tab-button.active,
 :is(html.dark-mode, body.dark-mode) .sub-tab-button.tab-active {
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
-  box-shadow: 0 18px 32px rgba(37, 99, 235, 0.38), 0 0 24px rgba(96, 165, 250, 0.32);
+  background: var(--bo-color-tab-active-bg);
+  border-color: var(--bo-color-tab-active-border);
+  box-shadow: var(--bo-color-tab-active-shadow);
+  color: var(--bo-color-tab-active-fg);
 }
 
 body.tabs-loading .tab-buttons,
@@ -200,9 +203,9 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 /* Focus styles for keyboard navigation */
 .tab-button:focus-visible,
 .sub-tab-button:focus-visible {
-  outline: 3px solid var(--clr-primary);
+  outline: 3px solid var(--bo-color-control-focus-border);
   outline-offset: 2px;
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--clr-primary) 22%, transparent);
+  box-shadow: 0 0 0 4px var(--bo-color-control-focus-ring);
 }
 
 /* Reduced motion support */
@@ -315,9 +318,9 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 /* ===================== Technicians › Positions table (unified theme) ===================== */
 .positions-list-box .table-responsive {
   border-radius: 18px;
-  border: 1px solid rgba(76, 110, 245, 0.12);
-  background: linear-gradient(135deg, rgba(76, 110, 245, 0.08), rgba(238, 243, 255, 0.92));
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  border: 1px solid var(--bo-color-content-border);
+  background: var(--bo-color-content-muted-bg);
+  box-shadow: var(--bo-color-content-shadow);
   overflow: hidden;
   backdrop-filter: blur(8px);
 }
@@ -327,29 +330,29 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   width: 100%;
   border-collapse: collapse;
   font-size: 0.97rem;
-  background: #ffffff;
-  color: #1f2937;
+  background: var(--bo-color-table-row-bg);
+  color: var(--bo-color-text-primary, #1f2937);
 }
 
 .positions-table thead th {
-  background: linear-gradient(135deg, rgba(226, 232, 255, 0.92), rgba(210, 220, 255, 0.86));
-  color: #1e293b;
+  background: var(--bo-color-table-head-bg);
+  color: var(--bo-color-table-head-fg);
   font-weight: 700;
   padding: 1.05rem 1.35rem;
-  border: 1px solid rgba(162, 178, 255, 0.35);
+  border: 1px solid var(--bo-color-table-head-border);
   text-align: center;
   letter-spacing: 0.01em;
-  box-shadow: inset 0 -1px 0 rgba(148, 163, 255, 0.38);
+  box-shadow: inset 0 -1px 0 var(--bo-color-table-head-border);
 }
 
 .positions-table tbody td {
   padding: 1rem 1.35rem;
-  border: 1px solid rgba(209, 217, 255, 0.4);
-  background: #ffffff;
-  color: #1f2937;
+  border: 1px solid var(--bo-color-table-row-border);
+  background: var(--bo-color-table-row-bg);
+  color: var(--bo-color-text-primary, #1f2937);
 }
 
-.positions-table tbody tr:hover { background: rgba(76, 110, 245, 0.08); }
+.positions-table tbody tr:hover { background: var(--bo-color-table-row-edit-bg); }
 
 .positions-table .table-actions-head,
 .positions-table .table-actions-cell {
@@ -358,30 +361,30 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 }
 
 :is(html.dark-mode, body.dark-mode, html.dark, body.dark) .positions-list-box .table-responsive {
-  border-color: rgba(59, 130, 246, 0.24);
-  background: linear-gradient(135deg, rgba(18, 28, 54, 0.92), rgba(10, 18, 40, 0.9));
-  box-shadow: 0 14px 32px rgba(3, 8, 26, 0.55);
+  border-color: var(--bo-color-content-border);
+  background: var(--bo-color-content-bg);
+  box-shadow: var(--bo-color-content-shadow-elevated);
 }
 
 :is(html.dark-mode, body.dark-mode, html.dark, body.dark) .positions-table {
-  background: rgba(5, 10, 24, 0.98);
-  color: #ffffff;
+  background: var(--bo-color-table-row-bg);
+  color: var(--bo-color-table-head-fg);
 }
 
 :is(html.dark-mode, body.dark-mode, html.dark, body.dark) .positions-table thead th {
-  background: rgba(8, 16, 34, 0.98);
-  border-color: rgba(62, 90, 170, 0.32);
-  color: #ffffff;
+  background: var(--bo-color-table-head-bg);
+  border-color: var(--bo-color-table-head-border);
+  color: var(--bo-color-table-head-fg);
 }
 
 :is(html.dark-mode, body.dark-mode, html.dark, body.dark) .positions-table tbody td {
-  background: rgba(5, 10, 24, 0.98);
-  border-color: rgba(60, 88, 168, 0.24);
-  color: #ffffff;
+  background: var(--bo-color-table-row-bg);
+  border-color: var(--bo-color-table-row-border);
+  color: var(--bo-color-table-head-fg);
 }
 
 :is(html.dark-mode, body.dark-mode, html.dark, body.dark) .positions-table tbody tr:hover {
-  background: rgba(59, 130, 246, 0.14);
+  background: var(--bo-color-table-row-edit-bg);
 }
 
 .crew-picker-modal__body {
@@ -654,14 +657,14 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 
 .crew-position-add-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 14px 30px rgba(76, 110, 245, 0.28);
+  box-shadow: var(--bo-color-action-shadow-hover);
 }
 
-.crew-position-add-btn:focus-visible { outline: 3px solid rgba(76, 110, 245, 0.45); outline-offset: 2px; }
+.crew-position-add-btn:focus-visible { outline: 3px solid var(--bo-color-control-focus-border); outline-offset: 2px; }
 
 .crew-position-add-btn:active {
   transform: translateY(0);
-  box-shadow: 0 6px 14px rgba(76, 110, 245, 0.22);
+  box-shadow: var(--bo-color-action-shadow);
 }
 
 /* Smaller edit button to avoid overflow */
@@ -1109,13 +1112,13 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   color: hsla(var(--pc));
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-add-btn:hover { box-shadow: 0 22px 44px rgba(59, 130, 246, 0.58); }
+:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-add-btn:hover { box-shadow: var(--bo-color-action-shadow-hover); }
 
 /* Stronger specificity inside the technicians modal */
-#selectTechniciansModal .crew-position-add-btn { /* keep default .btn-primary visuals, only enhance elevation */ box-shadow: 0 8px 18px rgba(76, 110, 245, 0.24); }
+#selectTechniciansModal .crew-position-add-btn { /* keep default .btn-primary visuals, only enhance elevation */ box-shadow: var(--bo-color-action-shadow); }
 
 #selectTechniciansModal .crew-position-add-btn:hover,
-#selectTechniciansModal .crew-position-add-btn:focus-visible { box-shadow: 0 14px 30px rgba(76, 110, 245, 0.32); }
+#selectTechniciansModal .crew-position-add-btn:focus-visible { box-shadow: var(--bo-color-action-shadow-hover); }
 
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-empty {
   background: hsla(var(--b1) / 0.22);
@@ -1191,9 +1194,9 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   gap: 10px;
   padding: 10px;
   border-radius: 999px;
-  background: linear-gradient(135deg, rgba(248, 250, 255, 0.96), rgba(230, 237, 255, 0.94));
-  border: 1px solid rgba(76, 110, 245, 0.16);
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+  background: var(--bo-color-tab-shell-bg);
+  border: 1px solid var(--bo-color-tab-shell-border);
+  box-shadow: var(--bo-color-tab-shell-shadow);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   text-align: center;
@@ -1202,15 +1205,15 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 :is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .reservations-subtabs-container .tabs,
 :is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .tech-subtabs-container .tabs,
 :is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .dashboard-subtabbar .tabs {
-  background: linear-gradient(135deg, rgba(19, 28, 52, 0.85), rgba(22, 36, 60, 0.92));
-  border: 1px solid rgba(59, 130, 246, 0.28);
-  box-shadow: 0 12px 28px rgba(3, 8, 26, 0.55);
+  background: var(--bo-color-tab-shell-bg);
+  border: 1px solid var(--bo-color-tab-shell-border);
+  box-shadow: var(--bo-color-tab-shell-shadow);
 }
 
 .reservations-subtabs-container .tab,
 .tech-subtabs-container .tab,
 .dashboard-subtabbar .tab {
-  color: #1f2d52;
+  color: var(--bo-color-tab-text);
   font-weight: 600;
   letter-spacing: 0.01em;
   transition: color 0.2s ease-in-out, background 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
@@ -1247,10 +1250,10 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   padding: 0.95rem 1.85rem;
   font-size: 1.02rem;
   border-radius: 999px;
-  border: 1px solid rgba(76, 110, 245, 0.22);
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(236, 242, 255, 0.9));
-  box-shadow: 0 10px 24px rgba(76, 110, 245, 0.14);
-  color: rgba(31, 45, 82, 0.92);
+  border: 1px solid var(--bo-color-tab-shell-border);
+  background: var(--bo-color-tab-shell-bg);
+  box-shadow: var(--bo-color-content-shadow);
+  color: var(--bo-color-tab-text);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1266,54 +1269,58 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 .reservations-subtabs-container .sub-tab-button.tab:hover,
 .tech-subtabs-container .sub-tab-button.tab:hover,
 .dashboard-subtabbar .sub-tab-button.tab:hover {
-  background: linear-gradient(145deg, rgba(244, 247, 255, 0.98), rgba(223, 233, 255, 0.94));
-  color: #1b2c57;
+  background: var(--bo-color-tab-hover-bg);
+  border-color: var(--bo-color-tab-hover-border);
+  color: var(--bo-color-text-primary);
   transform: translateY(-1px);
-  box-shadow: 0 16px 32px rgba(76, 110, 245, 0.18);
+  box-shadow: var(--bo-color-tab-hover-shadow);
 }
 
 .reservations-subtabs-container .sub-tab-button.tab.tab-active,
 .tech-subtabs-container .sub-tab-button.tab.tab-active,
 .dashboard-subtabbar .sub-tab-button.tab.tab-active {
-  background: linear-gradient(140deg, rgba(76, 110, 245, 0.82), rgba(93, 139, 255, 0.78));
-  color: #ffffff;
-  border-color: rgba(76, 110, 245, 0.28);
-  box-shadow: 0 22px 44px rgba(37, 99, 235, 0.26), 0 0 0 6px rgba(76, 110, 245, 0.12), 0 0 36px rgba(135, 167, 255, 0.24);
+  background: var(--bo-color-tab-active-bg);
+  color: var(--bo-color-tab-active-fg);
+  border-color: var(--bo-color-tab-active-border);
+  box-shadow: var(--bo-color-tab-active-shadow);
 }
 
 :is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .reservations-subtabs-container .sub-tab-button.tab,
 :is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .tech-subtabs-container .sub-tab-button.tab,
 :is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .dashboard-subtabbar .sub-tab-button.tab {
-  background: linear-gradient(145deg, rgba(24, 36, 64, 0.92), rgba(18, 30, 58, 0.9));
-  border-color: rgba(94, 133, 255, 0.32);
-  color: rgba(226, 232, 240, 0.88);
-  box-shadow: 0 16px 26px rgba(8, 15, 35, 0.6);
+  background: var(--bo-color-tab-shell-bg);
+  border-color: var(--bo-color-tab-shell-border);
+  color: var(--bo-color-tab-text);
+  box-shadow: var(--bo-color-content-shadow);
 }
 
 :is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .reservations-subtabs-container .sub-tab-button.tab:hover,
 :is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .tech-subtabs-container .sub-tab-button.tab:hover,
 :is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .dashboard-subtabbar .sub-tab-button.tab:hover {
-  background: linear-gradient(145deg, rgba(32, 48, 84, 0.95), rgba(27, 41, 72, 0.95));
-  color: #f8fafc;
-  box-shadow: 0 22px 38px rgba(15, 23, 42, 0.55);
+  background: var(--bo-color-tab-hover-bg);
+  border-color: var(--bo-color-tab-hover-border);
+  color: var(--bo-color-tab-active-fg);
+  box-shadow: var(--bo-color-tab-hover-shadow);
 }
 
 :is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .reservations-subtabs-container .sub-tab-button.tab.tab-active,
 :is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .tech-subtabs-container .sub-tab-button.tab.tab-active,
 :is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .dashboard-subtabbar .sub-tab-button.tab.tab-active {
-  background: linear-gradient(140deg, rgba(59, 130, 246, 0.78), rgba(37, 99, 235, 0.74));
-  box-shadow: 0 24px 46px rgba(15, 23, 42, 0.58), 0 0 0 6px rgba(96, 165, 250, 0.18), 0 0 38px rgba(148, 197, 255, 0.45);
+  background: var(--bo-color-tab-active-bg);
+  border-color: var(--bo-color-tab-active-border);
+  box-shadow: var(--bo-color-tab-active-shadow);
+  color: var(--bo-color-tab-active-fg);
 }
 
 .sub-tab-button:not(.tab) {
-  border: 1px solid rgba(76, 110, 245, 0.2);
-  background: linear-gradient(135deg, #f9fafc, #eef3ff);
-  color: #30406f;
+  border: 1px solid var(--bo-color-tab-shell-border);
+  background: var(--bo-color-tab-shell-bg);
+  color: var(--bo-color-tab-text);
   padding: 9px 20px;
   border-radius: 999px;
   font-weight: 600;
   transition: var(--transition);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--bo-color-content-shadow);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1321,28 +1328,31 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 }
 
 .sub-tab-button:not(.tab):hover {
-  background: linear-gradient(135deg, #eff4ff, #dbe4ff);
-  color: #1d2b56;
+  background: var(--bo-color-tab-hover-bg);
+  border-color: var(--bo-color-tab-hover-border);
+  color: var(--bo-color-text-primary);
   transform: translateY(-1px);
+  box-shadow: var(--bo-color-tab-hover-shadow);
 }
 
 .sub-tab-button.active:not(.tab) {
-  background: linear-gradient(135deg, var(--clr-primary), var(--clr-primary-soft));
-  color: #fff;
-  box-shadow: 0 6px 16px rgba(76, 110, 245, 0.25);
-  border-color: transparent;
+  background: var(--bo-color-tab-active-bg);
+  color: var(--bo-color-tab-active-fg);
+  box-shadow: var(--bo-color-tab-active-shadow);
+  border-color: var(--bo-color-tab-active-border);
 }
 
 :is(html.dark-mode, body.dark-mode) .sub-tab-button:not(.tab) {
-  border: 1px solid rgba(93, 133, 255, 0.2);
-  background: linear-gradient(135deg, rgba(30, 42, 68, 0.9), rgba(22, 36, 60, 0.82));
-  color: var(--clr-text);
-  box-shadow: 0 3px 8px rgba(4, 10, 25, 0.5);
+  border: 1px solid var(--bo-color-tab-shell-border);
+  background: var(--bo-color-tab-shell-bg);
+  color: var(--bo-color-tab-text);
+  box-shadow: var(--bo-color-content-shadow);
 }
 
 :is(html.dark-mode, body.dark-mode) .sub-tab-button:not(.tab):hover {
-  background: linear-gradient(135deg, rgba(40, 57, 92, 0.92), rgba(32, 49, 80, 0.88));
-  color: #f8fafc;
+  background: var(--bo-color-tab-hover-bg);
+  border-color: var(--bo-color-tab-hover-border);
+  color: var(--bo-color-tab-active-fg);
 }
 
 @media (max-width: 768px) {
@@ -1364,7 +1374,7 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 
   .tab-buttons::-webkit-scrollbar-thumb,
   .sub-tab-buttons::-webkit-scrollbar-thumb {
-    background: rgba(76, 110, 245, 0.25);
+    background: rgba(142, 167, 181, 0.3);
     border-radius: 999px;
   }
 
@@ -1442,7 +1452,7 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   .reservations-subtabs-container .tabs::-webkit-scrollbar-thumb,
   .tech-subtabs-container .tabs::-webkit-scrollbar-thumb,
   .dashboard-subtabbar .tabs::-webkit-scrollbar-thumb {
-    background: rgba(76, 110, 245, 0.35);
+    background: rgba(142, 167, 181, 0.36);
     border-radius: 999px;
   }
 }

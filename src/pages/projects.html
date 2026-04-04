@@ -8,7 +8,7 @@
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="color-scheme" content="light dark">
 
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' https://cdn.jsdelivr.net https://img1.wsimg.com https://static.cloudflareinsights.com; connect-src 'self' http://127.0.0.1:8000 http://localhost:8000 https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://csp.secureserver.net https://cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://assets.art-ratio.com; font-src 'self' https://fonts.gstatic.com data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'self' https://assets.art-ratio.com; worker-src 'self' blob:; upgrade-insecure-requests;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' https://cdn.jsdelivr.net https://img1.wsimg.com https://static.cloudflareinsights.com; connect-src 'self' http://127.0.0.1:8000 http://localhost:8000 http://127.0.0.1:8080 http://localhost:8080 https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://csp.secureserver.net https://cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://assets.art-ratio.com; font-src 'self' https://fonts.gstatic.com data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'self' https://assets.art-ratio.com; worker-src 'self' blob:; upgrade-insecure-requests;">
 
   <script src="/js/godaddy-monitor.js" defer></script>
   <script src="/js/page-boot.js"></script>
@@ -18,9 +18,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/src/styles/app.css">
   <link rel="stylesheet" href="/dist/css/sidebar.css">
-  
-  <link rel="stylesheet" href="/src/styles/forms.css">
-  <link rel="stylesheet" href="/src/styles/reports.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 </head>
 <body class="page-shell theme-loading projects-page" data-theme="light">
@@ -272,6 +269,7 @@
         <div class="dashboard-main-inner space-y-8">
           <div class="tab-section-header">
             <h2 class="tab-section-title" data-i18n data-i18n-key="projects.hero.title">إدارة المشاريع</h2>
+            <p class="section-support-text" data-i18n data-i18n-key="projects.workflow.tabsHint">استخدم تبويب المشاريع لإنشاء ومتابعة العمل، وتبويبي العملاء وطاقم العمل لتحديث السجلات التي تُستخدم داخل المشاريع والحجوزات.</p>
           </div>
 
           <div class="glass-card dashboard-tabbar hidden lg:block">
@@ -322,9 +320,13 @@
                 </div>
               </div>
 
+              <div class="glass-card">
+                <p class="surface-support-text" data-i18n data-i18n-key="projects.workflow.subtabsHint">استخدم "إنشاء مشروع" للأعمال الجديدة، و"مشاريعي" للمراجعة والتعديل، و"تقارير المشاريع" للمتابعة والتحليل، و"القوالب" للطباعة والتصدير.</p>
+              </div>
+
               <div class="tab-pane active project-creation-pane space-y-6" id="create-project-tab" data-project-subtab="create-project-tab">
                 <div class="glass-card">
-                  <p class="text-base text-base-content/70 projects-hero-text mb-0" data-i18n data-i18n-key="projects.hero.subtitle">أنشئ ونسّق المشاريع، ووزّع المهام على الطاقم والمعدات، وتتبع المصاريف.</p>
+                  <p class="surface-support-text projects-hero-text" data-i18n data-i18n-key="projects.hero.subtitle">أنشئ ونسّق المشاريع، ووزّع المهام على الطاقم والمعدات، وتتبع المصاريف.</p>
                 </div>
 
                 <div class="box project-form-card">
@@ -863,6 +865,7 @@
             <section id="customers-section" class="tab-pane d-none space-y-6" data-tab-pane="customers-section">
               <div class="tab-section-header">
                 <h2 class="tab-section-title" data-i18n data-i18n-key="customers.section.title">📋 إدارة العملاء</h2>
+                <p class="section-support-text" data-i18n data-i18n-key="projects.workflow.customersHint">حدّث بيانات العملاء هنا قبل ربطهم بالمشاريع أو إنشاء حجوزات جديدة لهم.</p>
               </div>
 
               <div class="box customer-form-box management-form-box mb-4">
@@ -948,11 +951,13 @@
                   </tbody>
                 </table>
               </div>
+              <div id="customers-list-pagination" class="list-pagination" hidden></div>
             </section>
 
             <section id="technicians-section" class="tab-pane d-none space-y-6" data-tab-pane="technicians-section">
               <div class="tab-section-header">
                 <h2 class="tab-section-title" data-i18n data-i18n-key="technicians.section.title">😎 إدارة طاقم العمل</h2>
+                <p class="section-support-text" data-i18n data-i18n-key="projects.workflow.techniciansHint">حدّث بيانات الطاقم والمناصب هنا قبل إسنادهم للمشاريع أو للحجوزات المرتبطة بها.</p>
               </div>
 
               <div class="box add-technicians-box management-form-box mb-4">
@@ -1034,6 +1039,7 @@
                   </tbody>
                 </table>
               </div>
+              <div id="technicians-list-pagination" class="list-pagination" hidden></div>
             </section>
           </div>
         </div>
@@ -1098,7 +1104,7 @@
   <script type="module" src="/src/scripts/translations/projects.js"></script>
   <script type="module" src="/src/scripts/customers.js"></script>
   <script type="module" src="/src/scripts/technicians.js"></script>
+  <!-- Preferred projects-page bootstrap owner -->
   <script type="module" src="/src/scripts/projects.js"></script>
-  <script type="module" src="/src/scripts/projectsReports.js"></script>
 </body>
 </html>

@@ -6,7 +6,8 @@ import { registerReservationGlobals, getReservationsEditContext, setupEditReserv
 import { initTechnicianSelection } from './reservationsTechnicians.js';
 import mountReservationModalsIfNeeded from './reservations/modals.js';
 import { initDashboardShell } from './dashboardShell.js';
-import { initProjectsPage } from './projects/app.js';
+import { initProjectsPage, initProjectsPageBindings } from './projects/app.js';
+import { initProjectsReportsModule } from './projectsReports.js';
 
 mountReservationModalsIfNeeded();
 applyStoredTheme();
@@ -30,9 +31,19 @@ if (document.readyState === 'loading') {
   initProjectsReservationModal();
 }
 
-initProjectsPage();
+initProjectsPageBindings();
 
-document.addEventListener('DOMContentLoaded', () => {
+const bootstrapProjectsPage = () => {
   initDashboardShell();
   initThemeToggle();
-});
+  initProjectsPage();
+  void initProjectsReportsModule().catch((error) => {
+    console.error('❌ [projects] Failed to initialise reports bootstrap', error);
+  });
+};
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bootstrapProjectsPage, { once: true });
+} else {
+  bootstrapProjectsPage();
+}

@@ -49,31 +49,45 @@ import {
 import { state } from './state.js';
 import { autoCloseExpiredProjects } from './actions.js';
 
+let projectsPageInitialised = false;
+let projectsPageBindingsInitialised = false;
+
 export function initProjectsPage() {
-  document.addEventListener('DOMContentLoaded', () => {
-    initProjectPreferencesSync();
-    capturePendingProjectRequest();
-    cacheDom();
-    refreshProjectSubmitButton();
-    initProjectDatePickers();
-    initTabNavigation();
-    initProjectSubTabs();
-    initTemplatesTab();
-    bindLogout();
+  if (projectsPageInitialised) {
+    return;
+  }
 
-    bindFormEvents();
-    bindSelectionEvents();
-    bindSelectionRemovalEvents();
-    bindExpenseEvents();
-    bindLinkedReservationButton();
-    bindTableEvents({ onViewDetails: openProjectDetails });
-    bindFocusCards({ onOpenProject: openProjectDetails });
+  projectsPageInitialised = true;
 
-    refreshProjectClientField();
+  initProjectPreferencesSync();
+  capturePendingProjectRequest();
+  cacheDom();
+  refreshProjectSubmitButton();
+  initProjectDatePickers();
+  initTabNavigation();
+  initProjectSubTabs();
+  initTemplatesTab();
+  bindLogout();
 
-    initialiseProjectsData();
-  });
+  bindFormEvents();
+  bindSelectionEvents();
+  bindSelectionRemovalEvents();
+  bindExpenseEvents();
+  bindLinkedReservationButton();
+  bindTableEvents({ onViewDetails: openProjectDetails });
+  bindFocusCards({ onOpenProject: openProjectDetails });
 
+  refreshProjectClientField();
+
+  initialiseProjectsData();
+}
+
+export function initProjectsPageBindings() {
+  if (projectsPageBindingsInitialised) {
+    return;
+  }
+
+  projectsPageBindingsInitialised = true;
   document.addEventListener('language:changed', handleLanguageUpdate);
   document.addEventListener('language:translationsReady', handleLanguageUpdate);
   document.addEventListener('customers:changed', handleCustomersChangedWrapper);

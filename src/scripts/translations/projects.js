@@ -15,6 +15,10 @@ registerTranslations({
 
     'projects.hero.title': 'إدارة المشاريع',
     'projects.hero.subtitle': 'أنشئ ونسّق المشاريع، ووزّع المهام على الطاقم والمعدات، وتتبع المصاريف.',
+    'projects.workflow.tabsHint': 'استخدم تبويب المشاريع لإنشاء ومتابعة العمل، وتبويبي العملاء وطاقم العمل لتحديث السجلات التي تُستخدم داخل المشاريع والحجوزات.',
+    'projects.workflow.subtabsHint': 'استخدم "إنشاء مشروع" للأعمال الجديدة، و"مشاريعي" للمراجعة والتعديل، و"تقارير المشاريع" للمتابعة والتحليل، و"القوالب" للطباعة والتصدير.',
+    'projects.workflow.customersHint': 'حدّث بيانات العملاء هنا قبل ربطهم بالمشاريع أو إنشاء حجوزات جديدة لهم.',
+    'projects.workflow.techniciansHint': 'حدّث بيانات الطاقم والمناصب هنا قبل إسنادهم للمشاريع أو للحجوزات المرتبطة بها.',
 
     'projects.form.title': 'إنشاء مشروع جديد',
     'projects.form.labels.type': 'نوع المشروع',
@@ -469,6 +473,10 @@ registerTranslations({
 
     'projects.hero.title': 'Projects Management',
     'projects.hero.subtitle': 'Create and coordinate projects, assign crew and equipment, and track expenses.',
+    'projects.workflow.tabsHint': 'Use the Projects tab to create and monitor work, and use Clients and Crew to maintain the records reused across projects and reservations.',
+    'projects.workflow.subtabsHint': 'Use Create Project for new jobs, My Projects for review and editing, Project Reports for follow-up and analysis, and Templates for print/export work.',
+    'projects.workflow.customersHint': 'Update client records here before linking them to projects or creating new reservations for them.',
+    'projects.workflow.techniciansHint': 'Update crew records and roles here before assigning them to projects or linked reservations.',
 
     'projects.form.title': 'Create New Project',
     'projects.form.labels.type': 'Project Type',

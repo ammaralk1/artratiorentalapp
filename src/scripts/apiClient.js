@@ -8,6 +8,39 @@ const NETWORK_COOLDOWN_BASE_MS = 5000; // base backoff window
 const NETWORK_COOLDOWN_MAX_MS = 30000; // cap
 const DEFAULT_TIMEOUT_MS = 12000; // abort fetch after 12s
 
+function shouldAttachAbortSignals() {
+  return !(typeof process !== 'undefined' && process?.versions?.node);
+}
+
+function mergeAbortSignals(...signals) {
+  if (typeof AbortController === 'undefined') {
+    return undefined;
+  }
+
+  const controller = new AbortController();
+  const abort = () => {
+    try {
+      controller.abort();
+    } catch (_) {
+      /* ignore */
+    }
+  };
+
+  signals.filter(Boolean).forEach((source) => {
+    try {
+      if (source.aborted) {
+        abort();
+      } else {
+        source.addEventListener('abort', abort, { once: true });
+      }
+    } catch (_) {
+      /* ignore */
+    }
+  });
+
+  return controller.signal;
+}
+
 export class ApiError extends Error {
   constructor(message, { status, payload } = {}) {
     super(message);
@@ -64,14 +97,14 @@ export async function apiRequest(path, { method = 'GET', headers = {}, body, sig
   const cleanedPath = isAbsolute ? pathStr : (pathStr.charAt(0) === '/' ? pathStr : `/${pathStr}`);
   const url = isAbsolute ? cleanedPath : `${getApiBase()}${cleanedPath}`;
 
+  // Reject immediately if browser reports offline
+  if (typeof navigator !== 'undefined' && navigator && navigator.onLine === false) {
+    const offlineErr = new ApiError('Network offline', { status: 0 });
+    offlineErr.offline = true;
+    throw offlineErr;
+  }
+
   // Backoff if recent network failures have been observed
-  try {
-    if (typeof navigator !== 'undefined' && navigator && navigator.onLine === false) {
-      const offlineErr = new ApiError('Network offline', { status: 0 });
-      offlineErr.offline = true;
-      throw offlineErr;
-    }
-  } catch (_) { /* ignore */ }
   const now = Date.now();
   const cooldownMs = Math.min(
     NETWORK_COOLDOWN_MAX_MS,
@@ -131,24 +164,18 @@ export async function apiRequest(path, { method = 'GET', headers = {}, body, sig
   }
 
   const doFetch = async () => {
-    // Support timeout via AbortController
-    const controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    const attachSignals = shouldAttachAbortSignals();
+    const controller = (attachSignals && typeof AbortController !== 'undefined') ? new AbortController() : null;
     const timeoutId = (controller && Number.isFinite(timeout) && timeout > 0)
       ? setTimeout(() => { try { controller.abort(); } catch (_) {} }, timeout)
       : null;
-    const effectiveSignal = controller ? (signal ? new AbortSignalAny([signal, controller.signal]) : controller.signal) : signal;
+    const effectiveSignal = attachSignals
+      ? (controller ? (signal ? mergeAbortSignals(signal, controller.signal) : controller.signal) : signal)
+      : undefined;
     const startedAt = Date.now();
 
-    // A minimal polyfill to merge multiple signals
-    function AbortSignalAny(signals) {
-      const ctrl = new AbortController();
-      const onAbort = () => { try { ctrl.abort(); } catch (_) {} };
-      signals.filter(Boolean).forEach((s) => { try { if (s.aborted) onAbort(); else s.addEventListener('abort', onAbort, { once: true }); } catch (_) {} });
-      return ctrl.signal;
-    }
-
     try {
-      const response = await fetch(url, { ...fetchOptions, signal: effectiveSignal });
+      const response = await fetch(url, effectiveSignal ? { ...fetchOptions, signal: effectiveSignal } : fetchOptions);
       __consecutiveNetworkFailures = 0;
       __lastNetworkFailureAt = 0;
       return response;
@@ -171,64 +198,70 @@ export async function apiRequest(path, { method = 'GET', headers = {}, body, sig
     }
   };
 
-  const inflight = doFetch().finally(() => { __inflight.delete(key); });
-  __inflight.set(key, inflight);
-  const response = await inflight;
-  const contentType = response.headers.get('content-type') || '';
-  let payload = null;
+  // Wrap fetch + parsing in a single promise so all deduplicated callers get
+  // the fully-parsed payload (not the raw Response object).
+  const processRequest = async () => {
+    const response = await doFetch();
+    const contentType = response.headers.get('content-type') || '';
+    let payload = null;
 
-  // Read body once as text, then try to parse JSON if applicable
-  let bodyText = '';
-  try {
-    bodyText = await response.text();
-  } catch {
-    bodyText = '';
-  }
-
-  if (contentType.includes('application/json')) {
+    // Read body once as text, then try to parse JSON if applicable
+    let bodyText = '';
     try {
-      payload = bodyText ? JSON.parse(bodyText) : null;
+      bodyText = await response.text();
     } catch {
-      // If JSON parsing fails, preserve raw text instead of failing
-      payload = bodyText ? { raw: bodyText } : null;
+      bodyText = '';
     }
-  } else if (bodyText) {
-    const trimmed = bodyText.trim();
-    if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+
+    if (contentType.includes('application/json')) {
       try {
-        payload = JSON.parse(trimmed);
+        payload = bodyText ? JSON.parse(bodyText) : null;
       } catch {
+        // If JSON parsing fails, preserve raw text instead of failing
+        payload = bodyText ? { raw: bodyText } : null;
+      }
+    } else if (bodyText) {
+      const trimmed = bodyText.trim();
+      if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+        try {
+          payload = JSON.parse(trimmed);
+        } catch {
+          payload = { raw: bodyText };
+        }
+      } else {
         payload = { raw: bodyText };
       }
     } else {
-      payload = { raw: bodyText };
+      payload = null;
     }
-  } else {
-    payload = null;
-  }
 
-  if (!response.ok) {
-    const message = payload?.error || `Request failed with status ${response.status}`;
-    // Treat server-side 5xx responses as failures for cooldown to avoid spamming the backend
-    try {
-      if (response.status >= 500) {
-        __consecutiveNetworkFailures = Math.min(10, __consecutiveNetworkFailures + 1);
-        __lastNetworkFailureAt = Date.now();
-      }
-    } catch (_) { /* ignore */ }
-    throw new ApiError(message, {
-      status: response.status,
-      payload,
-    });
-  }
+    if (!response.ok) {
+      const message = payload?.error || `Request failed with status ${response.status}`;
+      // Treat server-side 5xx responses as failures for cooldown to avoid spamming the backend
+      try {
+        if (response.status >= 500) {
+          __consecutiveNetworkFailures = Math.min(10, __consecutiveNetworkFailures + 1);
+          __lastNetworkFailureAt = Date.now();
+        }
+      } catch (_) { /* ignore */ }
+      throw new ApiError(message, {
+        status: response.status,
+        payload,
+      });
+    }
 
-  if (payload && typeof payload === 'object' && payload.ok === false) {
-    const message = payload.error || 'API returned an error response';
-    throw new ApiError(message, {
-      status: response.status,
-      payload,
-    });
-  }
+    if (payload && typeof payload === 'object' && payload.ok === false) {
+      const message = payload.error || 'API returned an error response';
+      throw new ApiError(message, {
+        status: response.status,
+        payload,
+      });
+    }
 
-  return payload;
+    return payload;
+  };
+
+  const inflight = processRequest().finally(() => { __inflight.delete(key); });
+  __inflight.set(key, inflight);
+  return inflight;
 }

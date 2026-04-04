@@ -1096,7 +1096,6 @@ async function fetchCustomerReservationsData(id) {
       : [];
 
     customerReservationsCache = records;
-    saveData({ reservations: records });
     return records;
   } catch (error) {
     console.warn('⚠️ Failed to load customer reservations', error);
@@ -1117,7 +1116,6 @@ async function fetchCustomerProjectsData(id) {
       : [];
 
     customerProjectsCache = records;
-    saveData({ projects: records });
     return records;
   } catch (error) {
     console.warn('⚠️ Failed to load customer projects', error);

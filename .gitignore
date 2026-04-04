@@ -19,3 +19,12 @@ backups/mysql/*.sql.gz
 
 # Composer binary
 composer
+
+# PHPUnit cache
+.phpunit.result.cache
+
+# PHPUnit
+.phpunit.result.cache
+
+# Claude Code project files
+.claude/

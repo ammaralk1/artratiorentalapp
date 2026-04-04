@@ -28,8 +28,10 @@
     return;
   }
 
-  // Ensure sidebar CSS is present even on legacy pages
-  (function ensureSidebarStyles() {
+  // Ensure sidebar CSS is present even on legacy pages.
+  // Run after the document has parsed so we don't inject a duplicate
+  // fallback stylesheet before the page's own <link> tags are discovered.
+  function ensureSidebarStyles() {
     try {
       const head = document.head;
       if (!head) return;
@@ -67,7 +69,13 @@
     } catch (_) {
       // ignore
     }
-  })();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', ensureSidebarStyles, { once: true });
+  } else {
+    ensureSidebarStyles();
+  }
 
   root.classList.add('language-loading');
   root.classList.add('theme-loading');

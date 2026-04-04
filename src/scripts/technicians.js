@@ -21,6 +21,11 @@ import {
   updateTechnicianPosition,
   deleteTechnicianPosition,
 } from "./technicianPositions.js";
+import {
+  DEFAULT_TECHNICIANS_PAGE_SIZE,
+  buildTechniciansPageNumbers,
+  getTechniciansPaginationState,
+} from "./techniciansPagination.js";
 
 const TECH_SUB_TAB_STORAGE_KEY = "__ART_RATIO_TECH_SUB_TAB__";
 const TECH_SUB_TAB_IDS = ["technicians-management", "technicians-positions"];
@@ -32,6 +37,11 @@ let techniciansErrorMessage = "";
 let techniciansHasLoaded = false;
 let editingPositionId = null;
 let activeTechnicianSubTab = "technicians-management";
+let techniciansUiInitialised = false;
+let techniciansBootstrapped = false;
+let technicianPositionsReadyPromise = null;
+const techniciansPagination = { page: 1, pageSize: DEFAULT_TECHNICIANS_PAGE_SIZE };
+let lastTechniciansResultSignature = "";
 
 const storedTechSubTab = readStoredTechSubTab();
 if (storedTechSubTab) {
@@ -76,6 +86,10 @@ function normalizeTechnicianId(value) {
 
 function normalizePhoneValue(value = "") {
   return normalizeNumbers(String(value)).replace(/[^0-9+]/g, "");
+}
+
+function resetTechniciansPagination() {
+  techniciansPagination.page = 1;
 }
 
 function normalizeMoneyValue(value = "") {
@@ -242,6 +256,36 @@ function renderPositionOptionsList() {
   });
 
   datalist.innerHTML = optionMarkup.join("");
+}
+
+function applyTechnicianPositionsUiState() {
+  renderPositionOptionsList();
+  if (activeTechnicianSubTab === 'technicians-positions') {
+    renderPositionsTable();
+  }
+  refreshTechnicianRoleSummaryFromInputs();
+}
+
+function ensureTechnicianPositionsUiReady({ showToastOnError = true } = {}) {
+  if (!technicianPositionsReadyPromise) {
+    technicianPositionsReadyPromise = ensureTechnicianPositionsLoaded()
+      .catch((error) => {
+        technicianPositionsReadyPromise = null;
+        throw error;
+      });
+  }
+
+  return technicianPositionsReadyPromise
+    .then(() => {
+      applyTechnicianPositionsUiState();
+    })
+    .catch((error) => {
+      console.error('❌ [technicians] failed to load technician positions', error);
+      if (showToastOnError) {
+        showToast(error?.message || t('positions.toast.fetchFailed', '⚠️ تعذر تحميل المناصب، حاول مرة أخرى'), 'error');
+      }
+      throw error;
+    });
 }
 
 function activateTechnicianSubTab(target) {
@@ -657,20 +701,26 @@ function renderTechniciansTable() {
   if (techniciansLoading && !techniciansHasLoaded) {
     const loadingMessage = t("technicians.table.loading", "جاري التحميل...");
     tableBody.innerHTML = `<tr><td colspan='6'>${loadingMessage}</td></tr>`;
+    renderTechniciansPagination(0);
     return;
   }
 
   if (techniciansErrorMessage && !techniciansHasLoaded) {
     tableBody.innerHTML = `<tr><td colspan='6' class='text-danger'>${techniciansErrorMessage}</td></tr>`;
+    renderTechniciansPagination(0);
     return;
   }
 
   const technicians = syncTechniciansStatuses();
   const { reservations = [] } = loadData();
   const now = new Date();
-  populateRoleFilterOptions(technicians);
-  const roleFilter = document.getElementById("technician-role-filter");
-  const selectedRoleNormalized = normalizeText(roleFilter?.value || "");
+  const selectedRoleNormalized = normalizeText(populateRoleFilterOptions(technicians));
+  const resultSignature = JSON.stringify([searchTerm, selectedRoleNormalized]);
+
+  if (resultSignature !== lastTechniciansResultSignature) {
+    resetTechniciansPagination();
+    lastTechniciansResultSignature = resultSignature;
+  }
 
   const filtered = technicians.filter((tech) => {
     if (selectedRoleNormalized && normalizeText(tech.role || "") !== selectedRoleNormalized) {
@@ -693,10 +743,19 @@ function renderTechniciansTable() {
   if (filtered.length === 0) {
     const emptyMessage = t("technicians.table.empty", "لا يوجد أعضاء في الطاقم بعد.");
     tableBody.innerHTML = `<tr><td colspan='6'>${emptyMessage}</td></tr>`;
+    renderTechniciansPagination(0);
     return;
   }
 
-  tableBody.innerHTML = filtered.map((tech) => {
+  const paginationState = getTechniciansPaginationState({
+    totalItems: filtered.length,
+    page: techniciansPagination.page,
+    pageSize: techniciansPagination.pageSize,
+  });
+  techniciansPagination.page = paginationState.currentPage;
+  const visibleTechnicians = filtered.slice(paginationState.startIndex, paginationState.endIndex);
+
+  tableBody.innerHTML = visibleTechnicians.map((tech) => {
     const isEditing = editingTechnicianId && String(editingTechnicianId) === String(tech.id);
     const activeNow = isTechnicianActiveNow(tech.id, reservations, now);
     const effectiveStatus = activeNow ? "busy" : (tech.status || tech.baseStatus || "available");
@@ -737,6 +796,62 @@ function renderTechniciansTable() {
       </tr>
     `;
   }).join("");
+
+  renderTechniciansPagination(filtered.length);
+}
+
+function renderTechniciansPagination(totalItems) {
+  const host = document.getElementById("technicians-list-pagination");
+  if (!host) return;
+
+  const paginationState = getTechniciansPaginationState({
+    totalItems,
+    page: techniciansPagination.page,
+    pageSize: techniciansPagination.pageSize,
+  });
+  techniciansPagination.page = paginationState.currentPage;
+
+  if (totalItems <= 0 || paginationState.totalPages <= 1) {
+    host.hidden = true;
+    host.innerHTML = "";
+    return;
+  }
+
+  const navLabel = t("technicians.pagination.navigation", "التنقل بين صفحات الطاقم");
+  const prevLabel = t("technicians.pagination.prev", "السابق");
+  const nextLabel = t("technicians.pagination.next", "التالي");
+  const pageLabelTemplate = t("technicians.pagination.page", "صفحة {page}");
+  const rangeTemplate = t("technicians.pagination.range", "{from}-{to} من {total}");
+  const rangeText = rangeTemplate
+    .replace("{from}", normalizeNumbers(String(paginationState.rangeStart)))
+    .replace("{to}", normalizeNumbers(String(paginationState.rangeEnd)))
+    .replace("{total}", normalizeNumbers(String(totalItems)));
+  const pageNumbers = buildTechniciansPageNumbers(paginationState.currentPage, paginationState.totalPages);
+
+  const buttonsHtml = pageNumbers.map((page) => {
+    const isActive = page === paginationState.currentPage;
+    const pageLabel = pageLabelTemplate.replace("{page}", normalizeNumbers(String(page)));
+    return `<button type="button" class="btn btn-sm ${isActive ? "btn-primary" : "btn-outline-primary"}" data-technicians-page="${page}" aria-label="${escapeHtml(pageLabel)}" ${isActive ? 'aria-current="page"' : ""}>${normalizeNumbers(String(page))}</button>`;
+  }).join("");
+
+  host.hidden = false;
+  host.innerHTML = `
+    <div class="list-pagination__summary text-muted small">${escapeHtml(rangeText)}</div>
+    <div class="list-pagination__controls btn-group" role="group" aria-label="${escapeHtml(navLabel)}">
+      <button type="button" class="btn btn-sm btn-outline-primary" data-technicians-page="${paginationState.currentPage - 1}" ${paginationState.currentPage <= 1 ? "disabled" : ""} aria-label="${escapeHtml(prevLabel)}">‹</button>
+      ${buttonsHtml}
+      <button type="button" class="btn btn-sm btn-outline-primary" data-technicians-page="${paginationState.currentPage + 1}" ${paginationState.currentPage >= paginationState.totalPages ? "disabled" : ""} aria-label="${escapeHtml(nextLabel)}">›</button>
+    </div>
+  `;
+
+  host.querySelectorAll("[data-technicians-page]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const nextPage = Number.parseInt(button.getAttribute("data-technicians-page") || "", 10);
+      if (!Number.isFinite(nextPage)) return;
+      techniciansPagination.page = nextPage;
+      renderTechniciansTable();
+    });
+  });
 }
 
 function getPositionFormElements() {
@@ -999,7 +1114,7 @@ async function handleDeleteClick(id) {
 }
 
 export function renderTechnicians() {
-  setupTechnicianModule();
+  initTechniciansModule({ loadData: false, showToastOnError: false });
   renderTechniciansTable();
 }
 
@@ -1126,7 +1241,15 @@ document.addEventListener('reservations:updated', () => {
   }
 });
 
-function setupTechnicianModule() {
+function setupTechnicianModuleUi() {
+  if (techniciansUiInitialised) {
+    activateTechnicianSubTab(activeTechnicianSubTab);
+    if (activeTechnicianSubTab === 'technicians-positions') {
+      renderPositionsTable();
+    }
+    return;
+  }
+
   const form = document.getElementById("technician-form");
   const firstInit = form && !form.dataset.initialized;
 
@@ -1182,6 +1305,7 @@ function setupTechnicianModule() {
   if (searchInput && !searchInput.dataset.listenerAttached) {
     searchInput.addEventListener("input", () => {
       searchInput.value = normalizeNumbers(searchInput.value);
+      resetTechniciansPagination();
       renderTechniciansTable();
     });
     searchInput.dataset.listenerAttached = "true";
@@ -1190,6 +1314,7 @@ function setupTechnicianModule() {
   const roleFilter = document.getElementById("technician-role-filter");
   if (roleFilter && !roleFilter.dataset.listenerAttached) {
     roleFilter.addEventListener("change", () => {
+      resetTechniciansPagination();
       renderTechniciansTable();
     });
     roleFilter.dataset.listenerAttached = "true";
@@ -1245,19 +1370,6 @@ function setupTechnicianModule() {
 
   activateTechnicianSubTab(activeTechnicianSubTab);
 
-  ensureTechnicianPositionsLoaded()
-    .then(() => {
-      renderPositionOptionsList();
-      if (activeTechnicianSubTab === 'technicians-positions') {
-        renderPositionsTable();
-      }
-      refreshTechnicianRoleSummaryFromInputs();
-    })
-    .catch((error) => {
-      console.error('❌ [technicians] failed to load technician positions', error);
-      showToast(error?.message || t('positions.toast.fetchFailed', '⚠️ تعذر تحميل المناصب، حاول مرة أخرى'), 'error');
-    });
-
   if (!technicianPrefillListenerAttached) {
     document.addEventListener('technician:prefill', (event) => {
       const technician = event.detail;
@@ -1273,13 +1385,36 @@ function setupTechnicianModule() {
   if (activeTechnicianSubTab === 'technicians-positions') {
     renderPositionsTable();
   }
+
+  techniciansUiInitialised = true;
+}
+
+export function initTechniciansModule({ loadData = false, showToastOnError = true } = {}) {
+  setupTechnicianModuleUi();
+  void ensureTechnicianPositionsUiReady({ showToastOnError });
+
+  if (loadData) {
+    return loadTechniciansFromApi({ showToastOnError });
+  }
+
+  return Promise.resolve();
+}
+
+function bootTechniciansModule() {
+  if (techniciansBootstrapped) {
+    return;
+  }
+
+  techniciansBootstrapped = true;
+  void initTechniciansModule({ loadData: true })
+    .finally(() => {
+      renderTechniciansTable();
+      refreshTechnicianLanguageStrings();
+    });
 }
 
 window.addEventListener("DOMContentLoaded", () => {
-  setupTechnicianModule();
-  renderTechniciansTable();
-  refreshTechnicianLanguageStrings();
-  loadTechniciansFromApi();
+  bootTechniciansModule();
 });
 
 const techniciansUpdatedHandler = () => {
@@ -1290,10 +1425,10 @@ window.addEventListener('technicians:updated', techniciansUpdatedHandler);
 document.addEventListener('technicians:updated', techniciansUpdatedHandler);
 
 document.addEventListener('technicians:refreshRequested', () => {
-  setupTechnicianModule();
+  initTechniciansModule({ loadData: false, showToastOnError: false });
   renderTechniciansTable();
   refreshTechnicianLanguageStrings();
-  loadTechniciansFromApi({ showToastOnError: false });
+  void loadTechniciansFromApi({ showToastOnError: false });
 });
 
 document.addEventListener("language:changed", () => {

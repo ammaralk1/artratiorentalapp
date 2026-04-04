@@ -59,12 +59,13 @@ const setupReservationEventsMock = vi.fn();
 const renderCalendarMock = vi.fn();
 const renderTechniciansMock = vi.fn();
 const renderReportsMock = vi.fn();
+const initReportsMock = vi.fn();
 const renderMaintenanceMock = vi.fn();
 
 vi.mock('../../src/scripts/customers.js', () => ({ renderCustomers: renderCustomersMock }));
 vi.mock('../../src/scripts/equipment.js', () => ({ renderEquipment: renderEquipmentMock }));
 vi.mock('../../src/scripts/technicians.js', () => ({ renderTechnicians: renderTechniciansMock }));
-vi.mock('../../src/scripts/reports.js', () => ({ renderReports: renderReportsMock }));
+vi.mock('../../src/scripts/reports.js', () => ({ renderReports: renderReportsMock, initReports: initReportsMock }));
 vi.mock('../../src/scripts/maintenance.js', () => ({ renderMaintenance: renderMaintenanceMock }));
 vi.mock('../../src/scripts/reservationsUI.js', () => ({ renderReservations: renderReservationsMock, setupReservationEvents: setupReservationEventsMock }));
 vi.mock('../../src/scripts/calendar.js', () => ({ renderCalendar: renderCalendarMock }));
@@ -84,6 +85,7 @@ const resetState = () => {
   renderCalendarMock.mockClear();
   renderTechniciansMock.mockClear();
   renderReportsMock.mockClear();
+  initReportsMock.mockClear();
   renderMaintenanceMock.mockClear();
   const updateMock = updatePreferencesMockAccessor();
   updateMock?.mockClear?.();

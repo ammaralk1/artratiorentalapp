@@ -20,14 +20,14 @@
   inset-block-start: 18px;
   width: 68px;
   height: 68px;
-  background: radial-gradient(circle at center, rgba(76, 110, 245, 0.18), transparent 70%);
+  background: radial-gradient(circle at center, var(--bo-color-accent-soft), transparent 70%);
   opacity: 0.6;
   pointer-events: none;
 }
 
 .reservation-card.paid {
-  border: 1px solid rgba(76, 110, 245, 0.25);
-  background: linear-gradient(165deg, rgba(76, 110, 245, 0.08) 0%, rgba(255, 255, 255, 0.95) 70%);
+  border: 1px solid var(--bo-color-content-border);
+  background: linear-gradient(165deg, rgba(154, 170, 145, 0.08) 0%, rgba(255, 255, 255, 0.95) 70%);
 }
 
 .reservation-card.unpaid {
@@ -62,8 +62,8 @@
 }
 
 :where(html.dark, body.dark) .reservations-search-input {
-  border-color: rgba(59, 130, 246, 0.35);
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.88));
+  border-color: var(--bo-color-control-border);
+  background: var(--bo-color-control-bg);
   color: rgba(226, 232, 240, 0.95);
   box-shadow: 0 14px 28px rgba(15, 23, 42, 0.42);
 }
@@ -122,8 +122,8 @@
 }
 
 :where(html.dark, body.dark) .reservations-inline-loader {
-  background: linear-gradient(135deg, rgba(20, 29, 54, 0.9), rgba(18, 28, 48, 0.86));
-  border-color: rgba(93, 133, 255, 0.26);
+  background: var(--bo-color-content-muted-bg);
+  border-color: var(--bo-color-content-border);
   color: rgba(226, 232, 240, 0.95);
 }
 
@@ -158,8 +158,8 @@
 :where(html.dark, body.dark) .reservations-filter-select,
 :where(html.dark, body.dark) .reservations-filters-bar .enhanced-select,
 :where(html.dark, body.dark) .reservations-filters-bar .enhanced-select__trigger {
-  background: linear-gradient(135deg, rgba(20, 29, 54, 0.95), rgba(18, 28, 48, 0.9));
-  border-color: rgba(59, 130, 246, 0.32);
+  background: var(--bo-color-control-bg);
+  border-color: var(--bo-color-control-border);
   color: rgba(226, 232, 240, 0.95);
   box-shadow: 0 12px 26px rgba(8, 15, 35, 0.36);
 }
@@ -274,14 +274,14 @@
 }
 
 :is(html.dark-mode, body.dark-mode) .reservations-pagination {
-  background: linear-gradient(135deg, rgba(24, 33, 59, 0.92), rgba(18, 26, 46, 0.9));
-  border-color: rgba(93, 133, 255, 0.28);
+  background: var(--bo-color-content-muted-bg);
+  border-color: var(--bo-color-content-border);
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-page-nav,
 :is(html.dark-mode, body.dark-mode) .reservation-page-btn {
-  background: rgba(17, 24, 39, 0.85);
-  border-color: rgba(93, 133, 255, 0.35);
+  background: var(--bo-color-control-bg);
+  border-color: var(--bo-color-control-border);
   color: rgba(226, 232, 240, 0.95);
 }
 
@@ -333,7 +333,7 @@
   }
 
   .reservations-grid::-webkit-scrollbar-thumb {
-    background: rgba(76, 110, 245, 0.25);
+    background: rgba(142, 167, 181, 0.30);
     border-radius: 999px;
   }
 
@@ -369,8 +369,8 @@
   gap: 14px;
   min-height: 220px;
   border-radius: 20px;
-  background: var(--clr-card);
-  border: 1px solid rgba(76, 110, 245, 0.1);
+  background: var(--bo-color-content-bg);
+  border: 1px solid var(--bo-color-content-border);
   padding: 16px 18px;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -483,34 +483,34 @@ body[dir="rtl"] .technician-reservations-section #technician-reservations > .res
 
 :is(html.dark-mode, body.dark-mode) .reservation-tile {
   border: 1px solid rgba(148, 163, 184, 0.22);
-  background: rgba(24, 33, 59, 0.94);
+  background: var(--bo-color-content-muted-bg);
   box-shadow: 0 12px 28px rgba(3, 7, 18, 0.45);
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-tile.tile-paid {
   border-color: rgba(46, 204, 113, 0.28);
-  background: linear-gradient(165deg, rgba(46,204,113,0.18) 0%, rgba(24,33,59,0.92) 75%);
+  background: linear-gradient(165deg, rgba(46,204,113,0.18) 0%, rgba(20,29,26,0.92) 75%);
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-tile.tile-partial {
   border-color: rgba(245, 158, 11, 0.3);
-  background: linear-gradient(165deg, rgba(245,158,11,0.2) 0%, rgba(24,33,59,0.9) 75%);
+  background: linear-gradient(165deg, rgba(245,158,11,0.2) 0%, rgba(20,29,26,0.90) 75%);
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-tile.tile-unpaid {
   border-color: rgba(248, 113, 113, 0.25);
-  background: linear-gradient(165deg, rgba(248,113,113,0.18) 0%, rgba(24,33,59,0.9) 75%);
+  background: linear-gradient(165deg, rgba(248,113,113,0.18) 0%, rgba(20,29,26,0.90) 75%);
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-tile.tile-completed {
   border-color: rgba(148, 163, 184, 0.25);
-  background: linear-gradient(165deg, rgba(148,163,184,0.18) 0%, rgba(24,33,59,0.88) 75%);
+  background: linear-gradient(165deg, rgba(148,163,184,0.18) 0%, rgba(20,29,26,0.88) 75%);
   padding-top: 32px;
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-tile.tile-cancelled {
   border-color: rgba(0, 0, 0, 0.55);
-  background: linear-gradient(165deg, rgba(0,0,0,0.35) 0%, rgba(24,33,59,0.9) 75%);
+  background: linear-gradient(165deg, rgba(0,0,0,0.35) 0%, rgba(20,29,26,0.90) 75%);
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-tile.tile-completed::after {
@@ -593,7 +593,7 @@ body[dir="rtl"] .technician-reservations-section #technician-reservations > .res
   padding: clamp(0.32rem, 0.75vw, 0.45rem) clamp(0.4rem, 0.95vw, 0.6rem);
   border-radius: 12px;
   background: rgba(248, 250, 255, 0.85);
-  border: 1px solid rgba(76, 110, 245, 0.08);
+  border: 1px solid var(--bo-color-content-border);
 }
 
 body[dir="rtl"] .tile-row {
@@ -605,8 +605,8 @@ body[dir="ltr"] .tile-row {
 }
 
 :is(html.dark-mode, body.dark-mode) .tile-row {
-  background: rgba(30, 42, 68, 0.82);
-  border: 1px solid rgba(93, 133, 255, 0.22);
+  background: var(--bo-color-content-muted-bg);
+  border: 1px solid var(--bo-color-content-border);
 }
 
 .tile-label {
@@ -670,13 +670,13 @@ body[dir="ltr"] .tile-value {
   padding: 3px 5px;
   border-radius: 10px;
   background: rgba(248, 250, 255, 0.75);
-  border: 1px solid rgba(76, 110, 245, 0.08);
+  border: 1px solid var(--bo-color-content-border);
   margin-top: clamp(0.2rem, 0.7vw, 0.35rem);
 }
 
 :is(html.dark-mode, body.dark-mode) .tile-footer {
-  background: rgba(30, 42, 68, 0.82);
-  border: 1px solid rgba(93, 133, 255, 0.18);
+  background: var(--bo-color-content-muted-bg);
+  border: 1px solid var(--bo-color-content-border);
 }
 
 .tile-notes {
@@ -713,15 +713,15 @@ body[dir="ltr"] .tile-value {
   inset-block-start: 0;
   inset-block-end: clamp(0.2rem, 0.8vw, 0.5rem);
   background: rgba(248, 250, 255, 0.96);
-  border: 1px solid rgba(76, 110, 245, 0.1);
+  border: 1px solid var(--bo-color-content-border);
   border-top: none;
   border-radius: 0 0 18px 18px;
   z-index: 0;
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-tile-wrapper.has-tile-action .tile-actions::before {
-  background: rgba(17, 24, 45, 0.92);
-  border-color: rgba(93, 133, 255, 0.24);
+  background: var(--bo-color-content-muted-bg);
+  border-color: var(--bo-color-content-border);
 }
 
 .tile-actions .tile-confirm {
@@ -818,7 +818,7 @@ body[dir="ltr"] .tile-value {
   padding: 12px 16px;
   border-radius: 16px;
   background: rgba(248, 250, 255, 0.9);
-  border: 1px solid rgba(76, 110, 245, 0.12);
+  border: 1px solid var(--bo-color-content-border);
 }
 
 .reservation-card-customer .label {
@@ -836,7 +836,7 @@ body[dir="ltr"] .tile-value {
 
 .reservation-metric {
   border-radius: 16px;
-  border: 1px solid rgba(76, 110, 245, 0.1);
+  border: 1px solid var(--bo-color-content-border);
   background: rgba(248, 250, 255, 0.82);
   padding: 14px 16px;
   display: flex;
@@ -902,7 +902,6 @@ body[dir="ltr"] .tile-value {
 
 .fc-reservation-event .fc-reservation-tags {
   display: flex;
-  gap: 4px;
   flex-wrap: wrap;
 }
 
@@ -913,11 +912,11 @@ body[dir="ltr"] .tile-value {
 
 .reservation-details {
   --res-card-bg-light: rgba(248, 250, 255, 0.92);
-  --res-card-border-light: rgba(76, 110, 245, 0.12);
-  --res-card-accent-light: rgba(76, 110, 245, 0.08);
+  --res-card-border-light: var(--bo-color-content-border);
+  --res-card-accent-light: var(--bo-color-accent-soft);
   --res-card-bg-dark: rgba(23, 31, 56, 0.85);
-  --res-card-border-dark: rgba(93, 133, 255, 0.22);
-  --res-card-accent-dark: rgba(93, 133, 255, 0.18);
+  --res-card-border-dark: var(--bo-color-content-border);
+  --res-card-accent-dark: var(--bo-color-accent-soft);
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 22px;
@@ -982,13 +981,13 @@ body[dir="rtl"] .reservation-details section {
   align-items: center;
   gap: 12px;
   padding: 10px 4px;
-  border-bottom: 1px solid rgba(76, 110, 245, 0.12);
+  border-bottom: 1px solid var(--bo-color-content-border);
   font-size: 0.95rem;
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-details .reservation-info-card {
-  background: rgba(24, 33, 59, 0.92);
-  border: 1px solid rgba(93, 133, 255, 0.22);
+  background: var(--bo-color-content-muted-bg);
+  border: 1px solid var(--bo-color-content-border);
   box-shadow: 0 16px 32px rgba(6, 12, 28, 0.55);
 }
 
@@ -1081,37 +1080,6 @@ body[dir="rtl"] .reservation-details .reservation-info-card .res-info-row .value
   color: var(--clr-text);
 }
 
-:is(html.dark-mode, body.dark-mode) .modal-content {
-  background: rgba(24, 33, 59, 0.96);
-  color: var(--clr-text);
-  border: 1px solid rgba(93, 133, 255, 0.18);
-}
-
-:is(html.dark-mode, body.dark-mode) .modal-header,
-:is(html.dark-mode, body.dark-mode) .modal-footer {
-  border-color: rgba(148, 163, 184, 0.2);
-}
-
-:is(html.dark-mode, body.dark-mode) .modal-title {
-  color: var(--clr-text);
-}
-
-:is(html.dark-mode, body.dark-mode) .modal-body {
-  color: var(--clr-text);
-}
-
-:is(html.dark-mode, body.dark-mode) .modal-content .form-label,
-:is(html.dark-mode, body.dark-mode) .modal-content label,
-:is(html.dark-mode, body.dark-mode) .modal-content p,
-:is(html.dark-mode, body.dark-mode) .modal-content span,
-:is(html.dark-mode, body.dark-mode) .modal-content strong {
-  color: var(--clr-text);
-}
-
-:is(html.dark-mode, body.dark-mode) .modal-content .form-text,
-:is(html.dark-mode, body.dark-mode) .modal-content small {
-  color: rgba(148, 163, 184, 0.75);
-}
 
 .reservation-modal-header {
   display: flex;
@@ -1140,7 +1108,7 @@ body[dir="rtl"] .reservation-modal-header {
   padding: 10px 18px;
   border-radius: 16px;
   background: rgba(248, 250, 255, 0.85);
-  border: 1px solid rgba(76, 110, 245, 0.12);
+  border: 1px solid var(--bo-color-content-border);
   text-align: left;
 }
 
@@ -1150,22 +1118,22 @@ body[dir="rtl"] .reservation-modal-id {
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-modal-id {
-  background: rgba(24, 33, 59, 0.9);
-  border: 1px solid rgba(93, 133, 255, 0.24);
+  background: var(--bo-color-content-muted-bg);
+  border: 1px solid var(--bo-color-content-border);
   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.3);
 }
 
 :is(html.dark-mode, body.dark-mode) #edit-res-id,
 :is(html.dark-mode, body.dark-mode) #edit-res-customer {
-  background: rgba(24, 33, 59, 0.88);
-  border: 1px solid rgba(93, 133, 255, 0.28);
+  background: var(--bo-color-control-bg);
+  border: 1px solid var(--bo-color-control-border);
   color: var(--clr-text);
 }
 
 :is(html.dark-mode, body.dark-mode) #edit-reservation-form .form-control:disabled {
-  background: rgba(24, 33, 59, 0.82);
+  background: var(--bo-color-content-muted-bg);
   color: rgba(226, 232, 240, 0.9);
-  border-color: rgba(93, 133, 255, 0.24);
+  border-color: var(--bo-color-control-border);
 }
 
 .reservation-modal-id span {
@@ -1248,8 +1216,8 @@ body[dir="rtl"] .reservation-modal-id {
   gap: 10px;
   padding: 18px 20px;
   border-radius: 18px;
-  background: linear-gradient(135deg, rgba(76, 110, 245, 0.12), rgba(238, 243, 255, 0.95));
-  border: 1px solid rgba(76, 110, 245, 0.12);
+  background: var(--bo-color-accent-soft);
+  border: 1px solid var(--bo-color-content-border);
   box-shadow: var(--shadow-sm);
 }
 
@@ -1264,8 +1232,8 @@ body[dir="rtl"] .reservation-modal-id {
   gap: 12px;
   padding: 18px 20px;
   border-radius: 16px;
-  background: linear-gradient(135deg, rgba(76, 110, 245, 0.12), rgba(238, 243, 255, 0.95));
-  border: 1px solid rgba(76, 110, 245, 0.1);
+  background: var(--bo-color-accent-soft);
+  border: 1px solid var(--bo-color-content-border);
   box-shadow: var(--shadow-sm);
   width: min(100%, 820px);
   margin-inline: auto;
@@ -1273,14 +1241,9 @@ body[dir="rtl"] .reservation-modal-id {
 
 :is(html.dark-mode, body.dark-mode) .reservation-info-card,
 :is(html.dark-mode, body.dark-mode) .reservation-summary-card {
-  background: rgba(24, 33, 59, 0.92);
-  border: 1px solid rgba(93, 133, 255, 0.2);
+  background: var(--bo-color-content-muted-bg);
+  border: 1px solid var(--bo-color-content-border);
   box-shadow: 0 12px 24px rgba(15, 23, 42, 0.25);
-}
-
-:is(html.dark-mode, body.dark-mode) .reservation-summary-card {
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(24, 33, 59, 0.88));
-  border-color: rgba(93, 133, 255, 0.2);
 }
 
 .reservation-summary-card .summary-icon { display: none; }
@@ -1320,15 +1283,15 @@ body[dir="rtl"] .reservation-modal-id {
   background: rgba(255, 255, 255, 0.7);
   border-radius: 12px;
   padding: 16px 18px;
-  box-shadow: inset 0 0 0 1px rgba(76, 110, 245, 0.08);
+  box-shadow: inset 0 0 0 1px var(--bo-color-content-border);
   margin-top: 6px;
   padding-top: 12px;
   border-top: none;
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-summary-card .reservation-payment-history-modal {
-  background: rgba(24, 33, 59, 0.65);
-  box-shadow: inset 0 0 0 1px rgba(93, 133, 255, 0.22);
+  background: var(--bo-color-content-muted-bg);
+  box-shadow: inset 0 0 0 1px var(--bo-color-content-border);
 }
 
 .reservation-summary-card .reservation-payment-history-modal .history-heading {
@@ -1723,8 +1686,8 @@ body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
 }
 
 :is(html.dark-mode, body.dark-mode) .quote-preview-sidebar {
-  background: rgba(15, 23, 42, 0.95);
-  border-color: rgba(59, 130, 246, 0.32);
+  background: var(--bo-color-content-muted-bg);
+  border-color: var(--bo-color-content-border);
 }
 
 :is(html.dark-mode, body.dark-mode) .quote-terms-editor__label {
@@ -1732,24 +1695,30 @@ body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
 }
 
 :is(html.dark-mode, body.dark-mode) .quote-terms-editor__textarea {
-  background: rgba(17, 24, 39, 0.82);
-  border-color: rgba(59, 130, 246, 0.35);
-  color: rgba(226, 232, 240, 0.9);
+  background: var(--bo-color-control-bg);
+  border-color: var(--bo-color-control-border);
+  color: var(--clr-text);
 }
 
 :is(html.dark-mode, body.dark-mode) .quote-terms-editor__textarea:focus {
-  border-color: rgba(96, 165, 250, 0.45);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.22);
+  border-color: var(--bo-color-control-focus-border);
+  box-shadow: 0 0 0 3px var(--bo-color-control-focus-ring);
 }
 
 :is(html.dark-mode, body.dark-mode) .quote-terms-reset {
-  background: rgba(59, 130, 246, 0.22);
-  color: rgba(219, 234, 254, 0.92);
+  border: 1px solid var(--bo-color-action-outline-border);
+  background: var(--bo-color-action-outline-bg);
+  color: var(--bo-color-action-outline-fg);
+  box-shadow: var(--bo-color-tab-shell-shadow);
 }
 
-:is(html.dark-mode, body.dark-mode) .quote-terms-reset:hover {
-  background: rgba(96, 165, 250, 0.3);
-  color: #f8fafc;
+:is(html.dark-mode, body.dark-mode) .quote-terms-reset:hover,
+:is(html.dark-mode, body.dark-mode) .quote-terms-reset:focus-visible {
+  background: var(--bo-color-tab-hover-bg);
+  border-color: var(--bo-color-tab-hover-border);
+  color: var(--bo-color-tab-active-fg);
+  box-shadow: var(--bo-color-tab-hover-shadow);
+  outline: none;
 }
 
 .quote-preview-sidebar h6 {
@@ -1995,13 +1964,19 @@ details[open] > .quote-toggle-summary .quote-toggle-caret {
 }
 
 :is(html.dark-mode, body.dark-mode) .quote-preview-status-action {
-  border-color: rgba(148, 163, 184, 0.6);
-  background: rgba(30, 41, 59, 0.35);
+  border-color: var(--bo-color-action-outline-border);
+  background: var(--bo-color-action-outline-bg);
+  color: var(--bo-color-action-outline-fg);
+  box-shadow: var(--bo-color-tab-shell-shadow);
 }
 
-:is(html.dark-mode, body.dark-mode) .quote-preview-status-action:hover {
-  background: rgba(96, 165, 250, 0.25);
-  border-color: rgba(96, 165, 250, 0.9);
+:is(html.dark-mode, body.dark-mode) .quote-preview-status-action:hover,
+:is(html.dark-mode, body.dark-mode) .quote-preview-status-action:focus-visible {
+  background: var(--bo-color-tab-hover-bg);
+  border-color: var(--bo-color-tab-hover-border);
+  color: var(--bo-color-tab-active-fg);
+  box-shadow: var(--bo-color-tab-hover-shadow);
+  outline: none;
 }
 
 :is(html.dark-mode, body.dark-mode) .quote-preview-spinner {
@@ -2104,15 +2079,25 @@ details[open] > .quote-toggle-summary .quote-toggle-caret {
 }
 
 :is(html.dark-mode, body.dark-mode) .quote-controls-dropdown__toggle {
-  background: rgba(30, 41, 59, 0.72);
-  color: rgba(226, 232, 240, 0.9);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--bo-color-tab-shell-border);
+  background: var(--bo-color-tab-shell-bg);
+  color: var(--bo-color-tab-text);
+  box-shadow: var(--bo-color-tab-shell-shadow);
+}
+
+:is(html.dark-mode, body.dark-mode) .quote-controls-dropdown__toggle:hover,
+:is(html.dark-mode, body.dark-mode) .quote-controls-dropdown__toggle:focus-visible {
+  background: var(--bo-color-tab-hover-bg);
+  border-color: var(--bo-color-tab-hover-border);
+  color: var(--bo-color-tab-active-fg);
+  box-shadow: var(--bo-color-tab-hover-shadow);
+  outline: none;
 }
 
 :is(html.dark-mode, body.dark-mode) .quote-controls-dropdown__menu {
-  background: rgba(15, 23, 42, 0.97);
-  border: 1px solid rgba(93, 133, 255, 0.35);
-  box-shadow: 0 20px 38px rgba(2, 6, 23, 0.75);
+  background: var(--bo-color-content-bg);
+  border: 1px solid var(--bo-color-content-border);
+  box-shadow: var(--bo-color-content-shadow-elevated);
 }
 
 .quote-preview-zoom-controls {
@@ -2126,8 +2111,9 @@ details[open] > .quote-toggle-summary .quote-toggle-caret {
 }
 
 :is(html.dark-mode, body.dark-mode) .quote-preview-zoom-controls {
-  background: rgba(30, 41, 59, 0.72);
-  border: 1px solid rgba(93, 133, 255, 0.32);
+  background: var(--bo-color-tab-shell-bg);
+  border: 1px solid var(--bo-color-tab-shell-border);
+  box-shadow: var(--bo-color-tab-shell-shadow);
 }
 
 .quote-preview-zoom-btn {
@@ -2146,9 +2132,10 @@ details[open] > .quote-toggle-summary .quote-toggle-caret {
 }
 
 :is(html.dark-mode, body.dark-mode) .quote-preview-zoom-btn {
-  background: rgba(51, 65, 85, 0.9);
-  color: rgba(226, 232, 240, 0.92);
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.35);
+  background: var(--bo-color-content-bg);
+  color: var(--clr-text);
+  border: 1px solid var(--bo-color-control-border);
+  box-shadow: var(--bo-color-control-shadow);
 }
 
 .quote-preview-zoom-btn:hover {
@@ -2156,8 +2143,28 @@ details[open] > .quote-toggle-summary .quote-toggle-caret {
   box-shadow: 0 4px 10px rgba(15, 23, 42, 0.16);
 }
 
+:is(html.dark-mode, body.dark-mode) .quote-preview-zoom-btn:hover,
+:is(html.dark-mode, body.dark-mode) .quote-preview-zoom-btn:focus-visible {
+  background: var(--bo-color-tab-hover-bg);
+  color: var(--bo-color-tab-active-fg);
+  border-color: var(--bo-color-tab-hover-border);
+  box-shadow: var(--bo-color-tab-hover-shadow);
+  outline: none;
+}
+
+:is(html.dark-mode, body.dark-mode) .quote-preview-zoom-btn:disabled {
+  background: var(--bo-color-control-disabled-bg);
+  color: var(--bo-color-control-placeholder);
+  border-color: var(--bo-color-control-border);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
 :is(html.dark-mode, body.dark-mode) .quote-preview-zoom-btn.is-active {
-  color: #0f172a;
+  background: var(--bo-color-action-bg);
+  color: var(--bo-color-action-fg);
+  border-color: var(--bo-color-action-border);
+  box-shadow: var(--bo-color-action-shadow);
 }
 
 @media (max-width: 768px) {
@@ -2211,13 +2218,15 @@ details[open] > .quote-toggle-summary .quote-toggle-caret {
   cursor: pointer;
 }
 
+:is(html.dark-mode, body.dark-mode) .quote-preview-align-select {
+  background: var(--bo-color-control-bg);
+  color: var(--clr-text);
+  border: 1px solid var(--bo-color-control-border);
+}
+
 .quote-preview-align-buttons .quote-preview-zoom-btn.is-active {
   background: #0ea5e9;
   color: #ffffff;
-}
-
-:is(html.dark-mode, body.dark-mode) .quote-preview-zoom-btn:hover {
-  box-shadow: 0 4px 12px rgba(8, 47, 73, 0.45);
 }
 
 .quote-preview-zoom-value {
@@ -2365,7 +2374,7 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 }
 
 .reservation-items-table {
-  background: var(--clr-card, #ffffff);
+  background: var(--bo-color-table-row-bg);
   border: 1px solid rgba(76, 110, 245, 0.18);
   border-radius: 18px;
   overflow: hidden;
@@ -2512,13 +2521,13 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 
 /* Keep edit modal styling consistent on standalone pages */
 #editReservationModal .reservation-equipment-inputs {
-  background: var(--clr-card, #ffffff);
+  background: var(--bo-color-content-bg);
   border: 1px solid rgba(76, 110, 245, 0.12);
   box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
 }
 
 #editReservationModal .reservation-items-table {
-  background: var(--clr-card, #ffffff);
+  background: var(--bo-color-table-row-bg);
   border: 1px solid rgba(76, 110, 245, 0.18);
   border-radius: 18px;
   overflow: hidden;
@@ -3058,7 +3067,7 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
     border: 1px solid rgba(76, 110, 245, 0.18);
     border-radius: 16px;
     padding: 14px;
-    background: var(--clr-card, #fff);
+    background: var(--bo-color-content-bg);
   }
 
   .reservation-modal-items-table td,
@@ -3521,12 +3530,63 @@ body[dir="ltr"] .slider-btn--next { inset-inline-end: 8px; }
 
 :is(html.dark-mode, body.dark-mode) .reservation-tech-button,
 :is(html.dark-mode, body.dark-mode) .reservation-primary-action {
-  box-shadow: 0 14px 34px rgba(8, 17, 40, 0.55);
+  box-shadow: var(--bo-color-action-shadow);
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-tech-button:hover,
 :is(html.dark-mode, body.dark-mode) .reservation-primary-action:hover {
-  box-shadow: 0 18px 40px rgba(12, 22, 48, 0.65);
+  box-shadow: var(--bo-color-action-shadow-hover);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-tech-button:active,
+:is(html.dark-mode, body.dark-mode) .reservation-primary-action:active {
+  box-shadow: var(--bo-color-action-shadow);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-tech-button.btn-primary,
+:is(html.dark-mode, body.dark-mode) .reservation-primary-action.btn-primary {
+  background: var(--bo-color-action-bg);
+  border: 1px solid var(--bo-color-action-border);
+  color: var(--bo-color-action-fg);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-tech-button.btn-primary:hover,
+:is(html.dark-mode, body.dark-mode) .reservation-tech-button.btn-primary:focus-visible,
+:is(html.dark-mode, body.dark-mode) .reservation-primary-action.btn-primary:hover,
+:is(html.dark-mode, body.dark-mode) .reservation-primary-action.btn-primary:focus-visible {
+  background: var(--bo-color-action-bg-hover);
+  border-color: var(--bo-color-action-border);
+  color: var(--bo-color-action-fg);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-tech-button.btn-primary:active,
+:is(html.dark-mode, body.dark-mode) .reservation-primary-action.btn-primary:active {
+  background: var(--bo-color-action-bg-active);
+  border-color: var(--bo-color-action-border);
+  color: var(--bo-color-action-fg);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-primary-action.btn-secondary {
+  background: var(--bo-color-action-outline-bg);
+  border: 1px solid var(--bo-color-action-outline-border);
+  color: var(--bo-color-action-outline-fg);
+  box-shadow: var(--bo-color-tab-shell-shadow);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-primary-action.btn-secondary:hover,
+:is(html.dark-mode, body.dark-mode) .reservation-primary-action.btn-secondary:focus-visible {
+  background: var(--bo-color-tab-hover-bg);
+  border-color: var(--bo-color-tab-hover-border);
+  color: var(--bo-color-tab-active-fg);
+  box-shadow: var(--bo-color-tab-hover-shadow);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-tech-button:disabled,
+:is(html.dark-mode, body.dark-mode) .reservation-primary-action:disabled {
+  background: var(--bo-color-control-disabled-bg);
+  border-color: var(--bo-color-control-border);
+  color: var(--bo-color-control-placeholder);
+  box-shadow: none;
 }
 
 @media (max-width: 768px) {
@@ -3643,31 +3703,29 @@ body[dir="ltr"] .slider-btn--next { inset-inline-end: 8px; }
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-notes__title {
-  color: rgba(226, 232, 240, 0.95);
+  color: var(--clr-text);
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-notes__hint {
-  color: rgba(147, 197, 253, 0.72);
+  color: var(--bo-color-text-muted);
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-notes__textarea {
-  background: linear-gradient(135deg, rgba(17, 27, 53, 0.92), rgba(30, 46, 86, 0.88));
-  border-color: rgba(148, 163, 255, 0.28);
-  color: rgba(226, 232, 240, 0.95);
-  box-shadow:
-    inset 0 1px 2px rgba(3, 8, 26, 0.28),
-    0 18px 34px rgba(8, 14, 32, 0.55);
+  background: var(--bo-color-control-bg);
+  border-color: var(--bo-color-control-border);
+  color: var(--clr-text);
+  box-shadow: inset 0 1px 2px rgba(3, 10, 8, 0.22);
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-notes__textarea:focus {
-  border-color: rgba(147, 197, 253, 0.35);
+  border-color: var(--bo-color-control-focus-border);
   box-shadow:
-    inset 0 1px 2px rgba(3, 8, 26, 0.32),
-    0 0 0 3px rgba(93, 133, 255, 0.18);
+    inset 0 1px 2px rgba(3, 10, 8, 0.24),
+    0 0 0 3px var(--bo-color-control-focus-ring);
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-notes__textarea::placeholder {
-  color: rgba(203, 213, 225, 0.72);
+  color: var(--bo-color-control-placeholder);
 }
 
 .reservation-terms-wrapper {
@@ -3722,28 +3780,29 @@ body[dir="ltr"] .slider-btn--next { inset-inline-end: 8px; }
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-terms__title {
-  color: rgba(226, 232, 240, 0.95);
+  color: var(--clr-text);
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-terms__hint {
-  color: rgba(148, 163, 184, 0.72);
+  color: var(--bo-color-text-muted);
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-terms__textarea {
-  background: linear-gradient(135deg, rgba(17, 23, 43, 0.92), rgba(31, 41, 73, 0.88));
-  border-color: rgba(148, 163, 255, 0.26);
-  color: rgba(226, 232, 240, 0.94);
+  background: var(--bo-color-control-bg);
+  border-color: var(--bo-color-control-border);
+  color: var(--clr-text);
+  box-shadow: inset 0 1px 2px rgba(3, 10, 8, 0.22);
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-terms__textarea:focus {
-  border-color: rgba(147, 197, 253, 0.35);
+  border-color: var(--bo-color-control-focus-border);
   box-shadow:
-    inset 0 1px 2px rgba(3, 8, 26, 0.3),
-    0 0 0 3px rgba(93, 133, 255, 0.18);
+    inset 0 1px 2px rgba(3, 10, 8, 0.24),
+    0 0 0 3px var(--bo-color-control-focus-ring);
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-terms__textarea::placeholder {
-  color: rgba(203, 213, 225, 0.7);
+  color: var(--bo-color-control-placeholder);
 }
 
 @media (min-width: 768px) {
@@ -4089,27 +4148,27 @@ body[dir="ltr"] .reservation-field textarea {
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-billing-input {
-  background: rgba(24, 33, 59, 0.88);
-  border: 1px solid rgba(120, 160, 255, 0.32);
+  background: var(--bo-color-control-bg);
+  border: 1px solid var(--bo-color-control-border);
   color: var(--clr-text);
-  box-shadow: inset 0 1px 0 rgba(37, 55, 88, 0.45);
+  box-shadow: inset 0 1px 0 rgba(154, 170, 145, 0.08);
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-billing-input option {
   color: var(--clr-text);
-  background: rgba(24, 33, 59, 0.95);
+  background: var(--bo-color-page-bg-solid);
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-billing-select {
-  color: rgba(226, 232, 240, 0.96) !important;
-  background-color: rgba(24, 33, 59, 0.92) !important;
-  border: 1px solid rgba(148, 191, 255, 0.4) !important;
+  color: var(--clr-text) !important;
+  background: var(--bo-color-control-bg) !important;
+  border: 1px solid var(--bo-color-control-border) !important;
   background-image: none;
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-billing-select option {
-  color: rgba(226, 232, 240, 0.95);
-  background: rgba(24, 33, 59, 0.98);
+  color: var(--clr-text);
+  background: var(--bo-color-page-bg-solid);
 }
 
 :is(html.dark-mode, body.dark-mode) .payment-status-select--unpaid {
@@ -4134,13 +4193,13 @@ body[dir="ltr"] .reservation-field textarea {
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-billing-input:focus {
-  border-color: rgba(148, 191, 255, 0.6);
-  box-shadow: 0 0 0 3px rgba(76, 110, 245, 0.32);
+  border-color: var(--bo-color-control-focus-border);
+  box-shadow: 0 0 0 3px var(--bo-color-control-focus-ring);
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-billing-input--readonly {
-  background: rgba(24, 33, 59, 0.6);
-  color: rgba(226, 232, 240, 0.7);
+  background: var(--bo-color-control-disabled-bg);
+  color: var(--bo-color-text-muted);
 }
 
 .reservation-meta-card--compact {
@@ -4561,8 +4620,8 @@ body[dir="ltr"] .reservation-field textarea {
 }
 
 .reservation-tax-switch .form-check-input:checked {
-  background-color: #4c6ef5;
-  border-color: #4c6ef5;
+  background-color: var(--bo-color-action);
+  border-color: var(--bo-color-action);
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-tax-switch .form-check-input {
@@ -4686,14 +4745,36 @@ body[dir="ltr"] .reservation-field textarea {
 .btn-outline-primary {
   background: transparent;
   border: 1px solid rgba(76, 110, 245, 0.4);
-  color: var(--clr-primary);
+  color: var(--bo-color-accent-text);
   border-radius: 999px;
   padding: 8px 18px;
 }
 
 .btn-outline-primary:hover {
   background: rgba(76, 110, 245, 0.08);
-  color: var(--clr-primary);
+  color: var(--bo-color-accent-text);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-payment-progress__actions .btn-outline-primary {
+  background: var(--bo-color-action-outline-bg);
+  border-color: var(--bo-color-action-outline-border);
+  color: var(--bo-color-action-outline-fg);
+  box-shadow: var(--bo-color-tab-shell-shadow);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-payment-progress__actions .btn-outline-primary:hover,
+:is(html.dark-mode, body.dark-mode) .reservation-payment-progress__actions .btn-outline-primary:focus-visible {
+  background: var(--bo-color-tab-hover-bg);
+  border-color: var(--bo-color-tab-hover-border);
+  color: var(--bo-color-tab-active-fg);
+  box-shadow: var(--bo-color-tab-hover-shadow);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-payment-progress__actions .btn-outline-primary:disabled {
+  background: var(--bo-color-control-disabled-bg);
+  border-color: var(--bo-color-control-border);
+  color: var(--bo-color-control-placeholder);
+  box-shadow: none;
 }
 
 .reservation-item-card .item-thumb {
@@ -4727,6 +4808,11 @@ body[dir="ltr"] .reservation-field textarea {
   align-items: center;
   gap: clamp(0.6rem, 1.8vw, 1rem);
   flex-wrap: wrap;
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-modal-actions {
+  padding-top: 0.95rem;
+  border-top: 1px solid rgba(133, 150, 142, 0.18);
 }
 
 .modal-action-btn {
@@ -4835,6 +4921,70 @@ body[dir="ltr"] .reservation-field textarea {
   box-shadow:
     0 18px 32px rgba(59, 130, 246, 0.32),
     0 0 0 1px rgba(148, 191, 255, 0.45);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-modal-actions .modal-action-btn {
+  border: 1px solid transparent;
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-modal-actions .modal-action-btn::after {
+  background: rgba(154, 170, 145, 0.08);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-modal-actions .modal-action-btn--primary {
+  background: var(--bo-color-action-bg);
+  border-color: var(--bo-color-action-border);
+  box-shadow: var(--bo-color-action-shadow);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-modal-actions .modal-action-btn--primary:hover,
+:is(html.dark-mode, body.dark-mode) .reservation-modal-actions .modal-action-btn--primary:focus-visible {
+  background: var(--bo-color-action-bg-hover);
+  border-color: var(--bo-color-action-border);
+  box-shadow: var(--bo-color-action-shadow-hover);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-modal-actions .modal-action-btn--primary:active {
+  background: var(--bo-color-action-bg-active);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-modal-actions .modal-action-btn--ghost {
+  background: var(--bo-color-tab-shell-bg);
+  color: var(--bo-color-action-outline-fg);
+  border-color: var(--bo-color-tab-shell-border);
+  box-shadow: var(--bo-color-tab-shell-shadow);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-modal-actions .modal-action-btn--ghost::after {
+  background: rgba(154, 170, 145, 0.08);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-modal-actions .modal-action-btn--ghost:hover,
+:is(html.dark-mode, body.dark-mode) .reservation-modal-actions .modal-action-btn--ghost:focus-visible {
+  background: var(--bo-color-tab-hover-bg);
+  color: var(--bo-color-tab-active-fg);
+  border-color: var(--bo-color-tab-hover-border);
+  box-shadow: var(--bo-color-tab-hover-shadow);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-modal-actions .modal-action-btn--danger {
+  box-shadow:
+    0 14px 24px rgba(108, 28, 45, 0.24),
+    0 0 0 1px rgba(244, 114, 182, 0.22);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-modal-actions .modal-action-btn--danger:hover,
+:is(html.dark-mode, body.dark-mode) .reservation-modal-actions .modal-action-btn--danger:focus-visible {
+  box-shadow:
+    0 18px 30px rgba(108, 28, 45, 0.3),
+    0 0 0 1px rgba(248, 113, 113, 0.34);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-modal-actions .modal-action-btn:disabled {
+  background: var(--bo-color-control-disabled-bg);
+  border-color: var(--bo-color-control-border);
+  color: var(--bo-color-control-placeholder);
+  box-shadow: none;
 }
 
 .reservation-preview,
@@ -5585,6 +5735,47 @@ body[dir="rtl"] .reservation-details-wrapper.reservation-details-compact .status
 .quote-preview-modal .modal-body,
 .quote-preview-modal .modal-footer {
   pointer-events: auto;
+}
+
+:is(html.dark-mode, body.dark-mode) .quote-preview-modal .modal-footer .btn-light {
+  border: 1px solid var(--bo-color-action-outline-border);
+  background: var(--bo-color-action-outline-bg);
+  color: var(--bo-color-action-outline-fg);
+  box-shadow: var(--bo-color-tab-shell-shadow);
+}
+
+:is(html.dark-mode, body.dark-mode) .quote-preview-modal .modal-footer .btn-light:hover,
+:is(html.dark-mode, body.dark-mode) .quote-preview-modal .modal-footer .btn-light:focus-visible {
+  background: var(--bo-color-tab-hover-bg);
+  border-color: var(--bo-color-tab-hover-border);
+  color: var(--bo-color-tab-active-fg);
+  box-shadow: var(--bo-color-tab-hover-shadow);
+}
+
+:is(html.dark-mode, body.dark-mode) .quote-preview-modal .modal-footer .btn-primary {
+  background: var(--bo-color-action-bg);
+  border-color: var(--bo-color-action-border);
+  color: var(--bo-color-action-fg);
+  box-shadow: var(--bo-color-action-shadow);
+}
+
+:is(html.dark-mode, body.dark-mode) .quote-preview-modal .modal-footer .btn-primary:hover,
+:is(html.dark-mode, body.dark-mode) .quote-preview-modal .modal-footer .btn-primary:focus-visible {
+  background: var(--bo-color-action-bg-hover);
+  border-color: var(--bo-color-action-border);
+  color: var(--bo-color-action-fg);
+  box-shadow: var(--bo-color-action-shadow-hover);
+}
+
+:is(html.dark-mode, body.dark-mode) .quote-preview-modal .modal-footer .btn-primary:active {
+  background: var(--bo-color-action-bg-active);
+}
+
+:is(html.dark-mode, body.dark-mode) .quote-preview-modal .modal-footer .btn-primary:disabled {
+  background: var(--bo-color-control-disabled-bg);
+  border-color: var(--bo-color-control-border);
+  color: var(--bo-color-control-placeholder);
+  box-shadow: none;
 }
 :is(html.dark-mode, body.dark-mode) .reservation-item-thumb--placeholder {
   background: rgba(37, 55, 88, 0.6);

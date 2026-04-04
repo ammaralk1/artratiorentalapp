@@ -8,8 +8,7 @@ provisions both services and seeds a deterministic dataset.
 
 ```bash
 # From the project root
-$ cd tests/integration
-$ docker compose up -d          # starts MySQL + PHP dev server on http://127.0.0.1:8080
+$ npm run integration:up        # starts MySQL + PHP dev server and applies the test schema patch
 
 # Export the credentials used by the seeded database
 $ export INTEGRATION_API_BASE_URL=http://127.0.0.1:8080/api
@@ -17,7 +16,6 @@ $ export INTEGRATION_USERNAME=integration_admin
 $ export INTEGRATION_PASSWORD=TestPassword123!
 
 # Run the tests from the project root
-$ cd ../..
 $ npm run test:integration
 ```
 
@@ -35,7 +33,9 @@ At startup, the container executes:
 
 1. `backend/sql/auth_schema.sql`
 2. `backend/sql/dev_sample_data.sql`
-3. `tests/integration/docker/init/10-seed-user.sql`
+3. `backend/sql/add_technician_positions_table.sql`
+4. `backend/tools/apply_phase4_schema_updates.php`
+5. deterministic admin re-seeding for `integration_admin`
 
 This creates the full schema with sample reservations/equipment and an admin user
 (`integration_admin` / `TestPassword123!`).
@@ -43,14 +43,13 @@ This creates the full schema with sample reservations/equipment and an admin use
 ## Tearing down
 
 ```bash
-$ cd tests/integration
-$ docker compose down -v
+$ npm run integration:down
 ```
 
 ## Notes
 
 - The PHP container uses the test-specific config in `tests/integration/config.testing.php`.
 - The PHP service is built from `tests/integration/docker/php/Dockerfile`, which enables the `pdo_mysql` extension required by the API.
-- If you make schema changes, update the SQL inside `backend/sql/` and restart the stack.
+- If you make schema changes, update the SQL/tooling inside `backend/sql/` and `backend/tools/`, then rebuild with `npm run integration:down && npm run integration:up`.
 - The compose services share the `art_ratio_test_network` network so you can attach
   additional tooling (e.g. MySQL Workbench) by targeting `127.0.0.1:33306`.
