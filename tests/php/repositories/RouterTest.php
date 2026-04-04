@@ -166,6 +166,30 @@ final class RouterTest extends TestCase
         $this->assertTrue($called);
     }
 
+    public function testTrailingSlashIsIgnoredWhenMatchingCollectionRoute(): void
+    {
+        $called = false;
+        $router = $this->makeRouter('GET', '/api/customers/');
+        $router->get('/api/customers', function () use (&$called) {
+            $called = true;
+        });
+        $router->dispatch();
+
+        $this->assertTrue($called);
+    }
+
+    public function testTrailingSlashIsIgnoredWhenMatchingParameterizedRoute(): void
+    {
+        $capturedParams = null;
+        $router = $this->makeRouter('GET', '/api/customers/42/');
+        $router->get('/api/customers/{id}', function (array $p) use (&$capturedParams) {
+            $capturedParams = $p;
+        });
+        $router->dispatch();
+
+        $this->assertSame(['id' => '42'], $capturedParams);
+    }
+
     // -------------------------------------------------------------------------
     // Method is case-insensitive
     // -------------------------------------------------------------------------

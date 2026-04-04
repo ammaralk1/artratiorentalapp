@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "backoffice:local:dev": "VITE_API_BASE_URL=http://127.0.0.1:8080/api vite --host 127.0.0.1",
+    "backoffice:local:api": "php -S 127.0.0.1:8000 -t backend",
+    "backoffice:local:dev": "VITE_API_BASE_URL=http://127.0.0.1:8000/api vite --host 127.0.0.1",
     "backoffice:local:schema": "php backend/tools/apply_phase4_schema_updates.php",
     "db:migrate": "php backend/tools/migrate.php",
     "db:migrate:status": "php backend/tools/migrate.php --status",

@@ -119,7 +119,7 @@ class Router
     {
         $escaped = preg_quote($path, '#');
         $pattern = preg_replace('/\\\{(\w+)\\\}/', '([^/]+)', $escaped);
-        return '#^' . $pattern . '$#';
+        return '#^' . rtrim($pattern, '/') . '/?$#';
     }
 
     /**

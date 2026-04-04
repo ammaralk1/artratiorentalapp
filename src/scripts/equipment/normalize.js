@@ -5,6 +5,8 @@ import { normalizeAssetUrl } from '../reservationsEquipment.js';
 
 // ── Pure helpers ──────────────────────────────────────────────────────────────
 
+export { normalizeNumbers };
+
 export function hasValue(value) {
   return value !== null && value !== undefined && value !== '';
 }

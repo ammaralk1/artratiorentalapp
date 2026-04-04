@@ -2,8 +2,26 @@ import { defineConfig } from 'vite';
 import { resolve } from 'path';
 import { Agent } from 'http';
 
+function resolveApiProxyTarget() {
+  const rawBase = process.env.VITE_API_BASE_URL || process.env.LOCAL_API_BASE_URL || 'http://127.0.0.1:8000/api';
+
+  try {
+    const parsed = new URL(rawBase);
+    return {
+      origin: parsed.origin,
+      apiPath: (parsed.pathname || '/api').replace(/\/$/, '') || '/api',
+    };
+  } catch (_) {
+    return {
+      origin: 'http://127.0.0.1:8000',
+      apiPath: '/api',
+    };
+  }
+}
+
 export default defineConfig(async () => {
   const analyze = process.env.ANALYZE === 'true';
+  const apiProxy = resolveApiProxyTarget();
   /** @type {import('rollup').Plugin[]} */
   const rollupPlugins = [];
 
@@ -35,10 +53,10 @@ export default defineConfig(async () => {
       open: '/src/pages/login.html',
       proxy: {
         // Proxy API calls to the local PHP dev server so cookies stay same-origin.
-        // Start the PHP server with: php -S 127.0.0.1:8000 -t backend/
+        // Start the PHP server with: npm run backoffice:local:api
         '/backend/api': {
-          target: 'http://127.0.0.1:8000',
-          rewrite: (path) => path.replace(/^\/backend\/api/, '/api'),
+          target: apiProxy.origin,
+          rewrite: (path) => path.replace(/^\/backend\/api/, apiProxy.apiPath),
           changeOrigin: true,
           secure: false,
           // PHP built-in server sends Connection: close — disable keep-alive

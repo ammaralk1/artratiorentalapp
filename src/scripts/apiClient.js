@@ -54,13 +54,20 @@ export function getApiBase() {
   const envBase = typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL;
   const globalBase = typeof window !== 'undefined' ? window.APP_API_BASE : null;
 
-  // If env base points to localhost but we are on a real host, ignore it.
+  // In local HTTP dev, prefer the same-origin Vite proxy so session cookies stay
+  // on a single site. Mixing localhost and 127.0.0.1 breaks auth persistence.
   let preferred = envBase || globalBase || DEFAULT_API_BASE;
   try {
-    const isLocalEnv = typeof preferred === 'string' && /^(https?:)?\/\/(localhost|127\.|\[::1\])\b/i.test(preferred);
-    const isLocalHost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '[::1]');
-    if (isLocalEnv && !isLocalHost) {
-      // Use same-origin backend path in production even if bundle has a dev env var baked in
+    const pageHost = typeof window !== 'undefined' ? (window.location.hostname || '') : '';
+    const pageProtocol = typeof window !== 'undefined' ? (window.location.protocol || '') : '';
+    const isLocalPageHost = pageHost === 'localhost' || pageHost === '127.0.0.1' || pageHost === '::1' || pageHost === '[::1]';
+    const isLocalHttpPage = isLocalPageHost && /^https?:$/i.test(pageProtocol);
+    const isLocalEnv = typeof preferred === 'string' && /^(https?:)?\/\/(localhost|127\.0\.0\.1|\[::1\])(?::\d+)?\b/i.test(preferred);
+
+    if (isLocalHttpPage && isLocalEnv) {
+      preferred = DEFAULT_API_BASE;
+    } else if (isLocalEnv && !isLocalPageHost) {
+      // Use same-origin backend path in production even if bundle has a dev env var baked in.
       preferred = DEFAULT_API_BASE;
     }
   } catch (_) { /* ignore */ }
