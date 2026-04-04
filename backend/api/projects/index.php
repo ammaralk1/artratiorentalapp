@@ -5,8 +5,6 @@ require_once __DIR__ . '/../../bootstrap.php';
 
 use ArtRatio\Repositories\ProjectRepository;
 
-$method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
-
 function projectsTimingLog(string $message): void
 {
     $logDir = __DIR__ . '/../../logs';
@@ -22,26 +20,16 @@ function projectsTimingLog(string $message): void
 if (!defined('API_INCLUDE_MODE')) {
     try {
         $pdo  = getDatabaseConnection();
-        requireAuthenticated();
+        AuthMiddleware::authenticated();
         $repo = new ProjectRepository($pdo);
 
-        switch ($method) {
-            case 'GET':
-                handleProjectsGet($pdo, $repo);
-                break;
-            case 'POST':
-                handleProjectsCreate($pdo, $repo);
-                break;
-            case 'PUT':
-            case 'PATCH':
-                handleProjectsUpdate($pdo, $repo);
-                break;
-            case 'DELETE':
-                handleProjectsDelete($pdo, $repo);
-                break;
-            default:
-                respondError('Method not allowed', 405);
-        }
+        (new Router($_SERVER['REQUEST_METHOD'] ?? 'GET', $_SERVER['REQUEST_URI'] ?? '/'))
+            ->get('/api/projects',    fn() => handleProjectsGet($pdo, $repo))
+            ->post('/api/projects',   fn() => handleProjectsCreate($pdo, $repo))
+            ->put('/api/projects',    fn() => handleProjectsUpdate($pdo, $repo))
+            ->patch('/api/projects',  fn() => handleProjectsUpdate($pdo, $repo))
+            ->delete('/api/projects', fn() => handleProjectsDelete($pdo, $repo))
+            ->dispatch();
     } catch (InvalidArgumentException $exception) {
         respondError($exception->getMessage(), 400);
     } catch (Throwable $exception) {

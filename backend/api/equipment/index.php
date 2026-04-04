@@ -7,30 +7,18 @@ use PDO;
 use RuntimeException;
 use Throwable;
 
-$method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
-
 try {
     $pdo  = getDatabaseConnection();
-    requireAuthenticated();
+    AuthMiddleware::authenticated();
     $repo = new EquipmentRepository($pdo);
 
-    switch ($method) {
-        case 'GET':
-            handleEquipmentGet($pdo, $repo);
-            break;
-        case 'POST':
-            handleEquipmentCreate($pdo, $repo);
-            break;
-        case 'PUT':
-        case 'PATCH':
-            handleEquipmentUpdate($pdo, $repo);
-            break;
-        case 'DELETE':
-            handleEquipmentDelete($pdo, $repo);
-            break;
-        default:
-            respondError('Method not allowed', 405);
-    }
+    (new Router($_SERVER['REQUEST_METHOD'] ?? 'GET', $_SERVER['REQUEST_URI'] ?? '/'))
+        ->get('/api/equipment',    fn() => handleEquipmentGet($pdo, $repo))
+        ->post('/api/equipment',   fn() => handleEquipmentCreate($pdo, $repo))
+        ->put('/api/equipment',    fn() => handleEquipmentUpdate($pdo, $repo))
+        ->patch('/api/equipment',  fn() => handleEquipmentUpdate($pdo, $repo))
+        ->delete('/api/equipment', fn() => handleEquipmentDelete($pdo, $repo))
+        ->dispatch();
 } catch (InvalidArgumentException $exception) {
     respondError($exception->getMessage(), 400);
 } catch (Throwable $exception) {

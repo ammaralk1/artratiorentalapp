@@ -3,33 +3,21 @@ require_once __DIR__ . '/../../bootstrap.php';
 
 use ArtRatio\Repositories\ReservationRepository;
 
-$method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
-
 // Only run the HTTP dispatcher when this file is the direct entrypoint.
 // When included from another endpoint (e.g. to use helper functions), skip dispatch.
 if (!defined('API_INCLUDE_MODE')) {
     try {
         $pdo  = getDatabaseConnection();
-        requireAuthenticated();
+        AuthMiddleware::authenticated();
         $repo = new ReservationRepository($pdo);
 
-        switch ($method) {
-            case 'GET':
-                handleReservationsGet($pdo, $repo);
-                break;
-            case 'POST':
-                handleReservationsCreate($pdo, $repo);
-                break;
-            case 'PUT':
-            case 'PATCH':
-                handleReservationsUpdate($pdo, $repo);
-                break;
-            case 'DELETE':
-                handleReservationsDelete($pdo, $repo);
-                break;
-            default:
-                respondError('Method not allowed', 405);
-        }
+        (new Router($_SERVER['REQUEST_METHOD'] ?? 'GET', $_SERVER['REQUEST_URI'] ?? '/'))
+            ->get('/api/reservations',    fn() => handleReservationsGet($pdo, $repo))
+            ->post('/api/reservations',   fn() => handleReservationsCreate($pdo, $repo))
+            ->put('/api/reservations',    fn() => handleReservationsUpdate($pdo, $repo))
+            ->patch('/api/reservations',  fn() => handleReservationsUpdate($pdo, $repo))
+            ->delete('/api/reservations', fn() => handleReservationsDelete($pdo, $repo))
+            ->dispatch();
     } catch (InvalidArgumentException $exception) {
         respondError($exception->getMessage(), 400);
     } catch (Throwable $exception) {

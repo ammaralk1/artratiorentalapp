@@ -7,30 +7,18 @@ use PDO;
 use RuntimeException;
 use Throwable;
 
-$method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
-
 try {
     $pdo  = getDatabaseConnection();
-    requireAuthenticated();
+    AuthMiddleware::authenticated();
     $repo = new CustomerRepository($pdo);
 
-    switch ($method) {
-        case 'GET':
-            handleGetCustomers($repo);
-            break;
-        case 'POST':
-            handleCreateCustomer($pdo, $repo);
-            break;
-        case 'PUT':
-        case 'PATCH':
-            handleUpdateCustomer($pdo, $repo);
-            break;
-        case 'DELETE':
-            handleDeleteCustomer($pdo, $repo);
-            break;
-        default:
-            respondError('Method not allowed', 405);
-    }
+    (new Router($_SERVER['REQUEST_METHOD'] ?? 'GET', $_SERVER['REQUEST_URI'] ?? '/'))
+        ->get('/api/customers',    fn() => handleGetCustomers($repo))
+        ->post('/api/customers',   fn() => handleCreateCustomer($pdo, $repo))
+        ->put('/api/customers',    fn() => handleUpdateCustomer($pdo, $repo))
+        ->patch('/api/customers',  fn() => handleUpdateCustomer($pdo, $repo))
+        ->delete('/api/customers', fn() => handleDeleteCustomer($pdo, $repo))
+        ->dispatch();
 } catch (InvalidArgumentException $exception) {
     respondError($exception->getMessage(), 400);
 } catch (Throwable $exception) {

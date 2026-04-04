@@ -17,3 +17,6 @@ $bootstrapFiles = [
 foreach ($bootstrapFiles as $file) {
     require_once $file;
 }
+
+require_once __DIR__ . '/../Router.php';
+require_once __DIR__ . '/../middleware/AuthMiddleware.php';
