@@ -8,7 +8,7 @@
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="color-scheme" content="light dark">
 
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' https://cdn.jsdelivr.net https://img1.wsimg.com https://static.cloudflareinsights.com; connect-src 'self' http://127.0.0.1:8000 http://localhost:8000 https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://csp.secureserver.net https://cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://assets.art-ratio.com; font-src 'self' https://fonts.gstatic.com data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'self' https://assets.art-ratio.com; worker-src 'self' blob:; upgrade-insecure-requests;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' https://cdn.jsdelivr.net https://img1.wsimg.com https://static.cloudflareinsights.com; connect-src 'self' http://127.0.0.1:8000 http://localhost:8000 http://127.0.0.1:8080 http://localhost:8080 https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://csp.secureserver.net https://cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://assets.art-ratio.com; font-src 'self' https://fonts.gstatic.com data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'self' https://assets.art-ratio.com; worker-src 'self' blob:; upgrade-insecure-requests;">
 
   <script src="../../js/godaddy-monitor.js" defer></script>
   <script src="../../js/page-boot.js"></script>
@@ -16,26 +16,25 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
-  
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-  <script type="module" crossorigin src="../../assets/projects.CIkjMHUE.js"></script>
-  <link rel="modulepreload" crossorigin href="../../assets/auth.CxL643bw.js">
-  <link rel="modulepreload" crossorigin href="../../assets/dashboard.CNWOI4gS.js">
-  <link rel="modulepreload" crossorigin href="../../assets/projectsService.bwdvUJ9y.js">
-  <link rel="modulepreload" crossorigin href="../../assets/technicians.BJWCf2QR.js">
-  <link rel="modulepreload" crossorigin href="../../assets/reservationsService.CSLvnf22.js">
-  <link rel="modulepreload" crossorigin href="../../assets/uiBridge.Bqm0GQEf.js">
-  <link rel="modulepreload" crossorigin href="../../assets/reservationsActions.BK-r61fa.js">
+  <script type="module" crossorigin src="../../assets/projects.DXRmBePr.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/auth.CHRg883P.js">
+  <link rel="modulepreload" crossorigin href="../../assets/dashboard.BEabfHwC.js">
+  <link rel="modulepreload" crossorigin href="../../assets/projectsService.YN_PyyrX.js">
+  <link rel="modulepreload" crossorigin href="../../assets/technicians.jxtgkfOA.js">
+  <link rel="modulepreload" crossorigin href="../../assets/reservationsService.BLqbbvd3.js">
+  <link rel="modulepreload" crossorigin href="../../assets/uiBridge.DJ9Z1nCX.js">
+  <link rel="modulepreload" crossorigin href="../../assets/reservationsActions.BNqfftTF.js">
   <link rel="modulepreload" crossorigin href="../../assets/quotePdf.WC1ebubv.js">
   <link rel="modulepreload" crossorigin href="../../assets/AR-Logo-v3.5-curved-WH.BONvRdJv.js">
   <link rel="modulepreload" crossorigin href="../../assets/canvasColorUtils.CviLtv6S.js">
-  <link rel="modulepreload" crossorigin href="../../assets/controller.O7inapzh.js">
-  <link rel="modulepreload" crossorigin href="../../assets/modals.6fBeNVrs.js">
-  <link rel="modulepreload" crossorigin href="../../assets/customers.CZ8c_tOu.js">
+  <link rel="modulepreload" crossorigin href="../../assets/controller.CM9_UtUa.js">
+  <link rel="modulepreload" crossorigin href="../../assets/modals.DeuIGShX.js">
+  <link rel="modulepreload" crossorigin href="../../assets/customers.BMPyLcaC.js">
   <link rel="modulepreload" crossorigin href="../../assets/dashboardShell.DF2kUed9.js">
-  <link rel="modulepreload" crossorigin href="../../assets/calculations.CMx1xA5Y.js">
-  <link rel="stylesheet" crossorigin href="../../assets/auth.D_xLx78v.css">
-  <link rel="stylesheet" crossorigin href="../../assets/projects.KHNgon2H.css">
+  <link rel="modulepreload" crossorigin href="../../assets/calculations.HbphrIeZ.js">
+  <link rel="stylesheet" crossorigin href="../../assets/auth.CKBT618s.css">
+  <link rel="stylesheet" crossorigin href="../../assets/projects.CpyiSS-3.css">
 </head>
 <body class="page-shell theme-loading projects-page" data-theme="light">
   <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
@@ -286,6 +285,7 @@
         <div class="dashboard-main-inner space-y-8">
           <div class="tab-section-header">
             <h2 class="tab-section-title" data-i18n data-i18n-key="projects.hero.title">إدارة المشاريع</h2>
+            <p class="section-support-text" data-i18n data-i18n-key="projects.workflow.tabsHint">استخدم تبويب المشاريع لإنشاء ومتابعة العمل، وتبويبي العملاء وطاقم العمل لتحديث السجلات التي تُستخدم داخل المشاريع والحجوزات.</p>
           </div>
 
           <div class="glass-card dashboard-tabbar hidden lg:block">
@@ -336,9 +336,13 @@
                 </div>
               </div>
 
+              <div class="glass-card">
+                <p class="surface-support-text" data-i18n data-i18n-key="projects.workflow.subtabsHint">استخدم "إنشاء مشروع" للأعمال الجديدة، و"مشاريعي" للمراجعة والتعديل، و"تقارير المشاريع" للمتابعة والتحليل، و"القوالب" للطباعة والتصدير.</p>
+              </div>
+
               <div class="tab-pane active project-creation-pane space-y-6" id="create-project-tab" data-project-subtab="create-project-tab">
                 <div class="glass-card">
-                  <p class="text-base text-base-content/70 projects-hero-text mb-0" data-i18n data-i18n-key="projects.hero.subtitle">أنشئ ونسّق المشاريع، ووزّع المهام على الطاقم والمعدات، وتتبع المصاريف.</p>
+                  <p class="surface-support-text projects-hero-text" data-i18n data-i18n-key="projects.hero.subtitle">أنشئ ونسّق المشاريع، ووزّع المهام على الطاقم والمعدات، وتتبع المصاريف.</p>
                 </div>
 
                 <div class="box project-form-card">
@@ -877,6 +881,7 @@
             <section id="customers-section" class="tab-pane d-none space-y-6" data-tab-pane="customers-section">
               <div class="tab-section-header">
                 <h2 class="tab-section-title" data-i18n data-i18n-key="customers.section.title">📋 إدارة العملاء</h2>
+                <p class="section-support-text" data-i18n data-i18n-key="projects.workflow.customersHint">حدّث بيانات العملاء هنا قبل ربطهم بالمشاريع أو إنشاء حجوزات جديدة لهم.</p>
               </div>
 
               <div class="box customer-form-box management-form-box mb-4">
@@ -962,11 +967,13 @@
                   </tbody>
                 </table>
               </div>
+              <div id="customers-list-pagination" class="list-pagination" hidden></div>
             </section>
 
             <section id="technicians-section" class="tab-pane d-none space-y-6" data-tab-pane="technicians-section">
               <div class="tab-section-header">
                 <h2 class="tab-section-title" data-i18n data-i18n-key="technicians.section.title">😎 إدارة طاقم العمل</h2>
+                <p class="section-support-text" data-i18n data-i18n-key="projects.workflow.techniciansHint">حدّث بيانات الطاقم والمناصب هنا قبل إسنادهم للمشاريع أو للحجوزات المرتبطة بها.</p>
               </div>
 
               <div class="box add-technicians-box management-form-box mb-4">
@@ -1048,6 +1055,7 @@
                   </tbody>
                 </table>
               </div>
+              <div id="technicians-list-pagination" class="list-pagination" hidden></div>
             </section>
           </div>
         </div>
@@ -1106,5 +1114,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <!-- Preferred projects-page bootstrap owner -->
 </body>
 </html>

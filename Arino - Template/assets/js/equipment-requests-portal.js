@@ -1,29 +1,56 @@
 (function () {
+  // LOCAL_API_BASE must be same-origin so the Vite dev proxy forwards the request
+  // and the SameSite=Strict session cookie is included. Never use an absolute
+  // http://127.0.0.1:PORT URL here — that bypasses the proxy and breaks auth.
+  const LOCAL_API_BASE = '/backend/api';
+  const PRODUCTION_API_BASE = 'https://api.art-ratio.com/backend/api';
+  const SAME_ORIGIN_API_BASE = '/backend/api';
+
+  function normalizeApiBase(value) {
+    return String(value || '').trim().replace(/\/+$/, '');
+  }
+
   function resolveApiBase() {
     try {
-      const globalBase = typeof window !== 'undefined' ? String(window.APP_API_BASE || '').trim() : '';
+      // Bootstrap contract:
+      // 1. Respect an explicit window.APP_API_BASE override when present.
+      // 2. On local hosts, always use the local API container instead of the page origin.
+      // 3. On production hosts, use the production API host.
+      // 4. Otherwise fall back to same-origin /backend/api for legacy deployments.
+      const globalBase = typeof window !== 'undefined' ? normalizeApiBase(window.APP_API_BASE) : '';
       if (globalBase) {
-        return globalBase.replace(/\/+$/, '');
+        return globalBase;
       }
 
       const host = String((window && window.location && window.location.hostname) || '').toLowerCase();
       if (host === 'localhost' || host === '127.0.0.1' || host === '::1' || host === '') {
-        return '/backend/api';
+        return LOCAL_API_BASE;
       }
 
       if (host === 'art-ratio.com' || host === 'www.art-ratio.com' || host.endsWith('.art-ratio.com')) {
-        return 'https://api.art-ratio.com/backend/api';
+        return PRODUCTION_API_BASE;
       }
     } catch (error) {}
 
-    return '/backend/api';
+    return SAME_ORIGIN_API_BASE;
   }
 
   const API_BASE = resolveApiBase();
   const AUTH_API = `${API_BASE}/auth/`;
   const REQUESTS_API = `${API_BASE}/equipment-requests/admin.php`;
-  const LOGIN_PAGE_URL = 'login.html';
-  const HOME_PAGE_URL = 'home.html';
+  // IMPORTANT: these must be root-relative so navigation works correctly from
+  // inside Arino - Template/. A bare 'login.html' resolves to
+  // /Arino - Template/login.html which does not exist and falls back to the
+  // marketing template index — that is the bug this comment prevents.
+  //
+  // Dev  (Vite):      pages live at /src/pages/
+  // Prod (deployed):  pages live at the web root, one level above this directory
+  const _portalHost = (function () {
+    try { return String(window.location.hostname || '').toLowerCase(); } catch (_) { return ''; }
+  })();
+  const _isLocalDev = _portalHost === 'localhost' || _portalHost === '127.0.0.1' || _portalHost === '::1' || _portalHost === '';
+  const LOGIN_PAGE_URL = _isLocalDev ? '/src/pages/login.html' : '../login.html';
+  const HOME_PAGE_URL  = _isLocalDev ? '/src/pages/home.html'  : '../home.html';
   const PREVIEW_MODE = (function () {
     try {
       const params = new URLSearchParams(window.location.search || '');
