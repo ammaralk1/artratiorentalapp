@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 import { Agent } from 'http';
+import tailwindcss from '@tailwindcss/vite';
 
 function resolveApiProxyTarget() {
   const rawBase = process.env.VITE_API_BASE_URL || process.env.LOCAL_API_BASE_URL || 'http://127.0.0.1:8000/api';
@@ -48,6 +49,7 @@ export default defineConfig(async () => {
     root: '.',
     publicDir: 'public',
     base: './',
+    plugins: [tailwindcss()],
     server: {
       port: 5173,
       open: '/src/pages/login.html',

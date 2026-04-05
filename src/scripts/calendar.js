@@ -1028,7 +1028,7 @@ export function renderCalendar() {
           const chips = [chip(confirmed ? 'badge-success' : 'badge-warning', confirmedLabel), chip(paidBadgeClass, paidLabel)];
           if (completed) chips.push(chip('badge-neutral', t('calendar.badges.completed', 'مغلق')));
           return `
-            <div class="card bg-base-100/90 border border-base-200 shadow-sm rounded-xl p-2">
+            <div class="card bg-base-100/90 border border-base-200 shadow-xs rounded-xl p-2">
               <div class="flex items-baseline justify-between text-[0.8rem]">
                 <span class="font-bold">${escapeHtml(timeLabel || '')}</span>
                 <span class="font-semibold">${escapeHtml(idLabel)}</span>

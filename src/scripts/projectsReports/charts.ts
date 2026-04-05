@@ -24,6 +24,13 @@ interface ApexRendererDeps {
 }
 
 const STATUS_ORDER = ['upcoming', 'ongoing', 'completed'];
+const CHART_COLORS = {
+  primary: 'var(--color-primary, #4c6ef5)',
+  secondary: 'var(--color-secondary, #60a5fa)',
+  accent: 'var(--color-accent, #f472b6)',
+  success: 'var(--color-success, #22c55e)',
+  warning: 'var(--color-warning, #fbbf24)',
+};
 
 export function buildStatusChartOptions(
   projects: ReportsChartProjectLike[],
@@ -42,7 +49,7 @@ export function buildStatusChartOptions(
     },
     labels,
     series,
-    colors: ['#3b82f6', '#fbbf24', '#22c55e'],
+    colors: [CHART_COLORS.primary, CHART_COLORS.warning, CHART_COLORS.success],
     dataLabels: {
       formatter: (val: number) => (Number.isFinite(val) ? `${Math.round(val)}%` : '0%'),
     },
@@ -131,7 +138,7 @@ export function buildTimelineChartOptions(
       },
     },
     markers: { size: 4 },
-    colors: ['#4c6ef5'],
+    colors: [CHART_COLORS.primary],
     tooltip: {
       y: {
         formatter: (value: unknown) => deps.formatCompactNumber(value),
@@ -186,7 +193,7 @@ export function buildExpenseChartOptions(
       position: 'bottom',
       fontSize: '13px',
     },
-    colors: ['#4c6ef5', '#f472b6'],
+    colors: [CHART_COLORS.primary, CHART_COLORS.accent],
     tooltip: {
       y: {
         formatter: (value: unknown) => deps.formatCompactNumber(value),
@@ -244,7 +251,7 @@ export function buildClientsChartOptions(
       },
     },
     dataLabels: { enabled: false },
-    colors: ['#3b82f6'],
+    colors: [CHART_COLORS.secondary],
     tooltip: {
       y: {
         formatter: (value: unknown) => deps.formatCompactNumber(value),

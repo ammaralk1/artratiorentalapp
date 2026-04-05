@@ -1301,7 +1301,7 @@ function renderDetails() {
         }
       }
       return `
-        <article class="rounded-2xl border border-base-200 bg-base-100/90 p-4 shadow-sm">
+        <article class="rounded-2xl border border-base-200 bg-base-100/90 p-4 shadow-xs">
           <span class="text-sm font-medium text-base-content/70" data-i18n data-i18n-key="${field.key}">${escapeHtml(label)}</span>
           <div class="mt-2">${docContent}</div>
         </article>
@@ -1313,7 +1313,7 @@ function renderDetails() {
     const displayValue = trimmedValue.length > 0 ? trimmedValue : '—';
     const valueHtml = field.multiline ? escapeMultiline(displayValue) : escapeHtml(displayValue);
     return `
-      <article class="rounded-2xl border border-base-200 bg-base-100/90 p-4 shadow-sm">
+      <article class="rounded-2xl border border-base-200 bg-base-100/90 p-4 shadow-xs">
         <span class="text-sm font-medium text-base-content/70" data-i18n data-i18n-key="${field.key}">${escapeHtml(label)}</span>
         <p class="mt-2 text-lg font-semibold text-base-content">${valueHtml}</p>
       </article>

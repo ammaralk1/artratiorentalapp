@@ -1,3 +1,4 @@
+@import './tailwind-theme.css';
 @import './core.css';
 @import './maintenance.css';
 @import './reservations.css';
@@ -7,10 +8,6 @@
 @import './calendar.css';
 @import './forms.css';
 @import './enhanced-select.css';
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 
 @layer base {
   :root {
@@ -53,7 +50,7 @@
   }
 
   .dashboard-header {
-    @apply sticky top-0 z-40 backdrop-blur border-b border-base-200 bg-base-100 shadow-sm;
+    @apply sticky top-0 z-40 backdrop-blur-sm border-b border-base-200 bg-base-100 shadow-xs;
     background-color: hsl(var(--b1) / 0.92);
     overflow: visible;
   }
@@ -339,7 +336,7 @@
   }
 
   .sidebar-shell {
-    @apply flex flex-col gap-4 backdrop-blur border-l border-base-200 shadow-soft p-6 w-72 xl:w-80;
+    @apply flex flex-col gap-4 backdrop-blur-sm border-l border-base-200 shadow-soft p-6 w-72 xl:w-80;
     background: var(--bo-color-shell-bg);
     border-color: var(--bo-color-shell-border);
     box-shadow: var(--bo-color-shell-shadow-elevated);
@@ -806,11 +803,21 @@
     box-shadow: var(--bo-color-shell-shadow);
   }
 
-  .glass-card {
-    @apply bg-base-100 shadow-soft border border-base-200 backdrop-blur-sm rounded-3xl p-6;
+  .glass-card,
+  .management-form-box,
+  .reservation-filter-card,
+  .kpi-card,
+  .calendar-card,
+  .table-wrapper,
+  .box {
+    @apply bg-base-100 shadow-soft border border-base-200 backdrop-blur-xs rounded-3xl p-6;
     background: var(--bo-color-shell-bg);
     border-color: var(--bo-color-shell-border);
     box-shadow: var(--bo-color-shell-shadow);
+  }
+
+  .table-wrapper {
+    @apply overflow-hidden p-0;
   }
 
   .primary-actions-card {
@@ -853,11 +860,12 @@
     }
   }
 
-  .box {
-    @apply glass-card;
-  }
-
   :where(html.dark, body.dark) .glass-card,
+  :where(html.dark, body.dark) .management-form-box,
+  :where(html.dark, body.dark) .reservation-filter-card,
+  :where(html.dark, body.dark) .kpi-card,
+  :where(html.dark, body.dark) .calendar-card,
+  :where(html.dark, body.dark) .table-wrapper,
   :where(html.dark, body.dark) .box {
     background: var(--bo-color-shell-bg);
     border-color: var(--bo-color-shell-border);
@@ -926,7 +934,7 @@
   }
 
   .tab-buttons {
-    @apply flex flex-wrap items-center gap-3 bg-base-100 border border-base-200 rounded-3xl p-2 shadow-sm;
+    @apply flex flex-wrap items-center gap-3 bg-base-100 border border-base-200 rounded-3xl p-2 shadow-xs;
     background: var(--bo-color-tab-shell-bg);
     border-color: var(--bo-color-tab-shell-border);
     box-shadow: var(--bo-color-tab-shell-shadow);
@@ -3641,7 +3649,7 @@
   }
 
   .sub-tab-buttons:not(.tabs) {
-    @apply flex flex-wrap gap-2 rounded-full bg-base-100 border border-base-200 p-1 shadow-sm;
+    @apply flex flex-wrap gap-2 rounded-full bg-base-100 border border-base-200 p-1 shadow-xs;
     background: var(--bo-color-tab-shell-bg);
     border-color: var(--bo-color-tab-shell-border);
     box-shadow: var(--bo-color-tab-shell-shadow);
@@ -3658,10 +3666,6 @@
     border-color: var(--bo-color-tab-active-border);
     color: var(--bo-color-tab-active-fg);
     box-shadow: var(--bo-color-tab-active-shadow);
-  }
-
-  .management-form-box {
-    @apply glass-card;
   }
 
   .management-form-header {
@@ -4111,10 +4115,6 @@
     box-shadow: none !important;
   }
 
-  .table-wrapper {
-    @apply glass-card overflow-hidden p-0;
-  }
-
   .table thead {
     @apply bg-base-200 text-base-content;
     background-color: hsl(var(--b2) / 0.85);
@@ -4293,7 +4293,7 @@
   }
 
   .sidebar-backdrop {
-    @apply fixed inset-0 bg-black backdrop-blur-sm z-40 hidden;
+    @apply fixed inset-0 bg-black backdrop-blur-xs z-40 hidden;
     background-color: rgb(0 0 0 / 0.35);
   }
 
@@ -4567,12 +4567,6 @@
 
   .d-none {
     display: none;
-  }
-
-  .reservation-filter-card,
-  .kpi-card,
-  .calendar-card {
-    @apply glass-card;
   }
 
   .badge-soft {
@@ -5418,7 +5412,7 @@
   }
 
   .btn.modal-close-btn {
-    @apply inline-flex items-center justify-center gap-2 font-semibold transition duration-150 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2;
+    @apply inline-flex items-center justify-center gap-2 font-semibold transition duration-150 ease-in-out focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2;
     padding: 0.6rem 1.4rem;
     border-radius: 999px;
     border: 1px solid rgba(148, 163, 184, 0.45);
@@ -5510,7 +5504,7 @@
   }
 
   .modal-backdrop.show {
-    @apply fixed inset-0 z-40 bg-slate-900 backdrop-blur-sm;
+    @apply fixed inset-0 z-40 bg-slate-900 backdrop-blur-xs;
     background-color: rgb(15 23 42 / 0.45);
   }
 

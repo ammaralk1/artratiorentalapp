@@ -1293,7 +1293,7 @@ function renderTechnicianDetails(technician) {
   ];
 
   const detailCards = detailItems.map(({ key, value }) => `
-    <article class="rounded-2xl border border-base-200 bg-base-100/90 p-4 shadow-sm">
+    <article class="rounded-2xl border border-base-200 bg-base-100/90 p-4 shadow-xs">
       <span class="text-sm font-medium text-base-content/70" data-i18n data-i18n-key="${key}">${t(key)}</span>
       <p class="mt-2 text-lg font-semibold text-base-content">${value}</p>
     </article>
