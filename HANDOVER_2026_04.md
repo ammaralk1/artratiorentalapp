@@ -16,10 +16,10 @@ Repo reality check date: 2026-04-05
 | Phase | Description | Status |
 |-------|-------------|--------|
 | A | Security hardening | ✅ Done |
-| B | CSS token / brand finish | ⚠️ Partial — Tailwind v4 upgrade still pending; minor brand-color debt remains outside CSS |
+| B | CSS token / brand finish | ⚠️ Partial — Tailwind v4 / DaisyUI v5 alignment still pending; minor chart and utility-compat debt remains |
 | C | DB migration tracking | ✅ Done |
 | D | JS test coverage | ✅ Done |
-| E | JS refactoring (monolith splits) | ⚠️ Partial — `templatesTab.js` has been modularized; next hotspots are reports/reservations edit surfaces |
+| E | JS refactoring (monolith splits) | ⚠️ Paused in a good state — `templatesTab.js` and `projectsReports.js` have been modularized; remaining hotspots are reservation/project edit surfaces |
 | F | PHP service layer (SQL → repositories) | ✅ Done |
 | G | TypeScript migration | ✅ Foundation set — incremental going forward |
 
@@ -30,7 +30,7 @@ Important: the older `memory/...` references mentioned in previous notes are not
 ## Verified On This Checkout
 
 ```bash
-npx vitest run        # 872 passing, 6 skipped
+npx vitest run        # 900 passing, 6 skipped
 php vendor/bin/phpunit # 101 passing, 207 assertions
 npx tsc --noEmit      # clean
 ```
@@ -73,12 +73,17 @@ Still open:
 - DaisyUI v5 / Tailwind v3 mismatch remains:
   - `daisyui@^5.1.26`
   - `tailwindcss@^3.4.14`
-- Minor hard-coded brand blue still exists outside the CSS audit scope, for example in `src/scripts/projectsReports.js`
+- Tailwind is still wired in the v3 style:
+  - `src/styles/app.css` and `src/styles/auth.css` still use `@tailwind base/components/utilities`
+  - `tailwind.config.js` still owns theme and daisyUI configuration
+  - `postcss.config.js` still registers `tailwindcss` instead of `@tailwindcss/postcss`
+- Minor hard-coded chart colors still exist outside the CSS audit scope, for example in `src/scripts/projectsReports/charts.ts`
 
 Recommendation:
 
-- Do the Tailwind v3 → v4 upgrade on its own branch after `templatesTab.js` is stabilized
+- Do the Tailwind v3 → v4 upgrade on its own branch next
 - Fold remaining chart/UI color literals into the same cleanup pass so Phase B can actually close
+- Use `TAILWIND_V4_PLAN.md` as the migration checklist for this repo
 
 ---
 
@@ -125,8 +130,8 @@ Seed data stays separate:
 
 Current verified counts on this checkout:
 
-- 878 total
-- 872 passing
+- 906 total
+- 900 passing
 - 6 skipped
 
 Covered areas include:
@@ -207,9 +212,19 @@ Recent additions closed a major prior gap:
 - `state.ts`
 - `zoom.ts`
 
+`src/scripts/projectsReports.js` → `src/scripts/projectsReports/`
+
+- `breakdown.ts`
+- `charts.ts`
+- `controls.ts`
+- `export.ts`
+- `filters.ts`
+- `financials.ts`
+- `formatting.ts`
+- `table.ts`
+
 ### Remaining high-priority refactor targets
 
-- `src/scripts/projectsReports.js`
 - `src/scripts/reservationsEdit.js`
 - `src/scripts/projects/form.js`
 - `src/scripts/reservations/editForm.js`
@@ -289,28 +304,28 @@ That gives a practical migration path:
 
 | Phase | Item | Effort |
 |-------|------|--------|
-| E | Refactor next large frontend hotspot (`projectsReports.js` or reservation edit surfaces) | ~1–3 days each |
-| B | Tailwind v3 → v4 upgrade for DaisyUI v5 compatibility | ~1 day plus regression testing |
+| B | Tailwind v3 → v4 upgrade for DaisyUI v5 compatibility | ~1–2 days plus regression testing |
 | B | Clean remaining hard-coded brand colors in JS/chart surfaces | <0.5 day |
+| E | Optional next monolith split (`reservationsEdit.js`, `projects/form.js`, `reservations/editForm.js`) | ~1–3 days each |
 | G | Incremental TypeScript migration | ongoing |
 
 ---
 
 ## Immediate Recommendation
 
-1. Keep Phase E moving away from the templates area; that work is now committed and green.
-2. Choose one next hotspot only:
-   - `src/scripts/projectsReports.js`
-   - `src/scripts/reservationsEdit.js`
-   - `src/scripts/projects/form.js`
-   - `src/scripts/reservations/editForm.js`
-3. Do Tailwind v4 / DaisyUI alignment on its own branch after that, not in the same refactor branch.
+1. Stop frontend refactors here unless a product bug forces another split.
+2. Move to Phase B next on its own branch:
+   - Tailwind v3 → v4 upgrade
+   - DaisyUI v5 CSS-plugin/theme migration
+   - remaining chart/UI color cleanup
+3. Leave the remaining monolith splits as backlog, not the active priority.
 
 Reason:
 
 - `templatesTab` has already been split and committed (`03d17314`).
+- `projectsReports` has already been split and committed (`777c37b9`).
 - Tests and typecheck are green on this checkout.
-- Stacking the Tailwind upgrade onto the next frontend refactor would still create two large UI regression surfaces at once.
+- The next repo-wide risk is styling/build compatibility, not module boundaries.
 
 ---
 
@@ -320,6 +335,7 @@ Use this plan for the next session:
 
 - `HANDOVER_2026_04.md` for current status
 - `TEMPLATES_TAB_SPLIT_PLAN.md` as historical reference for how the templates split was executed
+- `TAILWIND_V4_PLAN.md` for the next active branch/workstream
 
 ---
 
