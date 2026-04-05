@@ -1,11 +1,47 @@
 import { loadData } from './storage.js';
 import { t, getCurrentLanguage } from './language.js';
-import { normalizeNumbers, formatDateTime } from './utils.js';
 import { apiRequest } from './apiClient.js';
-import { ensureXlsx } from './reports/external.js';
-import { ensureXlsxStyled } from './templates/excelExport.js';
-import { computeReservationFinancials } from './reports/calculations.js';
-import { calculateReservationTotal, calculateDraftFinancialBreakdown } from './reservationsSummary.js';
+import {
+  buildClientsChartOptions,
+  buildExpenseChartOptions,
+  buildStatusChartOptions,
+  buildTimelineChartOptions,
+  renderApexChart,
+} from './projectsReports/charts';
+import {
+  buildSortTitle,
+  getNextSortState,
+  renderProjectsTable,
+} from './projectsReports/table';
+import {
+  ensureCustomRangePickers,
+  setupReportFilters,
+} from './projectsReports/controls';
+import {
+  computeProjectCommercialTotals,
+  computeProjectsRevenueBreakdown,
+} from './projectsReports/breakdown';
+import { exportProjectsToExcel as exportProjectsWorkbook } from './projectsReports/export';
+import {
+  computeProjectMetrics,
+  determineProjectStatus,
+  getProjectExpenses,
+  getReservationsForProject,
+  isProjectEligibleForReports,
+  resolveProjectPaymentState,
+} from './projectsReports/financials';
+import {
+  filterProjectsForReports,
+} from './projectsReports/filters';
+import {
+  escapeHtml,
+  formatCompactNumber,
+  formatCurrency,
+  formatNumber,
+  formatPercent,
+  formatProjectPeriod,
+  getChartLocale,
+} from './projectsReports/formatting';
 import {
   ensureProjectsLoaded,
   getProjectsState,
@@ -110,17 +146,6 @@ const KPI_ICONS = Object.freeze({
 let ChartLib = null;
 const STATUS_OPTIONS = ['upcoming', 'ongoing', 'completed'];
 let projectsReportsInitPromise = null;
-const CLOSED_STATUS_KEYWORDS = new Set([
-  'completed',
-  'closed',
-  'done',
-  'finished',
-  'resolved',
-  'مغلق',
-  'مكتمل',
-  'منتهي',
-  'منتهية'
-]);
 
 // Basic sort state for projects table
 const sortState = { key: 'value', dir: 'desc' };
@@ -131,57 +156,6 @@ const sortState = { key: 'value', dir: 'desc' };
 let __mutationRefreshInFlight = false;
 let __lastMutationRefreshAt = 0;
 const MUTATION_REFRESH_MIN_INTERVAL_MS = 1500; // throttle a bit when many events fire
-
-function normalizeStatusValue(value) {
-  if (value == null) return '';
-  return String(value).trim().toLowerCase();
-}
-
-function isProjectClosed(project) {
-  if (!project) return false;
-  const raw = project.raw || project;
-  const candidates = [
-    raw?.status,
-    raw?.project_status,
-    raw?.projectStatus,
-    raw?.state,
-    raw?.project_state,
-    raw?.projectState,
-    raw?.status_label,
-    raw?.statusLabel,
-  ];
-  for (const candidate of candidates) {
-    const normalized = normalizeStatusValue(candidate);
-    if (!normalized) continue;
-    if (CLOSED_STATUS_KEYWORDS.has(normalized)) return true;
-    if (normalized.includes('closed')) return true;
-  }
-
-  const flags = [
-    raw?.closed,
-    raw?.isClosed,
-    raw?.is_closed,
-    raw?.closed_at,
-    raw?.closedAt
-  ];
-  if (flags.some((flag) => {
-    if (flag == null) return false;
-    if (flag === true) return true;
-    if (typeof flag === 'number') return flag === 1;
-    const normalized = normalizeStatusValue(flag);
-    return normalized === 'true' || normalized === 'yes';
-  })) {
-    return true;
-  }
-
-  return false;
-}
-
-function isProjectEligibleForReports(project) {
-  if (!project || project.cancelled) return false;
-  if (project.confirmed === true) return true;
-  return isProjectClosed(project);
-}
 
 async function loadReportsData({ forceProjects = false } = {}) {
   try {
@@ -203,7 +177,7 @@ async function initReports() {
 
   resolveAndApplyTaxRate();
   // Pre-initialize date pickers so inputs respond even before switching to custom
-  try { ensureCustomRangePickers(); } catch (_) {}
+  try { ensureCustomRangePickersWrapper(); } catch (_) {}
   // Sync RTL/LTR on wrapper with current document language
   try {
     const dir = (document?.documentElement?.getAttribute('dir') || 'rtl');
@@ -391,39 +365,6 @@ function loadAllData() {
   state.totalProjects = state.projects.length;
 }
 
-function computeProjectMetrics(project) {
-  const reservations = getReservationsForProject(project.id);
-  let resFinal = 0;
-  let resTax = 0;
-  let resNetRevenue = 0;
-  reservations.forEach((res) => {
-    const f = computeReservationFinancials(res);
-    const finalTotal = Number(f.finalTotal || 0);
-    const taxAmount = Number(f.taxAmount || 0);
-    resFinal += finalTotal;
-    resTax += taxAmount;
-    resNetRevenue += (finalTotal - taxAmount);
-  });
-
-  const equipmentEstimate = Number(project?.raw?.equipmentEstimate ?? project?.equipmentEstimate ?? 0) || 0;
-  const servicesRevenue = Number(project?.raw?.servicesClientPrice ?? project?.servicesClientPrice ?? 0) || 0;
-  const projectExpenses = Number(project?.expensesTotal ?? 0) || 0;
-  const revenueExTax = resNetRevenue + equipmentEstimate + servicesRevenue;
-  const netProfit = resNetRevenue + (servicesRevenue - projectExpenses);
-  const marginPercent = revenueExTax > 0 ? (netProfit / revenueExTax) * 100 : 0;
-
-  return {
-    resFinal,
-    resTax,
-    resNetRevenue,
-    equipmentEstimate,
-    servicesRevenue,
-    projectExpenses,
-    netProfit,
-    marginPercent,
-  };
-}
-
 function resolveAndApplyTaxRate() {
   try {
     const root = typeof window !== 'undefined' ? window : globalThis;
@@ -452,51 +393,8 @@ function resolveAndApplyTaxRate() {
 function buildProjectSnapshot(project, customerMap) {
   const normalizedPayment = project.paymentStatus === 'paid' ? 'paid' : 'unpaid';
   const client = customerMap.get(String(project.clientId));
-  const reservations = getReservationsForProject(project.id);
-
-  // Aggregate equipment/crew totals and crew cost (exactly like modal)
-  const agg = reservations.reduce((acc, res) => {
-    const items = Array.isArray(res.items) ? res.items : [];
-    const crewAssignments = Array.isArray(res.crewAssignments) ? res.crewAssignments : [];
-    const techOrAssign = crewAssignments.length ? crewAssignments : (Array.isArray(res.technicians) ? res.technicians : []);
-    const useAssignments = Array.isArray(techOrAssign) && techOrAssign.length && typeof techOrAssign[0] === 'object';
-    const useTechnicianIds = Array.isArray(techOrAssign) && techOrAssign.length && typeof techOrAssign[0] !== 'object';
-    const breakdown = calculateDraftFinancialBreakdown({
-      items,
-      technicianIds: useTechnicianIds ? techOrAssign : [],
-      crewAssignments: useAssignments ? techOrAssign : [],
-      discount: res.discount ?? 0,
-      discountType: res.discountType || 'percent',
-      applyTax: false,
-      start: res.start,
-      end: res.end,
-    });
-    acc.equipment += Number(breakdown.equipmentTotal || 0);
-    acc.crew += Number(breakdown.crewTotal || 0);
-    acc.crewCost += Number(breakdown.crewCostTotal || 0);
-    return acc;
-  }, { equipment: 0, crew: 0, crewCost: 0 });
-
-  const servicesClientPrice = getProjectServicesRevenue(project);
-  const discountVal = Number(project?.discount ?? 0) || 0;
-  const discountType = project?.discountType === 'amount' ? 'amount' : 'percent';
-  const applyTaxRaw = project?.applyTax === true || project?.applyTax === 'true';
-
-  const grossBeforeDiscount = agg.equipment + agg.crew + servicesClientPrice;
-  let discountAmount = discountType === 'amount' ? discountVal : grossBeforeDiscount * (discountVal / 100);
-  if (!Number.isFinite(discountAmount) || discountAmount < 0) discountAmount = 0;
-  if (discountAmount > grossBeforeDiscount) discountAmount = grossBeforeDiscount;
-  const baseAfterDiscount = Math.max(0, grossBeforeDiscount - discountAmount);
-
-  const shareEnabled = project?.companyShareEnabled === true || project?.companyShareEnabled === 'true';
-  const rawSharePercent = Number(project?.companySharePercent) || 0;
-  // Couple VAT and company share: if share is set, VAT is effectively ON
-  const applyTax = applyTaxRaw || (shareEnabled && rawSharePercent > 0);
-  const sharePercent = (shareEnabled && applyTax) ? rawSharePercent : 0;
-  const companyShareAmount = sharePercent > 0 ? Number((baseAfterDiscount * (sharePercent / 100)).toFixed(2)) : 0;
-
-  const taxAmount = applyTax ? Number(((baseAfterDiscount + companyShareAmount) * PROJECT_TAX_RATE).toFixed(2)) : 0;
-  const finalTotal = Number((baseAfterDiscount + companyShareAmount + taxAmount).toFixed(2));
+  const reservations = getReservationsForProject(state.reservations, project.id);
+  const commercial = computeProjectCommercialTotals(project, reservations, PROJECT_TAX_RATE);
 
   const statusBase = determineProjectStatus(project);
   const isCancelled = (() => {
@@ -524,290 +422,38 @@ function buildProjectSnapshot(project, customerMap) {
     confirmed: project.confirmed === true || project.confirmed === 'true',
     start,
     end,
-    applyTax,
-    companyShareEnabled: shareEnabled,
-    companySharePercent: sharePercent,
+    applyTax: commercial.applyTax,
+    companyShareEnabled: commercial.sharePercent > 0,
+    companySharePercent: commercial.sharePercent,
     status,
     cancelled: isCancelled,
-    reservationsTotal: Number((agg.equipment + agg.crew).toFixed(2)),
+    reservationsTotal: Number((commercial.agg.equipment + commercial.agg.crew).toFixed(2)),
     expensesTotal: getProjectExpenses(project),
-    servicesClientPrice,
-    taxAmount,
-    combinedTaxAmount: taxAmount,
-    overallTotal: finalTotal,
-    unpaidValue: normalizedPayment === 'paid' ? 0 : finalTotal,
+    servicesClientPrice: commercial.servicesRevenue,
+    taxAmount: commercial.taxAmount,
+    combinedTaxAmount: commercial.taxAmount,
+    overallTotal: commercial.finalTotal,
+    unpaidValue: normalizedPayment === 'paid' ? 0 : commercial.finalTotal,
     reservationsCount: reservations.length
   };
 }
 
-function getReservationsForProject(projectId) {
-  if (!Array.isArray(state.reservations)) return [];
-  return state.reservations.filter((reservation) => String(reservation.projectId) === String(projectId));
-}
-
-function resolveReservationNetTotal(reservation) {
-  if (!reservation) return 0;
-  const items = Array.isArray(reservation.items) ? reservation.items : [];
-  const discountRaw = reservation.discount ?? 0;
-  const discountValue = Number(normalizeNumbers(String(discountRaw))) || 0;
-  const discountType = reservation.discountType || 'percent';
-  const crewAssignments = Array.isArray(reservation.crewAssignments) ? reservation.crewAssignments : [];
-  const techniciansOrAssignments = crewAssignments.length
-    ? crewAssignments
-    : (Array.isArray(reservation.technicians) ? reservation.technicians : []);
-  const calculated = calculateReservationTotal(
-    items,
-    discountValue,
-    discountType,
-    false,
-    techniciansOrAssignments,
-    { start: reservation.start, end: reservation.end }
-  );
-
-  if (Number.isFinite(calculated)) {
-    return calculated;
-  }
-
-  const storedCost = Number(normalizeNumbers(String(reservation.cost ?? 0)));
-  return Number.isFinite(storedCost) ? Math.round(storedCost) : 0;
-}
-
-function resolveReservationFinalTotal(reservation) {
-  if (!reservation) return 0;
-  try {
-    const f = computeReservationFinancials(reservation);
-    const val = Number(f.finalTotal || 0);
-    return Number.isFinite(val) ? val : 0;
-  } catch (_) {
-    return 0;
-  }
-}
-
-function getProjectExpenses(project) {
-  if (typeof project.expensesTotal === 'number') {
-    return Number(project.expensesTotal) || 0;
-  }
-  if (Array.isArray(project.expenses)) {
-    return project.expenses.reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0);
-  }
-  return 0;
-}
-
-function getProjectServicesRevenue(project) {
-  // Support both camelCase and snake_case sources
-  const direct = Number(
-    project?.servicesClientPrice
-    ?? project?.services_client_price
-    ?? project?.raw?.servicesClientPrice
-    ?? project?.raw?.services_client_price
-    ?? 0
-  ) || 0;
-  if (direct > 0) return direct;
-  const expenses = Array.isArray(project?.expenses) ? project.expenses
-    : (Array.isArray(project?.raw?.expenses) ? project.raw.expenses : []);
-  if (!expenses.length) return 0;
-  const parseNum = (v) => {
-    if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
-    if (v == null || v === '') return 0;
-    const s = normalizeNumbers(String(v)).replace(/[^\d.+-]/g, '');
-    const n = Number.parseFloat(s);
-    return Number.isFinite(n) ? n : 0;
-  };
-  return expenses.reduce((sum, exp) => sum + parseNum(exp?.salePrice ?? exp?.sale_price ?? 0), 0);
-}
-
-function determineProjectStatus(project) {
-  const now = new Date();
-  const start = project.start ? new Date(project.start) : null;
-  const end = project.end ? new Date(project.end) : null;
-
-  if (start && !Number.isNaN(start.getTime()) && start > now) {
-    return 'upcoming';
-  }
-  if (end && !Number.isNaN(end.getTime()) && end < now) {
-    return 'completed';
-  }
-  return 'ongoing';
-}
-
 function setupFilters() {
-  if (dom.search) {
-    let debounceTimer;
-    dom.search.addEventListener('input', () => {
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => {
-        state.filters.search = dom.search.value.trim();
-        renderAll();
-      }, 180);
-    });
-  }
-
-  if (dom.payment) {
-    dom.payment.value = state.filters.payment;
-    dom.payment.addEventListener('change', () => {
-      state.filters.payment = dom.payment.value || 'all';
-      renderAll();
-    });
-  }
-
-  if (dom.confirmed) {
-    dom.confirmed.value = state.filters.confirmed || 'all';
-    dom.confirmed.addEventListener('change', () => {
-      state.filters.confirmed = dom.confirmed.value || 'all';
-      renderAll();
-    });
-  }
-
-  if (dom.dateRange) {
-    dom.dateRange.addEventListener('change', handleDateRangeChange);
-    dom.dateRange.value = state.filters.range;
-    // If custom is already selected (e.g., via persisted state), ensure pickers are ready
-    if (dom.dateRange.value === 'custom') {
-      ensureCustomRangePickers();
-    }
-  }
-
-  if (dom.startDate) {
-    dom.startDate.addEventListener('change', () => {
-      state.filters.startDate = dom.startDate.value;
-      if (state.filters.range === 'custom') {
-        renderAll();
-      }
-    });
-  }
-
-  if (dom.endDate) {
-    dom.endDate.addEventListener('change', () => {
-      state.filters.endDate = dom.endDate.value;
-      if (state.filters.range === 'custom') {
-        renderAll();
-      }
-    });
-  }
-
-  if (dom.refreshBtn) {
-    dom.refreshBtn.addEventListener('click', () => {
-      if (state.filters.range !== 'custom') {
-        renderAll();
-        return;
-      }
-      state.filters.startDate = dom.startDate?.value || '';
-      state.filters.endDate = dom.endDate?.value || '';
-      renderAll();
-    });
-  }
+  setupReportFilters({
+    dom,
+    filters: state.filters,
+    renderAll,
+    getCurrentLanguage,
+  });
 }
 
-function handleDateRangeChange(event) {
-  const value = event.target.value;
-  state.filters.range = value;
-  if (value === 'custom') {
-    dom.customRangeWrapper?.classList.add('active');
-    ensureCustomRangePickers();
-  } else {
-    dom.customRangeWrapper?.classList.remove('active');
-    state.filters.startDate = '';
-    state.filters.endDate = '';
-    if (dom.startDate) dom.startDate.value = '';
-    if (dom.endDate) dom.endDate.value = '';
-    renderAll();
-  }
-}
-
-function ensureCustomRangePickers() {
-  try {
-    // If Flatpickr is not ready, load it and retry shortly.
-    if (!window.flatpickr) {
-      try {
-        const existing = document.querySelector('script[data-flatpickr-loader="true"]')
-          || document.querySelector('script[src*="flatpickr"]');
-        if (!existing) {
-          const s = document.createElement('script');
-          s.src = 'https://cdn.jsdelivr.net/npm/flatpickr';
-          s.async = true;
-          s.dataset.flatpickrLoader = 'true';
-          s.onload = () => { try { ensureCustomRangePickers(); } catch (_) {} };
-          document.head.appendChild(s);
-        } else if (!existing.dataset.boundRetry) {
-          existing.addEventListener('load', () => { try { ensureCustomRangePickers(); } catch (_) {} }, { once: true });
-          existing.dataset.boundRetry = 'true';
-        }
-      } catch (_) {}
-      // Also schedule a small retry in case onload didn't fire due to caching
-      setTimeout(() => { try { ensureCustomRangePickers(); } catch (_) {} }, 150);
-      return;
-    }
-    const locale = (() => {
-      try {
-        const lang = (getCurrentLanguage() || 'ar').toLowerCase();
-        if (lang.startsWith('ar') && window.flatpickr?.l10ns?.ar) return 'ar';
-      } catch (_) {}
-      return window.flatpickr?.l10ns?.default ? undefined : undefined;
-    })();
-
-    const baseOptions = (handlers) => ({
-      dateFormat: 'Y-m-d',
-      allowInput: true,
-      clickOpens: true,
-      disableMobile: true,
-      appendTo: document.body,
-      ...(locale ? { locale } : {}),
-      ...handlers,
-    });
-
-    if (dom.startDate && !dom.startDate._flatpickr) {
-      try { dom.startDate.removeAttribute('readonly'); dom.startDate.setAttribute('tabindex', '0'); dom.startDate.style.cursor = 'pointer'; dom.startDate.setAttribute('aria-haspopup', 'dialog'); } catch (_) {}
-      window.flatpickr(dom.startDate, baseOptions({
-        onChange: (selected, dateStr) => {
-          state.filters.startDate = dateStr || '';
-          if (dom.endDate?._flatpickr && selected?.length) {
-            dom.endDate._flatpickr.set('minDate', selected[0]);
-          }
-          if (state.filters.range === 'custom') renderAll();
-        },
-        onValueUpdate: (_, dateStr) => {
-          state.filters.startDate = dateStr || '';
-          if (state.filters.range === 'custom') renderAll();
-        },
-      }));
-      // Open on click even if readonly
-      dom.startDate.addEventListener('click', () => dom.startDate?._flatpickr?.open());
-      dom.startDate.addEventListener('focus', () => dom.startDate?._flatpickr?.open());
-    }
-
-    if (dom.endDate && !dom.endDate._flatpickr) {
-      try { dom.endDate.removeAttribute('readonly'); dom.endDate.setAttribute('tabindex', '0'); dom.endDate.style.cursor = 'pointer'; dom.endDate.setAttribute('aria-haspopup', 'dialog'); } catch (_) {}
-      window.flatpickr(dom.endDate, baseOptions({
-        onChange: (selected, dateStr) => {
-          state.filters.endDate = dateStr || '';
-          if (dom.startDate?._flatpickr && selected?.length) {
-            dom.startDate._flatpickr.set('maxDate', selected[0]);
-          }
-          if (state.filters.range === 'custom') renderAll();
-        },
-        onValueUpdate: (_, dateStr) => {
-          state.filters.endDate = dateStr || '';
-          if (state.filters.range === 'custom') renderAll();
-        },
-      }));
-      dom.endDate.addEventListener('click', () => dom.endDate?._flatpickr?.open());
-      dom.endDate.addEventListener('focus', () => dom.endDate?._flatpickr?.open());
-    }
-
-    // Make the entire field area open the picker
-    const wrap = dom.customRangeWrapper;
-    if (wrap && !wrap.dataset.openBound) {
-      wrap.addEventListener('click', (ev) => {
-        const target = ev.target;
-        if (target === dom.startDate) { dom.startDate?._flatpickr?.open(); return; }
-        if (target === dom.endDate) { dom.endDate?._flatpickr?.open(); return; }
-        // If clicked the wrapper or gap, open start picker by default
-        dom.startDate?._flatpickr?.open();
-      });
-      wrap.dataset.openBound = 'true';
-    }
-
-  } catch (_) { /* ignore */ }
+function ensureCustomRangePickersWrapper() {
+  ensureCustomRangePickers({
+    dom,
+    filters: state.filters,
+    renderAll,
+    getCurrentLanguage,
+  });
 }
 
 async function handleDataMutation() {
@@ -874,135 +520,13 @@ function renderAll() {
 }
 
 function getFilteredProjects() {
-  const { search, statuses, payment, range, startDate, endDate, confirmed } = state.filters;
-  const searchTerm = normalizeText(search);
-  const now = new Date();
-  const rangeDays = Number(range);
-  let rangeStart = null;
-
-  if (range === 'custom') {
-    rangeStart = startDate ? new Date(startDate) : null;
-    const rangeEnd = endDate ? new Date(endDate) : null;
-    return state.projects.filter((project) => {
-      // Global rule: exclude cancelled projects everywhere
-      if (project?.cancelled === true || String(project?.status).toLowerCase() === 'cancelled' || String(project?.status).toLowerCase() === 'canceled') return false;
-      if (!isProjectEligibleForReports(project)) return false;
-      if (!isStatusAllowed(project, statuses)) return false;
-      if (!isPaymentAllowed(project, payment)) return false;
-      if (!matchesSearch(project, searchTerm)) return false;
-      if (!isConfirmedAllowed(project, confirmed)) return false;
-      return isWithinCustomRange(project.start, rangeStart, rangeEnd);
-    });
-  }
-
-  if (range !== 'all' && Number.isFinite(rangeDays)) {
-    rangeStart = new Date();
-    rangeStart.setDate(now.getDate() - rangeDays);
-  }
-
-  return state.projects.filter((project) => {
-    // Global rule: exclude cancelled projects everywhere
-    if (project?.cancelled === true || String(project?.status).toLowerCase() === 'cancelled' || String(project?.status).toLowerCase() === 'canceled') return false;
-    if (!isProjectEligibleForReports(project)) return false;
-    if (!isStatusAllowed(project, statuses)) return false;
-    if (!isPaymentAllowed(project, payment)) return false;
-    if (!matchesSearch(project, searchTerm)) return false;
-    if (!isConfirmedAllowed(project, confirmed)) return false;
-    if (range === 'all') return true;
-    return isWithinRelativeRange(project.start, rangeStart, now);
-  });
-}
-
-function isStatusAllowed(project, statuses) {
-  return statuses.includes(project.status);
-}
-
-function isPaymentAllowed(project, payment) {
-  if (payment === 'all') return true;
-  const state = resolveProjectPaymentState(project);
-  return state === payment;
-}
-
-function isConfirmedAllowed(project, confirmed) {
-  if (!confirmed || confirmed === 'all' || confirmed === 'no') return true;
-  const isConfirmed = project?.confirmed === true;
-  if (confirmed === 'yes') return isConfirmed;
-  if (confirmed === 'closed') return isProjectClosed(project);
-  return true;
-}
-
-function matchesSearch(project, searchTerm) {
-  if (!searchTerm) return true;
-  const haystack = normalizeText([
-    project.title,
-    project.projectCode,
-    project.clientName,
-    project.clientCompany,
-    project.type,
-    project.description
-  ].filter(Boolean).join(' '));
-  return haystack.includes(searchTerm);
-}
-
-// Derive payment state exactly like the table/payment chip and outstanding calc
-function resolveProjectPaymentState(project) {
-  try {
-    const raw = project?.raw || project || {};
-    const finalTotal = Number(project?.overallTotal || 0) || 0;
-    let paid = 0;
-    const add = (v) => { const n = Number(v); if (Number.isFinite(n) && n > 0) paid += n; };
-    const histSource = Array.isArray(raw.paymentHistory) ? raw.paymentHistory
-      : (Array.isArray(raw.payments) ? raw.payments : []);
-    if (Array.isArray(histSource) && histSource.length) {
-      histSource.forEach((e) => {
-        const t = (e?.type || '').toString().toLowerCase();
-        const val = Number(e?.value ?? e?.amount ?? e?.percentage ?? 0) || 0;
-        if (t === 'percent' || t === 'percentage') add((val / 100) * finalTotal); else add(val);
-      });
-    } else {
-      add(raw?.paidAmount ?? raw?.paid_amount);
-      const paidPct = Number(raw?.paidPercent ?? raw?.paid_percentage);
-      if (paidPct > 0) add((paidPct / 100) * finalTotal);
-    }
-    // Derive by outstanding to align with KPI
-    const epsilon = 0.01;
-    if (finalTotal <= 0) return paid > 0 ? 'partial' : 'unpaid';
-    const outstanding = Math.max(0, finalTotal - paid);
-    if (outstanding <= epsilon) return 'paid';
-    return paid > 0 ? 'partial' : 'unpaid';
-  } catch (_) {
-    return 'unpaid';
-  }
-}
-
-function isWithinRelativeRange(start, rangeStart, now) {
-  if (!start || !(start instanceof Date) || Number.isNaN(start.getTime())) return false;
-  if (!rangeStart) return true;
-  return start >= rangeStart && start <= now;
-}
-
-function isWithinCustomRange(start, customStart, customEnd) {
-  if (!customStart && !customEnd) return true;
-  if (!start || Number.isNaN(start.getTime())) return false;
-  const time = start.getTime();
-  if (customStart && !Number.isNaN(customStart.getTime()) && time < customStart.getTime()) {
-    return false;
-  }
-  if (customEnd && !Number.isNaN(customEnd.getTime()) && time > customEnd.getTime()) {
-    return false;
-  }
-  return true;
-}
-
-function normalizeText(value) {
-  if (!value) return '';
-  return normalizeNumbers(String(value)).toLowerCase().trim();
+  return filterProjectsForReports(state.projects, state.filters);
 }
 
 function renderKpis(projects) {
   if (!dom.kpiGrid) return;
   const totalCount = projects.length;
-  const breakdown = computeProjectsRevenueBreakdown(projects);
+  const breakdown = computeProjectsRevenueBreakdown(projects, state.reservations, PROJECT_TAX_RATE);
   const totalValue = breakdown.grossRevenue;
   const unpaidValue = breakdown.outstandingTotal || 0;
   const expensesTotal = breakdown.projectExpensesTotal || 0;
@@ -1034,7 +558,7 @@ function renderKpis(projects) {
 
 function renderProjectsRevenueBreakdown(projects) {
   try {
-    const breakdown = computeProjectsRevenueBreakdown(projects);
+    const breakdown = computeProjectsRevenueBreakdown(projects, state.reservations, PROJECT_TAX_RATE);
     const containerId = 'projects-revenue-breakdown';
     let container = document.getElementById(containerId);
   const servicesProfit = (breakdown.servicesRevenueTotal || 0) - (breakdown.projectExpensesTotal || 0);
@@ -1073,179 +597,6 @@ function renderProjectsRevenueBreakdown(projects) {
   } catch (error) {
     console.warn('[projectsReports] Failed to render revenue breakdown', error);
   }
-}
-
-function computeProjectsRevenueBreakdown(projects) {
-  const projectIds = new Set(projects.map((p) => String(p.id)));
-  const reservationsAll = state.reservations.filter((res) => res.projectId != null && projectIds.has(String(res.projectId)));
-
-  // Group reservations by project and aggregate equipment/crew revenue and crew cost
-  const resByProject = new Map();
-  let equipmentRevenueFromReservations = 0;
-  let equipmentCostFromReservations = 0;
-  let crewRevenueFromReservations = 0;
-  let crewCostTotal = 0;
-  reservationsAll.forEach((res) => {
-    const items = Array.isArray(res.items) ? res.items : [];
-    const crewAssignments = Array.isArray(res.crewAssignments) ? res.crewAssignments : [];
-    const techOrAssign = crewAssignments.length ? crewAssignments : (Array.isArray(res.technicians) ? res.technicians : []);
-    const useAssignments = Array.isArray(techOrAssign) && techOrAssign.length && typeof techOrAssign[0] === 'object';
-    const useTechnicianIds = Array.isArray(techOrAssign) && techOrAssign.length && typeof techOrAssign[0] !== 'object';
-    const breakdown = calculateDraftFinancialBreakdown({
-      items,
-      technicianIds: useTechnicianIds ? techOrAssign : [],
-      crewAssignments: useAssignments ? techOrAssign : [],
-      discount: res.discount ?? 0,
-      discountType: res.discountType || 'percent',
-      applyTax: false,
-      start: res.start,
-      end: res.end,
-    });
-    equipmentRevenueFromReservations += Number(breakdown.equipmentTotal || 0);
-    equipmentCostFromReservations += Number(breakdown.equipmentCostTotal || 0);
-    crewRevenueFromReservations += Number(breakdown.crewTotal || 0);
-    crewCostTotal += Number(breakdown.crewCostTotal || 0);
-    const arr = resByProject.get(String(res.projectId)) || [];
-    arr.push(res);
-    resByProject.set(String(res.projectId), arr);
-  });
-
-  let grossRevenue = 0;
-  let taxTotal = 0;
-  let companyShareTotal = 0;
-  let projectExpensesTotal = 0;
-  let servicesRevenueTotal = 0;
-  let outstandingTotal = 0;
-  let netProfitTotal = 0;
-  let discountTotal = 0;
-
-  projects.forEach((p) => {
-    const list = resByProject.get(String(p.id)) || [];
-    // Aggregate equipment/crew revenue for this project
-    const agg = list.reduce((acc, res) => {
-      const items = Array.isArray(res.items) ? res.items : [];
-      const crewAssignments = Array.isArray(res.crewAssignments) ? res.crewAssignments : [];
-      const techOrAssign = crewAssignments.length ? crewAssignments : (Array.isArray(res.technicians) ? res.technicians : []);
-      const useAssignments = Array.isArray(techOrAssign) && techOrAssign.length && typeof techOrAssign[0] === 'object';
-      const useTechnicianIds = Array.isArray(techOrAssign) && techOrAssign.length && typeof techOrAssign[0] !== 'object';
-      const breakdown = calculateDraftFinancialBreakdown({
-        items,
-        technicianIds: useTechnicianIds ? techOrAssign : [],
-        crewAssignments: useAssignments ? techOrAssign : [],
-        discount: res.discount ?? 0,
-        discountType: res.discountType || 'percent',
-        applyTax: false,
-        start: res.start,
-        end: res.end,
-      });
-      acc.equipment += Number(breakdown.equipmentTotal || 0);
-      acc.equipmentCost += Number(breakdown.equipmentCostTotal || 0);
-      acc.crew += Number(breakdown.crewTotal || 0);
-      acc.crewCost += Number(breakdown.crewCostTotal || 0);
-      return acc;
-    }, { equipment: 0, equipmentCost: 0, crew: 0, crewCost: 0 });
-
-    const servicesRevenue = getProjectServicesRevenue(p);
-    servicesRevenueTotal += servicesRevenue;
-    projectExpensesTotal += Number(getProjectExpenses(p) || 0);
-
-    // Modal-equivalent flow for all projects (with or without reservations)
-    const grossBeforeDiscount = agg.equipment + agg.crew + servicesRevenue;
-    // Read discount from raw first to avoid missing values on snapshot
-    const discountVal = Number(p?.raw?.discount ?? p?.discount ?? 0) || 0;
-    const discountType = (p?.raw?.discount_type ?? p?.discountType) === 'amount' ? 'amount' : 'percent';
-    let discountAmount = discountType === 'amount' ? discountVal : grossBeforeDiscount * (discountVal / 100);
-    if (!Number.isFinite(discountAmount) || discountAmount < 0) discountAmount = 0;
-    if (discountAmount > grossBeforeDiscount) discountAmount = grossBeforeDiscount;
-    const baseAfterDiscount = Math.max(0, grossBeforeDiscount - discountAmount);
-    discountTotal += Number(discountAmount || 0);
-
-    // Robust VAT flag detection (supports true/1/'1'/'true', camel/snake cases)
-    let applyTax = (() => {
-      const v = (p?.applyTax !== undefined) ? p.applyTax : (p?.apply_tax ?? p?.raw?.apply_tax ?? p?.raw?.applyTax);
-      if (v === true || v === 1 || v === '1') return true;
-      if (typeof v === 'string' && v.toLowerCase() === 'true') return true;
-      return false;
-    })();
-    const shareEnabled = (() => {
-      const v = (p?.companyShareEnabled !== undefined)
-        ? p.companyShareEnabled
-        : (p?.raw?.company_share_enabled ?? p?.raw?.companyShareEnabled);
-      if (v === true || v === 1 || v === '1') return true;
-      if (typeof v === 'string' && v.toLowerCase() === 'true') return true;
-      return false;
-    })();
-    const rawSharePercent = (() => {
-      const v = (p?.raw?.company_share_percent ?? p?.raw?.companySharePercent ?? p?.companySharePercent ?? p?.company_share_percent ?? 0);
-      const n = Number(v);
-      return Number.isFinite(n) ? n : 0;
-    })();
-    // Couple: if share is set, VAT is effectively ON
-    if (shareEnabled && rawSharePercent > 0) applyTax = true;
-    const sharePercent = (shareEnabled && applyTax) ? rawSharePercent : 0;
-    const companyShareAmount = sharePercent > 0 ? Number((baseAfterDiscount * (sharePercent / 100)).toFixed(2)) : 0;
-    companyShareTotal += companyShareAmount;
-    const combinedTax = applyTax ? Number(((baseAfterDiscount + companyShareAmount) * PROJECT_TAX_RATE).toFixed(2)) : 0;
-    taxTotal += combinedTax;
-
-    const finalTotal = baseAfterDiscount + companyShareAmount + combinedTax;
-    grossRevenue += finalTotal;
-
-    // Per-project net profit (sum of per-project nets): baseAfterDiscount − expenses − crewCost − equipmentCost
-    const perProjectExpenses = Number(getProjectExpenses(p) || 0);
-    const perProjectNet = Number(((baseAfterDiscount - perProjectExpenses - (agg.crewCost || 0) - (agg.equipmentCost || 0))).toFixed(2));
-    netProfitTotal += perProjectNet;
-
-    // Paid and outstanding: sum payment history (amount/percent) plus paidAmount/paidPercent
-    const raw = p.raw || p; // fallback
-    let paid = 0;
-    const add = (v) => { const n = Number(v); if (Number.isFinite(n) && n > 0) paid += n; };
-    let usedExplicitHistory = false;
-    try {
-      const histSource = Array.isArray(raw.paymentHistory) ? raw.paymentHistory
-        : (Array.isArray(raw.payments) ? raw.payments : []);
-      if (Array.isArray(histSource) && histSource.length) {
-        usedExplicitHistory = true;
-        histSource.forEach((e) => {
-          const t = (e?.type || '').toString().toLowerCase();
-          const val = Number(e?.value ?? e?.amount ?? e?.percentage ?? 0) || 0;
-          if (t === 'percent' || t === 'percentage') add((val / 100) * finalTotal);
-          else add(val);
-        });
-      }
-    } catch (_) { /* ignore */ }
-    if (!usedExplicitHistory) {
-      add(raw?.paidAmount ?? raw?.paid_amount);
-      const paidPct = Number(raw?.paidPercent ?? raw?.paid_percentage);
-      if (paidPct > 0) add((paidPct / 100) * finalTotal);
-    }
-    if (paid > finalTotal) paid = finalTotal;
-    outstandingTotal += Math.max(0, finalTotal - paid);
-  });
-
-  const equipmentTotalCombined = equipmentRevenueFromReservations; // revenue side
-  const equipmentCostTotalCombined = equipmentCostFromReservations; // cost side
-  const revenueExTax = Math.max(0, grossRevenue - taxTotal);
-  // Use sum of per-project net profit to match modal exactly
-  const netProfit = netProfitTotal;
-  const profitMarginPercent = revenueExTax > 0 ? (netProfit / revenueExTax) * 100 : 0;
-
-  return {
-    grossRevenue,
-    companyShareTotal,
-    taxTotal,
-    crewTotal: crewRevenueFromReservations,
-    crewCostTotal,
-    equipmentTotalCombined,
-    equipmentCostTotalCombined,
-    projectExpensesTotal,
-    servicesRevenueTotal,
-    outstandingTotal,
-    netProfit,
-    revenueExTax,
-    profitMarginPercent,
-    discountTotal,
-  };
 }
 
 function renderStatusChips() {
@@ -1293,277 +644,52 @@ function renderStatusChart(projects) {
   if (!ChartLib) return;
   const container = document.getElementById('reports-status-chart');
   if (!container) return;
-
-  const statusOrder = ['upcoming', 'ongoing', 'completed'];
-  const counts = statusOrder.map((status) => projects.filter((project) => project.status === status).length);
-  const labels = statusOrder.map((status) => t(`projects.status.${status}`, status));
-  const total = counts.reduce((sum, value) => sum + value, 0);
-  const series = total > 0 ? counts : [];
-
-  const options = {
-    chart: {
-      type: 'donut',
-      height: 320,
-      toolbar: { show: false }
-    },
-    labels,
-    series,
-    colors: ['#3b82f6', '#fbbf24', '#22c55e'],
-    dataLabels: {
-      formatter: (val) => (Number.isFinite(val) ? `${Math.round(val)}%` : '0%')
-    },
-    legend: {
-      position: 'bottom',
-      fontSize: '13px'
-    },
-    stroke: { width: 0 },
-    tooltip: {
-      y: {
-        formatter: (value) => formatCompactNumber(value)
-      }
-    },
-    noData: {
-      text: t('projects.reports.noData', 'لا توجد بيانات متاحة')
-    },
-    responsive: [
-      {
-        breakpoint: 1024,
-        options: {
-          chart: { height: 280 }
-        }
-      }
-    ]
-  };
-
-  renderApexChart('status', container, options);
+  renderApexChart({
+    ChartLib,
+    charts,
+    key: 'status',
+    element: container,
+    options: buildStatusChartOptions(projects, { t, formatCompactNumber }),
+  });
 }
 
 function renderTimelineChart(projects) {
   if (!ChartLib) return;
   const container = document.getElementById('reports-timeline-chart');
   if (!container) return;
-
-  const monthBuckets = new Map();
-  // Respect active language for month labels in charts (e.g., Arabic abbreviations)
-  const formatter = new Intl.DateTimeFormat(getChartLocale(), { month: 'short', year: 'numeric' });
-
-  projects.forEach((project) => {
-    if (!project.start || Number.isNaN(project.start.getTime())) return;
-    const bucketKey = `${project.start.getFullYear()}-${project.start.getMonth() + 1}`;
-    const current = monthBuckets.get(bucketKey) || { total: 0, label: formatter.format(project.start) };
-    current.total += project.overallTotal;
-    monthBuckets.set(bucketKey, current);
+  renderApexChart({
+    ChartLib,
+    charts,
+    key: 'timeline',
+    element: container,
+    options: buildTimelineChartOptions(projects, { t, formatCompactNumber, getChartLocale }),
   });
-
-  const sortedKeys = Array.from(monthBuckets.keys()).sort((a, b) => {
-    const [aYear, aMonth] = a.split('-').map(Number);
-    const [bYear, bMonth] = b.split('-').map(Number);
-    if (aYear === bYear) return aMonth - bMonth;
-    return aYear - bYear;
-  });
-
-  const limitedKeys = sortedKeys.slice(-12);
-  const labels = limitedKeys.map((key) => monthBuckets.get(key)?.label || key);
-  const values = limitedKeys.map((key) => Math.round(monthBuckets.get(key)?.total || 0));
-  const series = values.length
-    ? [{ name: t('projects.reports.datasets.value', 'Total value'), data: values }]
-    : [];
-
-  const options = {
-    chart: {
-      type: 'area',
-      height: 320,
-      toolbar: { show: false }
-    },
-    series,
-    xaxis: {
-      categories: labels,
-      labels: {
-        rotate: -35
-      }
-    },
-    yaxis: {
-      labels: {
-        formatter: (value) => formatCompactNumber(value)
-      }
-    },
-    dataLabels: { enabled: false },
-    stroke: {
-      curve: 'smooth',
-      width: 3
-    },
-    fill: {
-      type: 'gradient',
-      gradient: {
-        shadeIntensity: 0.35,
-        opacityFrom: 0.5,
-        opacityTo: 0.05
-      }
-    },
-    markers: { size: 4 },
-    colors: ['#4c6ef5'],
-    tooltip: {
-      y: {
-        formatter: (value) => formatCompactNumber(value)
-      }
-    },
-    noData: {
-      text: t('projects.reports.noData', 'لا توجد بيانات متاحة')
-    }
-  };
-
-  renderApexChart('timeline', container, options);
 }
 
 function renderExpenseChart(projects) {
   if (!ChartLib) return;
   const container = document.getElementById('reports-expense-chart');
   if (!container) return;
-
-  const topProjects = [...projects]
-    .sort((a, b) => b.overallTotal - a.overallTotal)
-    .slice(0, 6);
-
-  const labels = topProjects.map((project) => project.title || project.projectCode);
-  const valueData = topProjects.map((project) => Math.round(project.overallTotal));
-  const expenseData = topProjects.map((project) => Math.round(project.expensesTotal));
-  const series = labels.length
-    ? [
-        { name: t('projects.reports.datasets.value', 'Total value'), data: valueData },
-        { name: t('projects.reports.datasets.expenses', 'تكلفة الخدمات الإنتاجية'), data: expenseData }
-      ]
-    : [];
-
-  const chartHeight = Math.max(320, labels.length * 60 || 0);
-
-  const options = {
-    chart: {
-      type: 'bar',
-      height: chartHeight,
-      toolbar: { show: false }
-    },
-    series,
-    plotOptions: {
-      bar: {
-        horizontal: true,
-        barHeight: '55%',
-        borderRadius: 8
-      }
-    },
-    xaxis: {
-      categories: labels,
-      labels: {
-        formatter: (value) => formatCompactNumber(value)
-      }
-    },
-    dataLabels: { enabled: false },
-    legend: {
-      position: 'bottom',
-      fontSize: '13px'
-    },
-    colors: ['#4c6ef5', '#f472b6'],
-    tooltip: {
-      y: {
-        formatter: (value) => formatCompactNumber(value)
-      }
-    },
-    noData: {
-      text: t('projects.reports.noData', 'لا توجد بيانات متاحة')
-    }
-  };
-
-  renderApexChart('expenses', container, options);
+  renderApexChart({
+    ChartLib,
+    charts,
+    key: 'expenses',
+    element: container,
+    options: buildExpenseChartOptions(projects, { t, formatCompactNumber }),
+  });
 }
 
 function renderClientsChart(projects) {
   if (!ChartLib) return;
   const container = document.getElementById('reports-clients-chart');
   if (!container) return;
-
-  const clientTotals = new Map();
-  projects.forEach((project) => {
-    const key = project.clientName || project.clientCompany || t('projects.fallback.unknownClient', 'Unknown client');
-    const current = clientTotals.get(key) || 0;
-    clientTotals.set(key, current + project.overallTotal);
+  renderApexChart({
+    ChartLib,
+    charts,
+    key: 'clients',
+    element: container,
+    options: buildClientsChartOptions(projects, { t, formatCompactNumber }),
   });
-
-  const sortedClients = Array.from(clientTotals.entries())
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 6);
-
-  const labels = sortedClients.map(([client]) => client);
-  const values = sortedClients.map(([, total]) => Math.round(total));
-  const series = values.length
-    ? [{ name: t('projects.reports.datasets.value', 'Total value'), data: values }]
-    : [];
-
-  const options = {
-    chart: {
-      type: 'bar',
-      height: 320,
-      toolbar: { show: false }
-    },
-    series,
-    plotOptions: {
-      bar: {
-        borderRadius: 6,
-        columnWidth: '60%'
-      }
-    },
-    xaxis: {
-      categories: labels,
-      labels: {
-        rotate: -35
-      }
-    },
-    yaxis: {
-      labels: {
-        formatter: (value) => formatCompactNumber(value)
-      }
-    },
-    dataLabels: { enabled: false },
-    colors: ['#3b82f6'],
-    tooltip: {
-      y: {
-        formatter: (value) => formatCompactNumber(value)
-      }
-    },
-    legend: { show: false },
-    noData: {
-      text: t('projects.reports.noData', 'لا توجد بيانات متاحة')
-    }
-  };
-
-  renderApexChart('clients', container, options);
-}
-
-function renderApexChart(key, element, options = {}) {
-  if (!ChartLib || !element) return;
-  if (charts[key]) {
-    try {
-      charts[key].destroy();
-    } catch (error) {
-      console.warn(`⚠️ [projectsReports] Failed to destroy ${key} chart`, error);
-    }
-    delete charts[key];
-  }
-
-  element.innerHTML = '';
-
-  const chartOptions = { ...options };
-  if (!Array.isArray(chartOptions.series)) {
-    chartOptions.series = [];
-  }
-
-  try {
-    const chart = new ChartLib(element, chartOptions);
-    charts[key] = chart;
-    chart.render().catch((error) => {
-      console.error(`❌ [projectsReports] Failed to render ${key} chart`, error);
-    });
-  } catch (error) {
-    console.error(`❌ [projectsReports] Failed to render ${key} chart`, error);
-  }
 }
 
 // (deduped above)
@@ -1583,304 +709,39 @@ function setupExport() {
 }
 
 async function exportProjectsToExcel(projects) {
-  if (!Array.isArray(projects) || projects.length === 0) {
-    try { alert('لا توجد بيانات لتصديرها.'); } catch (_) {}
-    return;
-  }
-  // Prefer styled XLSX for nicer formatting; fall back to basic XLSX
-  let XLSX = null;
-  try { XLSX = await ensureXlsxStyled(); } catch (_) { XLSX = null; }
-  if (!XLSX) XLSX = await ensureXlsx();
-  if (!XLSX) { try { alert('مكتبة Excel غير متوفرة.'); } catch (_) {} return; }
-
-  const headers = [
-    'كود المشروع', 'المشروع', 'العميل', 'الحالة', 'الفترة', 'القيمة (مع الضريبة)',
-    'تقدير المعدات', 'إيرادات الخدمات', 'تكلفة الخدمات', 'صافي الحجوزات (بدون ضريبة)',
-    'صافي الربح', 'هامش الربح %', 'حالة الدفع', 'المبالغ المدفوعة', 'نسبة الدفع %', 'عدد الدفعات'
-  ];
-  const rows = projects.map((p) => {
-    // Recompute per‑project financials using the same logic used in KPIs/charts
-    const resList = getReservationsForProject(p.id);
-    const agg = (Array.isArray(resList) ? resList : []).reduce((acc, res) => {
-      const items = Array.isArray(res.items) ? res.items : [];
-      const crewAssignments = Array.isArray(res.crewAssignments) ? res.crewAssignments : [];
-      const techOrAssign = crewAssignments.length ? crewAssignments : (Array.isArray(res.technicians) ? res.technicians : []);
-      const useAssignments = Array.isArray(techOrAssign) && techOrAssign.length && typeof techOrAssign[0] === 'object';
-      const useTechnicianIds = Array.isArray(techOrAssign) && techOrAssign.length && typeof techOrAssign[0] !== 'object';
-      const breakdown = calculateDraftFinancialBreakdown({
-        items,
-        technicianIds: useTechnicianIds ? techOrAssign : [],
-        crewAssignments: useAssignments ? techOrAssign : [],
-        discount: res.discount ?? 0,
-        discountType: res.discountType || 'percent',
-        applyTax: false,
-        start: res.start,
-        end: res.end,
-      });
-      acc.equipment += Number(breakdown.equipmentTotal || 0);
-      acc.crew += Number(breakdown.crewTotal || 0);
-      acc.crewCost += Number(breakdown.crewCostTotal || 0);
-      return acc;
-    }, { equipment: 0, crew: 0, crewCost: 0 });
-
-    const servicesRevenue = getProjectServicesRevenue(p);
-    const projectExpenses = Number(getProjectExpenses(p) || 0);
-    const grossBeforeDiscount = agg.equipment + agg.crew + servicesRevenue;
-    const discountVal = Number(p?.raw?.discount ?? p?.discount ?? 0) || 0;
-    const discountType = (p?.raw?.discount_type ?? p?.discountType) === 'amount' ? 'amount' : 'percent';
-    let discountAmount = discountType === 'amount' ? discountVal : grossBeforeDiscount * (discountVal / 100);
-    if (!Number.isFinite(discountAmount) || discountAmount < 0) discountAmount = 0;
-    if (discountAmount > grossBeforeDiscount) discountAmount = grossBeforeDiscount;
-
-    const baseAfterDiscount = Math.max(0, grossBeforeDiscount - discountAmount);
-    const revenueExTax = baseAfterDiscount; // used for margin denominator
-    const resNetWithoutTax = Math.max(0, (agg.equipment + agg.crew) - discountAmount); // reservations only
-    const perProjectNet = Number(((baseAfterDiscount - projectExpenses - (agg.crewCost || 0))).toFixed(2));
-    const marginPercent = revenueExTax > 0 ? (perProjectNet / revenueExTax) * 100 : 0;
-
-    const periodLabel = formatProjectPeriod(p.start, p.end);
-    const statusLabel = t(`projects.status.${p.status}`, p.status);
-    const paymentLabel = t(`projects.paymentStatus.${p.paymentStatus}`, p.paymentStatus);
-    const customerLabel = p.clientCompany ? `${p.clientName} (${p.clientCompany})` : (p.clientName || '');
-    const paidAmount = Number(p.raw?.paidAmount ?? p.paidAmount ?? 0) || 0;
-    const paidPercent = Number(p.raw?.paidPercent ?? p.paidPercent ?? 0) || 0;
-    const paymentsCount = Array.isArray(p.raw?.paymentHistory) ? p.raw.paymentHistory.length : 0;
-
-    return [
-      String(p.projectCode || p.id || ''),
-      String(p.title || p.projectCode || ''),
-      String(customerLabel),
-      statusLabel,
-      periodLabel,
-      Math.round(p.overallTotal || 0),
-      Math.round(Number(p?.raw?.equipmentEstimate ?? p?.equipmentEstimate ?? 0) || 0),
-      Math.round(servicesRevenue || 0),
-      Math.round(projectExpenses || 0),
-      Math.round(resNetWithoutTax || 0),
-      Math.round(perProjectNet || 0),
-      Number(marginPercent.toFixed(1)),
-      paymentLabel,
-      Math.round(paidAmount || 0),
-      Number((paidPercent || 0).toFixed(1)),
-      paymentsCount,
-    ];
-  });
-  // Build a styled summary sheet if possible
-  const bold = { font: { bold: true } };
-  const right = { alignment: { horizontal: 'right' } };
-  const head = { font: { bold: true, color: { rgb: 'FFFFFF' } }, fill: { patternType: 'solid', fgColor: { rgb: '2563EB' } }, alignment: { horizontal: 'center', vertical: 'center' } };
-  const num0 = { z: '#,##0', alignment: { horizontal: 'right' } };
-  const num1 = { z: '#,##0.0', alignment: { horizontal: 'right' } };
-
-  const styledAoa = [
-    headers.map((h) => ({ v: h, t: 's', s: head }))
-  ];
-  rows.forEach((r) => {
-    const row = [];
-    // Columns: 0..5 text/number, then numeric columns
-    row.push({ v: r[0] }); // code
-    row.push({ v: r[1] }); // title
-    row.push({ v: r[2] }); // customer
-    row.push({ v: r[3] }); // status
-    row.push({ v: r[4] }); // period
-    row.push({ v: r[5], t: 'n', s: num0 }); // overall total (with VAT)
-    row.push({ v: r[6], t: 'n', s: num0 }); // equipment estimate
-    row.push({ v: r[7], t: 'n', s: num0 }); // services revenue
-    row.push({ v: r[8], t: 'n', s: num0 }); // project expenses
-    row.push({ v: r[9], t: 'n', s: num0 }); // reservations net (ex tax)
-    row.push({ v: r[10], t: 'n', s: num0 }); // net profit
-    row.push({ v: r[11], t: 'n', s: num1 }); // margin % (as number, not Excel percent)
-    row.push({ v: r[12] }); // payment label
-    row.push({ v: r[13], t: 'n', s: num0 }); // paid amount
-    row.push({ v: r[14], t: 'n', s: num1 }); // paid percent
-    row.push({ v: r[15], t: 'n', s: num0 }); // payments count
-    styledAoa.push(row);
-  });
-
-  const worksheet = XLSX.utils.aoa_to_sheet(styledAoa);
-  // Column widths for better readability
-  worksheet['!cols'] = [8, 24, 18, 12, 16, 16, 14, 14, 14, 18, 14, 12, 12, 14, 12, 10].map((wch) => ({ wch }));
-  // Auto filter on header row
-  const lastCol = String.fromCharCode('A'.charCodeAt(0) + headers.length - 1);
-  worksheet['!autofilter'] = { ref: `A1:${lastCol}${styledAoa.length}` };
-
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, worksheet, 'Summary');
-
-  // Build a detailed breakdown sheet
-  const details = buildProjectsBreakdownSheet(XLSX, projects);
-  XLSX.utils.book_append_sheet(wb, details, 'Breakdown');
-  const now = new Date();
-  const ts = now.toISOString().slice(0, 19).replace(/[:T]/g, '-');
-  XLSX.writeFile(wb, `projects-report-${ts}.xlsx`);
-}
-
-function buildProjectsBreakdownSheet(XLSX, projects) {
-  const blueHead = { font: { bold: true, color: { rgb: 'FFFFFF' } }, fill: { patternType: 'solid', fgColor: { rgb: '1F2937' } }, alignment: { horizontal: 'center', vertical: 'center' } };
-  const sectionHead = { font: { bold: true, sz: 13 }, alignment: { horizontal: 'left', vertical: 'center' } };
-  const cell = { alignment: { horizontal: 'right' } };
-  const num0 = { z: '#,##0', alignment: { horizontal: 'right' } };
-  const num1 = { z: '#,##0.0', alignment: { horizontal: 'right' } };
-
-  const ws = {};
-  let r = 0;
-  const write = (c, v, s) => { const addr = XLSX.utils.encode_cell({ r, c }); const t = typeof v === 'number' ? 'n' : 's'; ws[addr] = { v, t, s: s || {} }; updateRefRange(); };
-  const updateRefRange = () => { const ref = ws['!ref']; const end = XLSX.utils.encode_cell({ r, c: 5 }); ws['!ref'] = ref ? ref.replace(/:[A-Z]+\d+$/, `:${end}`) : `A1:${end}`; };
-  const nextRow = (n=1) => { r += n; };
-  ws['!cols'] = [22, 36, 16, 16, 16, 16].map((wch) => ({ wch }));
-
-  projects.forEach((p, idx) => {
-    // project header
-    write(0, `${p.title || p.projectCode || ''} — #${p.projectCode || p.id || ''}`, sectionHead);
-    // headers for the small table
-    nextRow();
-    const headers = ['البند', 'القيمة', 'البند', 'القيمة', 'البند', 'القيمة'];
-    headers.forEach((h, i) => write(i, h, blueHead));
-    nextRow();
-
-    // Recompute same as summary for consistency
-    const resList = getReservationsForProject(p.id);
-    const agg = (Array.isArray(resList) ? resList : []).reduce((acc, res) => {
-      const items = Array.isArray(res.items) ? res.items : [];
-      const crewAssignments = Array.isArray(res.crewAssignments) ? res.crewAssignments : [];
-      const techOrAssign = crewAssignments.length ? crewAssignments : (Array.isArray(res.technicians) ? res.technicians : []);
-      const useAssignments = Array.isArray(techOrAssign) && techOrAssign.length && typeof techOrAssign[0] === 'object';
-      const useTechnicianIds = Array.isArray(techOrAssign) && techOrAssign.length && typeof techOrAssign[0] !== 'object';
-      const breakdown = calculateDraftFinancialBreakdown({
-        items,
-        technicianIds: useTechnicianIds ? techOrAssign : [],
-        crewAssignments: useAssignments ? techOrAssign : [],
-        discount: res.discount ?? 0,
-        discountType: res.discountType || 'percent',
-        applyTax: false,
-        start: res.start,
-        end: res.end,
-      });
-      acc.equipment += Number(breakdown.equipmentTotal || 0);
-      acc.crew += Number(breakdown.crewTotal || 0);
-      acc.crewCost += Number(breakdown.crewCostTotal || 0);
-      return acc;
-    }, { equipment: 0, crew: 0, crewCost: 0 });
-    const servicesRevenue = getProjectServicesRevenue(p);
-    const projectExpenses = Number(getProjectExpenses(p) || 0);
-    const grossBeforeDiscount = agg.equipment + agg.crew + servicesRevenue;
-    const discountVal = Number(p?.raw?.discount ?? p?.discount ?? 0) || 0;
-    const discountType = (p?.raw?.discount_type ?? p?.discountType) === 'amount' ? 'amount' : 'percent';
-    let discountAmount = discountType === 'amount' ? discountVal : grossBeforeDiscount * (discountVal / 100);
-    if (!Number.isFinite(discountAmount) || discountAmount < 0) discountAmount = 0;
-    if (discountAmount > grossBeforeDiscount) discountAmount = grossBeforeDiscount;
-    const baseAfterDiscount = Math.max(0, grossBeforeDiscount - discountAmount);
-    const perProjectNet = Number(((baseAfterDiscount - projectExpenses - (agg.crewCost || 0))).toFixed(2));
-    const marginPercent = baseAfterDiscount > 0 ? (perProjectNet / baseAfterDiscount) * 100 : 0;
-
-    const pairs = [
-      ['إيراد المعدات (حجوزات)', agg.equipment, 'إيراد الطاقم (حجوزات)', agg.crew, 'إيرادات الخدمات', servicesRevenue],
-      ['الخصم', discountAmount, 'بعد الخصم', baseAfterDiscount, 'تكلفة الطاقم', agg.crewCost],
-      ['تكلفة الخدمات الإنتاجية', projectExpenses, 'صافي الربح', perProjectNet, 'هامش الربح %', Number(marginPercent.toFixed(1))],
-    ];
-    pairs.forEach((row) => {
-      row.forEach((v, i) => {
-        const isNum = i % 2 === 1; // every second cell in the pair is numeric
-        write(i, v, isNum ? (typeof v === 'number' && (i===5 ? num1 : num0)) : {});
-      });
-      nextRow();
-    });
-
-    // spacing between projects
-    nextRow();
-  });
-
-  return ws;
+  return exportProjectsWorkbook(projects, state.reservations, PROJECT_TAX_RATE);
 }
 
 function renderTable(projects) {
   if (!dom.table || !dom.tableBody || !dom.tableEmpty) return;
+  const rendered = renderProjectsTable({
+    projects,
+    totalProjects: state.totalProjects,
+    sortState,
+    isDebug: Boolean(state.__debug),
+    deps: {
+      t,
+      escapeHtml,
+      formatCurrency,
+      formatPercent,
+      formatNumber,
+      formatProjectPeriod,
+      computeMetrics: (project) => computeProjectMetrics(project, getReservationsForProject(state.reservations, project.id)),
+      resolveProjectPaymentState,
+    },
+  });
 
-  if (!projects.length) {
+  if (rendered.isEmpty) {
     dom.table.style.display = 'none';
     dom.tableEmpty.classList.add('active');
-    if (dom.tableMeta) {
-      dom.tableMeta.textContent = '';
-    }
+    if (dom.tableMeta) dom.tableMeta.textContent = '';
     return;
   }
 
   dom.table.style.display = '';
   dom.tableEmpty.classList.remove('active');
-
-  const rowsHtml = sortProjects([...(projects || [])]).map((project) => {
-    const metrics = computeProjectMetrics(project);
-    const periodLabel = formatProjectPeriod(project.start, project.end);
-    const statusLabel = t(`projects.status.${project.status}`, project.status);
-    const statusChip = `<span class=\"timeline-status-badge timeline-status-badge--${project.status}\">${escapeHtml(statusLabel)}</span>`;
-    // Payment chip (match project card style and emojis) — use unified resolver
-    const paymentState = resolveProjectPaymentState(project);
-    const paymentClass = paymentState === 'paid' ? 'status-paid' : (paymentState === 'partial' ? 'status-partial' : 'status-unpaid');
-    const paymentText = paymentState === 'paid'
-      ? t('reservations.list.payment.paid', '💳 مدفوع')
-      : (paymentState === 'partial'
-          ? t('reservations.list.payment.partial', '💳 مدفوع جزئياً')
-          : t('reservations.list.payment.unpaid', '💳 غير مدفوع'));
-    const paymentChip = `<span class=\"reservation-chip ${paymentClass}\">${escapeHtml(paymentText)}</span>`;
-    // Show only client name (hide client company for a cleaner table)
-    const clientLabel = escapeHtml(project.clientName || t('projects.fallback.unknownClient', 'Unknown client'));
-
-    const mainRow = `
-      <tr>
-        <td>
-          <div class="d-flex flex-column gap-1">
-            <span class="fw-semibold">${escapeHtml(project.title || project.projectCode)}</span>
-            <small class="text-muted">${escapeHtml(`#${project.projectCode}`)}</small>
-          </div>
-        </td>
-        <td>${clientLabel}</td>
-        <td>${statusChip}</td>
-        <td>${escapeHtml(periodLabel)}</td>
-        <td>${escapeHtml(formatCurrency(project.overallTotal))}</td>
-        <td>${escapeHtml(formatPercent(metrics.marginPercent))}</td>
-        <td>${paymentChip}</td>
-      </tr>
-    `;
-
-    if (!state.__debug) return mainRow;
-
-    // Debug row: show quick financial components to help diagnose zeros
-    const debugBits = [];
-    debugBits.push(`resFinal=${Math.round(metrics.resFinal)}`);
-    debugBits.push(`resTax=${Math.round(metrics.resTax)}`);
-    debugBits.push(`resNet=${Math.round(metrics.resNetRevenue)}`);
-    debugBits.push(`equipEst=${Math.round(metrics.equipmentEstimate)}`);
-    debugBits.push(`services=${Math.round(metrics.servicesRevenue)}`);
-    debugBits.push(`expenses=${Math.round(metrics.projectExpenses)}`);
-    debugBits.push(`netProfit=${Math.round(metrics.netProfit)}`);
-    debugBits.push(`margin=${Number((metrics.marginPercent || 0).toFixed(1))}%`);
-    // project-level inputs
-    const shareEnabled = project?.raw?.companyShareEnabled === true || String(project?.raw?.companyShareEnabled).toLowerCase() === 'true';
-    const sharePercent = shareEnabled ? (Number(project?.raw?.companySharePercent) || 0) : 0;
-    const discountVal = Number(project?.raw?.discount ?? 0) || 0;
-    const discountType = (project?.raw?.discountType === 'amount') ? 'amount' : 'percent';
-    debugBits.push(`share%=${sharePercent}`);
-    debugBits.push(`disc=${discountVal}${discountType === 'amount' ? '' : '%'}`);
-    debugBits.push(`applyTax=${project.applyTax ? 'Y' : 'N'} taxRate=${Number((PROJECT_TAX_RATE * 100).toFixed(2))}%`);
-
-    const debugRow = `
-      <tr class="reports-debug-row">
-        <td colspan="7">
-          <code class="reports-debug-code">${escapeHtml(debugBits.join('  |  '))}</code>
-        </td>
-      </tr>
-    `;
-
-    return `${mainRow}${debugRow}`;
-  }).join('');
-
-  dom.tableBody.innerHTML = rowsHtml;
-  if (dom.tableMeta) {
-    const metaTemplate = t('projects.reports.table.meta', 'Showing {count} of {total} projects');
-    dom.tableMeta.textContent = metaTemplate
-      .replace('{count}', formatNumber(projects.length))
-      .replace('{total}', formatNumber(state.totalProjects));
-  }
+  dom.tableBody.innerHTML = rendered.rowsHtml;
+  if (dom.tableMeta) dom.tableMeta.textContent = rendered.metaText;
 }
 
 function setupTableSorting() {
@@ -1890,58 +751,12 @@ function setupTableSorting() {
     if (!th) return;
     const key = th.getAttribute('data-sort-key');
     if (!key) return;
-    if (sortState.key === key) {
-      sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
-    } else {
-      sortState.key = key;
-      sortState.dir = (key === 'project' || key === 'client' || key === 'status') ? 'asc' : 'desc';
-    }
+    const nextSort = getNextSortState(sortState, key);
+    sortState.key = nextSort.key;
+    sortState.dir = nextSort.dir;
     renderAll();
   });
   dom.tableHead.dataset.sortAttached = 'true';
-}
-
-function sortProjects(list) {
-  const dirMul = sortState.dir === 'asc' ? 1 : -1;
-  const key = sortState.key;
-  const cmp = (a, b) => {
-    switch (key) {
-      case 'project': {
-        const aa = String(a.title || a.projectCode || '').toLowerCase();
-        const bb = String(b.title || b.projectCode || '').toLowerCase();
-        return aa.localeCompare(bb, 'ar');
-      }
-      case 'client': {
-        const aa = String(a.clientName || '').toLowerCase();
-        const bb = String(b.clientName || '').toLowerCase();
-        return aa.localeCompare(bb, 'ar');
-      }
-      case 'status': {
-        const aa = String(a.status || '');
-        const bb = String(b.status || '');
-        return aa.localeCompare(bb, 'ar');
-      }
-      case 'period': {
-        const aa = a.start ? new Date(a.start).getTime() : 0;
-        const bb = b.start ? new Date(b.start).getTime() : 0;
-        return aa - bb;
-      }
-      case 'value':
-        return (a.overallTotal || 0) - (b.overallTotal || 0);
-      case 'margin': {
-        const ma = computeProjectMetrics(a).marginPercent || 0;
-        const mb = computeProjectMetrics(b).marginPercent || 0;
-        return ma - mb;
-      }
-      case 'payment': {
-        const prio = (p) => (p === 'paid' ? 2 : (p === 'partial' ? 1 : 0));
-        return prio(a.paymentStatus) - prio(b.paymentStatus);
-      }
-      default:
-        return (a.overallTotal || 0) - (b.overallTotal || 0);
-    }
-  };
-  return list.sort((a, b) => dirMul * cmp(a, b));
 }
 
 function updateSortIndicators() {
@@ -1951,101 +766,13 @@ function updateSortIndicators() {
     th.removeAttribute('data-dir');
     const key = th.getAttribute('data-sort-key');
     if (key) {
-      th.setAttribute('title', buildSortTitle(key, null));
+      th.setAttribute('title', buildSortTitle(key, null, { t }));
     }
   });
   const active = dom.tableHead.querySelector(`th.sortable[data-sort-key="${sortState.key}"]`);
   if (active) {
     active.classList.add('is-sorted');
     active.setAttribute('data-dir', sortState.dir);
-    active.setAttribute('title', buildSortTitle(sortState.key, sortState.dir));
+    active.setAttribute('title', buildSortTitle(sortState.key, sortState.dir, { t }));
   }
-}
-
-function buildSortTitle(key, dir) {
-  const labelKeyMap = {
-    project: 'projects.reports.table.columns.project',
-    client: 'projects.reports.table.columns.client',
-    status: 'projects.reports.table.columns.status',
-    period: 'projects.reports.table.columns.period',
-    value: 'projects.reports.table.columns.value',
-    margin: 'projects.reports.table.columns.margin',
-    payment: 'projects.reports.table.columns.payment',
-  };
-  const colLabel = t(labelKeyMap[key] || '', key);
-  if (!dir) {
-    return `${colLabel} — ${t('projects.reports.table.sortable', 'قابل للفرز')}`;
-  }
-  const dirLabel = dir === 'asc'
-    ? t('projects.reports.table.sort.asc', 'ترتيب تصاعدي')
-    : t('projects.reports.table.sort.desc', 'ترتيب تنازلي');
-  return `${colLabel} — ${dirLabel}`;
-}
-
-function formatDateOnly(value) {
-  if (!value) return '—';
-  const d = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(d.getTime())) return '—';
-  const lang = getCurrentLanguage();
-  const locale = lang === 'ar' ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US';
-  // Use numeric month instead of month name in the period column
-  const fmt = new Intl.DateTimeFormat(locale, { day: '2-digit', month: '2-digit', year: 'numeric' });
-  return normalizeNumbers(fmt.format(d));
-}
-
-function formatProjectPeriod(start, end) {
-  if (!start && !end) return '—';
-  const startLabel = start ? formatDateOnly(start) : '—';
-  const endLabel = end ? formatDateOnly(end) : '—';
-  if (!end) return startLabel;
-  return `${startLabel} → ${endLabel}`;
-}
-
-function formatCurrency(value) {
-  const number = Number(value) || 0;
-  const lang = getCurrentLanguage();
-  const locale = lang === 'ar' ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US';
-  const formatted = new Intl.NumberFormat(locale, {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(Math.round(number));
-  const currencyLabel = 'SR';
-  return `${normalizeNumbers(formatted)} ${currencyLabel}`;
-}
-
-function formatNumber(value) {
-  const lang = getCurrentLanguage();
-  const locale = lang === 'ar' ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US';
-  return normalizeNumbers(new Intl.NumberFormat(locale).format(value));
-}
-
-function formatPercent(value) {
-  const lang = getCurrentLanguage();
-  const locale = lang === 'ar' ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US';
-  const num = Number.isFinite(value) ? value : 0;
-  const formatted = new Intl.NumberFormat(locale, {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1
-  }).format(num);
-  return `${normalizeNumbers(formatted)}%`;
-}
-
-function formatCompactNumber(value) {
-  const lang = getCurrentLanguage();
-  const locale = lang === 'ar' ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US';
-  return normalizeNumbers(new Intl.NumberFormat(locale, { notation: 'compact', compactDisplay: 'short' }).format(value));
-}
-
-function getChartLocale() {
-  const lang = getCurrentLanguage();
-  return lang === 'ar' ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US';
-}
-
-function escapeHtml(value = '') {
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 }
