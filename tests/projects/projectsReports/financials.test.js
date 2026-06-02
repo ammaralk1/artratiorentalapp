@@ -14,8 +14,11 @@ import {
   getProjectExpenses,
   getProjectServicesRevenue,
   getReservationsForProject,
+  isProjectCancelled,
+  isProjectConfirmed,
   isProjectClosed,
   isProjectEligibleForReports,
+  isProjectPendingForReports,
   resolveProjectPaymentState,
 } from '../../../src/scripts/projectsReports/financials.ts';
 
@@ -23,8 +26,18 @@ describe('projectsReports/financials', () => {
   it('detects closed and eligible projects from status and confirmation state', () => {
     expect(isProjectClosed({ status: 'completed' })).toBe(true);
     expect(isProjectClosed({ raw: { closed: true } })).toBe(true);
+    expect(isProjectConfirmed({ confirmed: true })).toBe(true);
+    expect(isProjectConfirmed({ confirmed: 'true' })).toBe(true);
+    expect(isProjectCancelled({ cancelled: true })).toBe(true);
+    expect(isProjectCancelled({ status: 'ملغي' })).toBe(true);
+    expect(isProjectPendingForReports({ status: 'pending', confirmed: true })).toBe(true);
     expect(isProjectEligibleForReports({ confirmed: true, cancelled: false })).toBe(true);
+    expect(isProjectEligibleForReports({ confirmed: 'true', cancelled: false, status: 'completed' })).toBe(true);
+    expect(isProjectEligibleForReports({ confirmed: true, status: 'pending', cancelled: false })).toBe(true);
+    expect(isProjectEligibleForReports({ confirmed: true, raw: { status: 'قيد التأكيد' }, cancelled: false })).toBe(true);
     expect(isProjectEligibleForReports({ confirmed: false, status: 'ongoing', cancelled: false })).toBe(false);
+    expect(isProjectEligibleForReports({ confirmed: false, status: 'pending', cancelled: false })).toBe(false);
+    expect(isProjectEligibleForReports({ confirmed: false, status: 'completed', cancelled: false })).toBe(false);
     expect(isProjectEligibleForReports({ confirmed: true, cancelled: true })).toBe(false);
   });
 
@@ -62,7 +75,21 @@ describe('projectsReports/financials', () => {
     expect(metrics.resTax).toBe(150);
     expect(metrics.resNetRevenue).toBe(1350);
     expect(metrics.netProfit).toBe(1550);
-    expect(metrics.marginPercent).toBeCloseTo(83.7837, 3);
+    expect(metrics.marginPercent).toBeCloseTo(93.939, 3);
+  });
+
+  it('does not add direct equipment estimate again when linked reservations own project revenue', () => {
+    const metrics = computeProjectMetrics({
+      raw: { equipmentEstimate: 1000, servicesClientPrice: 0 },
+      expensesTotal: 0,
+    }, [
+      { id: 228, projectId: 82, __financials: { finalTotal: 1900, taxAmount: 0 } },
+    ]);
+
+    expect(metrics.resFinal).toBe(1900);
+    expect(metrics.resNetRevenue).toBe(1900);
+    expect(metrics.equipmentEstimate).toBe(1000);
+    expect(metrics.marginPercent).toBe(100);
   });
 
   it('derives payment state from payment history or paid percentages', () => {

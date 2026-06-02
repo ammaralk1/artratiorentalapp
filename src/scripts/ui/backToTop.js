@@ -13,7 +13,7 @@ export function initBackToTopForEquipment() {
     const update = () => {
       try {
         const shouldShow = isEquipmentActive() && (window.scrollY || window.pageYOffset || 0) > THRESHOLD;
-        btn.style.display = shouldShow ? '' : 'none';
+        btn.hidden = !shouldShow;
       } catch (_) {}
     };
 
@@ -37,4 +37,3 @@ export function initBackToTopForEquipment() {
     // no-op
   }
 }
-

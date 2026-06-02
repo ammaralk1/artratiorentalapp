@@ -13,6 +13,91 @@ import {
 } from '../../canvasColorUtils.js';
 import { escapeAttribute, escapeHtml } from './utils.js';
 
+function getSectionPaginationState(key) {
+  const fallbackSize = reportsState.pagination?.pageSize || 10;
+  const store = reportsState.sectionPagination || {};
+  if (!store[key]) {
+    store[key] = { page: 1, pageSize: fallbackSize };
+    reportsState.sectionPagination = store;
+  }
+  return store[key];
+}
+
+function paginateRows(rows, key) {
+  const state = getSectionPaginationState(key);
+  const totalItems = Array.isArray(rows) ? rows.length : 0;
+  const pageSize = Number.isFinite(state.pageSize) ? state.pageSize : 10;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const currentPage = Math.min(Math.max(1, state.page || 1), totalPages);
+  state.page = currentPage;
+  const startIndex = Math.max(0, (currentPage - 1) * pageSize);
+  return {
+    rows: (rows || []).slice(startIndex, startIndex + pageSize),
+    totalItems,
+    totalPages,
+    currentPage,
+    pageSize,
+  };
+}
+
+function renderSectionPagination(hostId, key, totalItems) {
+  const host = document.getElementById(hostId);
+  if (!host) return;
+
+  const state = getSectionPaginationState(key);
+  const pageSize = Number.isFinite(state.pageSize) ? state.pageSize : 10;
+  const totalPages = Math.max(1, Math.ceil((totalItems || 0) / pageSize));
+  const currentPage = Math.min(Math.max(1, state.page || 1), totalPages);
+  state.page = currentPage;
+
+  if (totalPages <= 1) {
+    host.hidden = true;
+    host.innerHTML = '';
+    return;
+  }
+
+  const prevDisabled = currentPage <= 1 ? 'disabled' : '';
+  const nextDisabled = currentPage >= totalPages ? 'disabled' : '';
+  const rangeStart = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const rangeEnd = Math.min(currentPage * pageSize, totalItems);
+  const navLabel = translate('projects.pagination.navigation', 'التنقل بين صفحات النتائج', 'Results pagination');
+  const prevLabel = translate('projects.pagination.prev', 'السابق', 'Previous page');
+  const nextLabel = translate('projects.pagination.next', 'التالي', 'Next page');
+  const pageLabelTemplate = translate('projects.pagination.page', 'صفحة {page}', 'Page {page}');
+  const rangeTemplate = translate('projects.pagination.range', '{from}-{to} من {total}', '{from}-{to} of {total}');
+  const rangeText = rangeTemplate
+    .replace('{from}', formatNumber(rangeStart))
+    .replace('{to}', formatNumber(rangeEnd))
+    .replace('{total}', formatNumber(totalItems));
+  const pages = Array.from({ length: totalPages }, (_, index) => index + 1);
+
+  host.hidden = false;
+  host.innerHTML = `
+    <div class="list-pagination__summary text-muted small">${escapeHtml(rangeText)}</div>
+    <div class="list-pagination__controls btn-group" role="group" aria-label="${escapeHtml(navLabel)}">
+      <button type="button" class="btn btn-sm btn-outline-primary" data-reports-section-page="${Math.max(1, currentPage - 1)}" data-reports-section-key="${escapeAttribute(key)}" ${prevDisabled} aria-label="${escapeHtml(prevLabel)}">‹</button>
+      ${pages.map((pageNumber) => {
+        const isActive = pageNumber === currentPage;
+        const label = pageLabelTemplate.replace('{page}', formatNumber(pageNumber));
+        return `<button type="button" class="btn btn-sm ${isActive ? 'btn-primary' : 'btn-outline-primary'}" data-reports-section-page="${pageNumber}" data-reports-section-key="${escapeAttribute(key)}" aria-label="${escapeHtml(label)}" ${isActive ? 'aria-current="page"' : ''}>${escapeHtml(formatNumber(pageNumber))}</button>`;
+      }).join('')}
+      <button type="button" class="btn btn-sm btn-outline-primary" data-reports-section-page="${Math.min(totalPages, currentPage + 1)}" data-reports-section-key="${escapeAttribute(key)}" ${nextDisabled} aria-label="${escapeHtml(nextLabel)}">›</button>
+    </div>
+  `;
+
+  host.querySelectorAll('[data-reports-section-page]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const nextPage = Number(button.getAttribute('data-reports-section-page'));
+      const sectionKey = button.getAttribute('data-reports-section-key');
+      if (!sectionKey || !Number.isFinite(nextPage) || nextPage < 1) return;
+      const sectionState = getSectionPaginationState(sectionKey);
+      if (sectionState.page === nextPage) return;
+      sectionState.page = nextPage;
+      reportsState.callbacks.onRender?.();
+    });
+  });
+}
+
 function getExportFileName(extension) {
   const stamp = formatDateInput(new Date()).replace(/-/g, '');
   const prefix = translate('reservations.reports.export.filePrefix', 'تقرير-الحجوزات', 'reservations-report');
@@ -118,7 +203,7 @@ export function buildPdfReportElement(rows = []) {
       <div class="kpi"><div class="label">${translate('reservations.reports.kpi.total.label', 'الحجوزات', 'Reservations')}</div><div class="value">${formatNumber(metrics.total || 0)}</div></div>
       <div class="kpi"><div class="label">${translate('reservations.reports.kpi.revenue.label', 'الإيرادات', 'Revenue')}</div><div class="value">${formatCurrency(metrics.revenue || 0)}</div></div>
       <div class="kpi"><div class="label">${translate('reservations.reports.kpi.net.label', 'صافي الربح', 'Net profit')}</div><div class="value">${formatCurrency(metrics.netProfit || 0)}</div></div>
-      <div class="kpi"><div class="label">${translate('reservations.reports.kpi.share.label', 'نسبة الشركة', 'Company share')}</div><div class="value">${formatCurrency(metrics.companyShareTotal || 0)}</div></div>
+      <div class="kpi"><div class="label">${translate('reservations.reports.kpi.share.label', 'المصاريف التشغيلية', 'Company overhead')}</div><div class="value">${formatCurrency(metrics.companyShareTotal || 0)}</div></div>
       <div class="kpi"><div class="label">${translate('reservations.reports.kpi.tax.label', 'الضريبة', 'Tax')}</div><div class="value">${formatCurrency(metrics.taxTotal || 0)}</div></div>
       <div class="kpi"><div class="label">${translate('reservations.reports.kpi.maintenance.label', 'مصاريف الصيانة', 'Maintenance')}</div><div class="value">${formatCurrency((metrics.maintenanceExpense) || 0)}</div></div>
     </div>
@@ -137,7 +222,7 @@ export function buildPdfReportElement(rows = []) {
     translate('reservations.reports.results.headers.status', 'الحالة', 'Status'),
     translate('reservations.reports.results.headers.payment', 'الدفع', 'Payment'),
     translate('reservations.reports.results.headers.total', 'الإجمالي', 'Total'),
-    translate('reservations.reports.results.headers.share', 'نسبة الشركة', 'Company share'),
+    translate('reservations.reports.results.headers.share', 'المصاريف التشغيلية', 'Company overhead'),
     translate('reservations.reports.results.headers.net', 'صافي الربح', 'Net profit'),
   ];
 
@@ -199,9 +284,13 @@ export function renderTopCustomers(rows) {
   tbody.innerHTML = rows
     .map((row) => `
       <tr class="hover:bg-base-200 cursor-pointer" data-drilldown="customer" data-search="${escapeAttribute(row.name)}">
-        <td>${escapeHtml(row.name)}</td>
-        <td>${formatNumber(row.count)}</td>
-        <td>${formatCurrency(row.revenue)}</td>
+        <td>
+          <div class="reports-row-title">
+            <span class="reports-row-title__main">${escapeHtml(row.name)}</span>
+          </div>
+        </td>
+        <td><span class="reports-cell-pill">${formatNumber(row.count)}</span></td>
+        <td><span class="reports-cell-pill">${formatCurrency(row.revenue)}</span></td>
       </tr>
     `)
     .join('');
@@ -219,9 +308,13 @@ export function renderTopEquipment(rows) {
   tbody.innerHTML = rows
     .map((row) => `
       <tr class="hover:bg-base-200 cursor-pointer" data-drilldown="equipment" data-search="${escapeAttribute(row.name)}">
-        <td>${escapeHtml(row.name)}</td>
-        <td>${formatNumber(row.count)}</td>
-        <td>${formatCurrency(row.revenue)}</td>
+        <td>
+          <div class="reports-row-title">
+            <span class="reports-row-title__main">${escapeHtml(row.name)}</span>
+          </div>
+        </td>
+        <td><span class="reports-cell-pill">${formatNumber(row.count)}</span></td>
+        <td><span class="reports-cell-pill">${formatCurrency(row.revenue)}</span></td>
       </tr>
     `)
     .join('');
@@ -233,21 +326,29 @@ export function renderEquipmentCosts(rows) {
 
   if (!rows || rows.length === 0) {
     tbody.innerHTML = `<tr><td colspan="6" class="text-base-content/60">${translate('reservations.reports.table.emptyPeriod', 'لا توجد بيانات في هذه الفترة.', 'No data for this period.')}</td></tr>`;
+    renderSectionPagination('reports-equipment-costs-pagination', 'equipmentCosts', 0);
     return;
   }
 
-  tbody.innerHTML = rows
+  const paged = paginateRows(rows, 'equipmentCosts');
+
+  tbody.innerHTML = paged.rows
     .map((row) => `
       <tr class="hover:bg-base-200">
-        <td>${escapeHtml(row.name)}</td>
-        <td>${formatNumber(row.quantity)}</td>
-        <td>${formatNumber(row.days ?? 0)}</td>
-        <td>${formatCurrency(row.billable)}</td>
-        <td>${formatCurrency(row.cost)}</td>
-        <td>${formatCurrency(row.net)}</td>
+        <td>
+          <div class="reports-row-title">
+            <span class="reports-row-title__main">${escapeHtml(row.name)}</span>
+          </div>
+        </td>
+        <td><span class="reports-cell-pill">${formatNumber(row.quantity)}</span></td>
+        <td><span class="reports-cell-pill">${formatNumber(row.days ?? 0)}</span></td>
+        <td><span class="reports-cell-pill">${formatCurrency(row.billable)}</span></td>
+        <td><span class="reports-cell-pill">${formatCurrency(row.cost)}</span></td>
+        <td><span class="reports-cell-pill">${formatCurrency(row.net)}</span></td>
       </tr>
     `)
     .join('');
+  renderSectionPagination('reports-equipment-costs-pagination', 'equipmentCosts', paged.totalItems);
 }
 
 export function renderCrewWork(rows) {
@@ -256,20 +357,28 @@ export function renderCrewWork(rows) {
 
   if (!rows || rows.length === 0) {
     tbody.innerHTML = `<tr><td colspan="5" class="text-base-content/60">${translate('reservations.reports.table.emptyPeriod', 'لا توجد بيانات في هذه الفترة.', 'No data for this period.')}</td></tr>`;
+    renderSectionPagination('reports-crew-pagination', 'crew', 0);
     return;
   }
 
-  tbody.innerHTML = rows
+  const paged = paginateRows(rows, 'crew');
+
+  tbody.innerHTML = paged.rows
     .map((row) => `
       <tr class="hover:bg-base-200 cursor-pointer" data-drilldown="technician" data-search="${escapeAttribute(row.name)}">
-        <td>${escapeHtml(row.name)}</td>
-        <td>${formatNumber(row.days)}</td>
-        <td>${formatCurrency(row.billable)}</td>
-        <td>${formatCurrency(row.cost)}</td>
-        <td>${formatCurrency(row.billable - row.cost)}</td>
+        <td>
+          <div class="reports-row-title">
+            <span class="reports-row-title__main">${escapeHtml(row.name)}</span>
+          </div>
+        </td>
+        <td><span class="reports-cell-pill">${formatNumber(row.days)}</span></td>
+        <td><span class="reports-cell-pill">${formatCurrency(row.billable)}</span></td>
+        <td><span class="reports-cell-pill">${formatCurrency(row.cost)}</span></td>
+        <td><span class="reports-cell-pill">${formatCurrency(row.billable - row.cost)}</span></td>
       </tr>
     `)
     .join('');
+  renderSectionPagination('reports-crew-pagination', 'crew', paged.totalItems);
 }
 
 export function renderPaymentForecast(rows) {
@@ -277,17 +386,20 @@ export function renderPaymentForecast(rows) {
   if (!tbody) return;
   if (!rows || rows.length === 0) {
     tbody.innerHTML = `<tr><td colspan="3" class="text-base-content/60">${translate('reservations.reports.table.emptyPeriod', 'لا توجد بيانات في هذه الفترة.', 'No data for this period.')}</td></tr>`;
+    renderSectionPagination('reports-forecast-pagination', 'forecast', 0);
     return;
   }
-  tbody.innerHTML = rows
+  const paged = paginateRows(rows, 'forecast');
+  tbody.innerHTML = paged.rows
     .map((r) => `
       <tr>
-        <td>${r.date}</td>
-        <td>${translate('reservations.reports.forecast.count', '{count} حجوزات', '{count} reservations').replace('{count}', String(r.count || 0))}</td>
-        <td>${formatCurrency(r.amount || 0)}</td>
+        <td><span class="reports-cell-pill">${r.date}</span></td>
+        <td><span class="reports-cell-pill">${translate('reservations.reports.forecast.count', '{count} حجوزات', '{count} reservations').replace('{count}', String(r.count || 0))}</span></td>
+        <td><span class="reports-cell-pill">${formatCurrency(r.amount || 0)}</span></td>
       </tr>
     `)
     .join('');
+  renderSectionPagination('reports-forecast-pagination', 'forecast', paged.totalItems);
 }
 
 export function renderTopOutstanding(rows) {
@@ -302,9 +414,14 @@ export function renderTopOutstanding(rows) {
   tbody.innerHTML = rows
     .map((row) => `
       <tr class="hover:bg-base-200 cursor-pointer" data-drilldown="reservation" data-search="${escapeAttribute(row.code)}">
-        <td>#${escapeHtml(String(row.code))} — ${escapeHtml(row.customer || '')}</td>
-        <td>${escapeHtml(paymentLabelText(row.paidStatus))}</td>
-        <td>${formatCurrency(row.outstanding)}</td>
+        <td>
+          <div class="reports-row-title">
+            <span class="reports-row-title__main">#${escapeHtml(String(row.code))}</span>
+            <span class="reports-row-title__sub">${escapeHtml(row.customer || '')}</span>
+          </div>
+        </td>
+        <td><span class="reports-cell-pill">${escapeHtml(paymentLabelText(row.paidStatus))}</span></td>
+        <td><span class="reports-cell-pill reports-cell-pill--danger">${formatCurrency(row.outstanding)}</span></td>
       </tr>
     `)
     .join('');
@@ -319,6 +436,7 @@ export function renderMaintenanceExpenses(summary, tickets = []) {
 
   if (!items.length) {
     tbody.innerHTML = `<tr><td colspan="5" class="text-base-content/60">${translate('reservations.reports.table.emptyPeriod', 'لا توجد بيانات في هذه الفترة.', 'No data for this period.')}</td></tr>`;
+    renderSectionPagination('reports-maintenance-pagination', 'maintenance', 0);
     return;
   }
 
@@ -346,7 +464,9 @@ export function renderMaintenanceExpenses(summary, tickets = []) {
     })
     .sort((a, b) => normalizedTime(b?.date) - normalizedTime(a?.date));
 
-  tbody.innerHTML = enriched
+  const paged = paginateRows(enriched, 'maintenance');
+
+  tbody.innerHTML = paged.rows
     .map((entry) => {
       const ticketLabel = entry?.id != null ? `#${escapeHtml(String(entry.id))}` : translate('common.placeholder.empty', '—', '—');
       const dateLabel = entry?.date ? formatDateInput(entry.date) : translate('common.placeholder.empty', '—', '—');
@@ -364,4 +484,5 @@ export function renderMaintenanceExpenses(summary, tickets = []) {
       `;
     })
     .join('');
+  renderSectionPagination('reports-maintenance-pagination', 'maintenance', paged.totalItems);
 }

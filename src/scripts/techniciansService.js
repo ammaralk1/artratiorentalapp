@@ -1,6 +1,7 @@
 import { loadData, saveData } from './storage.js';
 import { apiRequest, ApiError } from './apiClient.js';
 import { normalizeNumbers } from './utils.js';
+import { isLocalDashboardFixtureEnabled } from './fixtureRuntime.js';
 
 const initialTechniciansData = loadData() || {};
 let techniciansState = (initialTechniciansData.technicians || []).map(mapLegacyTechnician);
@@ -24,6 +25,12 @@ export function setTechniciansState(list) {
 }
 
 export async function refreshTechniciansFromApi(params = {}) {
+  if (isLocalDashboardFixtureEnabled()) {
+    const snapshot = loadData();
+    const localTechnicians = Array.isArray(snapshot?.technicians) ? snapshot.technicians : [];
+    return setTechniciansState(localTechnicians);
+  }
+
   const searchParams = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {

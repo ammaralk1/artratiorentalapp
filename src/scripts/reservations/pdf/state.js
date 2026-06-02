@@ -9,10 +9,7 @@ export const state = {
   manualQuoteBackdrop: null,
   manualQuoteEscapeHandler: null,
   quoteAssetWarningShown: false,
-  blockDragMode: false,
-  blockDragDirty: false,
-  initializedInfoAlignments: false,
   quoteLiveListenersAttached: false,
   reservationsChangedHandlerRef: null,
-  renderLayoutStateOverride: null,
+  quotePdfVersion: 'v2',
 };

@@ -1,0 +1,365 @@
+body.notifications-page {
+  --notifications-shell-bg: rgba(248, 250, 247, 0.92);
+  --notifications-card-bg: rgba(242, 245, 239, 0.92);
+  --notifications-shell-border: rgba(42, 64, 48, 0.11);
+  --notifications-card-border: rgba(42, 64, 48, 0.09);
+  --notifications-control-bg: #f2f5ef;
+  --notifications-control-bg-hover: #edf2ec;
+  --notifications-control-border: rgba(42, 64, 48, 0.1);
+  --notifications-control-border-focus: rgba(42, 64, 48, 0.15);
+}
+
+html.dark body.notifications-page,
+html.dark-mode body.notifications-page,
+html[data-theme='dark'] body.notifications-page,
+body.notifications-page.dark,
+body.notifications-page.dark-mode,
+body.notifications-page[data-theme='dark'] {
+  --notifications-shell-bg: rgba(14, 22, 18, 0.9);
+  --notifications-card-bg: rgba(20, 29, 25, 0.84);
+  --notifications-shell-border: rgba(147, 168, 137, 0.1);
+  --notifications-card-border: rgba(147, 168, 137, 0.08);
+  --notifications-control-bg: rgba(20, 30, 24, 0.96);
+  --notifications-control-bg-hover: rgba(24, 36, 29, 0.98);
+  --notifications-control-border: rgba(147, 168, 137, 0.16);
+  --notifications-control-border-focus: rgba(147, 168, 137, 0.26);
+}
+
+.notifications-page .dashboard-main-inner {
+  gap: 2rem;
+}
+
+.notifications-page .glass-card:not(.dashboard-greeting-panel) {
+  background: var(--notifications-shell-bg);
+  background-image: none;
+  border-color: var(--notifications-shell-border);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.notifications-page .notifications-hero-shell,
+.notifications-page .notifications-search-shell,
+.notifications-page .notifications-compose-shell,
+.notifications-page .notifications-logs-shell,
+.notifications-page .notifications-templates-shell,
+.notifications-page .notifications-telegram-shell,
+.notifications-page .notifications-diagnostics-shell,
+.notifications-page .notifications-chat-shell {
+  padding: 1.35rem 1.45rem;
+}
+
+.notifications-page .notifications-section-header {
+  gap: 0.9rem;
+}
+
+.notifications-page .notifications-section-copy {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.notifications-page .notifications-selected-summary {
+  margin-top: 0.65rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--notifications-card-border);
+  border-radius: var(--radius-lg, 12px);
+  background: var(--notifications-card-bg);
+  background-image: none;
+}
+
+.notifications-page .notifications-filter-grid {
+  gap: 0.85rem 1rem;
+  align-items: end;
+}
+
+.notifications-page .notifications-field {
+  gap: 0.45rem;
+}
+
+.notifications-page .notifications-field > label,
+.notifications-page .notifications-page label.font-medium {
+  font-size: 0.88rem;
+}
+
+.notifications-page :is(
+  #notif-entity-type,
+  #notif-search,
+  #notif-extra-emails,
+  #notif-extra-chatids,
+  #notif-template,
+  #notif-subject,
+  #notif-body,
+  #log-filter-entity,
+  #log-filter-channel,
+  #log-filter-status,
+  #log-filter-batch,
+  #log-filter-q,
+  #tpl-name,
+  #tpl-channel,
+  #tpl-attachment,
+  #tpl-attachments,
+  #tpl-subject,
+  #tpl-text,
+  #tpl-html,
+  #tg-tech-search,
+  #tg-chat-tech-search,
+  #tg-chat-input
+) {
+  background: var(--notifications-control-bg);
+  background-image: none;
+  border-color: var(--notifications-control-border);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.notifications-page :is(
+  #notif-entity-type,
+  #notif-search,
+  #notif-extra-emails,
+  #notif-extra-chatids,
+  #notif-template,
+  #notif-subject,
+  #notif-body,
+  #log-filter-entity,
+  #log-filter-channel,
+  #log-filter-status,
+  #log-filter-batch,
+  #log-filter-q,
+  #tpl-name,
+  #tpl-channel,
+  #tpl-attachment,
+  #tpl-attachments,
+  #tpl-subject,
+  #tpl-text,
+  #tpl-html,
+  #tg-tech-search,
+  #tg-chat-tech-search,
+  #tg-chat-input
+):is(:hover, :focus, :focus-visible) {
+  background: var(--notifications-control-bg-hover);
+  border-color: var(--notifications-control-border-focus);
+  box-shadow: none;
+}
+
+.notifications-page :is(#notif-search, #notif-extra-emails, #notif-extra-chatids, #notif-subject, #log-filter-batch, #log-filter-q, #tpl-name, #tpl-attachment, #tpl-subject, #tg-tech-search, #tg-chat-tech-search, #tg-chat-input) {
+  min-height: 2.7rem;
+}
+
+.notifications-page .notifications-inline-note,
+.notifications-page .notifications-preview-box {
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--notifications-card-border);
+  border-radius: var(--radius-lg, 12px);
+  background: var(--notifications-card-bg);
+  background-image: none;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.notifications-page .notifications-preview-box {
+  min-width: min(100%, 24rem);
+}
+
+.notifications-page .notifications-compose-actions {
+  gap: 0.9rem;
+}
+
+.notifications-page .notifications-action-group,
+.notifications-page .notifications-template-actions,
+.notifications-page .notifications-log-filters {
+  gap: 0.55rem;
+}
+
+.notifications-page :is(#notif-results-pagination, #tg-tech-pagination) {
+  margin-top: 0.2rem;
+}
+
+.notifications-page .notifications-table {
+  table-layout: fixed;
+}
+
+.notifications-page .notifications-table :is(th, td) {
+  padding-block: 0.9rem;
+  vertical-align: top;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.notifications-page .notifications-table th {
+  color: var(--bo-color-text-muted);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.notifications-page #notif-results-table th:nth-child(1),
+.notifications-page #notif-results-table td:nth-child(1) {
+  width: 14%;
+}
+
+.notifications-page #notif-results-table th:nth-child(2),
+.notifications-page #notif-results-table td:nth-child(2) {
+  width: 28%;
+}
+
+.notifications-page #notif-results-table th:nth-child(3),
+.notifications-page #notif-results-table td:nth-child(3) {
+  width: 24%;
+}
+
+.notifications-page #notif-results-table th:nth-child(4),
+.notifications-page #notif-results-table td:nth-child(4) {
+  width: 22%;
+}
+
+.notifications-page #notif-results-table th:nth-child(5),
+.notifications-page #notif-results-table td:nth-child(5) {
+  width: 12%;
+  text-align: center;
+}
+
+.notifications-page #notif-logs-table th:nth-child(1),
+.notifications-page #notif-logs-table td:nth-child(1) {
+  width: 13%;
+}
+
+.notifications-page #notif-logs-table th:nth-child(2),
+.notifications-page #notif-logs-table td:nth-child(2) {
+  width: 14%;
+}
+
+.notifications-page #notif-logs-table th:nth-child(3),
+.notifications-page #notif-logs-table td:nth-child(3) {
+  width: 14%;
+}
+
+.notifications-page #notif-logs-table th:nth-child(4),
+.notifications-page #notif-logs-table td:nth-child(4) {
+  width: 12%;
+}
+
+.notifications-page #notif-logs-table th:nth-child(5),
+.notifications-page #notif-logs-table td:nth-child(5) {
+  width: 19%;
+}
+
+.notifications-page #notif-logs-table th:nth-child(6),
+.notifications-page #notif-logs-table td:nth-child(6) {
+  width: 9%;
+}
+
+.notifications-page #notif-logs-table th:nth-child(7),
+.notifications-page #notif-logs-table td:nth-child(7) {
+  width: 8%;
+  text-align: center;
+}
+
+.notifications-page #notif-logs-table th:nth-child(8),
+.notifications-page #notif-logs-table td:nth-child(8) {
+  width: 11%;
+}
+
+.notifications-page .notifications-table-stack {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.notifications-page .notifications-table-primary {
+  color: var(--bo-color-text-primary);
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.notifications-page .notifications-table-secondary {
+  color: var(--bo-color-text-muted);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.notifications-page .notifications-status-chip {
+  min-height: 2rem;
+  white-space: nowrap;
+}
+
+.notifications-page .notifications-row-action {
+  min-height: 2.35rem;
+  padding-inline: 0.9rem;
+}
+
+.notifications-page :is(#tpl-table, #tg-tech-table, #tg-admin-table, #notif-diag-table) th:last-child,
+.notifications-page :is(#tpl-table, #tg-tech-table, #tg-admin-table, #notif-diag-table) td:last-child {
+  text-align: center;
+}
+
+.notifications-page .notifications-template-form {
+  padding-top: 0.35rem;
+}
+
+.notifications-page .notifications-chat-list {
+  background: var(--notifications-card-bg);
+  border: 1px solid var(--notifications-card-border);
+}
+
+.notifications-page .notifications-chat-list-item {
+  display: grid;
+  gap: 0.2rem;
+  border-radius: var(--radius-md, 10px);
+  transition: background-color 160ms ease;
+}
+
+.notifications-page .notifications-chat-list-item:hover {
+  background: var(--notifications-control-bg-hover);
+}
+
+.notifications-page .notifications-chat-list-item__title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--bo-color-text-primary);
+  font-weight: 600;
+}
+
+.notifications-page .notifications-chat-list-item__meta {
+  color: var(--bo-color-text-muted);
+}
+
+.notifications-page .notifications-chat-unread {
+  min-height: 1.5rem;
+  padding-inline: 0.45rem;
+  font-size: 0.72rem;
+}
+
+.notifications-page .notifications-chat-messages {
+  border-color: var(--notifications-card-border);
+  background: var(--notifications-card-bg);
+  background-image: none;
+  box-shadow: none;
+}
+
+.notifications-page .notifications-chat-actions {
+  gap: 0.55rem;
+}
+
+@media (max-width: 767px) {
+  .notifications-page .dashboard-main-inner {
+    gap: 1.75rem;
+  }
+
+  .notifications-page .notifications-hero-shell,
+  .notifications-page .notifications-search-shell,
+  .notifications-page .notifications-compose-shell,
+  .notifications-page .notifications-logs-shell,
+  .notifications-page .notifications-templates-shell,
+  .notifications-page .notifications-telegram-shell,
+  .notifications-page .notifications-diagnostics-shell,
+  .notifications-page .notifications-chat-shell {
+    padding: 1rem;
+  }
+
+  .notifications-page .notifications-filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .notifications-page .notifications-table {
+    min-width: 58rem;
+  }
+}

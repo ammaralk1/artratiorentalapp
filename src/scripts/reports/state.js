@@ -95,7 +95,13 @@ export const reportsState = {
   },
   pagination: {
     page: 1,
-    pageSize: 50,
+    pageSize: 10,
+  },
+  sectionPagination: {
+    forecast: { page: 1, pageSize: 10 },
+    crew: { page: 1, pageSize: 10 },
+    equipmentCosts: { page: 1, pageSize: 10 },
+    maintenance: { page: 1, pageSize: 10 },
   },
 };
 

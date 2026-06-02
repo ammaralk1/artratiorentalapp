@@ -289,8 +289,8 @@ class ProjectRepository extends BaseRepository
         }
 
         $ins = $this->pdo->prepare(
-            'INSERT INTO project_expenses (project_id, label, amount, sale_price, note)
-             VALUES (:project_id, :label, :amount, :sale_price, :note)'
+            'INSERT INTO project_expenses (project_id, label, amount, sale_price, service_days, note)
+             VALUES (:project_id, :label, :amount, :sale_price, :service_days, :note)'
         );
 
         foreach ($expenses as $exp) {
@@ -299,6 +299,7 @@ class ProjectRepository extends BaseRepository
                 'label'      => $exp['label'] ?? '',
                 'amount'     => $exp['amount'] ?? 0,
                 'sale_price' => $exp['sale_price'] ?? $exp['salePrice'] ?? 0,
+                'service_days' => $exp['service_days'] ?? $exp['days'] ?? 1,
                 'note'       => $exp['note'] ?? $exp['notes'] ?? null,
             ]);
         }
@@ -380,7 +381,7 @@ class ProjectRepository extends BaseRepository
     public function findExpenses(int $projectId): array
     {
         $statement = $this->pdo->prepare(
-            'SELECT id, label, amount, sale_price, note
+            'SELECT id, label, amount, sale_price, service_days, note
              FROM project_expenses
              WHERE project_id = :project_id'
         );

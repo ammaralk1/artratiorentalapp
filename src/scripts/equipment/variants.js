@@ -38,7 +38,7 @@ export function clearEquipmentVariants() {
   if (section) section.hidden = true;
   if (tableBody) {
     const emptyMessage = t('equipment.modal.variants.empty', 'لا توجد قطع مرتبطة أخرى.');
-    tableBody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">${escapeHtml(emptyMessage)}</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="4" class="text-center projects-table-empty-row">${escapeHtml(emptyMessage)}</td></tr>`;
   }
   if (countEl) countEl.textContent = '0';
 }

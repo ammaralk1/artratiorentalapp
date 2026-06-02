@@ -352,7 +352,7 @@ export function derivePackagesFromItemsList(items = []) {
           ?? normalizeNumbers(String(normalizedId)),
         name: base.package_name ?? base.packageName ?? base.desc ?? base.name ?? `Package ${normalizedId}`,
         quantity: toPositiveInt(base.package_quantity ?? base.packageQty ?? 1, { fallback: 1, max: 9_999 }),
-        unit_price: toNumber(base.package_price ?? base.packagePrice ?? base.price ?? 0),
+        unit_price: toNumber(base.package_price ?? base.packagePrice ?? base.unit_price ?? base.unitPrice ?? base.price ?? 0),
         unit_cost: unitCost,
         unitCost,
         cost: unitCost,
@@ -508,7 +508,13 @@ export function normalizeReservationPackageItemsFromEntry(entry = {}, fallbackPa
 }
 
 export function derivePackageUnitPrice(entry = {}, packageItems = [], quantity = 1) {
-  // 1) Prefer the canonical package price from Equipment > Packages
+  // Stored reservation/project package prices are user-editable and must win over catalog defaults.
+  const explicitUnit = entry.package_price ?? entry.packagePrice ?? entry.unit_price ?? entry.unitPrice ?? entry.price;
+  if (Number.isFinite(Number(explicitUnit)) && Number(explicitUnit) > 0) {
+    return toNumber(explicitUnit);
+  }
+
+  // 2) Fall back to the canonical package price from Equipment > Packages
   try {
     const candidateId = normalizePackageIdentifier(
       entry.packageId ?? entry.package_id ?? entry.id ?? entry.package_code ?? entry.packageCode
@@ -523,12 +529,6 @@ export function derivePackageUnitPrice(entry = {}, packageItems = [], quantity =
       }
     }
   } catch (_) { /* ignore lookup errors */ }
-
-  // 2) Fallback to explicit package price fields on the entry itself
-  const explicitUnit = entry.package_price ?? entry.packagePrice ?? entry.unit_price ?? entry.unitPrice ?? entry.price;
-  if (Number.isFinite(Number(explicitUnit)) && Number(explicitUnit) > 0) {
-    return toNumber(explicitUnit);
-  }
 
   // 3) Fallback to known total fields (convert to unit by quantity if sensible)
   const totalCandidate = entry.total_price ?? entry.totalPrice ?? entry.total ?? entry.amount ?? null;
@@ -555,10 +555,11 @@ export function mergePackageRecords(base, incoming) {
 
   ['name', 'desc', 'barcode', 'image'].forEach(assignIfMissing);
 
-  if ((!Number.isFinite(Number(merged.unit_price)) || merged.unit_price === 0) && Number.isFinite(Number(incoming.unit_price))) {
-    merged.unit_price = incoming.unit_price;
-    merged.unitPrice = incoming.unitPrice;
-    merged.price = incoming.price;
+  const incomingPrice = toNumber(incoming.unit_price ?? incoming.unitPrice ?? incoming.price);
+  if (Number.isFinite(incomingPrice) && incomingPrice > 0) {
+    merged.unit_price = incomingPrice;
+    merged.unitPrice = incomingPrice;
+    merged.price = incomingPrice;
   }
 
   const mergedCostCandidate = toNumber(

@@ -9,6 +9,9 @@ import { resolveReservationProjectState } from './reservationsShared.js';
 import { calculatePaymentProgress, determinePaymentStatus, calculateDraftFinancialBreakdown } from './reservationsSummary.js';
 import { normalizeNumbers } from './utils.js';
 import { resolveProjectTotals } from './projects/view.js';
+import mountReservationModalsIfNeeded from './reservations/modals.js';
+import { openReservationEditor, deleteReservation } from './reservations/controller/actions.js';
+import { exportReservationPdf, exportReservationChecklistPdf } from './reservations/reservationPdf.js';
 
 const CALENDAR_FETCH_PARAMS = { limit: 200 };
 
@@ -193,6 +196,45 @@ function getEventClassNames({ paidStatus, confirmed, completed, cancelled }) {
   return classNames;
 }
 
+function buildCalendarEventMarkup({
+  timeLabel = '',
+  idLabel = '',
+  customer = '',
+  confirmed = false,
+  completed = false,
+  cancelled = false,
+  paidStatus = 'unpaid',
+}) {
+  const chip = (cls, text) => `<span class="calendar-chip ${cls}">${escapeHtml(text)}</span>`;
+  const confirmedLabel = confirmed ? t('calendar.badges.confirmed', 'مؤكد') : t('calendar.badges.pending', 'غير مؤكد');
+  const paidLabel = paidStatus === 'paid'
+    ? t('calendar.badges.paid', 'مدفوع')
+    : paidStatus === 'partial'
+      ? t('calendar.badges.partial', 'مدفوع جزئياً', 'Partially paid')
+      : t('calendar.badges.unpaid', 'غير مدفوع');
+  let chips = [];
+  if (cancelled) {
+    chips = [chip('status-cancelled', t('calendar.badges.cancelled', 'ملغي'))];
+  } else {
+    const paidClass = paidStatus === 'paid' ? 'status-paid' : paidStatus === 'partial' ? 'status-partial' : 'status-unpaid';
+    chips = [chip(confirmed ? 'status-confirmed' : 'status-pending', confirmedLabel), chip(paidClass, paidLabel)];
+    if (completed) chips.push(chip('status-completed', t('calendar.badges.completed', 'مغلق')));
+  }
+
+  return `
+    <div class="calendar-event-wrapper">
+      <div class="calendar-event-card">
+        <div class="calendar-event-card__head">
+          <span class="calendar-event-card__time">${escapeHtml(timeLabel || '')}</span>
+          <span class="calendar-event-card__id">${escapeHtml(idLabel)}</span>
+        </div>
+        <div class="calendar-event-card__customer">${escapeHtml(customer)}</div>
+        <div class="calendar-event-card__chips">${chips.join('')}</div>
+      </div>
+    </div>
+  `;
+}
+
 // Render a styled event card for FullCalendar
 function buildEventContent(arg) {
   try {
@@ -203,35 +245,17 @@ function buildEventContent(arg) {
     const customer = props?.customerName || t('calendar.labels.unknownCustomer', 'غير معروف');
     const confirmed = props?.confirmed === true || props?.confirmed === 'true';
     const paidStatus = typeof props?.paidStatus === 'string' ? props.paidStatus : (props?.paid === true || props?.paid === 'paid') ? 'paid' : 'unpaid';
-    const paid = paidStatus === 'paid';
     const completed = props?.completed === true || props?.completed === 'true';
-    const chip = (cls, text) => `<span class="calendar-chip ${cls}">${escapeHtml(text)}</span>`;
-    const confirmedLabel = confirmed ? t('calendar.badges.confirmed', 'مؤكد') : t('calendar.badges.pending', 'غير مؤكد');
-    const paidLabel = paidStatus === 'paid'
-      ? t('calendar.badges.paid', 'مدفوع')
-      : paidStatus === 'partial'
-        ? t('calendar.badges.partial', 'مدفوع جزئياً', 'Partially paid')
-        : t('calendar.badges.unpaid', 'غير مدفوع');
     const cancelled = props?.cancelled === true || props?.cancelled === 'true';
-    let chips = [];
-    if (cancelled) {
-      chips = [chip('status-cancelled', t('calendar.badges.cancelled', 'ملغي'))];
-    } else {
-      const paidClass = paidStatus === 'paid' ? 'status-paid' : paidStatus === 'partial' ? 'status-partial' : 'status-unpaid';
-      chips = [chip(confirmed ? 'status-confirmed' : 'status-pending', confirmedLabel), chip(paidClass, paidLabel)];
-      if (completed) chips.push(chip('status-completed', t('calendar.badges.completed', 'مغلق')));
-    }
-    const html = `
-      <div class="calendar-event-wrapper">
-        <div class="calendar-event-card">
-          <div class="calendar-event-card__head">
-            <span class="calendar-event-card__time">${escapeHtml(timeLabel || '')}</span>
-            <span class="calendar-event-card__id">${escapeHtml(idLabel)}</span>
-          </div>
-          <div class="calendar-event-card__customer">${escapeHtml(customer)}</div>
-          <div class="calendar-event-card__chips">${chips.join('')}</div>
-        </div>
-      </div>`;
+    const html = buildCalendarEventMarkup({
+      timeLabel,
+      idLabel,
+      customer,
+      confirmed,
+      completed,
+      cancelled,
+      paidStatus,
+    });
     return { html };
   } catch (_e) {
     return { html: '' };
@@ -240,13 +264,28 @@ function buildEventContent(arg) {
 
 function renderCalendarLegend() {
   const legendEl = document.getElementById('calendar-legend');
+  const legendShell = legendEl?.closest('.calendar-legend-shell');
   if (!legendEl) return;
   const language = getCurrentLanguage?.() === 'en' ? 'en' : 'ar';
-  legendEl.innerHTML = CALENDAR_LEGEND_ITEMS.map(({ key, chipClass }) => {
+  const legendHtml = CALENDAR_LEGEND_ITEMS.map(({ key, chipClass }) => {
     const fallback = language === 'en' ? LEGEND_FALLBACK_EN[key] ?? key : LEGEND_FALLBACK_AR[key] ?? key;
     const label = escapeHtml(t(`calendar.legend.${key}`, fallback));
     return `<span class="calendar-legend__item" role="listitem"><span class="${chipClass} calendar-legend__chip">${label}</span></span>`;
   }).join('');
+  legendEl.innerHTML = legendHtml;
+  if (legendShell) {
+    legendShell.hidden = legendHtml.trim().length === 0;
+  }
+}
+
+function updateCalendarSummary(events = []) {
+  const badge = document.getElementById('calendar-summary-badge');
+  if (!badge) return;
+  const count = Array.isArray(events) ? events.length : 0;
+  const isEnglish = getCurrentLanguage?.() === 'en';
+  badge.textContent = isEnglish
+    ? `${count} ${count === 1 ? 'reservation' : 'reservations'}`
+    : `${count} ${count === 1 ? 'حجز' : 'حجوزات'}`;
 }
 
 function decorateCalendarControls() {
@@ -282,22 +321,7 @@ function setCalendarStatus({ loading = false, error = '', empty = false } = {}) 
   panelEl.classList.toggle('is-empty', isEmpty);
 
   if (!statusEl.dataset.initialized) {
-    statusEl.classList.add(
-      'calendar-status-card',
-      'shadow-2xl',
-      'bg-base-100/95',
-      'border',
-      'border-base-200/80',
-      'rounded-3xl',
-      'text-base-content',
-      'px-8',
-      'py-8',
-      'flex',
-      'flex-col',
-      'items-center',
-      'justify-center',
-      'gap-4'
-    );
+    statusEl.classList.add('calendar-status-card');
     statusEl.dataset.initialized = 'true';
   }
 
@@ -596,10 +620,6 @@ function getWidthBucket(w) {
 
 function getResponsiveCalendarView() {
   if (typeof window === 'undefined') return 'month';
-  const w = window.innerWidth || 1024;
-  const bucket = getWidthBucket(w);
-  if (bucket === 'xs') return 'day';
-  if (bucket === 'sm') return 'week';
   return 'month';
 }
 
@@ -663,6 +683,7 @@ function ensureThemeListener() {
 
 
 function showReservationModal(reservation) {
+  mountReservationModalsIfNeeded();
   const container = document.getElementById('calendar-reservation-details');
   if (!container) {
     alert(t('calendar.alerts.cannotShowDetails', 'لا يمكن عرض تفاصيل الحجز'));
@@ -677,59 +698,10 @@ function showReservationModal(reservation) {
     technicians: storedTechnicians = []
   } = dataStore;
 
-  const baseReservation = reservation?.raw && typeof reservation.raw === 'object'
-    ? { ...reservation.raw, ...reservation }
-    : { ...reservation };
-
-  const identifierCandidates = [
-    baseReservation.id,
-    baseReservation.reservationId,
-    baseReservation.reservation_id,
-    baseReservation.reservationCode,
-    baseReservation.reservation_code
-  ]
-    .map((value) => (value == null ? '' : String(value)))
-    .filter((value) => value.length > 0);
-
-  let matchedIndex = -1;
-  let storedReservation = null;
-
-  if (identifierCandidates.length > 0) {
-    matchedIndex = storedReservations.findIndex((entry) => {
-      const entryIds = [
-        entry?.id,
-        entry?.reservationId,
-        entry?.reservation_id,
-        entry?.reservationCode,
-        entry?.reservation_code
-      ]
-        .map((value) => (value == null ? '' : String(value)))
-        .filter((value) => value.length > 0);
-
-      if (entryIds.length === 0) return false;
-      return entryIds.some((value) => identifierCandidates.includes(value));
-    });
-
-    if (matchedIndex >= 0) {
-      storedReservation = storedReservations[matchedIndex];
-    }
-  }
-
-  let mergedReservation;
-  if (storedReservation) {
-    mergedReservation = {
-      ...baseReservation,
-      ...storedReservation
-    };
-    if (Array.isArray(storedReservation.items) && storedReservation.items.length) {
-      mergedReservation.items = storedReservation.items;
-    }
-    if (Array.isArray(storedReservation.packages) && storedReservation.packages.length) {
-      mergedReservation.packages = storedReservation.packages;
-    }
-  } else {
-    mergedReservation = baseReservation;
-  }
+  const {
+    mergedReservation,
+    matchedIndex,
+  } = resolveCalendarReservationContext(reservation, storedReservations);
 
   const projectId = mergedReservation.projectId ?? mergedReservation.project_id ?? null;
   const project = projectId != null
@@ -769,45 +741,138 @@ function showReservationModal(reservation) {
     return;
   }
 
-  container.innerHTML = detailsHtml;
-  container.classList.add('calendar-reservation-details');
+  const modalEl = document.getElementById('calendarReservationModal');
+  const modalApi = window.bootstrap?.Modal;
+  const hideCalendarModal = (onHidden = null) => {
+    if (!modalEl || !modalApi) return;
+    if (typeof onHidden === 'function') {
+      modalEl.addEventListener('hidden.bs.modal', () => {
+        onHidden();
+      }, { once: true });
+    }
+    modalApi.getOrCreateInstance(modalEl).hide();
+  };
 
-  // Initialize crew slider (if present)
-  try {
-    const slider = container.querySelector('[data-tech-slider]');
-    if (slider) {
-      const track = slider.querySelector('[data-slider-track]');
-      const prev = slider.querySelector('[data-slider-prev]');
-      const next = slider.querySelector('[data-slider-next]');
-      if (track && (prev || next)) {
-        const isRtl = document.documentElement.getAttribute('dir') === 'rtl' || document.body.getAttribute('dir') === 'rtl';
-        const getStep = () => {
-          const firstCard = track.querySelector('.reservation-technician-card');
-          const cardWidth = firstCard ? (firstCard.getBoundingClientRect().width || 220) : 220;
-          const gap = 12;
-          const visible = Math.max(1, Math.floor(track.clientWidth / (cardWidth + gap)));
-          return Math.max(cardWidth + gap, Math.floor(visible * (cardWidth + gap) * 0.9));
-        };
-        const updateButtons = () => {
-          const maxScroll = Math.max(0, track.scrollWidth - track.clientWidth - 2);
-          const atStart = track.scrollLeft <= 1;
-          const atEnd = track.scrollLeft >= maxScroll;
-          if (prev) prev.disabled = atStart;
-          if (next) next.disabled = atEnd;
-        };
-        const scrollByStep = (dir) => {
-          const delta = getStep() * dir;
-          const left = isRtl ? -delta : delta;
-          track.scrollBy({ left, behavior: 'smooth' });
-        };
-        prev?.addEventListener('click', () => scrollByStep(-1));
-        next?.addEventListener('click', () => scrollByStep(1));
-        track.addEventListener('scroll', updateButtons, { passive: true });
-        window.addEventListener('resize', updateButtons, { passive: true });
-        setTimeout(updateButtons, 0);
+  const hydrateCalendarReservationDetails = () => {
+    container.classList.add('calendar-reservation-details');
+
+    try {
+      const slider = container.querySelector('[data-tech-slider]');
+      if (slider) {
+        const track = slider.querySelector('[data-slider-track]');
+        const prev = slider.querySelector('[data-slider-prev]');
+        const next = slider.querySelector('[data-slider-next]');
+        if (track && (prev || next)) {
+          const isRtl = document.documentElement.getAttribute('dir') === 'rtl' || document.body.getAttribute('dir') === 'rtl';
+          const getStep = () => {
+            const firstCard = track.querySelector('.reservation-technician-card');
+            const cardWidth = firstCard ? (firstCard.getBoundingClientRect().width || 220) : 220;
+            const gap = 12;
+            const visible = Math.max(1, Math.floor(track.clientWidth / (cardWidth + gap)));
+            return Math.max(cardWidth + gap, Math.floor(visible * (cardWidth + gap) * 0.9));
+          };
+          const updateButtons = () => {
+            const maxScroll = Math.max(0, track.scrollWidth - track.clientWidth - 2);
+            const atStart = track.scrollLeft <= 1;
+            const atEnd = track.scrollLeft >= maxScroll;
+            if (prev) prev.disabled = atStart;
+            if (next) next.disabled = atEnd;
+          };
+          const scrollByStep = (dir) => {
+            const delta = getStep() * dir;
+            const left = isRtl ? -delta : delta;
+            track.scrollBy({ left, behavior: 'smooth' });
+          };
+          prev.onclick = () => scrollByStep(-1);
+          next.onclick = () => scrollByStep(1);
+          track.addEventListener('scroll', updateButtons, { passive: true });
+          window.addEventListener('resize', updateButtons, { passive: true });
+          setTimeout(updateButtons, 0);
+        }
+      }
+    } catch (_e) { /* optional */ }
+
+    container.querySelectorAll('.reservation-qty-btn, .reservation-remove-button').forEach((button) => {
+      if (!(button instanceof HTMLElement)) return;
+      button.setAttribute('disabled', 'true');
+      button.setAttribute('aria-disabled', 'true');
+      button.setAttribute('tabindex', '-1');
+    });
+
+    const openProjectBtn = container.querySelector('[data-action="open-project"]');
+    if (openProjectBtn) {
+      if (project) {
+        openProjectBtn.addEventListener('click', () => {
+          const projectIdValue = project?.id != null ? String(project.id) : '';
+          const target = projectIdValue
+            ? `projects.html?project=${encodeURIComponent(projectIdValue)}`
+            : 'projects.html';
+          window.location.href = target;
+        });
+      } else if (openProjectBtn instanceof HTMLElement) {
+        openProjectBtn.setAttribute('disabled', 'true');
       }
     }
-  } catch (_e) { /* optional */ }
+
+    const editBtn = container.querySelector('#reservation-details-edit-btn');
+    if (editBtn instanceof HTMLButtonElement) {
+      if (matchedIndex >= 0) {
+        editBtn.onclick = () => {
+          hideCalendarModal(() => {
+            openReservationEditor(matchedIndex, mergedReservation);
+          });
+        };
+      } else {
+        editBtn.disabled = true;
+        editBtn.setAttribute('aria-disabled', 'true');
+      }
+    }
+
+    const deleteBtn = container.querySelector('#reservation-details-delete-btn');
+    if (deleteBtn instanceof HTMLButtonElement) {
+      if (matchedIndex >= 0) {
+        deleteBtn.onclick = () => {
+          hideCalendarModal(() => {
+            deleteReservation(matchedIndex);
+          });
+        };
+      } else {
+        deleteBtn.disabled = true;
+        deleteBtn.setAttribute('aria-disabled', 'true');
+      }
+    }
+
+    const exportBtn = container.querySelector('#reservation-details-export-btn');
+    if (exportBtn instanceof HTMLButtonElement) {
+      exportBtn.onclick = async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        exportBtn.blur();
+        try {
+          await exportReservationPdf({ reservation: mergedReservation, customer, project });
+        } catch (error) {
+          console.error('❌ [calendar] export reservation pdf failed', error);
+        }
+      };
+    }
+
+    const checklistBtn = container.querySelector('#reservation-details-checklist-btn');
+    if (checklistBtn instanceof HTMLButtonElement) {
+      checklistBtn.onclick = async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        checklistBtn.blur();
+        try {
+          await exportReservationChecklistPdf({ reservation: mergedReservation, customer, project });
+        } catch (error) {
+          console.error('❌ [calendar] export reservation checklist failed', error);
+        }
+      };
+    }
+  };
+
+  container.innerHTML = detailsHtml;
+  hydrateCalendarReservationDetails();
 
   // Refresh positions cache from API if needed, then re-render details to ensure position labels are accurate
   try {
@@ -822,79 +887,78 @@ function showReservationModal(reservation) {
           project
         );
         container.innerHTML = refreshedHtml;
-        container.classList.add('calendar-reservation-details');
-        try {
-          const slider = container.querySelector('[data-tech-slider]');
-          if (slider) {
-            const track = slider.querySelector('[data-slider-track]');
-            const prev = slider.querySelector('[data-slider-prev]');
-            const next = slider.querySelector('[data-slider-next]');
-            if (track && (prev || next)) {
-              const isRtl = document.documentElement.getAttribute('dir') === 'rtl' || document.body.getAttribute('dir') === 'rtl';
-              const getStep = () => {
-                const firstCard = track.querySelector('.reservation-technician-card');
-                const cardWidth = firstCard ? (firstCard.getBoundingClientRect().width || 220) : 220;
-                const gap = 12;
-                const visible = Math.max(1, Math.floor(track.clientWidth / (cardWidth + gap)));
-                return Math.max(cardWidth + gap, Math.floor(visible * (cardWidth + gap) * 0.9));
-              };
-              const updateButtons = () => {
-                const maxScroll = Math.max(0, track.scrollWidth - track.clientWidth - 2);
-                const atStart = track.scrollLeft <= 1;
-                const atEnd = track.scrollLeft >= maxScroll;
-                if (prev) prev.disabled = atStart;
-                if (next) next.disabled = atEnd;
-              };
-              const scrollByStep = (dir) => {
-                const delta = getStep() * dir;
-                const left = isRtl ? -delta : delta;
-                track.scrollBy({ left, behavior: 'smooth' });
-              };
-              prev?.addEventListener('click', () => scrollByStep(-1));
-              next?.addEventListener('click', () => scrollByStep(1));
-              track.addEventListener('scroll', updateButtons, { passive: true });
-              window.addEventListener('resize', updateButtons, { passive: true });
-              setTimeout(updateButtons, 0);
-            }
-          }
-        } catch (_e2) { /* ignore */ }
+        hydrateCalendarReservationDetails();
       } catch (_e) { /* ignore */ }
     }).catch(() => { /* ignore */ });
   } catch (_e) {
     /* non-fatal */
   }
 
-  const actionsSection = container.querySelector('.reservation-modal-actions');
-  actionsSection?.remove();
-
-  container.querySelectorAll('.reservation-qty-btn, .reservation-remove-button').forEach((button) => {
-    if (!(button instanceof HTMLElement)) return;
-    button.setAttribute('disabled', 'true');
-    button.setAttribute('aria-disabled', 'true');
-    button.setAttribute('tabindex', '-1');
-  });
-
-  const openProjectBtn = container.querySelector('[data-action="open-project"]');
-  if (openProjectBtn) {
-    if (project) {
-      openProjectBtn.addEventListener('click', () => {
-        const projectIdValue = project?.id != null ? String(project.id) : '';
-        const target = projectIdValue
-          ? `projects.html?project=${encodeURIComponent(projectIdValue)}`
-          : 'projects.html';
-        window.location.href = target;
-      });
-    } else if (openProjectBtn instanceof HTMLElement) {
-      openProjectBtn.setAttribute('disabled', 'true');
-    }
-  }
-
-  const modalEl = document.getElementById('calendarReservationModal');
-  if (modalEl && window.bootstrap?.Modal) {
-    window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+  if (modalEl && modalApi) {
+    modalApi.getOrCreateInstance(modalEl).show();
   } else {
     alert(t('calendar.alerts.cannotOpenModal', 'لا يمكن فتح نافذة التفاصيل'));
   }
+}
+
+function resolveCalendarReservationContext(reservation, storedReservations = []) {
+  const baseReservation = reservation?.raw && typeof reservation.raw === 'object'
+    ? { ...reservation.raw, ...reservation }
+    : { ...reservation };
+
+  const identifierCandidates = collectCalendarReservationIdentifiers(baseReservation);
+  const matchedIndex = findStoredCalendarReservationIndex(storedReservations, identifierCandidates);
+  const storedReservation = matchedIndex >= 0 ? storedReservations[matchedIndex] : null;
+
+  if (!storedReservation) {
+    return {
+      baseReservation,
+      mergedReservation: baseReservation,
+      matchedIndex: -1,
+      storedReservation: null,
+    };
+  }
+
+  const mergedReservation = {
+    ...baseReservation,
+    ...storedReservation,
+  };
+
+  if (Array.isArray(storedReservation.items) && storedReservation.items.length) {
+    mergedReservation.items = storedReservation.items;
+  }
+  if (Array.isArray(storedReservation.packages) && storedReservation.packages.length) {
+    mergedReservation.packages = storedReservation.packages;
+  }
+
+  return {
+    baseReservation,
+    mergedReservation,
+    matchedIndex,
+    storedReservation,
+  };
+}
+
+function collectCalendarReservationIdentifiers(reservation = {}) {
+  return [
+    reservation.id,
+    reservation.reservationId,
+    reservation.reservation_id,
+    reservation.reservationCode,
+    reservation.reservation_code,
+  ]
+    .map((value) => (value == null ? '' : String(value)))
+    .filter((value) => value.length > 0);
+}
+
+function findStoredCalendarReservationIndex(storedReservations = [], identifierCandidates = []) {
+  if (!identifierCandidates.length) return -1;
+
+  return storedReservations.findIndex((entry) => {
+    const entryIds = collectCalendarReservationIdentifiers(entry);
+    if (entryIds.length === 0) return false;
+    return entryIds.some((value) => identifierCandidates.includes(value));
+  });
 }
 
 
@@ -904,6 +968,7 @@ export function renderCalendar() {
   ensureCalendarListeners();
   ensureResponsiveListener();
   ensureThemeListener();
+  renderCalendarLegend();
 
   const { calendarEl } = getCalendarElements();
   if (!calendarEl) return;
@@ -966,6 +1031,7 @@ export function renderCalendar() {
       }
       applyResponsiveCalendarView();
       dispatchCalendarUpdated(events);
+      updateCalendarSummary(events);
       setCalendarStatus({ loading: false, error: '', empty: events.length === 0 });
     })();
     return;
@@ -1010,33 +1076,22 @@ export function renderCalendar() {
           const paidStatus = typeof schedule?.raw?.paidStatus === 'string'
             ? schedule.raw.paidStatus
             : (schedule?.raw?.paid === true || schedule?.raw?.paid === 'paid') ? 'paid' : 'unpaid';
-          const paid = paidStatus === 'paid';
           const confirmed = schedule?.raw?.confirmed === true || schedule?.raw?.confirmed === 'true';
           const completed = schedule?.raw?.completed === true || schedule?.raw?.completed === 'true';
+          const cancelled = schedule?.raw?.cancelled === true || schedule?.raw?.cancelled === 'true';
           const unknownCustomer = t('calendar.labels.unknownCustomer', 'غير معروف');
           const timeLabel = formatEventTimeRange(schedule.start?.toString?.() || schedule.start, schedule.end?.toString?.() || schedule.end, schedule.isAllDay);
           const idLabel = schedule?.raw?.reservationId ? String(schedule.raw.reservationId) : t('common.placeholder.empty', '—');
           const customer = schedule?.raw?.customerName || unknownCustomer;
-          const chip = (cls, text) => `<span class="badge ${cls} badge-sm">${escapeHtml(text)}</span>`;
-          const confirmedLabel = confirmed ? t('calendar.badges.confirmed', 'مؤكد') : t('calendar.badges.pending', 'غير مؤكد');
-          const paidLabel = paidStatus === 'paid'
-            ? t('calendar.badges.paid', 'مدفوع')
-            : paidStatus === 'partial'
-              ? t('calendar.badges.partial', 'مدفوع جزئياً', 'Partially paid')
-              : t('calendar.badges.unpaid', 'غير مدفوع');
-          const paidBadgeClass = paidStatus === 'paid' ? 'badge-info' : paidStatus === 'partial' ? 'badge-warning' : 'badge-error';
-          const chips = [chip(confirmed ? 'badge-success' : 'badge-warning', confirmedLabel), chip(paidBadgeClass, paidLabel)];
-          if (completed) chips.push(chip('badge-neutral', t('calendar.badges.completed', 'مغلق')));
-          return `
-            <div class="card bg-base-100/90 border border-base-200 shadow-xs rounded-xl p-2">
-              <div class="flex items-baseline justify-between text-[0.8rem]">
-                <span class="font-bold">${escapeHtml(timeLabel || '')}</span>
-                <span class="font-semibold">${escapeHtml(idLabel)}</span>
-              </div>
-              <div class="mt-1 font-semibold text-sm truncate">${escapeHtml(customer)}</div>
-              <div class="mt-1 flex gap-1 flex-wrap">${chips.join('')}</div>
-            </div>
-          `;
+          return buildCalendarEventMarkup({
+            timeLabel,
+            idLabel,
+            customer,
+            confirmed,
+            completed,
+            cancelled,
+            paidStatus,
+          });
         },
       },
     });
@@ -1067,6 +1122,7 @@ export function renderCalendar() {
 
     applyResponsiveCalendarView();
     dispatchCalendarUpdated(events);
+    updateCalendarSummary(events);
     setCalendarStatus({ loading: false, error: '', empty: events.length === 0 });
     setTimeout(() => {
       applyResponsiveCalendarView();
@@ -1117,10 +1173,5 @@ function buildCalendarSchedules(reservations = []) {
   }).filter(Boolean);
 }
 function getResponsiveFcView() {
-  if (typeof window === 'undefined') return 'dayGridMonth';
-  const w = window.innerWidth || 1024;
-  const bucket = getWidthBucket(w);
-  if (bucket === 'xs') return 'timeGridDay';
-  if (bucket === 'sm') return 'timeGridWeek';
   return 'dayGridMonth';
 }

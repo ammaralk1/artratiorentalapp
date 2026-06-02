@@ -3,6 +3,7 @@ import { apiRequest, ApiError } from '../../apiClient.js';
 import { parsePriceValue } from '../../reservationsShared.js';
 import { calculateDraftFinancialBreakdown } from '../../reservationsSummary.js';
 import { debugLogPackages } from './utils.js';
+import { isLocalDashboardFixtureEnabled } from '../../fixtureRuntime.js';
 import { persistReservationPackagesToCache, persistReservationItemCostsToCache, persistReservationCrewToCache, hasRichCrewData, syncReservationItemCostCache } from './cache.js';
 import { toInternalReservation, mapLegacyReservation, mapReservationFromApi, buildReservationPayload, applyPayloadPackages, mergeItemCostsFromPayload, normalizeCrewAssignmentEntry, setMappingStateGetter, mapReservationItem } from './mapping.js';
 import { normalizePaymentHistoryCollection } from './payment.js';
@@ -57,6 +58,12 @@ export function setReservationsState(reservations) {
 }
 
 export async function refreshReservationsFromApi(params = {}) {
+  if (isLocalDashboardFixtureEnabled()) {
+    const snapshot = loadData();
+    const localReservations = Array.isArray(snapshot?.reservations) ? snapshot.reservations : [];
+    return setReservationsState(localReservations);
+  }
+
   const searchParams = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {

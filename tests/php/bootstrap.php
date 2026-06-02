@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../../vendor/autoload.php';
+require_once __DIR__ . '/../../backend/services/ProjectManagedReservationService.php';
+require_once __DIR__ . '/../../backend/services/ProjectReservationPackageRepairService.php';
 
 // Global stub so Router tests work without a full bootstrap stack.
 // Will be overridden if the real bootstrap is loaded.

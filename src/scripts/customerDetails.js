@@ -4,13 +4,16 @@ import { loadData } from "./storage.js";
 import { t, getCurrentLanguage } from "./language.js";
 import {
   determineProjectStatus,
-  calculateProjectExpenses
+  calculateProjectExpenses,
+  escapeHtml
 } from "./projectsCommon.js";
 import {
   buildProjectFocusCard,
+  buildProjectFocusGroups,
   buildProjectDetailsMarkup,
   buildProjectEditMarkup,
   buildProjectEditExpensesMarkup,
+  handleProjectFocusGroupPaginationClick,
   syncProjectReservationsPayment,
   getProjectIdentifier,
   PROJECT_TAX_RATE,
@@ -42,6 +45,7 @@ let lastCustomerFilters = {};
 let customerProjectsContext = {
   initialized: false,
   currentId: null,
+  focusSectionPagination: {},
   modal: {
     el: null,
     body: null
@@ -363,7 +367,18 @@ function attachCustomerProjectCardEvents() {
   container.dataset.projectModalListenerAttached = 'true';
 }
 
+function renderProjectGridEmptyCopy(message) {
+  return `<p class="linked-records-empty-copy project-card-grid__empty-line">${escapeHtml(message)}</p>`;
+}
+
 function handleCustomerProjectCardClick(event) {
+  if (handleProjectFocusGroupPaginationClick(event, {
+    paginationState: customerProjectsContext.focusSectionPagination,
+    onChange: () => updateCustomerProjects()
+  })) {
+    return;
+  }
+
   const card = event.target.closest('.project-focus-card');
   if (!card) return;
   const projectId = card.dataset.projectId ? String(card.dataset.projectId) : '';
@@ -385,14 +400,14 @@ function ensureProjectDetailsModal() {
     // Resilient fallback: create the modal structure if it doesn't exist
     const wrapper = document.createElement('div');
     wrapper.innerHTML = `
-      <div class="modal fade" id="projectDetailsModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-          <div class="modal-content">
-            <div class="modal-header">
+      <div class="modal fade customer-edit-modal project-shell-modal" id="projectDetailsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable customer-edit-modal__dialog project-shell-modal__dialog">
+          <div class="ui-modal__content modal-content customer-edit-modal__content">
+            <div class="ui-modal__header modal-header customer-edit-modal__header">
               <h5 class="modal-title">${t('projects.details.modalTitle', 'تفاصيل المشروع')}</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body" id="project-details-body"></div>
+            <div class="ui-modal__body modal-body customer-edit-modal__body" id="project-details-body"></div>
           </div>
         </div>
       </div>`;
@@ -448,11 +463,11 @@ function updateCustomerProjects() {
   const endDateObj = parseInputDate(endDate, { endOfDay: true });
 
   const {
-    projects = [],
     technicians = [],
-    reservations = [],
     customers = []
   } = loadData();
+  const projects = Array.isArray(getProjectsState()) ? getProjectsState() : [];
+  const reservations = Array.isArray(getReservationsState()) ? getReservationsState() : [];
   const techniciansMap = new Map(
     technicians.map((tech) => [String(tech.id), tech])
   );
@@ -500,13 +515,21 @@ function updateCustomerProjects() {
   });
 
   if (!filtered.length) {
-    const emptyMessage = t('customerProjects.empty', container.dataset.empty || 'لا توجد مشاريع مرتبطة بهذا العميل.');
-    container.innerHTML = `<div class="project-card-grid__item project-card-grid__item--full"><div class="alert alert-info text-center mb-0">${emptyMessage}</div></div>`;
+    const hasActiveFilters = Boolean(searchTerm || statusFilter || startDate || endDate || quickRange);
+    const messageKey = hasActiveFilters && relevant.length > 0
+      ? 'customerProjects.noResults'
+      : 'customerProjects.empty';
+    const fallbackMessage = messageKey === 'customerProjects.noResults'
+      ? '🔍 لا توجد مشاريع مطابقة للبحث.'
+      : container.dataset.empty || '⚠️ لا توجد مشاريع مرتبطة بهذا العميل.';
+    const emptyMessage = t(messageKey, fallbackMessage);
+    container.innerHTML = renderProjectGridEmptyCopy(emptyMessage);
     return;
   }
 
-  container.innerHTML = filtered
-    .map((project) => {
+  container.innerHTML = buildProjectFocusGroups(filtered, {
+    paginationState: customerProjectsContext.focusSectionPagination,
+    renderCard: (project) => {
       const projectKey = getProjectIdentifier(project);
       const linkedReservations = projectKey ? reservationsByProject.get(projectKey) || [] : [];
       return buildProjectFocusCard(project, {
@@ -514,8 +537,8 @@ function updateCustomerProjects() {
         techniciansMap,
         reservations: linkedReservations
       });
-    })
-    .join('');
+    }
+  });
 
   // Attach direct click listeners to cards as a safety in addition to container delegation
   container.querySelectorAll('.project-focus-card').forEach((card) => {
@@ -572,20 +595,14 @@ function openCustomerProjectDetails(projectId) {
   if (!ensureProjectDetailsModal()) return;
 
   // Reuse the Projects page modal/details renderer for a 1:1 match
-  const { projects = [], reservations = [], customers = [] } = loadData();
+  const { customers = [] } = loadData();
+  const projects = Array.isArray(getProjectsState()) ? getProjectsState() : [];
+  const reservations = Array.isArray(getReservationsState()) ? getReservationsState() : [];
   const modal = customerProjectsContext.modal;
   projectsDom.detailsModalEl = modal.el;
   projectsDom.detailsBody = modal.body;
-  // Ensure Projects module state is populated even if service state is stale
-  const serviceProjects = getProjectsState();
-  const serviceReservations = getReservationsState();
-  const serviceHasProject = Array.isArray(serviceProjects)
-    ? serviceProjects.some((p) => String(p?.id) === normalizedId)
-    : false;
-  projectsState.projects = (Array.isArray(serviceProjects) && serviceProjects.length && serviceHasProject)
-    ? serviceProjects
-    : (projects || []);
-  projectsState.reservations = Array.isArray(serviceReservations) && serviceReservations.length ? serviceReservations : (reservations || []);
+  projectsState.projects = projects;
+  projectsState.reservations = reservations;
   projectsState.customers = customers || [];
   // Delegate to Projects implementation
   openProjectDetails(normalizedId);

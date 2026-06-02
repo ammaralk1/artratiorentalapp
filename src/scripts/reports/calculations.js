@@ -1,4 +1,4 @@
-import { normalizeText, resolveReservationProjectState, isReservationCompleted, parsePriceValue, sanitizePriceValue } from '../reservationsShared.js';
+import { normalizeText, resolveReservationProjectState, isReservationCompleted, parsePriceValue, sanitizePriceValue, hasLinkedProjectId, isTruthyReservationFlag } from '../reservationsShared.js';
 import { DEFAULT_COMPANY_SHARE_PERCENT, calculateDraftFinancialBreakdown } from '../reservationsSummary.js';
 import { normalizeNumbers } from '../utils.js';
 import reportsState from './state.js';
@@ -246,8 +246,9 @@ export function computeReservationFinancials(reservation) {
 }
 
 export function getProjectForReservation(reservation) {
-  if (!reservation?.projectId) return null;
-  return reportsState.data.projectsMap.get(String(reservation.projectId)) || null;
+  const projectId = reservation?.projectId ?? reservation?.project_id ?? null;
+  if (!hasLinkedProjectId(projectId)) return null;
+  return reportsState.data.projectsMap.get(String(projectId)) || null;
 }
 
 export function normalizeStatusValue(value = '') {
@@ -306,7 +307,7 @@ export function computeReportStatus(reservation) {
   }
 
   const projectStatusConfirms = projectStatusRaw === 'confirmed' || projectStatusRaw === 'in_progress';
-  const explicitProjectConfirmed = project?.confirmed === true || project?.confirmed === 'true';
+  const explicitProjectConfirmed = isTruthyReservationFlag(project?.confirmed);
   const baseReservationConfirmed = projectState.reservationConfirmed || baseStatusValue === 'confirmed';
 
   let confirmed = baseReservationConfirmed;
@@ -317,6 +318,12 @@ export function computeReportStatus(reservation) {
   // If reservation is cancelled, do NOT mark as confirmed and do NOT override label
   if (statusValue === 'cancelled') {
     confirmed = false;
+  }
+
+  // Closed/completed reservations should still participate in reservation reports
+  // as "closed confirmed" even when the raw confirmed flag was not persisted cleanly.
+  if (statusValue === 'completed') {
+    confirmed = true;
   }
 
   if (confirmed && statusValue !== 'completed' && statusValue !== 'cancelled') {
@@ -691,19 +698,22 @@ export function calculateMonthlyStatusStack(reservations) {
     const date = new Date(endAnchor.getFullYear(), endAnchor.getMonth() - i, 1);
     const y = date.getFullYear();
     const m = date.getMonth();
-    let confirmed = 0;
-    let cancelled = 0;
+    let active = 0;
+    let closed = 0;
     (reservations || []).forEach((res) => {
       const start = res?.start ? new Date(res.start) : null;
       if (!start || start.getFullYear() !== y || start.getMonth() !== m) return;
       const { statusValue, confirmed: conf } = computeReportStatus(res);
-      if (statusValue === 'cancelled') {
-        cancelled += 1;
-      } else if (conf || statusValue === 'confirmed' || statusValue === 'completed') {
-        confirmed += 1;
+      if (statusValue === 'cancelled' || !conf) {
+        return;
+      }
+      if (statusValue === 'completed') {
+        closed += 1;
+      } else if (statusValue === 'confirmed') {
+        active += 1;
       }
     });
-    rows.push({ label: getMonthLabel(date), confirmed, cancelled });
+    rows.push({ label: getMonthLabel(date), active, closed });
   }
   return rows;
 }
@@ -714,9 +724,7 @@ export function calculateStatusBreakdown(reservations) {
   if (cached) return cached;
   const counts = {
     confirmed: 0,
-    pending: 0,
     completed: 0,
-    cancelled: 0,
   };
 
   (reservations || []).forEach((reservation) => {
@@ -724,36 +732,24 @@ export function calculateStatusBreakdown(reservations) {
     if (statusValue === 'completed') {
       counts.completed += 1;
     } else if (statusValue === 'cancelled') {
-      counts.cancelled += 1;
+      return;
     } else if (statusValue === 'confirmed' || confirmed) {
       counts.confirmed += 1;
-    } else {
-      counts.pending += 1;
     }
   });
 
-  const total = Math.max(1, (reservations || []).length);
+  const total = Math.max(1, counts.confirmed + counts.completed);
   const confirmedCount = counts.confirmed;
-  const pending = counts.pending;
   const completed = counts.completed;
-  const cancelled = counts.cancelled;
 
   const out = [
     {
-      label: translate('reservations.reports.status.confirmedLabel', 'مؤكدة', 'Confirmed'),
+      label: translate('reservations.reports.status.confirmedLabel', 'نشطة', 'Active'),
       value: confirmedCount,
       percent: Math.round((confirmedCount / total) * 100) || 0,
       rawCount: confirmedCount,
       className: 'status-confirmed',
       filterKey: 'confirmed',
-    },
-    {
-      label: translate('reservations.reports.status.pendingLabel', 'قيد التأكيد', 'Pending confirmation'),
-      value: pending,
-      percent: Math.round((pending / total) * 100) || 0,
-      rawCount: pending,
-      className: 'status-pending',
-      filterKey: 'pending',
     },
     {
       label: translate('reservations.reports.status.completedLabel', 'مغلقة', 'Closed'),
@@ -762,14 +758,6 @@ export function calculateStatusBreakdown(reservations) {
       rawCount: completed,
       className: 'status-completed',
       filterKey: 'completed',
-    },
-    {
-      label: translate('reservations.reports.status.cancelledLabel', 'ملغاة', 'Cancelled'),
-      value: cancelled,
-      percent: Math.round((cancelled / total) * 100) || 0,
-      rawCount: cancelled,
-      className: 'status-cancelled',
-      filterKey: 'cancelled',
     },
   ];
   return memoSet(__memo.status, key, out);
@@ -935,8 +923,7 @@ export function calculateEquipmentCostReport(reservations) {
       if (b.cost !== a.cost) return b.cost - a.cost;
       if (b.billable !== a.billable) return b.billable - a.billable;
       return (b.quantity || 0) - (a.quantity || 0);
-    })
-    .slice(0, 10);
+    });
 
   return memoSet(__memo.equipmentCost, key, rows);
 }
@@ -1010,10 +997,8 @@ export function filterReservations(reservations, filters, customers, equipment, 
 
   return (reservations || []).filter((reservation) => {
     const projectRaw = reservation?.projectId ?? reservation?.project_id ?? null;
-    const linkedToProject = projectRaw != null
-      && String(projectRaw).trim() !== ''
-      && String(projectRaw).trim().toLowerCase() !== 'null';
-    if (linkedToProject) return false; // استبعاد الحجوزات المرتبطة بمشاريع من تبويب تقارير الحجوزات
+    const linkedToProject = hasLinkedProjectId(projectRaw);
+    if (linkedToProject) return false;
 
     const start = reservation?.start ? new Date(reservation.start) : null;
     if (!start || Number.isNaN(start.getTime())) return false;
@@ -1029,7 +1014,7 @@ export function filterReservations(reservations, filters, customers, equipment, 
     // لا نعتمد أي حجوزات غير مؤكدة (سواء كانت قيد التأكيد أو مغلقة تلقائياً)
     if (!confirmed) return false;
 
-    if (filters.status === 'confirmed' && !(statusValue === 'confirmed' || statusValue === 'completed' || confirmed)) return false;
+    if (filters.status === 'confirmed' && statusValue !== 'confirmed') return false;
     if (filters.status === 'pending' && statusValue !== 'pending') return false;
     if (filters.status === 'completed' && statusValue !== 'completed') return false;
     if (filters.status === 'cancelled' && statusValue !== 'cancelled') return false;

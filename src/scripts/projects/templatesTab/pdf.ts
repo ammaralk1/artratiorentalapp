@@ -314,62 +314,71 @@ export function ensurePdfTunerUI(options: EnsurePdfTunerUIOptions): void {
   const controls = options.controlsEl ?? document.getElementById('templates-controls');
   if (!controls || document.getElementById('templates-pdf-tuner-toggle')) return;
 
-  const actionsRow = controls.querySelector('.ms-auto') || controls;
+  const utilities = controls.querySelector<HTMLElement>('#templates-toolbar-utilities') || controls.querySelector<HTMLElement>('.templates-toolbar-utilities') || controls;
+  const utilitiesShell = document.getElementById('templates-preview-utilities-shell');
+  const actionsRow =
+    controls.querySelector<HTMLElement>('#templates-review-actions') ||
+    controls.querySelector<HTMLElement>('#templates-actions') ||
+    controls.querySelector<HTMLElement>('.templates-toolbar-actions') ||
+    controls;
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.id = 'templates-pdf-tuner-toggle';
-  btn.className = 'btn btn-outline';
+  btn.className = 'ui-button ui-button--outline btn btn-outline templates-pdf-tuner-toggle';
   btn.textContent = '🛠️ ضبط PDF';
+  btn.setAttribute('aria-expanded', 'false');
+  btn.setAttribute('aria-controls', 'templates-pdf-tuner');
   actionsRow.appendChild(btn);
 
   const panel = document.createElement('div');
   panel.id = 'templates-pdf-tuner';
-  panel.style.display = 'none';
-  panel.style.marginTop = '10px';
-  panel.style.border = '1px solid #e5e7eb';
-  panel.style.borderRadius = '10px';
-  panel.style.padding = '10px';
+  panel.className = 'templates-pdf-tuner';
+  panel.hidden = true;
   panel.innerHTML = `
-    <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:flex-end;">
-      <label style="display:flex; flex-direction:column; gap:4px;">
+    <div class="templates-pdf-tuner__grid">
+      <label class="templates-pdf-tuner__field">
         <span>الصفحة</span>
-        <select id="pdftun-page" style="width:110px;"></select>
+        <select id="pdftun-page" class="ui-select form-select"></select>
       </label>
-      <label style="display:flex; flex-direction:column; gap:4px;">
+      <label class="templates-pdf-tuner__field">
         <span>Top Offset (All)</span>
-        <input id="pdftun-globalY" type="number" step="0.5" min="-1000" max="1000" style="width:90px;" />
+        <input id="pdftun-globalY" class="ui-input form-control" type="number" step="0.5" min="-1000" max="1000" />
       </label>
-      <label style="display:flex; flex-direction:column; gap:4px;">
+      <label class="templates-pdf-tuner__field">
         <span>Right Shift (All)</span>
-        <input id="pdftun-globalX" type="number" step="0.5" min="-1000" max="1000" style="width:90px;" />
+        <input id="pdftun-globalX" class="ui-input form-control" type="number" step="0.5" min="-1000" max="1000" />
       </label>
-      <label style="display:flex; flex-direction:column; gap:4px;">
+      <label class="templates-pdf-tuner__field">
         <span>Top Trim (mm)</span>
-        <input id="pdftun-extraTrim" type="number" step="0.5" min="0" max="40" style="width:90px;" />
+        <input id="pdftun-extraTrim" class="ui-input form-control" type="number" step="0.5" min="0" max="40" />
       </label>
-      <label style="display:flex; flex-direction:column; gap:4px;">
+      <label class="templates-pdf-tuner__field">
         <span>Safe Margin (mm)</span>
-        <input id="pdftun-safeMargin" type="number" step="0.1" min="0" max="10" style="width:90px;" />
+        <input id="pdftun-safeMargin" class="ui-input form-control" type="number" step="0.1" min="0" max="10" />
       </label>
-      <label style="display:flex; flex-direction:column; gap:4px;">
+      <label class="templates-pdf-tuner__field">
         <span>Top Offset (mm)</span>
-        <input id="pdftun-tightFudge" type="number" step="0.5" min="-40" max="40" style="width:90px;" />
+        <input id="pdftun-tightFudge" class="ui-input form-control" type="number" step="0.5" min="-40" max="40" />
       </label>
-      <label style="display:flex; flex-direction:column; gap:4px;">
+      <label class="templates-pdf-tuner__field">
         <span>Right Shift (mm)</span>
-        <input id="pdftun-right" type="number" step="0.5" min="-40" max="40" style="width:90px;" />
+        <input id="pdftun-right" class="ui-input form-control" type="number" step="0.5" min="-40" max="40" />
       </label>
-      <label style="display:flex; flex-direction:column; gap:4px;">
+      <label class="templates-pdf-tuner__field">
         <span>Scale (%)</span>
-        <input id="pdftun-scale" type="number" step="1" min="90" max="110" style="width:90px;" />
+        <input id="pdftun-scale" class="ui-input form-control" type="number" step="1" min="90" max="110" />
       </label>
-      <span style="flex:1 1 auto"></span>
-      <button type="button" class="btn btn-outline" id="pdftun-preset">تطبيق القيم</button>
-      <button type="button" class="btn btn-outline" id="pdftun-reset">الافتراضيات</button>
-      <button type="button" class="btn btn-primary" id="pdftun-print">🖨️ طباعة</button>
+      <div class="templates-pdf-tuner__actions">
+        <button type="button" class="ui-button ui-button--outline btn btn-outline" id="pdftun-preset">تطبيق القيم</button>
+        <button type="button" class="ui-button ui-button--outline btn btn-outline" id="pdftun-reset">الافتراضيات</button>
+        <button type="button" class="ui-button ui-button--primary btn btn-primary" id="pdftun-print">🖨️ طباعة</button>
+      </div>
     </div>
   `;
-  controls.parentElement?.appendChild(panel);
+  utilities.appendChild(panel);
+  if (utilitiesShell instanceof HTMLElement) {
+    utilitiesShell.hidden = false;
+  }
 
   const refreshPagesList = (): void => {
     const select = panel.querySelector<HTMLSelectElement>('#pdftun-page');
@@ -426,8 +435,9 @@ export function ensurePdfTunerUI(options: EnsurePdfTunerUIOptions): void {
   init();
 
   btn.addEventListener('click', () => {
-    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-    if (panel.style.display === 'block') {
+    panel.hidden = !panel.hidden;
+    btn.setAttribute('aria-expanded', panel.hidden ? 'false' : 'true');
+    if (!panel.hidden) {
       try {
         refreshPagesList();
         loadValuesForSelected();

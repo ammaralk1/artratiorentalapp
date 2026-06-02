@@ -234,6 +234,7 @@ function renderDraftItems() {
   if (!elements.itemsTableBody || !elements.itemsEmptyMessage) return;
   if (packageItemsDraft.length === 0) {
     elements.itemsTableBody.innerHTML = '';
+    elements.itemsTableBody.appendChild(elements.itemsEmptyMessage);
     elements.itemsEmptyMessage.hidden = false;
     applyAutoCalculatedPackagePrice(0);
     return;
@@ -268,59 +269,70 @@ function renderPackagesTable() {
   if (!elements.tableBody || !elements.emptyRow) return;
 
   if (!packagesState.length) {
-    elements.tableBody.innerHTML = '';
-    elements.tableBody.appendChild(elements.emptyRow);
-    elements.emptyRow.hidden = false;
-    if (elements.countBadge) {
-      elements.countBadge.textContent = '0';
-    }
+    renderPackagesEmptyState();
     return;
   }
 
   const equipmentIndex = buildEquipmentIndexById();
 
-  const rows = packagesState.map((pkg) => {
-    const resolvedItems = resolvePackageItems({ ...pkg, items: pkg.items });
-    const displayItems = resolvedItems.map((item) => {
-      const equipment = equipmentIndex.get(String(item.equipmentId ?? item.equipment_id));
-      const name = equipment?.desc || equipment?.name || item.desc || t('equipment.packages.items.unknown', 'معدة بدون اسم');
-      const qty = normalizeNumbers(String(item.qty ?? item.quantity ?? 1));
-      const barcode = item.barcode || equipment?.barcode;
-      const barcodePart = barcode ? ` (${normalizeNumbers(String(barcode))})` : '';
-      return `<li>${name}${barcodePart} × ${qty}</li>`;
-    });
-
-    const itemCount = resolvedItems.reduce((sum, item) => sum + (Number(item.qty ?? item.quantity ?? 1) || 0), 0);
-    const packageQty = Number(pkg.package_qty ?? 1);
-    const priceDisplay = `${normalizeNumbers(pkg.price.toFixed(2))} ${t('reservations.create.summary.currency', 'SR')}`;
-
-    return `
-      <tr data-package-id="${pkg.id}">
-        <td>${pkg.name || t('common.placeholder.empty', '—')}</td>
-        <td>${pkg.package_code || t('common.placeholder.empty', '—')}</td>
-        <td>${priceDisplay}</td>
-        <td>${normalizeNumbers(String(packageQty))}</td>
-        <td>
-          <details>
-            <summary>${normalizeNumbers(String(itemCount || 0))}</summary>
-            <ul class="equipment-package-items-summary">${displayItems.join('')}</ul>
-          </details>
-        </td>
-        <td>
-          <div class="d-flex gap-2">
-            <button type="button" class="btn btn-sm btn-outline-primary" data-action="edit-package" data-id="${pkg.id}">✏️</button>
-            <button type="button" class="btn btn-sm btn-outline-danger" data-action="delete-package" data-id="${pkg.id}">🗑️</button>
-          </div>
-        </td>
-      </tr>
-    `;
-  });
+  const rows = packagesState.map((pkg) => buildPackageTableRow(pkg, equipmentIndex));
 
   elements.tableBody.innerHTML = rows.join('');
   elements.emptyRow.hidden = true;
   if (elements.countBadge) {
     elements.countBadge.textContent = normalizeNumbers(String(packagesState.length));
   }
+}
+
+function renderPackagesEmptyState() {
+  elements.tableBody.innerHTML = '';
+  elements.tableBody.appendChild(elements.emptyRow);
+  elements.emptyRow.hidden = false;
+  if (elements.countBadge) {
+    elements.countBadge.textContent = '0';
+  }
+}
+
+function buildPackageTableRow(pkg, equipmentIndex) {
+  const resolvedItems = resolvePackageItems({ ...pkg, items: pkg.items });
+  const displayItems = resolvedItems.map((item) => {
+    const equipment = equipmentIndex.get(String(item.equipmentId ?? item.equipment_id));
+    const name = equipment?.desc || equipment?.name || item.desc || t('equipment.packages.items.unknown', 'معدة بدون اسم');
+    const qty = normalizeNumbers(String(item.qty ?? item.quantity ?? 1));
+    const barcode = item.barcode || equipment?.barcode;
+    const barcodePart = barcode ? ` (${normalizeNumbers(String(barcode))})` : '';
+    return `<li>${name}${barcodePart} × ${qty}</li>`;
+  });
+
+  const itemCount = resolvedItems.reduce((sum, item) => sum + (Number(item.qty ?? item.quantity ?? 1) || 0), 0);
+  const packageQty = Number(pkg.package_qty ?? 1);
+  const priceDisplay = `${normalizeNumbers(pkg.price.toFixed(2))} ${t('reservations.create.summary.currency', 'SR')}`;
+
+  return `
+    <tr data-package-id="${pkg.id}">
+      <td>${pkg.name || t('common.placeholder.empty', '—')}</td>
+      <td>${pkg.package_code || t('common.placeholder.empty', '—')}</td>
+      <td>${priceDisplay}</td>
+      <td>${normalizeNumbers(String(packageQty))}</td>
+      <td class="equipment-packages-table__items-cell">
+        <details class="equipment-package-items-disclosure">
+          <summary class="equipment-package-items-disclosure__summary">
+            <span class="equipment-package-items-disclosure__count">${normalizeNumbers(String(itemCount || 0))}</span>
+            <span class="equipment-package-items-disclosure__chevron" aria-hidden="true">▾</span>
+          </summary>
+          <div class="equipment-package-items-disclosure__panel">
+            <ul class="equipment-package-items-summary">${displayItems.join('')}</ul>
+          </div>
+        </details>
+      </td>
+      <td>
+        <div class="table-action-buttons equipment-package-action-buttons">
+          <button type="button" class="equipment-package-action-btn equipment-package-action-btn--edit" data-action="edit-package" data-id="${pkg.id}">✏️</button>
+          <button type="button" class="equipment-package-action-btn equipment-package-action-btn--delete" data-action="delete-package" data-id="${pkg.id}">🗑️</button>
+        </div>
+      </td>
+    </tr>
+  `;
 }
 
 function resetPackageForm() {

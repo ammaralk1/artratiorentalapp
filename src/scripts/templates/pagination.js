@@ -298,19 +298,19 @@ export function paginateExpDetailsTables({ headerFooter = false, logoUrl = '' } 
     });
   });
 
-  // Reorder pages so that groups appear in the logical order: ATL → PROD → POST
+  // Reorder pages so that groups appear in the logical order: Creative → Crew → Operations → Post
   try {
     const pages = Array.from(pagesWrap.querySelectorAll('.a4-page'));
     if (pages.length > 1) {
       const first = pages[0]; // keep top sheet page first
       const rest = pages.slice(1);
-      const buckets = { atl: [], prod: [], post: [], other: [] };
+      const buckets = { creative: [], crew: [], operations: [], post: [], other: [] };
       rest.forEach((p) => {
         const tb = p.querySelector('table.exp-details');
         const gk = (tb && tb.getAttribute('data-group')) || 'other';
         if (gk in buckets) buckets[gk].push(p); else buckets.other.push(p);
       });
-      const ordered = [first, ...buckets.atl, ...buckets.prod, ...buckets.post, ...buckets.other];
+      const ordered = [first, ...buckets.creative, ...buckets.crew, ...buckets.operations, ...buckets.post, ...buckets.other];
       ordered.forEach((p) => { try { pagesWrap.appendChild(p); } catch (_) {} });
     }
   } catch (_) {}

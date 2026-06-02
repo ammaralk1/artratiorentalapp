@@ -38,6 +38,7 @@ export function populateReservationSelectOptions(
 ): void {
   if (!selectEl) return;
 
+  const previousValue = String(selectEl.value || '').trim();
   const options = ['<option value="" selected>— بدون ربط —</option>'];
   (Array.isArray(reservations) ? reservations : []).forEach((reservation) => {
     const id = reservation.id ?? reservation.reservationId;
@@ -45,6 +46,12 @@ export function populateReservationSelectOptions(
     options.push(`<option value="${String(id)}">${label}</option>`);
   });
   selectEl.innerHTML = options.join('');
+
+  if (!previousValue) return;
+  const hasPreviousOption = Array.from(selectEl.options).some((option) => option.value === previousValue);
+  if (hasPreviousOption) {
+    selectEl.value = previousValue;
+  }
 }
 
 export function updateExpenseItemRowTotal(target: EventTarget | null): void {
@@ -93,6 +100,7 @@ export interface CreateTemplatesHostInputHandlerOptions {
   markEditing: () => void;
   recomputeSubtotalsDebounced: (delay?: number) => void;
   enforceCallsheetSizing: () => void;
+  onEditableInput?: (target: HTMLElement) => void;
 }
 
 export function createTemplatesHostInputHandler(options: CreateTemplatesHostInputHandlerOptions): EventListener {
@@ -106,6 +114,12 @@ export function createTemplatesHostInputHandler(options: CreateTemplatesHostInpu
       options.markEditing();
     } catch {
       // ignore editing marker failures
+    }
+
+    try {
+      options.onEditableInput?.(element);
+    } catch {
+      // ignore manual-edit marker failures
     }
 
     try {
@@ -172,6 +186,7 @@ export function createTemplatesCompositionHandlers(options: CreateTemplatesCompo
 export interface CreateTemplatesFocusHandlersOptions {
   recomputeSubtotalsDebounced: (delay?: number) => void;
   enforceCallsheetSizing: () => void;
+  beforeEditableFocus?: (target: HTMLElement) => boolean;
 }
 
 export function createTemplatesFocusHandlers(options: CreateTemplatesFocusHandlersOptions): {
@@ -181,6 +196,9 @@ export function createTemplatesFocusHandlers(options: CreateTemplatesFocusHandle
   const onFocusIn: EventListener = (event) => {
     const target = event.target;
     if (!(target instanceof HTMLElement)) return;
+    if (target.isContentEditable && options.beforeEditableFocus && options.beforeEditableFocus(target) === false) {
+      return;
+    }
     const td = target.closest('td');
     if (!td) return;
     try {
@@ -221,29 +239,14 @@ export function createTemplatesMouseDownHandler(): EventListener {
   return (event) => {
     const target = event.target;
     if (!(target instanceof Element)) return;
+    const button = 'button' in event ? event.button : 0;
+    if (button !== 0) return;
 
-    const editable = target.closest('[contenteditable="true"]') as HTMLElement | null;
-    if (editable) {
-      try {
-        setTimeout(() => {
-          editable.focus?.();
-        }, 0);
-      } catch {
-        // ignore focus failures
-      }
-      return;
-    }
-
-    const tdHost = target.closest('td');
-    const inner = tdHost?.querySelector<HTMLElement>('[contenteditable="true"]');
-    if (!inner) return;
-    try {
-      setTimeout(() => {
-        inner.focus?.();
-      }, 0);
-    } catch {
-      // ignore focus failures
-    }
+    // Let the browser handle direct editing targets naturally. Avoid force-focusing
+    // nested editable cells on generic mouse-down because that can hijack scrolling
+    // near the end of long Call Sheet pages and jump the viewport unexpectedly.
+    const editable = target.closest('[contenteditable="true"]');
+    if (editable) return;
   };
 }
 

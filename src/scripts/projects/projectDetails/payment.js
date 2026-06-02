@@ -116,12 +116,35 @@ export function normalizeProjectPaymentHistoryForView(project = {}) {
 // ── View-mode markup ──────────────────────────────────────────────────────────
 
 export function buildProjectPaymentHistoryMarkup(paymentHistory = [], { total = null } = {}) {
+  const methodHeader = escapeHtml(t('reservations.paymentHistory.headers.method', 'نوع الدفعة'));
+  const amountHeader = escapeHtml(t('reservations.paymentHistory.headers.amount', 'المبلغ'));
+  const percentHeader = escapeHtml(t('reservations.paymentHistory.headers.percent', 'النسبة'));
+  const dateHeader = escapeHtml(t('reservations.paymentHistory.headers.date', 'التاريخ'));
+  const noteHeader = escapeHtml(t('reservations.paymentHistory.headers.note', 'ملاحظات'));
+
   if (!Array.isArray(paymentHistory) || paymentHistory.length === 0) {
     const emptyText = escapeHtml(t('reservations.paymentHistory.empty', 'لا توجد دفعات مسجلة'));
-    return `<div class="reservation-payment-history-empty">${emptyText}</div>`;
+    return `
+      <div class="users-table-wrapper overflow-x-auto project-modal-table-wrapper reservation-payment-history-table-shell">
+        <table class="ui-table users-table surface-table table table-sm table-hover align-middle reservation-payment-history-table">
+          <thead class="table-light">
+            <tr>
+              <th>${methodHeader}</th>
+              <th>${amountHeader}</th>
+              <th>${percentHeader}</th>
+              <th>${dateHeader}</th>
+              <th>${noteHeader}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="5" class="text-center text-muted">${emptyText}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    `;
   }
 
-  return `<ul class="reservation-payment-history-list">${paymentHistory.map((entry) => {
+  const rows = paymentHistory.map((entry) => {
     const typeLabel = entry?.type === 'percent'
       ? t('reservations.paymentHistory.type.percent', 'دفعة نسبة')
       : entry?.type === 'amount'
@@ -146,29 +169,69 @@ export function buildProjectPaymentHistoryMarkup(paymentHistory = [], { total = 
     const dateDisplay = entry?.recordedAt
       ? normalizeNumbers(formatDateTime(entry.recordedAt))
       : '—';
-    const noteHtml = entry?.note
-      ? `<div class="payment-history-note">${escapeHtml(normalizeNumbers(entry.note))}</div>`
-      : '';
+    const noteDisplay = entry?.note
+      ? escapeHtml(normalizeNumbers(entry.note))
+      : '—';
     return `
-      <li>
-        <div class="payment-history-entry">
-          <span class="payment-history-entry__type">${escapeHtml(typeLabel)}</span>
-          <span class="payment-history-entry__amount">${amountDisplay}</span>
-          <span class="payment-history-entry__percent">${percentDisplay}</span>
-          <span class="payment-history-entry__date">${dateDisplay}</span>
-        </div>
-        ${noteHtml}
-      </li>
+      <tr>
+        <td>${escapeHtml(typeLabel)}</td>
+        <td>${amountDisplay}</td>
+        <td>${percentDisplay}</td>
+        <td>${dateDisplay}</td>
+        <td>${noteDisplay}</td>
+      </tr>
     `;
-  }).join('')}</ul>`;
+  }).join('');
+
+  return `
+    <div class="users-table-wrapper overflow-x-auto project-modal-table-wrapper reservation-payment-history-table-shell">
+      <table class="ui-table users-table surface-table table table-sm table-hover align-middle reservation-payment-history-table">
+        <thead class="table-light">
+          <tr>
+            <th>${methodHeader}</th>
+            <th>${amountHeader}</th>
+            <th>${percentHeader}</th>
+            <th>${dateHeader}</th>
+            <th>${noteHeader}</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
 }
 
 // ── Edit-mode markup (with delete buttons) ────────────────────────────────────
 
 export function buildProjectEditPaymentHistoryMarkup(payments = [], { total = null } = {}) {
+  const methodHeader = escapeHtml(t('reservations.paymentHistory.headers.method', 'نوع الدفعة'));
+  const amountHeader = escapeHtml(t('reservations.paymentHistory.headers.amount', 'المبلغ'));
+  const percentHeader = escapeHtml(t('reservations.paymentHistory.headers.percent', 'النسبة'));
+  const dateHeader = escapeHtml(t('reservations.paymentHistory.headers.date', 'التاريخ'));
+  const noteHeader = escapeHtml(t('reservations.paymentHistory.headers.note', 'ملاحظات'));
+  const actionsHeader = escapeHtml(t('projects.expenses.table.headers.actions', 'الإجراءات'));
+
   if (!Array.isArray(payments) || payments.length === 0) {
     const emptyText = escapeHtml(t('reservations.paymentHistory.empty', 'لا توجد دفعات مسجلة'));
-    return `<div class="reservation-payment-history__empty">${emptyText}</div>`;
+    return `
+      <div class="users-table-wrapper overflow-x-auto project-modal-table-wrapper reservation-payment-history-table-shell">
+        <table class="ui-table users-table surface-table table table-sm table-hover align-middle reservation-payment-history-table">
+          <thead class="table-light">
+            <tr>
+              <th>${methodHeader}</th>
+              <th>${amountHeader}</th>
+              <th>${percentHeader}</th>
+              <th>${dateHeader}</th>
+              <th>${noteHeader}</th>
+              <th>${actionsHeader}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="6" class="text-center text-muted">${emptyText}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    `;
   }
 
   const rows = payments.map((payment, index) => {
@@ -211,16 +274,16 @@ export function buildProjectEditPaymentHistoryMarkup(payments = [], { total = nu
   }).join('');
 
   return `
-    <div class="reservation-payment-history__table-wrapper">
-      <table class="table table-sm reservation-payment-history__table">
-        <thead>
+    <div class="users-table-wrapper overflow-x-auto project-modal-table-wrapper reservation-payment-history-table-shell">
+      <table class="ui-table users-table surface-table table table-sm table-hover align-middle reservation-payment-history-table">
+        <thead class="table-light">
           <tr>
-            <th>${escapeHtml(t('reservations.paymentHistory.headers.method', 'نوع الدفعة'))}</th>
-            <th>${escapeHtml(t('reservations.paymentHistory.headers.amount', 'المبلغ'))}</th>
-            <th>${escapeHtml(t('reservations.paymentHistory.headers.percent', 'النسبة'))}</th>
-            <th>${escapeHtml(t('reservations.paymentHistory.headers.date', 'التاريخ'))}</th>
-            <th>${escapeHtml(t('reservations.paymentHistory.headers.note', 'ملاحظات'))}</th>
-            <th></th>
+            <th>${methodHeader}</th>
+            <th>${amountHeader}</th>
+            <th>${percentHeader}</th>
+            <th>${dateHeader}</th>
+            <th>${noteHeader}</th>
+            <th>${actionsHeader}</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>

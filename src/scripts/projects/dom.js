@@ -24,15 +24,9 @@ export function cacheDom() {
   dom.endDate = document.getElementById('project-end-date');
   dom.endTime = document.getElementById('project-end-time');
   dom.description = document.getElementById('project-description');
-  dom.technicianSelect = document.getElementById('project-technician-select');
-  dom.addTechnicianBtn = document.getElementById('add-technician-btn');
-  dom.technicianList = document.getElementById('project-technician-list');
-  dom.equipmentSelect = document.getElementById('project-equipment-select');
-  dom.equipmentQty = document.getElementById('project-equipment-qty');
-  dom.addEquipmentBtn = document.getElementById('add-equipment-btn');
-  dom.equipmentList = document.getElementById('project-equipment-list');
   dom.expenseLabel = document.getElementById('project-expense-label');
   dom.expenseAmount = document.getElementById('project-expense-amount');
+  dom.expenseDays = document.getElementById('project-expense-days');
   dom.expenseNote = document.getElementById('project-expense-note');
   dom.addExpenseBtn = document.getElementById('add-expense-btn');
   dom.expenseList = document.getElementById('project-expense-list');
@@ -47,7 +41,21 @@ export function cacheDom() {
   dom.paymentProgressType = document.getElementById('project-payment-progress-type');
   dom.paymentProgressValue = document.getElementById('project-payment-progress-value');
   dom.taxCheckbox = document.getElementById('project-tax');
-  dom.linkedReservationBtn = document.getElementById('project-linked-reservation-btn');
+  dom.projectCreateSummaryCard = document.getElementById('project-create-summary-card');
+  dom.operationalEquipmentSummary = document.getElementById('project-operational-equipment-summary');
+  dom.operationalEquipmentCount = document.getElementById('project-operational-equipment-count');
+  dom.operationalCrewSummary = document.getElementById('project-operational-crew-summary');
+  dom.projectSelectedTechniciansList = document.getElementById('project-selected-technicians-list');
+  dom.projectTechnicianPickerButton = document.getElementById('open-project-technician-picker');
+  dom.projectEquipmentMethodSelect = document.getElementById('project-equipment-method-select');
+  dom.projectEquipmentMethodPanels = Array.from(document.querySelectorAll('[data-project-equipment-method]'));
+  dom.projectEquipmentPackageSelect = document.getElementById('project-equipment-package-select');
+  dom.projectEquipmentPackageHint = document.getElementById('project-equipment-package-hint');
+  dom.projectEquipmentBarcode = document.getElementById('project-equipment-barcode');
+  dom.projectEquipmentDescription = document.getElementById('project-equipment-description');
+  dom.projectEquipmentSuggestions = document.getElementById('project-equipment-description-suggestions');
+  dom.projectEquipmentListSelect = document.getElementById('project-equipment-list-select');
+  dom.projectEquipmentSelectedBody = document.getElementById('project-equipment-selected-body');
   dom.submitBtn = dom.form?.querySelector('[type="submit"]');
   dom.projectsTableBody = document.getElementById('project-table-body');
   dom.projectsCount = document.getElementById('projects-count');
@@ -72,7 +80,8 @@ export function cacheDom() {
   dom.projectSubTabPanes = Array.from(document.querySelectorAll('[data-project-subtab]'));
   dom.timeline = document.getElementById('project-timeline');
   dom.focusCards = document.getElementById('project-focus-cards');
-  dom.focusPagination = document.getElementById('project-focus-pagination');
+  dom.archiveCards = document.getElementById('project-archive-cards');
+  dom.archiveCount = document.getElementById('projects-archive-count');
   dom.tablePagination = document.getElementById('project-table-pagination');
 
   if (dom.detailsModalEl && !dom.detailsModalEl.dataset.projectListenerAttached) {

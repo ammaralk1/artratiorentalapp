@@ -24,10 +24,22 @@ export const state = {
   pendingProjectDetailId: null,
   pendingProjectEditId: null,
   pendingLinkedToast: false,
-  focusPagination: {
+  tablePagination: {
     page: 1,
-    pageSize: 6,
+    pageSize: 8,
     totalPages: 1,
+  },
+  focusSectionPagination: {
+    live: {
+      page: 1,
+      pageSize: 8,
+      totalPages: 1,
+    },
+    archive: {
+      page: 1,
+      pageSize: 8,
+      totalPages: 1,
+    }
   }
 };
 

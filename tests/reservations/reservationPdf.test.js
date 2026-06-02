@@ -94,8 +94,7 @@ vi.mock('../../src/scripts/canvasColorUtils.js', () => ({
 }));
 
 // Vite asset imports — return stable stub strings
-vi.mock('../../src/styles/quotePdf.css?raw', () => ({ default: '/* stub */' }));
-vi.mock('../../src/assets/AR-Logo-v3.5-curved-WH.png?url', () => ({
+vi.mock('../../src/assets/ART-RATIO-LGWG.png?url', () => ({
   default: 'data:image/png;base64,stub',
 }));
 vi.mock('/assets/Tajawal-400.ttf?url', () => ({ default: 'stub-400.ttf' }));

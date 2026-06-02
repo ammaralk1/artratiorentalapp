@@ -2,6 +2,7 @@ import { loadData, saveData } from './storage.js';
 import { t } from './language.js';
 import { apiRequest, ApiError } from './apiClient.js';
 import { normalizeNumbers } from './utils.js';
+import { isLocalDashboardFixtureEnabled } from './fixtureRuntime.js';
 
 const initialProjectsData = loadData() || {};
 let projectsState = (initialProjectsData.projects || []).map(mapLegacyProject);
@@ -38,6 +39,14 @@ export function setProjectsState(projects) {
 }
 
 export async function refreshProjectsFromApi(params = {}) {
+  if (isLocalDashboardFixtureEnabled()) {
+    const snapshot = loadData();
+    const localProjects = Array.isArray(snapshot?.projects) ? snapshot.projects : [];
+    setProjectsState(localProjects);
+    hasFetchedProjects = true;
+    return projectsState;
+  }
+
   const searchParams = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
     if (value === undefined || value === null || value === '') return;
@@ -187,25 +196,145 @@ export function buildProjectPayload({
   paymentProgressValue = null,
   confirmed = false,
   technicians = [],
+  crewAssignments = [],
   equipment = [],
   payments,
   paymentHistory,
+  syncManagedReservation = false,
 } = {}) {
   const technicianIds = Array.isArray(technicians)
     ? technicians
-        .map((value) => Number.parseInt(String(value), 10))
+        .map((value) => {
+          if (value && typeof value === 'object') {
+            return Number.parseInt(String(value.id ?? value.technicianId ?? value.technician_id ?? 0), 10);
+          }
+          return Number.parseInt(String(value), 10);
+        })
         .filter((value) => Number.isInteger(value) && value > 0)
+    : [];
+
+  const normalizedCrewAssignments = Array.isArray(crewAssignments)
+    ? crewAssignments
+        .map((assignment) => {
+          if (!assignment || typeof assignment !== 'object') return null;
+          const technicianId = Number.parseInt(String(
+            assignment.technicianId ?? assignment.technician_id ?? assignment.id ?? 0
+          ), 10);
+          if (!Number.isInteger(technicianId) || technicianId <= 0) return null;
+          return {
+            technician_id: technicianId,
+            role: assignment.role ?? null,
+            notes: assignment.notes ?? null,
+            position_id: assignment.positionId ?? assignment.position_id ?? null,
+            position_key: assignment.positionKey ?? assignment.position_key ?? null,
+            position_name: assignment.positionName
+              ?? assignment.position_name
+              ?? assignment.positionLabel
+              ?? assignment.position_label
+              ?? assignment.role
+              ?? null,
+            position_label_ar: assignment.positionLabelAr
+              ?? assignment.position_label_ar
+              ?? assignment.positionLabel
+              ?? assignment.position_label
+              ?? null,
+            position_label_en: assignment.positionLabelEn
+              ?? assignment.position_label_en
+              ?? assignment.positionLabelAlt
+              ?? assignment.position_label_alt
+              ?? null,
+            position_cost: toNumber(assignment.positionCost ?? assignment.position_cost ?? assignment.cost ?? 0),
+            position_client_price: toNumber(
+              assignment.positionClientPrice
+              ?? assignment.position_client_price
+              ?? assignment.clientPrice
+              ?? assignment.client_price
+              ?? 0
+            ),
+            assignment_id: assignment.assignmentId ?? assignment.assignment_id ?? null,
+          };
+        })
+        .filter(Boolean)
     : [];
 
   const normalizedEquipment = Array.isArray(equipment)
     ? equipment
-        .map((item) => {
+        .flatMap((item) => {
+          if (item?.type === 'package' && Array.isArray(item.packageItems)) {
+            const packagePrice = toNumber(item.unit_price ?? item.unitPrice ?? item.price ?? 0);
+            const packageCost = toNumber(item.unit_cost ?? item.unitCost ?? item.cost ?? 0);
+            return item.packageItems
+              .map((packageItem, index) => {
+                const equipmentId = Number.parseInt(String(packageItem.equipmentId ?? packageItem.equipment_id ?? packageItem.id ?? 0), 10);
+                if (!Number.isInteger(equipmentId) || equipmentId <= 0) return null;
+                return {
+                  equipment_id: equipmentId,
+                  quantity: 1,
+                  unit_price: index === 0 ? packagePrice : 0,
+                  unit_cost: index === 0 ? packageCost : 0,
+                  notes: item.desc ? `Package: ${item.desc}` : (item.notes ?? null),
+                };
+              })
+              .filter(Boolean);
+          }
           const equipmentId = Number.parseInt(String(item.equipmentId ?? item.equipment_id ?? item.id ?? 0), 10);
           const quantity = Number.parseInt(String(item.qty ?? item.quantity ?? 0), 10);
-          if (!Number.isInteger(equipmentId) || equipmentId <= 0) return null;
-          return {
+          if (!Number.isInteger(equipmentId) || equipmentId <= 0) return [];
+          return [{
             equipment_id: equipmentId,
             quantity: Number.isInteger(quantity) && quantity > 0 ? quantity : 1,
+            unit_price: toNumber(item.unit_price ?? item.unitPrice ?? item.price ?? 0),
+            unit_cost: toNumber(item.unit_cost ?? item.unitCost ?? item.cost ?? 0),
+            notes: item.notes ?? null,
+          }];
+        })
+        .filter(Boolean)
+    : [];
+
+  const normalizedReservationPackages = Array.isArray(equipment)
+    ? equipment
+        .filter((item) => item?.type === 'package' && Array.isArray(item.packageItems))
+        .map((item) => {
+          const packageItems = item.packageItems
+            .map((packageItem) => {
+              const equipmentId = Number.parseInt(String(packageItem.equipmentId ?? packageItem.equipment_id ?? packageItem.id ?? 0), 10);
+              if (!Number.isInteger(equipmentId) || equipmentId <= 0) return null;
+              const label = packageItem.desc ?? packageItem.description ?? packageItem.name ?? '';
+              return {
+                equipmentId,
+                equipment_id: equipmentId,
+                barcode: packageItem.barcode ?? packageItem.normalizedBarcode ?? '',
+                normalizedBarcode: packageItem.normalizedBarcode ?? packageItem.barcode ?? '',
+                desc: label,
+                description: label,
+                qty: 1,
+                quantity: 1,
+                qtyPerPackage: 1,
+                price: toNumber(packageItem.price ?? packageItem.unit_price ?? packageItem.unitPrice ?? 0),
+                cost: toNumber(packageItem.cost ?? packageItem.unit_cost ?? packageItem.unitCost ?? 0),
+                image: packageItem.image ?? packageItem.image_url ?? packageItem.imageUrl ?? null,
+              };
+            })
+            .filter(Boolean);
+          if (!packageItems.length) return null;
+          const packageId = item.packageId ?? item.package_id ?? item.id ?? null;
+          const packageCode = item.package_code ?? item.packageCode ?? item.code ?? item.barcode ?? packageId ?? '';
+          const packageName = item.desc ?? item.name ?? item.package_name ?? item.packageName ?? packageCode;
+          return {
+            package_id: packageId,
+            package_code: packageCode,
+            package_name: packageName,
+            name: packageName,
+            quantity: 1,
+            unit_price: toNumber(item.unit_price ?? item.unitPrice ?? item.price ?? 0),
+            unit_cost: toNumber(item.unit_cost ?? item.unitCost ?? item.cost ?? 0),
+            items_json: JSON.stringify(packageItems),
+            package_metadata: JSON.stringify({
+              source: 'project_managed_reservation',
+              packageId,
+              packageCode,
+              packageName,
+            }),
           };
         })
         .filter(Boolean)
@@ -218,6 +347,9 @@ export function buildProjectPayload({
           const label = (expense?.label ?? expense?.name ?? '').trim();
           if (!label) return null;
           const sale = toNumber(expense?.salePrice ?? expense?.sale_price ?? 0);
+          const rawDays = expense?.days ?? expense?.service_days;
+          const parsedDays = Number.parseInt(String(rawDays ?? ''), 10);
+          const days = Number.isInteger(parsedDays) && parsedDays > 0 ? parsedDays : 1;
           // Support both note and notes (for compatibility with older/newer backends)
           const rawNote = (expense?.note ?? expense?.notes ?? '')
             .toString()
@@ -226,6 +358,7 @@ export function buildProjectPayload({
             label,
             amount: Math.round(amount * 100) / 100,
             sale_price: Math.max(0, Math.round(sale * 100) / 100),
+            service_days: days,
             note: rawNote || undefined,
             // Duplicate to notes for backward compatibility with APIs expecting `notes`
             ...(rawNote ? { notes: rawNote } : {}),
@@ -234,7 +367,10 @@ export function buildProjectPayload({
         .filter(Boolean)
     : [];
 
-  const expensesTotal = normalizedExpenses.reduce((sum, expense) => sum + (expense?.amount ?? 0), 0);
+  const expensesTotal = normalizedExpenses.reduce((sum, expense) => sum + ((expense?.amount ?? 0) * (expense?.service_days ?? 1)), 0);
+  const servicesClientPriceTotal = normalizedExpenses.length
+    ? normalizedExpenses.reduce((sum, expense) => sum + ((expense?.sale_price ?? 0) * (expense?.service_days ?? 1)), 0)
+    : toNumber(servicesClientPrice);
 
   const payload = {
     title,
@@ -248,14 +384,23 @@ export function buildProjectPayload({
     payment_status: paymentStatus ?? 'unpaid',
     equipment_estimate: toNumber(equipmentEstimate),
     expenses_total: Math.round(expensesTotal * 100) / 100,
-    services_client_price: Math.round(toNumber(servicesClientPrice) * 100) / 100,
+    services_client_price: Math.round(servicesClientPriceTotal * 100) / 100,
     tax_amount: Math.round(toNumber(taxAmount) * 100) / 100,
     total_with_tax: Math.round(toNumber(totalWithTax) * 100) / 100,
     confirmed: Boolean(confirmed),
     technicians: technicianIds,
     equipment: normalizedEquipment,
+    reservation_packages: normalizedReservationPackages,
     expenses: normalizedExpenses,
   };
+
+  if (syncManagedReservation) {
+    payload.sync_managed_reservation = true;
+  }
+
+  if (normalizedCrewAssignments.length > 0) {
+    payload.crew_assignments = normalizedCrewAssignments;
+  }
 
   const normalizedDiscount = Math.max(0, Number.parseFloat(discount) || 0);
   payload.discount = normalizedDiscount;
@@ -319,6 +464,24 @@ export function mapLegacyProject(raw = {}) {
   return toInternalProject(raw);
 }
 
+function resolveStoredCustomerName(raw = {}) {
+  const direct = raw.client_name ?? raw.clientName ?? raw.customer_name ?? raw.customerName ?? '';
+  const normalizedDirect = String(direct || '').trim();
+  if (normalizedDirect) return normalizedDirect;
+
+  const clientId = raw.client_id ?? raw.clientId ?? raw.customer_id ?? raw.customerId ?? null;
+  if (clientId == null || clientId === '') return '';
+
+  try {
+    const cachedCustomers = loadData()?.customers;
+    if (!Array.isArray(cachedCustomers)) return '';
+    const match = cachedCustomers.find((customer) => String(customer?.id ?? customer?.customerId ?? '') === String(clientId));
+    return String(match?.customerName ?? match?.full_name ?? match?.name ?? '').trim();
+  } catch {
+    return '';
+  }
+}
+
 function toInternalProject(raw = {}) {
   const idValue = raw.id ?? raw.projectId ?? raw.project_id ?? null;
   const techniciansRaw = Array.isArray(raw.technicians) ? raw.technicians : [];
@@ -351,6 +514,7 @@ function toInternalProject(raw = {}) {
     label: expense?.label ?? '',
     amount: toNumber(expense?.amount ?? 0),
     salePrice: toNumber(expense?.sale_price ?? expense?.salePrice ?? 0),
+    days: Math.max(1, Number.parseInt(String(expense?.service_days ?? expense?.days ?? 1), 10) || 1),
     // Accept both `note` and `notes` from API payloads
     note: expense?.note ?? expense?.notes ?? '',
   }));
@@ -393,6 +557,7 @@ function toInternalProject(raw = {}) {
     title: raw.title ?? '',
     type: raw.type ?? raw.projectType ?? '',
     clientId: raw.client_id != null ? String(raw.client_id) : raw.clientId ?? null,
+    clientName: resolveStoredCustomerName(raw),
     clientCompany: raw.client_company ?? raw.clientCompany ?? '',
     // Use only the explicit description field for project notes
     description: raw.description ?? '',

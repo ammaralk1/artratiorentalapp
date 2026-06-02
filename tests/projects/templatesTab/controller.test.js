@@ -44,6 +44,23 @@ describe('templatesTab/controller', () => {
     expect(reservationSelect.options[2]?.textContent).toBe('#9');
   });
 
+  it('preserves the selected reservation when the options are repopulated with the same reservation id', () => {
+    document.body.innerHTML = `<select id="templates-reservation"><option value="">— بدون ربط —</option><option value="218" selected>#218</option></select>`;
+    const reservationSelect = document.getElementById('templates-reservation');
+    if (!(reservationSelect instanceof HTMLSelectElement)) {
+      throw new Error('missing reservation select');
+    }
+
+    reservationSelect.value = '218';
+    populateReservationSelectOptions(reservationSelect, [
+      { id: 217, title: 'Reservation 217' },
+      { id: 218, title: 'Reservation 218' },
+    ]);
+
+    expect(reservationSelect.value).toBe('218');
+    expect(reservationSelect.options[2]?.selected).toBe(true);
+  });
+
   it('updates expense row totals and schedules recompute/enforce while typing', async () => {
     vi.useFakeTimers();
     document.body.innerHTML = `
@@ -94,7 +111,7 @@ describe('templatesTab/controller', () => {
     expect(recomputeSubtotalsDebounced).toHaveBeenCalledWith(420);
   });
 
-  it('builds composition, focus, and mouse handlers around the editable lifecycle', async () => {
+  it('builds composition and focus handlers without force-focusing on generic mouse-down', async () => {
     vi.useFakeTimers();
     document.body.innerHTML = `
       <table class="exp-details">
@@ -139,7 +156,7 @@ describe('templatesTab/controller', () => {
     expect(setComposing).toHaveBeenNthCalledWith(2, false);
     expect(handleInput).toHaveBeenCalledTimes(1);
     expect(enforceCallsheetSizing).toHaveBeenCalled();
-    expect(focusSpy).toHaveBeenCalled();
+    expect(focusSpy).not.toHaveBeenCalled();
   });
 
   it('debounces repopulation, preserves selection, and avoids duplicate renders for the same key', async () => {

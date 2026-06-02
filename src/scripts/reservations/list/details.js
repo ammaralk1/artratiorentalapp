@@ -7,6 +7,8 @@ import { resolveItemImage } from '../../reservationsEquipment.js';
 import { normalizeBarcodeValue } from '../state.js';
 import { calculateReservationDays, DEFAULT_COMPANY_SHARE_PERCENT, calculateDraftFinancialBreakdown, calculatePaymentProgress, determinePaymentStatus } from '../../reservationsSummary.js';
 import { userCanManageDestructiveActions } from '../../auth.js';
+import { resolveProjectOverheadSettings } from '../../projects/helpers.js';
+import { applyProjectItemOverhead, calculateProjectLineFinancials } from '../../projects/financials.js';
 
 const PENDING_PROJECT_DETAIL_KEY = 'pendingProjectDetailId';
 
@@ -32,6 +34,15 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   const completed = isReservationCompleted(reservation);
   const items = reservation.items || [];
   let { groups: displayGroups, packageGroups, groupedItems } = buildReservationDisplayGroups(reservation);
+  const projectOverhead = (() => {
+    if (!projectLinked || !project) {
+      return { applyTax: false, companyShareEnabled: false, companySharePercent: 0 };
+    }
+    const applyTaxRaw = project?.applyTax === true || project?.applyTax === 'true' || project?.apply_tax === true || project?.apply_tax === 'true';
+    const { applyTax, enabled, sharePercent } = resolveProjectOverheadSettings(project, { applyTaxRaw });
+    return { applyTax, companyShareEnabled: enabled, companySharePercent: sharePercent };
+  })();
+  const withProjectOverhead = (value) => applyProjectItemOverhead(value, projectOverhead);
 
   // Deduplicate package groups defensively (in case upstream produced two entries for same package)
   const isPkgGroup = (g) => Boolean(
@@ -237,7 +248,8 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
       notes: assignment.notes ?? null,
     };
   });
-  const canDelete = userCanManageDestructiveActions();
+  const isProjectLinked = Boolean(reservation?.projectId ?? reservation?.project_id);
+  const canDelete = !isProjectLinked && userCanManageDestructiveActions();
 
   const rentalDays = calculateReservationDays(reservation.start, reservation.end);
 
@@ -334,24 +346,39 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   const equipmentCostTotal = sanitizePriceValue(breakdown.equipmentCostTotal);
   const crewTotal = sanitizePriceValue(breakdown.crewTotal);
   const crewCostTotal = sanitizePriceValue(breakdown.crewCostTotal);
-  const discountAmount = sanitizePriceValue(breakdown.discountAmount);
-  const subtotalAfterDiscount = sanitizePriceValue(breakdown.subtotalAfterDiscount);
-  const companySharePercent = Number.isFinite(breakdown.companySharePercent) ? breakdown.companySharePercent : 0;
-  let companyShareAmount = sanitizePriceValue(breakdown.companyShareAmount);
+  const linkedProjectFinancials = projectLinked && project
+    ? calculateProjectLineFinancials({
+      equipmentRevenue: equipmentTotal,
+      crewRevenue: crewTotal,
+      equipmentCost: equipmentCostTotal,
+      crewCost: crewCostTotal,
+      discountValue,
+      discountType,
+      applyTax: projectOverhead.applyTax,
+      companyShareEnabled: projectOverhead.companyShareEnabled,
+      companySharePercent: projectOverhead.companySharePercent,
+    })
+    : null;
+  const discountAmount = sanitizePriceValue(linkedProjectFinancials?.discountAmount ?? breakdown.discountAmount);
+  const subtotalAfterDiscount = sanitizePriceValue(linkedProjectFinancials?.taxableAmount ?? breakdown.subtotalAfterDiscount);
+  const companySharePercent = Number.isFinite(linkedProjectFinancials?.overheadPercent)
+    ? linkedProjectFinancials.overheadPercent
+    : (Number.isFinite(breakdown.companySharePercent) ? breakdown.companySharePercent : 0);
+  let companyShareAmount = sanitizePriceValue(linkedProjectFinancials?.companyShareAmount ?? breakdown.companyShareAmount);
   companyShareAmount = companySharePercent > 0
     ? sanitizePriceValue(Math.max(0, companyShareAmount))
     : 0;
-  const taxAmount = sanitizePriceValue(breakdown.taxAmount);
-  const finalTotalComputed = sanitizePriceValue(breakdown.finalTotal);
+  const taxAmount = sanitizePriceValue(linkedProjectFinancials?.taxAmount ?? breakdown.taxAmount);
+  const finalTotalComputed = sanitizePriceValue(linkedProjectFinancials?.totalWithTax ?? breakdown.finalTotal);
   // Always show the computed final total to reflect live breakdown
   const finalTotal = finalTotalComputed;
-  const netProfitValue = sanitizePriceValue(breakdown.netProfit);
+  const netProfitValue = sanitizePriceValue(linkedProjectFinancials?.marginBeforeTax ?? breakdown.netProfit);
 
   const reservationIdDisplay = normalizeNumbers(String(reservation.reservationId ?? reservation.id ?? ''));
   const startDisplay = reservation.start ? normalizeNumbers(formatDateTime(reservation.start)) : '-';
   const endDisplay = reservation.end ? normalizeNumbers(formatDateTime(reservation.end)) : '-';
   const techniciansCountDisplay = normalizeNumbers(String(crewAssignments.length));
-  const equipmentTotalDisplay = normalizeNumbers(equipmentTotal.toFixed(2));
+  const equipmentTotalDisplay = normalizeNumbers(withProjectOverhead(equipmentTotal).toFixed(2));
   const equipmentCostDisplay = normalizeNumbers(equipmentCostTotal.toFixed(2));
   const discountAmountDisplay = normalizeNumbers(discountAmount.toFixed(2));
   const subtotalAfterDiscountDisplay = normalizeNumbers(subtotalAfterDiscount.toFixed(2));
@@ -365,7 +392,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   const crewTotalLabel = t('reservations.details.labels.crewTotal', 'إجمالي الفريق');
   const subtotalAfterDiscountLabel = t('reservations.details.labels.subtotalAfterDiscount', 'الإجمالي');
   const durationLabel = t('reservations.details.labels.duration', 'عدد الأيام');
-  const companyShareLabel = t('reservations.details.labels.companyShare', '🏦 نسبة الشركة');
+  const companyShareLabel = t('reservations.details.labels.companyShare', '🏦 المصاريف التشغيلية');
   const netProfitLabel = t('reservations.details.labels.netProfit', '💵 صافي الربح');
   const equipmentCostLabel = t('reservations.details.labels.equipmentCost', 'تكلفة المعدات');
   const imageAlt = t('reservations.create.equipment.imageAlt', 'صورة');
@@ -404,6 +431,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   const projectFallback = t('reservations.details.project.unlinked', 'غير مرتبط بأي مشروع.');
   const projectMissingText = t('reservations.edit.project.missing', '⚠️ المشروع غير متوفر (تم حذفه)');
   const openProjectLabel = t('reservations.details.actions.openProject', '📁 فتح المشروع');
+  const projectLinkedReadonlyLabel = t('reservations.details.projectLinkedReadonly', 'مرتبط بمشروع - يتم تعديل الحجز من شاشة المشروع.');
   const startLabel = t('reservations.details.labels.start', 'بداية الحجز');
   const endLabel = t('reservations.details.labels.end', 'نهاية الحجز');
   const notesLabel = t('reservations.details.labels.notes', 'ملاحظات');
@@ -552,12 +580,11 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   const crewCountText = crewCountTemplate.replace('{count}', techniciansCountDisplay);
   const notesDisplay = reservation.notes ? normalizeNumbers(reservation.notes) : notesFallback;
 
-  const crewTotalDisplay = normalizeNumbers(crewTotal.toFixed(2));
+  const crewTotalDisplay = normalizeNumbers(withProjectOverhead(crewTotal).toFixed(2));
   const crewCostDisplay = normalizeNumbers(crewCostTotal.toFixed(2));
   const companySharePercentDisplay = normalizeNumbers(String(companySharePercent));
   const companyShareAmountDisplay = normalizeNumbers(companyShareAmount.toFixed(2));
   const companyShareValue = `${companySharePercentDisplay}% (${companyShareAmountDisplay} ${currencyLabel})`;
-  const revenueAfterDiscountValue = Math.max(0, (equipmentTotal + crewTotal) - discountAmount);
   const netProfitSafe = Number.isFinite(netProfitValue) ? Math.max(0, netProfitValue) : 0;
   const netProfitDisplay = normalizeNumbers(netProfitSafe.toFixed(2));
 
@@ -591,8 +618,11 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   summaryDetails.push({ icon: '💰', label: finalTotalLabel, value: `${finalTotalDisplay} ${currencyLabel}` });
 
   const summaryDetailsHtml = summaryDetails.map(({ icon, label, value }) => `
-    <div class="summary-details-row">
-      <span class="summary-details-label">${icon} ${label}</span>
+    <div class="summary-details-card">
+      <span class="summary-details-label">
+        <span class="summary-details-label-icon" aria-hidden="true">${icon}</span>
+        <span>${label}</span>
+      </span>
       <span class="summary-details-value">${value}</span>
     </div>
   `).join('');
@@ -811,9 +841,12 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
     .map(({ text: chipText, className }) => `<span class="status-chip ${className}">${chipText}</span>`)
     .join('');
 
-  const renderInfoRow = (icon, label, value) => `
-    <div class="res-info-row">
-      <span class="label">${icon} ${label}</span>
+  const renderInfoRow = (icon, label, value, options = {}) => `
+    <div class="res-info-row${options.wide ? ' res-info-row--wide' : ''}${options.primary ? ' res-info-row--primary' : ''}">
+      <span class="label">
+        <span class="label-icon" aria-hidden="true">${icon}</span>
+        <span class="label-text">${label}</span>
+      </span>
       <span class="value">${value}</span>
     </div>
   `;
@@ -827,21 +860,24 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
     }
 
     projectRowHtml = `
-      <div class="res-info-row">
-        <span class="label">📁 ${projectLabel}</span>
+      <div class="res-info-row res-info-row--wide">
+        <span class="label">
+          <span class="label-icon" aria-hidden="true">📁</span>
+          <span class="label-text">${projectLabel}</span>
+        </span>
         <span class="value">${projectValueHtml}</span>
       </div>
     `;
   }
 
   const infoRows = [];
-  infoRows.push(renderInfoRow('👤', customerLabel, customer?.customerName || reservation.customerName || unknownCustomer));
+  infoRows.push(renderInfoRow('👤', customerLabel, customer?.customerName || reservation.customerName || unknownCustomer, { primary: true }));
   infoRows.push(renderInfoRow('📞', contactLabel, customer?.phone || '—'));
   infoRows.push(renderInfoRow('🗓️', startLabel, startDisplay));
   infoRows.push(renderInfoRow('🗓️', endLabel, endDisplay));
   infoRows.push(renderInfoRow('📦', itemsCountLabel, itemsCountText));
   infoRows.push(renderInfoRow('⏱️', durationLabel, rentalDaysDisplay));
-  infoRows.push(renderInfoRow('📝', notesLabel, notesDisplay));
+  infoRows.push(renderInfoRow('📝', notesLabel, notesDisplay, { wide: true }));
   if (projectRowHtml) {
     infoRows.push(projectRowHtml);
   }
@@ -1026,9 +1062,9 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
         unitCostNumber = sanitizePriceValue(unitCostNumber);
         totalPriceNumber = sanitizePriceValue(totalPriceNumber);
 
-        const unitPriceDisplay = `${normalizeNumbers(unitPriceNumber.toFixed(2))} ${currencyLabel}`;
+        const displayUnitPriceNumber = withProjectOverhead(unitPriceNumber);
+        const unitPriceDisplay = `${normalizeNumbers(displayUnitPriceNumber.toFixed(2))} ${currencyLabel}`;
         const unitCostDisplay = `${normalizeNumbers(unitCostNumber.toFixed(2))} ${currencyLabel}`;
-        const totalPriceDisplay = `${normalizeNumbers(totalPriceNumber.toFixed(2))} ${currencyLabel}`;
         const normalizedBarcodes = group.barcodes
           .map((code) => normalizeNumbers(String(code || '')))
           .filter(Boolean);
@@ -1106,9 +1142,9 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
               if (Number.isFinite(Number(pricing.perDayTotal))) perDay = Number(pricing.perDayTotal);
             } catch (_) { /* ignore */ }
           }
-          rowTotalNumber = sanitizePriceValue(perDay * rentalDays);
+          rowTotalNumber = sanitizePriceValue(withProjectOverhead(perDay) * rentalDays);
         } else {
-          rowTotalNumber = sanitizePriceValue(unitPriceNumber * quantityValue * rentalDays);
+          rowTotalNumber = sanitizePriceValue(displayUnitPriceNumber * quantityValue * rentalDays);
         }
 
         const rowTotalDisplay = `${normalizeNumbers(rowTotalNumber.toFixed(2))} ${currencyLabel}`;
@@ -1116,7 +1152,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
         return `
           <tr>
             <td class="reservation-modal-items-table__cell reservation-modal-items-table__cell--item">
-              <div class="reservation-item-info">
+              <div class="reservation-item-info reservation-item-info--static">
                 <div class="reservation-item-thumb-wrapper">${imageCell}</div>
                 <div class="reservation-item-copy">
                   <div class="reservation-item-title">${escapeHtml(representative.desc || representative.description || representative.name || group.description || '-')}</div>
@@ -1142,8 +1178,16 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
 
 
   const itemsTable = `
-    <div class="table-responsive reservation-modal-items-wrapper">
-      <table class="table table-sm table-hover align-middle reservation-modal-items-table">
+    <div class="table-responsive reservation-modal-table-shell reservation-modal-items-wrapper">
+      <table class="table table-sm table-hover align-middle reservation-modal-table reservation-modal-items-table">
+        <colgroup>
+          <col class="reservation-modal-items-table__col reservation-modal-items-table__col--item">
+          <col class="reservation-modal-items-table__col reservation-modal-items-table__col--quantity">
+          <col class="reservation-modal-items-table__col reservation-modal-items-table__col--days">
+          <col class="reservation-modal-items-table__col reservation-modal-items-table__col--unit-price">
+          <col class="reservation-modal-items-table__col reservation-modal-items-table__col--unit-cost">
+          <col class="reservation-modal-items-table__col reservation-modal-items-table__col--total">
+        </colgroup>
         <thead>
           <tr>
             <th>${tableHeaders.item}</th>
@@ -1239,7 +1283,8 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
         ?? 0
     ));
 
-    const clientPriceDisplay = `${normalizeNumbers(positionClientPrice.toFixed(2))} ${currencyLabel}`;
+    const displayPositionClientPrice = withProjectOverhead(positionClientPrice);
+    const clientPriceDisplay = `${normalizeNumbers(displayPositionClientPrice.toFixed(2))} ${currencyLabel}`;
     const costDisplay = positionCost > 0
       ? `${normalizeNumbers(positionCost.toFixed(2))} ${currencyLabel}`
       : null;
@@ -1262,21 +1307,16 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
     `;
   }).join('');
 
-  const useSlider = Array.isArray(crewAssignments) && crewAssignments.length > 4;
   const techniciansSectionContent = crewAssignments.length
-    ? (
-      useSlider
-        ? `
-          <div class="reservation-technicians-slider" data-tech-slider>
-            <button type="button" class="slider-btn slider-btn--prev" data-slider-prev aria-label="${escapeHtml(t('reservations.details.slider.prev', 'السابق'))}" title="${escapeHtml(t('reservations.details.slider.prev', 'السابق'))}">‹</button>
-            <div class="reservation-technicians-track" data-slider-track>
-              ${techniciansCardsHtml}
-            </div>
-            <button type="button" class="slider-btn slider-btn--next" data-slider-next aria-label="${escapeHtml(t('reservations.details.slider.next', 'التالي'))}" title="${escapeHtml(t('reservations.details.slider.next', 'التالي'))}">›</button>
-          </div>
-        `
-        : `<div class="reservation-technicians-grid">${techniciansCardsHtml}</div>`
-      )
+    ? `
+      <div class="reservation-technicians-slider" data-tech-slider>
+        <button type="button" class="slider-btn slider-btn--prev" data-slider-prev aria-label="${escapeHtml(t('reservations.details.slider.prev', 'السابق'))}" title="${escapeHtml(t('reservations.details.slider.prev', 'السابق'))}">‹</button>
+        <div class="reservation-technicians-track" data-slider-track>
+          ${techniciansCardsHtml}
+        </div>
+        <button type="button" class="slider-btn slider-btn--next" data-slider-next aria-label="${escapeHtml(t('reservations.details.slider.next', 'التالي'))}" title="${escapeHtml(t('reservations.details.slider.next', 'التالي'))}">›</button>
+      </div>
+    `
     : `<ul class="reservation-modal-technicians"><li>${noCrewText}</li></ul>`;
 
   return `
@@ -1291,30 +1331,32 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
         </div>
       </div>
 
-      <div class="reservation-modal-grid">
+      <div class="reservation-modal-overview">
         <div class="reservation-info-card">
           <h6>${bookingSectionTitle}</h6>
-          ${infoRowsHtml}
+          <div class="reservation-info-list">
+            ${infoRowsHtml}
+          </div>
         </div>
-      </div>
-      <div class="reservation-summary-card">
-        <div class="summary-icon">💳</div>
-        <div class="summary-body">
-          <h6 class="summary-heading">${paymentSummaryTitle}</h6>
-          <div class="summary-content">
-            <div class="summary-details">
-              ${summaryDetailsHtml}
+        <div class="reservation-summary-card">
+          <div class="summary-icon">💳</div>
+          <div class="summary-body">
+            <h6 class="summary-heading">${paymentSummaryTitle}</h6>
+            <div class="summary-content">
+              <div class="summary-details">
+                ${summaryDetailsHtml}
+              </div>
+              <div class="reservation-payment-history-modal">
+                <h6 class="history-heading">${paymentHistoryTitle}</h6>
+                ${paymentHistoryHtml}
+              </div>
+              ${debugPanelHtml}
             </div>
-            <div class="reservation-payment-history-modal">
-              <h6 class="history-heading">${paymentHistoryTitle}</h6>
-              ${paymentHistoryHtml}
-            </div>
-            ${debugPanelHtml}
           </div>
         </div>
       </div>
 
-      <div class="reservation-technicians-section">
+      <div class="reservation-technicians-section reservation-modal-section-card">
         <div class="section-title">
           <span>${crewSectionTitle}</span>
           <span class="count">${crewCountText}</span>
@@ -1322,7 +1364,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
         ${techniciansSectionContent}
       </div>
 
-      <div class="reservation-items-section">
+      <div class="reservation-items-section reservation-modal-section-card">
         <div class="section-title">
           <span>${itemsSectionTitle}</span>
           <span class="count">${itemsCountText}</span>
@@ -1337,7 +1379,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
         <button type="button" class="modal-action-btn modal-action-btn--ghost" id="reservation-details-checklist-btn" data-index="${index}">
           ${t('reservations.details.actions.exportChecklist', '📋 لستة معدات وفنيين')}
         </button>
-        <button type="button" class="modal-action-btn modal-action-btn--primary" id="reservation-details-edit-btn" data-index="${index}">${editActionLabel}</button>
+        ${isProjectLinked ? `<span class="reservation-linked-pill">${projectLinkedReadonlyLabel}</span>` : `<button type="button" class="modal-action-btn modal-action-btn--primary" id="reservation-details-edit-btn" data-index="${index}">${editActionLabel}</button>`}
         ${canDelete ? `<button type="button" class="modal-action-btn modal-action-btn--danger" id="reservation-details-delete-btn" data-index="${index}">${deleteActionLabel}</button>` : ''}
       </div>
     </div>

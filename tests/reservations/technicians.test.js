@@ -40,7 +40,9 @@ const buildDom = () => {
     <button id="apply-technician-selection"></button>
     <div id="technician-picker-selection-info"></div>
     <div id="selectTechniciansModal"></div>
-    <table id="crew-assignment-table"><tbody></tbody></table>
+    <div class="crew-assignment-table-shell">
+      <table id="crew-assignment-table"><tbody></tbody></table>
+    </div>
     <div id="selected-technicians-list"></div>
     <div id="edit-selected-technicians-list"></div>
     <input type="hidden" id="res-customer" value="C1" />
@@ -208,18 +210,14 @@ describe('reservationsTechnicians', () => {
 
     document.getElementById('open-technician-picker').click();
     await Promise.resolve();
-    const inputs = Array.from(document.querySelectorAll('.crew-assignment-autocomplete'));
+    const inputs = Array.from(document.querySelectorAll('.crew-assignment-select'));
 
     expect(inputs).toHaveLength(2);
-    expect(inputs[0].value).toBe('Alpha');
-    expect(inputs[1].value).toBe('Beta');
+    expect(inputs[0].value).toBe('t1');
+    expect(inputs[1].value).toBe('t2');
 
-    const firstListId = inputs[0].getAttribute('list');
-    const firstList = firstListId ? document.getElementById(firstListId) : null;
-    const conflictingOption = firstList
-      ? Array.from(firstList.options).find((option) => option.dataset.id === 't2')
-      : null;
-    expect(conflictingOption?.dataset.disabled).toBe('true');
+    const conflictingOption = Array.from(inputs[0].options).find((option) => option.value === 't2');
+    expect(conflictingOption?.disabled).toBe(true);
 
     const priceText = document.querySelector('#crew-assignment-table tbody').textContent;
     expect(priceText).toContain('SR');

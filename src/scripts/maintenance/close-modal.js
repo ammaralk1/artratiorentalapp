@@ -108,7 +108,17 @@ export function ensureCloseTicketModalElements() {
   }
 
   if (!modalEl.dataset.listenerAttached) {
+    modalEl.addEventListener('show.bs.modal', () => {
+      document.body.classList.add('maintenance-modal-open');
+    });
     modalEl.addEventListener('hidden.bs.modal', resetCloseTicketModal);
+    modalEl.addEventListener('hidden.bs.modal', () => {
+      const reportModal = document.getElementById('maintenanceReportModal');
+      const isReportOpen = reportModal?.classList.contains('show');
+      if (!isReportOpen) {
+        document.body.classList.remove('maintenance-modal-open');
+      }
+    });
     modalEl.dataset.listenerAttached = 'true';
   }
 

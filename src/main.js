@@ -2,29 +2,54 @@ import './styles/app.css';
 
 import { logout, checkAuth } from './scripts/auth.js';
 import { setupTabs } from './scripts/tabs.js';
-import { initCustomers } from './scripts/customers.js';
-import {
-  uploadEquipmentFromExcel,
-  renderEquipment
-} from './scripts/equipment.js';
-import { initEquipmentPackages } from './scripts/equipmentPackagesManager.js';
 import { loadData } from './scripts/storage.js';
 // Lazy: calendar/reservations/maintenance now load per-tab in tabs.js
 import { applyStoredTheme, initThemeToggle } from './scripts/theme.js';
 import { initDashboardShell } from './scripts/dashboardShell.js';
 import { initEnhancedSelects } from './scripts/ui/enhancedSelect.js';
-import { initBackToTopForEquipment } from './scripts/ui/backToTop.js';
 import { initModalA11yFocusGuards } from './scripts/ui/modalAccessibility.js';
+import { applyLocalDashboardFixture, isLocalDashboardFixtureEnabled } from './scripts/devFixtures.js';
 import {
   getReservationUIHandler,
   waitForReservationUIHandler
 } from './scripts/reservations/uiBridge.js';
 
 applyStoredTheme();
+const dashboardFixtureActive = applyLocalDashboardFixture();
 
 let pendingReservationEdit = null;
 let pendingReservationEditPromise = null;
 let dashboardMetricsLoadPromise = null;
+
+function redirectLegacyOperationsRoute() {
+  const hash = window.location.hash || '';
+  const target = hash === '#customers-tab'
+    ? 'clients.html'
+    : hash === '#technicians-tab'
+      ? 'crew.html'
+      : hash === '#equipment-tab'
+        ? 'equipment.html'
+        : hash === '#maintenance-tab'
+          ? 'maintenance.html'
+      : '';
+  if (target) {
+    window.location.replace(`${target}${window.location.search || ''}`);
+    return true;
+  }
+
+  const pageName = String(window.location.pathname || '').split('/').pop();
+  if (pageName === 'dashboard.html') {
+    const operationsHash = hash === '#reservations' || hash === '#reservations-tab' ? '' : hash;
+    window.location.replace(`operations.html${window.location.search || ''}${operationsHash}`);
+    return true;
+  }
+
+  return false;
+}
+
+function revealDashboardPage() {
+  document.body?.classList.remove('auth-pending');
+}
 
 // Early restore for reservation draft so fields persist across refresh
 function earlyRestoreReservationDraft() {
@@ -112,6 +137,10 @@ function scheduleDashboardMetricsInit() {
 }
 
 function scheduleDashboardDataPrefetch() {
+  if (dashboardFixtureActive || isLocalDashboardFixtureEnabled()) {
+    return;
+  }
+
   const kickoff = async () => {
     try {
       const tasks = [];
@@ -138,6 +167,9 @@ function scheduleDashboardDataPrefetch() {
 }
 
 async function initApp() {
+  if (redirectLegacyOperationsRoute()) {
+    return;
+  }
   const user = await checkAuth();
   if (!user) {
     return;
@@ -146,11 +178,7 @@ async function initApp() {
   // Restore reservation draft very early so fields are visible even before module init
   try { earlyRestoreReservationDraft(); } catch (_) {}
   setupTabs();
-  initBackToTopForEquipment();
-  initCustomers();
   initThemeToggle();
-  renderEquipment();
-  initEquipmentPackages();
   initEnhancedSelects();
   // Ensure closing any modal won't leave focus on a hidden (aria-hidden) ancestor
   try { initModalA11yFocusGuards(); } catch (_) {}
@@ -159,29 +187,11 @@ async function initApp() {
   scheduleDashboardMetricsInit();
   scheduleDashboardDataPrefetch();
 
-  // ✅ رفع ملف إكسل
-  const excelUploadInput = document.getElementById("excel-upload");
-  if (excelUploadInput) {
-    excelUploadInput.addEventListener("change", async (e) => {
-      const file = e.target.files && e.target.files[0];
-      if (!file) return;
-      await uploadEquipmentFromExcel(file);
-      e.target.value = "";
-    });
-  }
-
-  const excelUploadTrigger = document.getElementById("excel-upload-trigger");
-  if (excelUploadTrigger && excelUploadInput) {
-    excelUploadTrigger.addEventListener("click", (event) => {
-      event.preventDefault();
-      excelUploadInput.click();
-    });
-  }
-
   // ✅ زر تسجيل الخروج
   document.getElementById("logout-btn")?.addEventListener("click", logout);
 
   // ✅ تحسين اختيار التاريخ والوقت
+  revealDashboardPage();
   enhanceDateTimePickers();
   handlePendingReservationEdit();
 }

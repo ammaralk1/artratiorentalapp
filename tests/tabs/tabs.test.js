@@ -27,12 +27,10 @@ const setupDom = () => {
   document.body.innerHTML = `
     <div class="tab-buttons">
       <button class="tab-button active" data-tab="customers-tab">Customers</button>
-      <button class="tab-button" data-tab="equipment-tab">Equipment</button>
       <button class="tab-button" data-tab="reservations-tab">Reservations</button>
     </div>
     <div class="tab-content-wrapper">
       <div class="tab active" id="customers-tab"></div>
-      <div class="tab" id="equipment-tab"></div>
       <div class="tab" id="reservations-tab">
         <div class="reservations-subtabs-container">
           <div class="sub-tab-buttons tabs tabs-boxed" role="tablist">
@@ -53,7 +51,6 @@ const setupDom = () => {
 };
 
 const renderCustomersMock = vi.fn();
-const renderEquipmentMock = vi.fn();
 const renderReservationsMock = vi.fn();
 const setupReservationEventsMock = vi.fn();
 const renderCalendarMock = vi.fn();
@@ -63,7 +60,6 @@ const initReportsMock = vi.fn();
 const renderMaintenanceMock = vi.fn();
 
 vi.mock('../../src/scripts/customers.js', () => ({ renderCustomers: renderCustomersMock }));
-vi.mock('../../src/scripts/equipment.js', () => ({ renderEquipment: renderEquipmentMock }));
 vi.mock('../../src/scripts/technicians.js', () => ({ renderTechnicians: renderTechniciansMock }));
 vi.mock('../../src/scripts/reports.js', () => ({ renderReports: renderReportsMock, initReports: initReportsMock }));
 vi.mock('../../src/scripts/maintenance.js', () => ({ renderMaintenance: renderMaintenanceMock }));
@@ -79,7 +75,6 @@ const resetState = () => {
   }
   setupDom();
   renderCustomersMock.mockClear();
-  renderEquipmentMock.mockClear();
   renderReservationsMock.mockClear();
   setupReservationEventsMock.mockClear();
   renderCalendarMock.mockClear();
@@ -107,14 +102,14 @@ describe('tabs module', () => {
 
   it('activates stored tab on init and renders corresponding section', async () => {
     resetState();
-    setMockPreferences({ dashboardTab: 'equipment-tab' });
+    setMockPreferences({ dashboardTab: 'reservations-tab', dashboardSubTab: 'my-reservations-tab' });
     const module = await import('../../src/scripts/tabs.js');
     module.setupTabs();
 
     await nextTick();
 
-    expect(renderEquipmentMock).toHaveBeenCalled();
-    expect(document.getElementById('equipment-tab').classList.contains('active')).toBe(true);
+    expect(renderReservationsMock).toHaveBeenCalled();
+    expect(document.getElementById('reservations-tab').classList.contains('active')).toBe(true);
     expect(document.body.classList.contains('tabs-loading')).toBe(false);
   });
 
@@ -126,13 +121,14 @@ describe('tabs module', () => {
     await nextTick();
 
     const updateMock = updatePreferencesMockAccessor();
-    const equipmentButton = document.querySelector('[data-tab="equipment-tab"]');
-    equipmentButton.click();
+    const reservationsButton = document.querySelector('[data-tab="reservations-tab"]');
+    reservationsButton.click();
+    await nextTick();
 
-    expect(updateMock).toHaveBeenCalledWith({ dashboardTab: 'equipment-tab' });
-    expect(getMockPreferences()).toEqual(expect.objectContaining({ dashboardTab: 'equipment-tab', dashboardSubTab: null }));
-    expect(renderEquipmentMock).toHaveBeenCalled();
-    expect(document.getElementById('equipment-tab').style.display).toBe('block');
+    expect(updateMock).toHaveBeenCalledWith({ dashboardTab: 'reservations-tab' });
+    expect(getMockPreferences()).toEqual(expect.objectContaining({ dashboardTab: 'reservations-tab', dashboardSubTab: 'my-reservations-tab' }));
+    expect(renderReservationsMock).toHaveBeenCalled();
+    expect(document.getElementById('reservations-tab').style.display).toBe('block');
   });
 
   it('activates reservations sub-tabs and triggers deferred renders', async () => {
@@ -174,8 +170,8 @@ describe('tabs module', () => {
 
     const createButton = document.querySelector('.sub-tab-button[data-sub-tab="create-tab"]');
     expect(createButton).not.toBeNull();
-    expect(getMockPreferences().dashboardSubTab).toBe('create-tab');
-    expect(updateMock).toHaveBeenCalledWith(expect.objectContaining({ dashboardSubTab: 'create-tab' }));
+    expect(getMockPreferences().dashboardSubTab).toBe('my-reservations-tab');
+    expect(updateMock).toHaveBeenCalledWith(expect.objectContaining({ dashboardSubTab: 'my-reservations-tab' }));
   });
 
   it('keeps the active reservations sub-tab when theme changes', async () => {

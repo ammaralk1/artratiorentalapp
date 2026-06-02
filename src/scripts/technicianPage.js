@@ -1,6 +1,13 @@
 import '../styles/app.css';
 import { getTechnicianById, syncTechniciansStatuses } from './technicians.js';
-import { refreshTechniciansFromApi } from './techniciansService.js';
+import {
+  getTechniciansState,
+  setTechniciansState,
+  refreshTechniciansFromApi,
+  updateTechnicianApi,
+  buildTechnicianPayload,
+  isApiError,
+} from './techniciansService.js';
 import { renderTechnicianReservations, renderTechnicianProjects, normalizeTechnicianAssignments } from './technicianDetails.js';
 import { normalizeNumbers, showToast } from './utils.js';
 import { applyStoredTheme, initThemeToggle } from './theme.js';
@@ -10,21 +17,47 @@ import { initDashboardShell } from './dashboardShell.js';
 import { ensureReservationsLoaded } from './reservationsActions.js';
 import { getReservationsState, refreshReservationsFromApi } from './reservationsService.js';
 import { calculateReservationDays } from './reservationsSummary.js';
-import { isReservationCompleted } from './reservationsShared.js';
+import { isReservationCompleted, resolveReservationProjectState } from './reservationsShared.js';
 import { listTechnicianPayouts, createTechnicianPayout, deleteTechnicianPayout } from './technicianPayoutsService.js';
 import { loadData } from './storage.js';
-import { refreshProjectsFromApi } from './projectsService.js';
+import { getProjectsState, refreshProjectsFromApi } from './projectsService.js';
 import { refreshEquipmentFromApi } from './equipment.js';
 import { initDashboardMetrics } from './dashboardMetrics.js';
 import { apiRequest } from './apiClient.js';
 import { registerReservationGlobals, getReservationsEditContext, setupEditReservationModalEvents } from './reservations/controller.js';
 import mountReservationModalsIfNeeded from './reservations/modals.js';
+import {
+  applyLocalDetailsFixture,
+  createLocalFixturePayout,
+  deleteLocalFixturePayout,
+  getLocalFixturePayouts
+} from './devFixtures.js';
+import { initDetailResponsiveLayout } from './detailResponsiveLayout.js';
 
 mountReservationModalsIfNeeded();
 applyStoredTheme();
-checkAuth();
 initDashboardShell();
+initDetailResponsiveLayout();
 registerReservationGlobals();
+const detailsFixtureActive = applyLocalDetailsFixture();
+
+function revealPage() {
+  document.body.classList.remove('auth-pending');
+}
+
+Promise.resolve(checkAuth({ redirect: false, retries: 1, retryDelay: 250 }))
+  .then((user) => {
+    if (!user) {
+      window.location.href = 'login.html';
+      return;
+    }
+
+    revealPage();
+  })
+  .catch(() => {
+    revealPage();
+  });
+
 const initTechnicianReservationModal = () => {
   try {
     setupEditReservationModalEvents(getReservationsEditContext());
@@ -48,8 +81,6 @@ const heroRoleEl = document.getElementById('technician-hero-role');
 const heroPositionEl = document.getElementById('technician-hero-position');
 const greetingNameEl = document.getElementById('dashboard-greeting-technician-name');
 const greetingRoleEl = document.getElementById('dashboard-greeting-technician-role');
-const greetingStatusEl = document.getElementById('dashboard-greeting-technician-status');
-const greetingRoleBadgeEl = document.getElementById('dashboard-greeting-technician-role-badge');
 
 const sidebarProjectsEl = document.getElementById('sidebar-stat-projects');
 const sidebarReservationsEl = document.getElementById('sidebar-stat-reservations');
@@ -88,6 +119,7 @@ const technicianTabButtons = Array.from(document.querySelectorAll('[data-technic
 const technicianTabPanels = new Map(
   Array.from(document.querySelectorAll('[data-technician-tab-panel]')).map((panel) => [panel.getAttribute('data-technician-tab-panel'), panel])
 );
+const technicianEditSaveBtn = document.getElementById('save-technician-changes');
 
 let activeTechnicianTab = 'reservations';
 let technicianState = null;
@@ -115,6 +147,197 @@ function formatNumberLocalized(value) {
     return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(number);
   } catch (error) {
     return normalizeNumbers(String(number)) || '0';
+  }
+}
+
+function normalizeTechnicianPhoneValue(value = '') {
+  return normalizeNumbers(String(value)).replace(/[^0-9+]/g, '');
+}
+
+function normalizeTechnicianMoneyValue(value = '') {
+  const normalized = normalizeNumbers(String(value)).replace(/[^0-9.]/g, '');
+  if (!normalized.includes('.')) return normalized;
+  const [integerPart, ...rest] = normalized.split('.');
+  const decimalPart = rest.join('').replace(/\D/g, '').slice(0, 2);
+  return decimalPart ? `${integerPart}.${decimalPart}` : integerPart;
+}
+
+function sanitizeTechnicianNumericInput(element, normalizer) {
+  if (!element || element.dataset.normalizerAttached) return;
+  element.addEventListener('input', () => {
+    const normalized = normalizer(element.value);
+    if (element.value !== normalized) {
+      element.value = normalized;
+      const cursor = normalized.length;
+      element.setSelectionRange?.(cursor, cursor);
+    }
+  });
+  element.dataset.normalizerAttached = 'true';
+}
+
+function getTechnicianEditFields() {
+  return {
+    id: document.getElementById('edit-technician-id'),
+    name: document.getElementById('edit-technician-name'),
+    phone: document.getElementById('edit-technician-phone'),
+    email: document.getElementById('edit-technician-email'),
+    role: document.getElementById('edit-technician-role'),
+    department: document.getElementById('edit-technician-department'),
+    wage: document.getElementById('edit-technician-wage'),
+    total: document.getElementById('edit-technician-total'),
+    status: document.getElementById('edit-technician-status'),
+    notes: document.getElementById('edit-technician-notes'),
+  };
+}
+
+function populateTechnicianEditModal(technician) {
+  const fields = getTechnicianEditFields();
+  if (!fields.id || !fields.name || !fields.phone || !fields.role || !fields.status) {
+    return;
+  }
+
+  fields.id.value = technician?.id || '';
+  fields.name.value = technician?.name || '';
+  fields.phone.value = normalizeTechnicianPhoneValue(technician?.phone || '');
+  if (fields.email) fields.email.value = technician?.email || '';
+  fields.role.value = technician?.role || '';
+  if (fields.department) fields.department.value = technician?.department || '';
+  if (fields.wage) fields.wage.value = normalizeTechnicianMoneyValue(technician?.dailyWage ?? '');
+  if (fields.total) fields.total.value = normalizeTechnicianMoneyValue(technician?.dailyTotal ?? '');
+  fields.status.value = technician?.baseStatus || technician?.status || 'available';
+  if (fields.notes) fields.notes.value = technician?.notes || '';
+
+  sanitizeTechnicianNumericInput(fields.phone, normalizeTechnicianPhoneValue);
+  sanitizeTechnicianNumericInput(fields.wage, normalizeTechnicianMoneyValue);
+  sanitizeTechnicianNumericInput(fields.total, normalizeTechnicianMoneyValue);
+}
+
+function collectTechnicianEditModalPayload() {
+  const fields = getTechnicianEditFields();
+  if (!fields.id || !fields.name || !fields.phone || !fields.role || !fields.status) {
+    return null;
+  }
+
+  const id = fields.id.value.trim();
+  const name = fields.name.value.trim();
+  const phone = normalizeTechnicianPhoneValue(fields.phone.value.trim());
+  const email = fields.email?.value.trim() || '';
+  const role = fields.role.value.trim();
+  const department = fields.department?.value.trim() || '';
+  const wageRaw = normalizeTechnicianMoneyValue(fields.wage?.value.trim() || '');
+  const totalRaw = normalizeTechnicianMoneyValue(fields.total?.value.trim() || '');
+  const status = fields.status.value || 'available';
+  const notes = fields.notes?.value.trim() || '';
+
+  fields.phone.value = phone;
+  if (fields.wage) fields.wage.value = wageRaw;
+  if (fields.total) fields.total.value = totalRaw;
+
+  if (!id) {
+    showToast(t('technicians.toast.unidentified', '⚠️ تعذر تحديد عضو الطاقم المطلوب'));
+    return null;
+  }
+  if (!name) {
+    showToast(t('technicians.toast.missingName', '⚠️ يرجى إدخال اسم عضو الطاقم'));
+    fields.name.focus();
+    return null;
+  }
+  if (!phone) {
+    showToast(t('technicians.toast.missingPhone', '⚠️ يرجى إدخال رقم التواصل'));
+    fields.phone.focus();
+    return null;
+  }
+  if (!role) {
+    showToast(t('technicians.toast.missingRole', '⚠️ يرجى إدخال الوظيفة'));
+    fields.role.focus();
+    return null;
+  }
+
+  const dailyWage = wageRaw === '' ? 0 : Number.parseFloat(wageRaw);
+  const dailyTotal = totalRaw === '' ? null : Number.parseFloat(totalRaw);
+  if (Number.isNaN(dailyWage) || dailyWage < 0) {
+    showToast(t('technicians.toast.invalidWage', '⚠️ أدخل قيمة صحيحة للأجر اليومي'));
+    fields.wage?.focus();
+    return null;
+  }
+  if (dailyTotal != null && (Number.isNaN(dailyTotal) || dailyTotal < 0)) {
+    showToast(t('technicians.toast.invalidTotal', '⚠️ أدخل قيمة صحيحة للتكلفة الإجمالية'));
+    fields.total?.focus();
+    return null;
+  }
+
+  return {
+    id,
+    name,
+    phone,
+    email,
+    role,
+    department,
+    dailyWage,
+    dailyTotal,
+    status,
+    notes,
+  };
+}
+
+async function handleTechnicianEditSave() {
+  const payload = collectTechnicianEditModalPayload();
+  if (!payload) return;
+
+  if (technicianEditSaveBtn) {
+    technicianEditSaveBtn.disabled = true;
+  }
+
+  const apiPayload = buildTechnicianPayload({
+    name: payload.name,
+    phone: payload.phone,
+    email: payload.email || null,
+    role: payload.role,
+    department: payload.department,
+    dailyWage: payload.dailyWage,
+    dailyTotal: payload.dailyTotal,
+    status: payload.status,
+    notes: payload.notes,
+    active: true,
+  });
+
+  try {
+    let updated;
+    if (detailsFixtureActive) {
+      const current = Array.isArray(getTechniciansState()) ? getTechniciansState() : [];
+      updated = {
+        ...(current.find((item) => String(item.id) === String(payload.id)) || {}),
+        ...payload,
+        baseStatus: payload.status,
+        status: payload.status,
+        active: true,
+      };
+      setTechniciansState(
+        current.map((item) => (String(item.id) === String(payload.id) ? updated : item))
+      );
+    } else {
+      updated = await updateTechnicianApi(payload.id, apiPayload);
+    }
+
+    technicianState = updated;
+    await refreshTechnicianFinancialSummary(updated);
+    renderTechnicianDetails(updated);
+    showToast(t('technicians.toast.updateSuccess', '💾 تم حفظ بيانات عضو الطاقم'));
+
+    const modalEl = document.getElementById('editTechnicianModal');
+    if (modalEl && window.bootstrap?.Modal) {
+      window.bootstrap.Modal.getInstance(modalEl)?.hide();
+    }
+  } catch (error) {
+    console.error('❌ [technician-page] Failed to save technician modal', error);
+    const message = isApiError(error)
+      ? error.message
+      : t('technicians.toast.updateFailed', 'تعذر حفظ بيانات عضو الطاقم');
+    showToast(message, 'error');
+  } finally {
+    if (technicianEditSaveBtn) {
+      technicianEditSaveBtn.disabled = false;
+    }
   }
 }
 
@@ -209,17 +432,16 @@ function updateSidebarStats(overrides = {}) {
 function resolveTechnicianScopedReservations() {
   if (!technicianId) return [];
   const reservations = getReservationsState();
+  const projectsState = getProjectsState();
+  const projectsMap = new Map(
+    Array.isArray(projectsState)
+      ? projectsState.map((project) => [String(project?.id ?? project?.projectId ?? ''), project])
+      : []
+  );
   const normalizedId = String(technicianId);
   if (!Array.isArray(reservations)) return [];
   return reservations.filter((reservation) => {
-    if (!reservation) return false;
-    const rawStatus = String(reservation.status || '').toLowerCase();
-    if (rawStatus === 'cancelled' || rawStatus === 'canceled' || rawStatus === 'ملغي' || rawStatus === 'ملغى' || rawStatus === 'ملغية') {
-      return false;
-    }
-    if (!isReservationCompleted(reservation)) {
-      return false;
-    }
+    if (!isReservationEligibleForFinancialSummary(reservation, projectsMap)) return false;
     const technicianIds = Array.isArray(reservation.technicians)
       ? reservation.technicians.map((id) => String(id))
       : [];
@@ -352,6 +574,11 @@ function computeTechnicianSidebarStats(reservations, technicianId) {
 }
 
 async function hydrateSidebarSummary() {
+  if (detailsFixtureActive) {
+    updateSidebarStats();
+    return;
+  }
+
   try {
     const response = await apiRequest('/summary/');
     const summary = normalizeSidebarSummary(response?.data ?? null);
@@ -447,26 +674,111 @@ function resolveTechnicianCostRate(technician = {}) {
 function buildPaymentStatusBadge(status) {
   const normalized = typeof status === 'string' ? status.toLowerCase() : 'unpaid';
   let key = 'technicianFinancial.status.unpaid';
-  let badgeClass = 'technician-payment-badge technician-payment-badge--unpaid';
+  let badgeClass = 'reservation-chip status-chip status-unpaid';
   if (normalized === 'paid') {
     key = 'technicianFinancial.status.paid';
-    badgeClass = 'technician-payment-badge technician-payment-badge--paid';
+    badgeClass = 'reservation-chip status-chip status-paid';
   } else if (normalized === 'partial') {
     key = 'technicianFinancial.status.partial';
-    badgeClass = 'technician-payment-badge technician-payment-badge--partial';
+    badgeClass = 'reservation-chip status-chip status-partial';
   }
   return `<span class="${badgeClass}" data-i18n data-i18n-key="${key}">${t(key, key)}</span>`;
+}
+
+function resolveFinancialWorkStatusMeta(status) {
+  const normalized = String(status || '').trim().toLowerCase();
+  if (!normalized) {
+    return { key: '', fallback: '', modifier: 'default' };
+  }
+
+  if (['completed', 'closed', 'مغلق', 'مغلقة', 'مكتمل', 'مكتملة', 'منتهي', 'منتهية'].includes(normalized)) {
+    return { key: 'technicianFinancial.list.workStatus.completed', fallback: 'مغلق', modifier: 'completed' };
+  }
+  if (['confirmed', 'مؤكد', 'مؤكدة'].includes(normalized)) {
+    return { key: 'technicianFinancial.list.workStatus.confirmed', fallback: 'مؤكد', modifier: 'confirmed' };
+  }
+  if (['pending', 'غير مؤكد', 'قيد التأكيد'].includes(normalized)) {
+    return { key: 'technicianFinancial.list.workStatus.pending', fallback: 'غير مؤكد', modifier: 'pending' };
+  }
+  if (['cancelled', 'canceled', 'ملغي', 'ملغى', 'ملغية'].includes(normalized)) {
+    return { key: 'technicianFinancial.list.workStatus.cancelled', fallback: 'ملغي', modifier: 'cancelled' };
+  }
+  if (['in_progress', 'ongoing', 'قيد التنفيذ', 'جاري'].includes(normalized)) {
+    return { key: 'technicianFinancial.list.workStatus.ongoing', fallback: 'قيد التنفيذ', modifier: 'ongoing' };
+  }
+
+  return { key: '', fallback: String(status), modifier: 'default' };
+}
+
+function resolveFinancialWorkStatusLabel(status) {
+  const meta = resolveFinancialWorkStatusMeta(status);
+  if (!meta.fallback) return '';
+  return meta.key ? t(meta.key, meta.fallback) : meta.fallback;
+}
+
+function buildFinancialWorkStatusBadge(status) {
+  const meta = resolveFinancialWorkStatusMeta(status);
+  const modifierClassMap = {
+    confirmed: 'status-confirmed',
+    pending: 'status-pending',
+    completed: 'status-completed',
+    cancelled: 'status-cancelled',
+    ongoing: 'status-ongoing',
+    default: 'status-info',
+  };
+  const statusClass = modifierClassMap[meta.modifier] || 'status-info';
+  if (!meta.fallback) {
+    return `<span class="reservation-chip status-chip ${statusClass}">${t('common.placeholder.empty', '—')}</span>`;
+  }
+  const label = meta.key ? t(meta.key, meta.fallback) : meta.fallback;
+  const dataAttr = meta.key ? ` data-i18n data-i18n-key="${meta.key}"` : '';
+  return `<span class="reservation-chip status-chip ${statusClass}"${dataAttr}>${escapeHtml(label)}</span>`;
+}
+
+function resolvePayoutNoteText(entry = {}) {
+  const noteKey = entry?.noteKey ?? entry?.note_key ?? '';
+  const noteText = entry?.note ?? '';
+  if (noteKey) {
+    return t(noteKey, noteText);
+  }
+  return noteText;
+}
+
+function isReservationEligibleForFinancialSummary(reservation, projectsMap = null) {
+  if (!reservation) return false;
+
+  const rawStatus = String(reservation.status || '').trim().toLowerCase();
+  if (['cancelled', 'canceled', 'ملغي', 'ملغى', 'ملغية'].includes(rawStatus)) {
+    return false;
+  }
+
+  const projectId = reservation?.projectId ?? reservation?.project_id ?? null;
+  const project = projectId != null && projectsMap?.get
+    ? projectsMap.get(String(projectId))
+    : null;
+  const { effectiveConfirmed, projectLinked, projectStatus } = resolveReservationProjectState(reservation, project);
+  if (!effectiveConfirmed) {
+    return false;
+  }
+
+  const effectiveStatus = String(projectLinked && projectStatus ? projectStatus : rawStatus).trim().toLowerCase();
+
+  if (isReservationCompleted(reservation) || effectiveStatus === 'completed') {
+    return true;
+  }
+
+  return ['confirmed', 'مؤكد', 'مؤكدة'].includes(effectiveStatus);
 }
 
 function renderFinancialSummary(state) {
   const { totals, metrics } = state;
   const assignmentsCount = Number(metrics.assignments ?? 0);
   const payoutsCount = Number(metrics.payoutsCount ?? 0);
-  const assignmentsText = t('technicianFinancial.stats.totalDesc', 'مرتبطة بـ {count} مهام')
+  const assignmentsText = t('technicianFinancial.stats.totalDesc', 'Across {count} assignments')
     .replace('{count}', normalizeNumbers(String(assignmentsCount)));
-  const paidText = t('technicianFinancial.stats.paidDesc', '{count} دفعات مسجلة')
+  const paidText = t('technicianFinancial.stats.paidDesc', '{count} payouts recorded')
     .replace('{count}', normalizeNumbers(String(payoutsCount)));
-  const outstandingTemplate = t('technicianFinancial.stats.outstandingDesc', 'المتبقي {amount}');
+  const outstandingTemplate = t('technicianFinancial.stats.outstandingDesc', 'Outstanding {amount}');
   const outstandingText = totals.outstanding > 0
     ? outstandingTemplate.replace('{amount}', formatCurrency(totals.outstanding))
     : t('common.placeholder.empty', '—');
@@ -491,27 +803,28 @@ function renderFinancialModal(state) {
 
   if (!breakdown.length) {
     financialModalRowsEl.innerHTML = '';
-    financialModalTableWrapper.classList.add('hidden');
-    financialModalEmptyEl.classList.remove('hidden');
+    financialModalTableWrapper.hidden = true;
+    financialModalEmptyEl.hidden = false;
   } else {
-    financialModalEmptyEl.classList.add('hidden');
-    financialModalTableWrapper.classList.remove('hidden');
+    financialModalEmptyEl.hidden = true;
+    financialModalTableWrapper.hidden = false;
 
     const rows = breakdown.map((entry) => {
       const period = entry.period || '—';
       const outstanding = entry.outstandingAmount > 0
         ? formatCurrency(entry.outstandingAmount)
-        : `<span class="text-success">${t('technicianFinancial.list.settled', 'لا يوجد')}</span>`;
+        : `<span class="text-success">${t('technicianFinancial.list.settled', 'None')}</span>`;
       return `
-        <tr>
-          <td>
-            <div class="font-semibold text-base-content">${escapeHtml(entry.label)}</div>
-            <div class="text-xs text-base-content/60">${escapeHtml(entry.reference)}</div>
+        <tr class="technician-financial-table__row">
+          <td class="technician-financial-table__cell technician-financial-table__cell--reservation">
+            <div class="technician-financial-table__primary">${escapeHtml(entry.label)}</div>
+            <div class="technician-financial-table__secondary">${escapeHtml(entry.reference)}</div>
           </td>
-          <td class="whitespace-nowrap">${escapeHtml(period)}</td>
-          <td>${formatCurrency(entry.dueAmount)}</td>
-          <td>${buildPaymentStatusBadge(entry.paidStatus)}</td>
-          <td>${outstanding}</td>
+          <td class="technician-financial-table__cell technician-financial-table__cell--period whitespace-nowrap">${escapeHtml(period)}</td>
+          <td class="technician-financial-table__cell technician-financial-table__cell--work-status">${buildFinancialWorkStatusBadge(entry.workStatus)}</td>
+          <td class="technician-financial-table__cell technician-financial-table__cell--amount">${formatCurrency(entry.dueAmount)}</td>
+          <td class="technician-financial-table__cell technician-financial-table__cell--payment-status">${buildPaymentStatusBadge(entry.paidStatus)}</td>
+          <td class="technician-financial-table__cell technician-financial-table__cell--outstanding">${outstanding}</td>
         </tr>
       `;
     }).join('');
@@ -529,17 +842,18 @@ function renderFinancialPayouts(payouts = []) {
 
   if (!Array.isArray(payouts) || payouts.length === 0) {
     financialPayoutListEl.innerHTML = '';
-    financialPayoutEmptyEl.classList.remove('hidden');
+    financialPayoutEmptyEl.hidden = false;
     return;
   }
 
   const items = payouts.map((entry) => {
     const amountFormatted = formatCurrency(entry.amount || 0);
     const dateFormatted = formatDateLocalized(entry.paidAt || entry.createdAt);
-    const noteHtml = entry.note
-      ? `<p class="technician-payout-note text-sm text-base-content/70">${escapeHtml(entry.note)}</p>`
+    const noteText = resolvePayoutNoteText(entry);
+    const noteHtml = noteText
+      ? `<p class="technician-payout-note text-sm text-base-content/70">${escapeHtml(noteText)}</p>`
       : '';
-    const deleteLabel = t('actions.delete', '🗑️ حذف');
+    const deleteLabel = t('actions.delete', '🗑️ Delete');
 
     return `
       <li class="technician-payout-item">
@@ -556,7 +870,7 @@ function renderFinancialPayouts(payouts = []) {
   }).join('');
 
   financialPayoutListEl.innerHTML = items;
-  financialPayoutEmptyEl.classList.add('hidden');
+  financialPayoutEmptyEl.hidden = true;
 }
 
 function formatDateInputValue(value) {
@@ -597,14 +911,14 @@ function sanitizeAmountInput(rawValue) {
 function handlePayoutFormSubmit(event) {
   event.preventDefault();
   if (!technicianId) {
-    showToast(t('technicianFinancial.payouts.toast.invalidTechnician', '⚠️ لا يمكن تحديد عضو الطاقم حالياً.'));
+    showToast(t('technicianFinancial.payouts.toast.invalidTechnician', '⚠️ Unable to determine the crew member right now.'));
     return;
   }
 
   const amountRaw = financialPayoutAmountInput?.value ?? '';
   const amount = Number.parseFloat(normalizeNumbers(String(amountRaw)));
   if (!Number.isFinite(amount) || amount <= 0) {
-    showToast(t('technicianFinancial.payouts.toast.invalidAmount', '⚠️ أدخل قيمة صحيحة للمبلغ.'));
+    showToast(t('technicianFinancial.payouts.toast.invalidAmount', '⚠️ Enter a valid payout amount.'));
     financialPayoutAmountInput?.focus();
     return;
   }
@@ -616,13 +930,15 @@ function handlePayoutFormSubmit(event) {
     submitButton.disabled = true;
   }
 
-  createTechnicianPayout({
+  const createPayout = detailsFixtureActive ? createLocalFixturePayout : createTechnicianPayout;
+
+  createPayout({
     technicianId,
     amount: Number(amount.toFixed(2)),
     note,
     paidAt: paidDate.toISOString(),
   }).then((entry) => {
-    showToast(t('technicianFinancial.payouts.toast.added', '✅ تم تسجيل الدفعة.'));
+    showToast(t('technicianFinancial.payouts.toast.added', '✅ Payout logged successfully.'));
     financialPayoutForm?.reset();
     if (financialPayoutDateInput) {
       financialPayoutDateInput.value = formatDateInputValue(entry?.paidAt || new Date());
@@ -632,7 +948,7 @@ function handlePayoutFormSubmit(event) {
     }
   }).catch((error) => {
     console.error('❌ [technician-page] Failed to create technician payout', error);
-    const message = error?.message || t('technicianFinancial.payouts.toast.failed', '⚠️ تعذر تسجيل الدفعة، حاول مرة أخرى.');
+    const message = error?.message || t('technicianFinancial.payouts.toast.failed', '⚠️ Unable to record the payout. Please try again.');
     showToast(message);
   }).finally(() => {
     if (submitButton) {
@@ -698,13 +1014,7 @@ function handleTechnicianEditClick(event) {
     return;
   }
 
-  try {
-    document.dispatchEvent(new CustomEvent('technician:prefill', {
-      detail: { ...technicianState }
-    }));
-  } catch (error) {
-    console.error('⚠️ [technician-page] Failed to prefill technician edit modal', error);
-  }
+  populateTechnicianEditModal(technicianState);
 
   const modalEl = document.getElementById('editTechnicianModal');
   if (!modalEl || !window.bootstrap?.Modal) {
@@ -741,30 +1051,33 @@ async function refreshTechnicianFinancialSummary(technician) {
   }
 
   try {
-    await ensureReservationsLoaded({ suppressError: true });
+    if (!detailsFixtureActive) {
+      await ensureReservationsLoaded({ suppressError: true });
+    }
   } catch (error) {
     console.error('⚠️ [technician-page] Failed to load reservations for financial summary', error);
   }
 
   const reservations = getReservationsState();
+  const projectsState = getProjectsState();
+  const projectsMap = new Map(
+    Array.isArray(projectsState)
+      ? projectsState.map((project) => [String(project?.id ?? project?.projectId ?? ''), project])
+      : []
+  );
   const normalizedId = String(technicianId);
 
   try {
-    const payoutsResponse = await listTechnicianPayouts(normalizedId);
+    const payoutsResponse = detailsFixtureActive
+      ? getLocalFixturePayouts(normalizedId)
+      : await listTechnicianPayouts(normalizedId);
     technicianPayoutsState = Array.isArray(payoutsResponse) ? payoutsResponse : [];
   } catch (error) {
     console.error('⚠️ [technician-page] Failed to load technician payouts from API', error);
     technicianPayoutsState = [];
   }
   const relevantReservations = reservations.filter((reservation) => {
-    if (!reservation) return false;
-    const rawStatus = String(reservation.status || '').toLowerCase();
-    if (rawStatus === 'cancelled' || rawStatus === 'canceled' || rawStatus === 'ملغي' || rawStatus === 'ملغى' || rawStatus === 'ملغية') {
-      return false;
-    }
-    if (!isReservationCompleted(reservation)) {
-      return false;
-    }
+    if (!isReservationEligibleForFinancialSummary(reservation, projectsMap)) return false;
     const technicianIds = resolveReservationTechnicianIds(reservation);
     return technicianIds.includes(normalizedId);
   });
@@ -784,22 +1097,18 @@ async function refreshTechnicianFinancialSummary(technician) {
     const days = Math.max(1, calculateReservationDays(reservation.start, reservation.end));
     const dueAmount = Math.max(0, Math.round(rate * days));
 
-    const fallbackLabel = t('technicianFinancial.list.reservationFallback', 'حجز رقم {id}')
+    const fallbackLabel = t('technicianFinancial.list.reservationFallback', 'Reservation #{id}')
       .replace('{id}', normalizeNumbers(String(reservation.reservationId || reservation.id || '?')));
     const label = reservation.title && reservation.title.trim().length
       ? reservation.title.trim()
       : fallbackLabel;
 
     const referenceParts = [];
-    if (reservation.reservationId || reservation.id) {
-      const refId = reservation.reservationId || reservation.id;
-      referenceParts.push(`#${normalizeNumbers(String(refId))}`);
-    }
     const projectInfo = resolveReservationProjectInfo(reservation);
     if (projectInfo?.id) {
       const projectIdDisplay = normalizeNumbers(String(projectInfo.id));
       if (projectInfo.name) {
-        const template = t('technicianFinancial.list.projectReferenceWithName', 'مشروع #{id} • {name}');
+        const template = t('technicianFinancial.list.projectReferenceWithName', 'Project #{id} • {name}');
         referenceParts.push(
           template
             .replace('{id}', projectIdDisplay)
@@ -807,17 +1116,13 @@ async function refreshTechnicianFinancialSummary(technician) {
         );
       } else {
         referenceParts.push(
-          t('technicianFinancial.list.projectReference', 'مشروع #{id}')
+          t('technicianFinancial.list.projectReference', 'Project #{id}')
             .replace('{id}', projectIdDisplay)
         );
       }
     } else if (projectInfo?.name) {
-      const template = t('technicianFinancial.list.projectReferenceNameOnly', 'مشروع: {name}');
+      const template = t('technicianFinancial.list.projectReferenceNameOnly', 'Project: {name}');
       referenceParts.push(template.replace('{name}', String(projectInfo.name)));
-    }
-    if (reservation.status) {
-      const statusKey = `reservations.status.${reservation.status}`;
-      referenceParts.push(t(statusKey, reservation.status));
     }
 
     const periodStart = formatDateLocalized(reservation.start);
@@ -839,6 +1144,7 @@ async function refreshTechnicianFinancialSummary(technician) {
       label,
       reference: referenceParts.join(' • ') || '—',
       period,
+      workStatus: reservation.status || '',
       dueAmount,
       paidAmount: 0,
       outstandingAmount: dueAmount,
@@ -913,14 +1219,14 @@ function setHeroBadge(element, icon, value, { hideWhenEmpty = false } = {}) {
   const hasValue = stringValue.length > 0;
   element.textContent = hasValue ? `${icon} ${stringValue}` : `${icon} ${t('common.placeholder.empty', '—')}`;
   if (hideWhenEmpty) {
-    element.classList.toggle('hidden', !hasValue);
+    element.hidden = !hasValue;
   } else if (!hasValue) {
-    element.classList.remove('hidden');
+    element.hidden = false;
   }
 }
 
 function setStatusBadge(status) {
-  const targets = [heroStatusEl, greetingStatusEl].filter(Boolean);
+  const targets = [heroStatusEl].filter(Boolean);
   if (!targets.length) {
     return;
   }
@@ -929,7 +1235,8 @@ function setStatusBadge(status) {
 
   if (!normalized) {
     targets.forEach((element) => {
-      element.className = 'technician-badge hidden';
+      element.className = 'technician-badge';
+      element.hidden = true;
       element.textContent = t('common.placeholder.empty', '—');
     });
     return;
@@ -944,7 +1251,7 @@ function setStatusBadge(status) {
 
   targets.forEach((element) => {
     element.className = badgeClasses.join(' ');
-    element.classList.remove('hidden');
+    element.hidden = false;
     element.setAttribute('data-i18n', '');
     element.setAttribute('data-i18n-key', key);
     element.textContent = t(key, fallback);
@@ -1013,10 +1320,9 @@ function getCurrentPositionLabelForTechnician(id) {
 function setHeroData(technician) {
   if (!technician) {
     setHeroBadge(heroNameEl, '😎', t('common.placeholder.empty', '—'));
-  setHeroBadge(heroRoleEl, '🎯', '', { hideWhenEmpty: true });
+    setHeroBadge(heroRoleEl, '🎯', '', { hideWhenEmpty: true });
     if (greetingNameEl) greetingNameEl.textContent = t('common.placeholder.empty', '—');
     if (greetingRoleEl) greetingRoleEl.textContent = t('common.placeholder.empty', '—');
-    setHeroBadge(greetingRoleBadgeEl, '🎯', '', { hideWhenEmpty: true });
     setStatusBadge(null);
     return;
   }
@@ -1027,15 +1333,19 @@ function setHeroData(technician) {
     greetingNameEl.textContent = technician.name || t('common.placeholder.empty', '—');
   }
   if (greetingRoleEl) {
-    const roleText = technician.role ? technician.role : '';
-    if (roleText) {
-      greetingRoleEl.textContent = `🎯 ${roleText}`;
-    } else {
-      const fallbackRole = t('technicianDetails.fallback.role', 'غير محدد');
-      greetingRoleEl.textContent = `🎯 ${fallbackRole}`;
-    }
+    const infoParts = [];
+    const roleText = typeof technician.role === 'string' ? technician.role.trim() : '';
+    const phoneText = technician.phone ? normalizeNumbers(technician.phone) : '';
+    const departmentText = typeof technician.department === 'string' ? technician.department.trim() : '';
+
+    if (roleText) infoParts.push(roleText);
+    if (phoneText) infoParts.push(`📞 ${phoneText}`);
+    if (departmentText) infoParts.push(`🧩 ${departmentText}`);
+
+    greetingRoleEl.textContent = infoParts.length
+      ? infoParts.join(' • ')
+      : t('technicianDetails.fallback.role', 'Not specified');
   }
-  setHeroBadge(greetingRoleBadgeEl, '🎯', technician.role || '', { hideWhenEmpty: true });
   setStatusBadge(technician.status || technician.baseStatus || 'available');
 }
 
@@ -1058,7 +1368,7 @@ function setActiveTechnicianTab(tab) {
 
   technicianTabPanels.forEach((panel, key) => {
     if (!panel) return;
-    panel.classList.toggle('hidden', key !== tab);
+    panel.hidden = key !== tab;
   });
 
   if (tab === 'projects' && technicianId) {
@@ -1083,17 +1393,6 @@ function initTechnicianTabs() {
     button.dataset.listenerAttached = 'true';
   });
 
-  document.querySelectorAll('[data-technician-tab-trigger]').forEach((trigger) => {
-    if (!trigger || trigger.dataset.listenerAttached) return;
-    trigger.addEventListener('click', (event) => {
-      event.preventDefault();
-      const tab = trigger.getAttribute('data-technician-tab-trigger');
-      if (!tab) return;
-      setActiveTechnicianTab(tab);
-    });
-    trigger.dataset.listenerAttached = 'true';
-  });
-
   setActiveTechnicianTab(activeTechnicianTab);
 }
 
@@ -1101,6 +1400,15 @@ setHeroData(null);
 setEditButtonsDisabled(true);
 initTechnicianTabs();
 attachTechnicianEditListeners();
+
+if (technicianEditSaveBtn && !technicianEditSaveBtn.dataset.listenerAttached) {
+  technicianEditSaveBtn.addEventListener('click', () => {
+    handleTechnicianEditSave().catch((error) => {
+      console.error('❌ [technician-page] edit modal save failed', error);
+    });
+  });
+  technicianEditSaveBtn.dataset.listenerAttached = 'true';
+}
 
 if (financialModalOpenBtn && !financialModalOpenBtn.dataset.listenerAttached) {
   financialModalOpenBtn.addEventListener('click', () => {
@@ -1170,15 +1478,16 @@ if (payoutConfirmYesBtn && !payoutConfirmYesBtn.dataset.listenerAttached) {
       return;
     }
     payoutConfirmYesBtn.disabled = true;
-    deleteTechnicianPayout(pendingPayoutRemovalId).then(() => {
-      showToast(t('technicianFinancial.payouts.toast.removed', '🗑️ تم حذف الدفعة.'));
+    const removePayout = detailsFixtureActive ? deleteLocalFixturePayout : deleteTechnicianPayout;
+    removePayout(pendingPayoutRemovalId).then(() => {
+      showToast(t('technicianFinancial.payouts.toast.removed', '🗑️ Payout removed.'));
       closePayoutConfirmModal();
       if (technicianState) {
         refreshTechnicianFinancialSummary(technicianState);
       }
     }).catch((error) => {
       console.error('❌ [technician-page] Failed to remove technician payout', error);
-      const message = error?.message || t('technicianFinancial.payouts.toast.failed', '⚠️ تعذر تسجيل الدفعة، حاول مرة أخرى.');
+      const message = error?.message || t('technicianFinancial.payouts.toast.failed', '⚠️ Unable to record the payout. Please try again.');
       showToast(message);
       payoutConfirmYesBtn.disabled = false;
     });
@@ -1328,8 +1637,10 @@ async function loadTechnicianDetails() {
   let apiError = null;
 
   try {
-    await refreshTechniciansFromApi();
-    syncTechniciansStatuses();
+    if (!detailsFixtureActive) {
+      await refreshTechniciansFromApi();
+      syncTechniciansStatuses();
+    }
   } catch (error) {
     apiError = error;
     console.error('❌ [technician-details] Failed to refresh technician from API', error);
@@ -1400,3 +1711,4 @@ const handleReservationsUpdated = () => {
 };
 
 document.addEventListener('reservations:changed', handleReservationsUpdated, { passive: true });
+document.addEventListener('projects:changed', handleReservationsUpdated, { passive: true });

@@ -1,4 +1,5 @@
 import '../styles/app.css';
+import '../styles/site-analytics.css';
 import { applyStoredTheme, initThemeToggle } from './theme.js';
 import { checkAuth, getCurrentUser, logout } from './auth.js';
 import { apiRequest, ApiError } from './apiClient.js';
@@ -32,6 +33,29 @@ function escapeHtml(value) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+function decodeDisplayValue(value) {
+  let decoded = String(value || '').trim();
+  if (!decoded) return '';
+
+  for (let index = 0; index < 6; index += 1) {
+    try {
+      const next = decodeURIComponent(decoded.replace(/\+/g, '%20'));
+      if (next === decoded) break;
+      decoded = next;
+    } catch {
+      try {
+        const next = decodeURI(decoded.replace(/\+/g, '%20'));
+        if (next === decoded) break;
+        decoded = next;
+      } catch {
+        break;
+      }
+    }
+  }
+
+  return decoded;
 }
 
 function formatNumber(value) {
@@ -78,7 +102,7 @@ function formatDayLabel(value) {
 }
 
 function humanizePagePath(path) {
-  const raw = String(path || '').trim();
+  const raw = decodeDisplayValue(path);
   if (!raw || raw === '/') {
     return t('siteAnalytics.common.homepage', 'الصفحة الرئيسية');
   }
@@ -87,7 +111,8 @@ function humanizePagePath(path) {
 }
 
 function humanizeSource(source) {
-  const normalized = String(source || '').trim().toLowerCase();
+  const raw = decodeDisplayValue(source);
+  const normalized = raw.toLowerCase();
   if (!normalized || normalized === '(direct)') {
     return t('siteAnalytics.sources.direct', 'دخول مباشر');
   }
@@ -97,7 +122,7 @@ function humanizeSource(source) {
   if (normalized === '(unknown)') {
     return t('siteAnalytics.sources.unknown', 'غير معروف');
   }
-  return source;
+  return raw;
 }
 
 function humanizeDevice(value) {
@@ -108,7 +133,8 @@ function humanizeDevice(value) {
 }
 
 function humanizePageType(value) {
-  const normalized = String(value || '').trim().toLowerCase();
+  const raw = decodeDisplayValue(value);
+  const normalized = raw.toLowerCase();
   const labels = {
     index: t('siteAnalytics.pageTypes.index', 'الرئيسية'),
     contact: t('siteAnalytics.pageTypes.contact', 'تواصل معنا'),
@@ -119,7 +145,7 @@ function humanizePageType(value) {
     about: t('siteAnalytics.pageTypes.about', 'من نحن'),
     blog: t('siteAnalytics.pageTypes.blog', 'المدونة'),
   };
-  return labels[normalized] || humanizePagePath(normalized);
+  return labels[normalized] || humanizePagePath(raw);
 }
 
 function humanizeSourceType(value) {
@@ -213,7 +239,15 @@ function renderFilterOptions(payload) {
     const pageTypes = Array.isArray(options.page_types) ? options.page_types : [];
     els.pageTypeSelect.innerHTML = [
       `<option value="">${escapeHtml(t('siteAnalytics.filters.allPageTypes', 'كل الصفحات'))}</option>`,
-      ...pageTypes.map((pageType) => `<option value="${escapeHtml(pageType)}">${escapeHtml(humanizePageType(pageType))}</option>`),
+      ...pageTypes.map((pageTypeOption) => {
+        const rawValue = typeof pageTypeOption === 'object' && pageTypeOption !== null
+          ? String(pageTypeOption.value || '')
+          : String(pageTypeOption || '');
+        const labelSource = typeof pageTypeOption === 'object' && pageTypeOption !== null
+          ? String(pageTypeOption.label_source || rawValue)
+          : rawValue;
+        return `<option value="${escapeHtml(rawValue)}">${escapeHtml(resolvePageTypeLabel(rawValue, labelSource))}</option>`;
+      }),
     ].join('');
   }
 
@@ -223,6 +257,22 @@ function renderFilterOptions(payload) {
   if (els.includeInternal) {
     els.includeInternal.checked = Boolean(currentFilters.includeInternal);
   }
+}
+
+function resolvePageTypeLabel(value, labelSource) {
+  const rawValue = decodeDisplayValue(value);
+  const normalized = rawValue.toLowerCase();
+  const known = humanizePageType(normalized);
+  if (known !== humanizePagePath(normalized)) {
+    return known;
+  }
+
+  const rawLabelSource = decodeDisplayValue(labelSource);
+  if (rawLabelSource && rawLabelSource !== rawValue) {
+    return humanizePagePath(rawLabelSource);
+  }
+
+  return humanizePagePath(rawValue);
 }
 
 function renderTopPages(rows) {
@@ -240,16 +290,38 @@ function renderTopPages(rows) {
 
   els.topPagesBody.innerHTML = list.map((row) => `
     <tr>
-      <td>
-        <div class="font-semibold text-base-content">${escapeHtml(row.page_title || humanizePagePath(row.page_path))}</div>
-        <div class="text-xs text-base-content/60">${escapeHtml(row.page_path || '/')}</div>
+      <td class="site-analytics-top-pages__page-cell">
+        <div class="site-analytics-top-pages__page-title">${escapeHtml(resolvePageTitle(row))}</div>
+        <div class="site-analytics-top-pages__page-path">${escapeHtml(resolvePagePath(row.page_path))}</div>
       </td>
-      <td>${formatNumber(row.views || 0)}</td>
-      <td>${formatNumber(row.visitors || 0)}</td>
-      <td>${formatNumber(row.sessions || 0)}</td>
-      <td>${escapeHtml(formatDateTime(row.last_visited_at))}</td>
+      <td class="site-analytics-top-pages__metric">${formatNumber(row.views || 0)}</td>
+      <td class="site-analytics-top-pages__metric">${formatNumber(row.visitors || 0)}</td>
+      <td class="site-analytics-top-pages__metric">${formatNumber(row.sessions || 0)}</td>
+      <td class="site-analytics-top-pages__last-visit">${escapeHtml(formatDateTime(row.last_visited_at))}</td>
     </tr>
   `).join('');
+}
+
+function resolvePageTitle(row) {
+  const rawTitle = decodeDisplayValue(row?.page_title || '');
+  const rawPath = decodeDisplayValue(row?.page_path || '');
+  const trimmedTitle = rawTitle.trim();
+  const trimmedPath = rawPath.trim();
+
+  if (!trimmedTitle) {
+    return humanizePagePath(trimmedPath);
+  }
+
+  if (trimmedTitle === trimmedPath) {
+    return humanizePagePath(trimmedPath);
+  }
+
+  return trimmedTitle;
+}
+
+function resolvePagePath(path) {
+  const decoded = decodeDisplayValue(path);
+  return decoded || '/';
 }
 
 function renderSources(rows) {
@@ -258,7 +330,7 @@ function renderSources(rows) {
 
   if (!list.length) {
     els.sourcesList.innerHTML = `
-      <div class="rounded-2xl border border-dashed border-base-300 p-5 text-center text-base-content/60">
+      <div class="ui-empty-state surface-empty-state p-5">
         ${t('siteAnalytics.empty', 'لا توجد بيانات كافية للفترة الحالية.')}
       </div>
     `;
@@ -266,19 +338,24 @@ function renderSources(rows) {
   }
 
   els.sourcesList.innerHTML = list.map((row) => `
-    <div class="rounded-2xl border border-base-300/80 bg-base-100/60 p-4">
+    <div class="compact-list-item site-analytics-source-item">
       <div class="flex items-center justify-between gap-3">
         <div>
-          <div class="font-semibold text-base-content">${escapeHtml(humanizeSource(row.source))}</div>
-          <div class="text-xs text-base-content/60">${escapeHtml(String(row.source || '').trim() || '(direct)')}</div>
+          <div class="site-analytics-source-item__title">${escapeHtml(humanizeSource(row.source))}</div>
+          <div class="compact-list-item__meta">${escapeHtml(resolveSourceMeta(row.source))}</div>
         </div>
         <div class="text-end">
-          <div class="text-lg font-bold text-base-content">${formatNumber(row.views || 0)}</div>
-          <div class="text-xs text-base-content/60">${t('siteAnalytics.sources.viewsLabel', 'مشاهدات')}</div>
+          <div class="compact-list-item__value">${formatNumber(row.views || 0)}</div>
+          <div class="compact-list-item__meta">${t('siteAnalytics.sources.viewsLabel', 'مشاهدات')}</div>
         </div>
       </div>
     </div>
   `).join('');
+}
+
+function resolveSourceMeta(source) {
+  const decoded = decodeDisplayValue(source);
+  return decoded || '(direct)';
 }
 
 function renderDevices(rows) {
@@ -287,7 +364,7 @@ function renderDevices(rows) {
 
   if (!list.length) {
     els.devicesGrid.innerHTML = `
-      <div class="rounded-2xl border border-dashed border-base-300 p-5 text-center text-base-content/60 sm:col-span-3">
+      <div class="ui-empty-state surface-empty-state p-5 sm:col-span-3">
         ${t('siteAnalytics.empty', 'لا توجد بيانات كافية للفترة الحالية.')}
       </div>
     `;
@@ -295,10 +372,10 @@ function renderDevices(rows) {
   }
 
   els.devicesGrid.innerHTML = list.map((row) => `
-    <article class="rounded-2xl border border-base-300/80 bg-base-100/60 p-4 text-center">
-      <div class="text-sm text-base-content/60">${escapeHtml(humanizeDevice(row.device_type))}</div>
-      <div class="mt-2 text-2xl font-bold text-base-content">${formatNumber(row.views || 0)}</div>
-      <div class="mt-1 text-xs text-base-content/60">${formatNumber(row.percentage || 0)}%</div>
+    <article class="ui-stat-card compact-kpi-card site-analytics-device-card">
+      <div class="compact-kpi-card__label">${escapeHtml(humanizeDevice(row.device_type))}</div>
+      <div class="compact-kpi-card__value">${formatNumber(row.views || 0)}</div>
+      <div class="compact-list-item__meta">${formatNumber(row.percentage || 0)}%</div>
     </article>
   `).join('');
 }
@@ -309,7 +386,7 @@ function renderDaily(rows) {
 
   if (!list.length) {
     els.dailyList.innerHTML = `
-      <div class="rounded-2xl border border-dashed border-base-300 p-5 text-center text-base-content/60">
+      <div class="ui-empty-state surface-empty-state p-5">
         ${t('siteAnalytics.empty', 'لا توجد بيانات كافية للفترة الحالية.')}
       </div>
     `;
@@ -317,15 +394,18 @@ function renderDaily(rows) {
   }
 
   const maxViews = list.reduce((max, row) => Math.max(max, Number(row.page_views || 0)), 0) || 1;
-  els.dailyList.innerHTML = list.map((row) => {
-    const width = Math.max(6, Math.round((Number(row.page_views || 0) / maxViews) * 100));
+  els.dailyList.innerHTML = list.map((row, index) => {
+    const views = Number(row.page_views || 0);
+    const width = Math.max(views > 0 ? 6 : 0, Math.round((views / maxViews) * 100));
+    const rowStateClass = views > 0 ? 'site-analytics-daily-row--active' : 'site-analytics-daily-row--zero';
+    const rowGroupClass = index > 0 && index % 4 === 0 ? 'site-analytics-daily-row--group-start' : '';
     return `
-      <div class="grid gap-3 rounded-2xl border border-base-300/70 p-4 md:grid-cols-[120px_minmax(0,1fr)_120px] md:items-center">
-        <div class="font-medium text-base-content">${escapeHtml(formatDayLabel(row.date))}</div>
-        <div class="h-3 overflow-hidden rounded-full bg-base-200">
-          <div class="h-full rounded-full bg-primary/80" style="width:${width}%;"></div>
+      <div class="compact-bar-row site-analytics-daily-row ${rowStateClass} ${rowGroupClass}">
+        <div class="site-analytics-daily-row__label">${escapeHtml(formatDayLabel(row.date))}</div>
+        <div class="compact-bar-track">
+          <div class="compact-bar-fill" style="width:${width}%;"></div>
         </div>
-        <div class="text-sm text-base-content/70">${formatNumber(row.page_views || 0)} ${escapeHtml(t('siteAnalytics.daily.viewsUnit', 'مشاهدة'))}</div>
+        <div class="compact-bar-value">${formatNumber(views)} ${escapeHtml(t('siteAnalytics.daily.viewsUnit', 'مشاهدة'))}</div>
       </div>
     `;
   }).join('');
@@ -341,21 +421,21 @@ function renderLoadingState() {
   }
   if (els.sourcesList) {
     els.sourcesList.innerHTML = `
-      <div class="rounded-2xl border border-dashed border-base-300 p-5 text-center text-base-content/60">
+      <div class="ui-empty-state surface-empty-state p-5">
         ${t('siteAnalytics.loading', '⏳ جارٍ تحميل الإحصائيات...')}
       </div>
     `;
   }
   if (els.devicesGrid) {
     els.devicesGrid.innerHTML = `
-      <div class="rounded-2xl border border-dashed border-base-300 p-5 text-center text-base-content/60 sm:col-span-3">
+      <div class="ui-empty-state surface-empty-state p-5 sm:col-span-3">
         ${t('siteAnalytics.loading', '⏳ جارٍ تحميل الإحصائيات...')}
       </div>
     `;
   }
   if (els.dailyList) {
     els.dailyList.innerHTML = `
-      <div class="rounded-2xl border border-dashed border-base-300 p-5 text-center text-base-content/60">
+      <div class="ui-empty-state surface-empty-state p-5">
         ${t('siteAnalytics.loading', '⏳ جارٍ تحميل الإحصائيات...')}
       </div>
     `;
@@ -389,11 +469,6 @@ async function loadAnalytics() {
     renderPayload(response?.data || null);
   } catch (error) {
     console.error('❌ Failed to load site analytics', error);
-    if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
-      window.location.href = 'home.html';
-      return;
-    }
-
     const message = error instanceof ApiError
       ? error.message
       : t('siteAnalytics.error', 'تعذر تحميل إحصائيات الموقع.');
@@ -461,13 +536,16 @@ async function bootstrap() {
   cacheElements();
 
   try {
-    currentUser = await checkAuth();
-    const hydratedUser = await getCurrentUser();
-    if (hydratedUser) {
-      currentUser = hydratedUser;
+    currentUser = await checkAuth({ redirect: false });
+    if (!currentUser) {
+      currentUser = await getCurrentUser({ refresh: true });
     }
   } catch (error) {
     console.error('❌ Site analytics auth failed', error);
+    currentUser = null;
+  }
+
+  if (!currentUser) {
     window.location.href = 'login.html';
     return;
   }

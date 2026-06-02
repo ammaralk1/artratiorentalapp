@@ -75,7 +75,7 @@ describe('projectsReports/table', () => {
 
     expect(rendered.isEmpty).toBe(false);
     expect(rendered.rowsHtml).toContain('Alpha');
-    expect(rendered.rowsHtml).toContain('reservation-chip status-paid');
+    expect(rendered.rowsHtml).toContain('reservation-chip status-chip status-paid');
     expect(rendered.rowsHtml).toContain('reports-debug-row');
     expect(rendered.metaText).toBe('Showing 2 of 5 projects');
   });

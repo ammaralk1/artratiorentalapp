@@ -18,4 +18,5 @@ if (state.equipmentList.length) {
 
 export { refreshEquipmentFromApi, syncEquipmentStatuses, clearEquipment } from './equipment/api.js';
 export { renderEquipment } from './equipment/render.js';
+export { initEquipmentModule } from './equipment/events.js';
 export { uploadEquipmentFromExcel, downloadEquipmentToExcel } from './equipment/excel.js';

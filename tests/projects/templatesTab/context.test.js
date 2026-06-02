@@ -28,7 +28,7 @@ import {
   setTemplateLang,
   writeTplPreferredType,
 } from '../../../src/scripts/projects/templatesTab/context.ts';
-import { templatesTabState } from '../../../src/scripts/projects/templatesTab/state.ts';
+import { setTemplatesHydratedReservation, templatesTabState } from '../../../src/scripts/projects/templatesTab/state.ts';
 
 describe('templatesTab/context', () => {
   beforeEach(() => {
@@ -98,6 +98,46 @@ describe('templatesTab/context', () => {
     expect(getSelectedProject()).toEqual({ id: 2, title: 'Two' });
     expect(getReservationsForProject(2)).toHaveLength(2);
     expect(getSelectedReservations(2)).toEqual([{ reservationId: 22, project_id: 2, title: 'B' }]);
+  });
+
+  it('prefers hydrated reservation overrides when the cached reservation list is stale', () => {
+    document.body.innerHTML = `
+      <select id="templates-project">
+        <option value="74" selected>Project</option>
+      </select>
+      <select id="templates-reservation">
+        <option value="218" selected>Reservation</option>
+      </select>
+    `;
+
+    mockProjectsState.mockReturnValue([{ id: 74, title: 'Adidas' }]);
+    mockReservationsState.mockReturnValue([
+      { id: 218, projectId: 74, title: 'Legacy reservation', crewAssignments: [] },
+    ]);
+
+    setTemplatesHydratedReservation({
+      id: 218,
+      projectId: 74,
+      title: 'Hydrated reservation',
+      crewAssignments: [{ position_name: 'مخرج', position_cost: 3000 }],
+    });
+
+    expect(getReservationsForProject(74)).toEqual([
+      {
+        id: 218,
+        projectId: 74,
+        title: 'Hydrated reservation',
+        crewAssignments: [{ position_name: 'مخرج', position_cost: 3000 }],
+      },
+    ]);
+    expect(getSelectedReservations(74)).toEqual([
+      {
+        id: 218,
+        projectId: 74,
+        title: 'Hydrated reservation',
+        crewAssignments: [{ position_name: 'مخرج', position_cost: 3000 }],
+      },
+    ]);
   });
 
   it('stores template language in shared state and formats numbers by locale', () => {

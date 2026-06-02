@@ -108,6 +108,15 @@ function findUserByUsername(PDO $pdo, string $username): ?array
     return $user ?: null;
 }
 
+function isLegacyPasswordLoginAllowed(): bool
+{
+    if (!function_exists('getAppConfig')) {
+        return true;
+    }
+
+    return (bool) getAppConfig('security', 'allow_legacy_password_login', true);
+}
+
 function verifyCredentials(string $username, string $password, ?PDO $pdo = null): ?array
 {
     $normalizedUsername = trim($username);
@@ -131,7 +140,7 @@ function verifyCredentials(string $username, string $password, ?PDO $pdo = null)
         $passwordValid = true;
     }
 
-    if (!$passwordValid) {
+    if (!$passwordValid && isLegacyPasswordLoginAllowed()) {
         $plainMatch = $storedHash !== '' && hash_equals($storedHash, $password);
         $legacyMd5Match = $storedHash !== ''
             && preg_match('/^[a-f0-9]{32}$/i', $storedHash)

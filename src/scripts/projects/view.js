@@ -1,16 +1,17 @@
 import { userCanManageDestructiveActions } from '../auth.js';
 import { t } from '../language.js';
 import { normalizeNumbers } from '../utils.js';
-import { calculateReservationTotal, calculateDraftFinancialBreakdown, calculatePaymentProgress, determinePaymentStatus } from '../reservationsSummary.js';
-import { state, dom } from './state.js';
-import { resolveReservationProjectState, buildReservationDisplayGroups } from '../reservationsShared.js';
 import {
-  MAX_FOCUS_CARDS,
+  calculateDraftFinancialBreakdown,
+  calculatePaymentProgress,
+  determinePaymentStatus
+} from '../reservationsSummary.js';
+import { state, dom } from './state.js';
+import { resolveReservationProjectState, buildReservationDisplayGroups, isReservationCompleted } from '../reservationsShared.js';
+import {
   FOCUS_CARDS_PER_PAGE,
   ONE_HOUR_IN_MS,
-  PROJECT_TAX_RATE,
-  statusBadgeClass,
-  statusFallbackLabels
+  PROJECT_TAX_RATE
 } from './constants.js';
 import {
   escapeHtml,
@@ -19,41 +20,79 @@ import {
   getEmptyText,
   setTableCount
 } from './formatting.js';
+import { computeProjectsRevenueBreakdown } from '../projectsReports/breakdown';
 import {
+  buildProjectsPageWindow,
   combineProjectDateTime,
   getProjectCreatedTimestamp,
   getProjectStartTimestamp,
+  resolveProjectOverheadSettings,
   truncateText
 } from './helpers.js';
+import { applyProjectItemOverhead, calculateProjectLineFinancials } from './financials.js';
+import { jumpPaginationSectionToStart, settlePaginationSectionToStart } from '../ui/paginationViewport.js';
 
 const PROJECTS_TABLE_CHUNK_SIZE = 30;
 const TIMELINE_RENDER_LIMIT = 200;
 
 let projectsRenderToken = 0;
 
-function ensureFocusPagination() {
-  if (!state.focusPagination) {
-    state.focusPagination = { page: 1, pageSize: FOCUS_CARDS_PER_PAGE, totalPages: 1 };
+function ensureTablePagination() {
+  if (!state.tablePagination) {
+    state.tablePagination = { page: 1, pageSize: FOCUS_CARDS_PER_PAGE, totalPages: 1 };
   }
-  if (!state.focusPagination.pageSize || state.focusPagination.pageSize <= 0) {
-    state.focusPagination.pageSize = FOCUS_CARDS_PER_PAGE;
+  if (!state.tablePagination.pageSize || state.tablePagination.pageSize <= 0) {
+    state.tablePagination.pageSize = FOCUS_CARDS_PER_PAGE;
   }
-  return state.focusPagination;
+  return state.tablePagination;
+}
+
+function ensureFocusSectionPagination(sectionKey) {
+  if (!state.focusSectionPagination) {
+    state.focusSectionPagination = {};
+  }
+  if (!state.focusSectionPagination[sectionKey]) {
+    state.focusSectionPagination[sectionKey] = {
+      page: 1,
+      pageSize: FOCUS_CARDS_PER_PAGE,
+      totalPages: 1,
+    };
+  }
+  if (!state.focusSectionPagination[sectionKey].pageSize || state.focusSectionPagination[sectionKey].pageSize <= 0) {
+    state.focusSectionPagination[sectionKey].pageSize = FOCUS_CARDS_PER_PAGE;
+  }
+  return state.focusSectionPagination[sectionKey];
 }
 
 function getProjectTypeLabel(type) {
-  if (!type) return t('projects.form.types.unknown', 'نوع غير محدد');
+  const normalizedType = String(type || '').trim().toLowerCase();
+  if (!normalizedType) return t('projects.form.types.unknown', 'نوع غير محدد');
   const key = {
     commercial: 'projects.form.types.commercial',
     coverage: 'projects.form.types.coverage',
     photography: 'projects.form.types.photography',
-    social: 'projects.form.types.social'
-  }[type] || 'projects.form.types.unknown';
+    social: 'projects.form.types.social',
+    event: 'projects.form.types.event',
+    conference: 'projects.form.types.conference',
+  }[normalizedType] || 'projects.form.types.unknown';
   return t(key, type);
+}
+
+function getProjectTypeClass(type) {
+  const normalizedType = String(type || '').trim().toLowerCase();
+  return ['commercial', 'coverage', 'photography', 'social', 'event', 'conference'].includes(normalizedType)
+    ? normalizedType
+    : 'default';
 }
 
 function normalizeProjectText(value) {
   return normalizeNumbers(String(value || '')).toLowerCase().trim();
+}
+
+function stripReservationTagDecorators(value) {
+  return String(value || '')
+    .replace(/^[\p{Emoji_Presentation}\p{Extended_Pictographic}\uFE0F\u200D#*0-9]+\s*/gu, '')
+    .trim();
 }
 
 function hasProjectFilters() {
@@ -109,6 +148,7 @@ function projectMatchesFilters(project) {
   const haystack = normalizeProjectText([
     project.title,
     project.description,
+    project.clientName,
     client?.customerName,
     project.clientCompany,
     getProjectTypeLabel(project.type),
@@ -153,6 +193,27 @@ function projectMatchesFilters(project) {
   return true;
 }
 
+function resolveProjectClientName(project, client, fallback) {
+  const fromProject = String(
+    project?.clientName
+      ?? project?.client_name
+      ?? project?.customerName
+      ?? project?.customer_name
+      ?? ''
+  ).trim();
+  if (fromProject) return fromProject;
+  const fromClient = String(
+    client?.customerName
+      ?? client?.fullName
+      ?? client?.full_name
+      ?? client?.customer_name
+      ?? client?.name
+      ?? ''
+  ).trim();
+  if (fromClient) return fromClient;
+  return fallback;
+}
+
 function getFilteredProjects() {
   const projects = Array.isArray(state.projects) ? state.projects : [];
   return projects.filter((project) => projectMatchesFilters(project));
@@ -185,7 +246,7 @@ export function renderProjects() {
   state.visibleProjects = sortedProjects;
   setTableCount(sortedProjects.length);
 
-  const pagination = ensureFocusPagination();
+  const pagination = ensureTablePagination();
   const pageSize = pagination.pageSize || FOCUS_CARDS_PER_PAGE;
   const totalPages = Math.max(1, Math.ceil(sortedProjects.length / pageSize));
   pagination.totalPages = totalPages;
@@ -197,11 +258,7 @@ export function renderProjects() {
 
   renderProjectsTableChunked(currentPageProjects);
   renderTimeline(currentPageProjects);
-  renderFocusCardsInternal(currentPageProjects, {
-    totalPagesOverride: totalPages,
-    currentPageOverride: pagination.page,
-    prePaged: true
-  });
+  renderFocusCardsInternal(sortedProjects);
   renderProjectsPagination(totalPages, pagination.page);
 }
 
@@ -255,23 +312,23 @@ function renderProjectsTableChunked(projects) {
 
 function renderProjectRow(project) {
   const client = state.customers.find((c) => String(c.id) === String(project.clientId));
-  const clientName = client?.customerName || t('projects.fallback.unknownClient', 'عميل غير معروف');
-  const typeClass = ['commercial', 'coverage', 'photography', 'social'].includes(project.type) ? project.type : 'default';
-  const { expensesTotal, totalWithTax } = resolveProjectTotals(project);
+  const clientName = resolveProjectClientName(project, client, t('projects.fallback.unknownClient', 'عميل غير معروف'));
+  const typeClass = getProjectTypeClass(project.type);
+  const { displayExpensesTotal, displayTotalWithTax } = resolveProjectCommercialDisplayTotals(project);
   const typeLabel = escapeHtml(getProjectTypeLabel(project.type));
   const typeBadge = `<span class="project-type-chip project-type-chip--${typeClass}">${typeLabel}</span>`;
   const projectCodeDisplay = project.projectCode || `PRJ-${normalizeNumbers(String(project.id))}`;
   const projectCodeBadge = `<span class="project-code-badge">#${escapeHtml(projectCodeDisplay)}</span>`;
   const canDelete = userCanManageDestructiveActions();
   const deleteButton = canDelete
-    ? `<button class="btn btn-sm btn-outline-danger" data-action="delete-project" data-id="${project.id}">${escapeHtml(t('actions.delete', 'حذف'))}</button>`
+    ? `<button class="ui-button ui-button--danger btn btn-sm btn-outline-danger" data-action="delete-project" data-id="${project.id}">${escapeHtml(t('actions.delete', 'حذف'))}</button>`
     : '';
 
   return `
     <tr data-project-id="${project.id}">
       <td>
-        <div class="d-flex flex-column gap-1">
-          <div class="fw-bold">${escapeHtml(project.title)}</div>
+        <div class="projects-table__project-cell d-flex flex-column gap-1">
+          <div class="projects-table__title">${escapeHtml(project.title)}</div>
           <div class="d-flex flex-wrap gap-2 align-items-center project-row-meta">
             ${projectCodeBadge}
             ${typeBadge}
@@ -279,14 +336,16 @@ function renderProjectRow(project) {
         </div>
       </td>
       <td>
-        ${escapeHtml(clientName)}
+        <div class="projects-table__client-cell">${escapeHtml(clientName)}</div>
       </td>
-      <td>${combineProjectDateRange(project.start, project.end)}</td>
-      <td>${formatCurrency(totalWithTax)}</td>
-      <td>${formatCurrency(expensesTotal)}</td>
+      <td><div class="projects-table__schedule">${combineProjectDateRange(project.start, project.end)}</div></td>
+      <td><span class="projects-table__amount">${formatCurrency(displayTotalWithTax)}</span></td>
+      <td><span class="projects-table__amount">${formatCurrency(displayExpensesTotal)}</span></td>
       <td class="text-end">
-        <button class="btn btn-sm btn-outline-primary" data-action="view-details" data-id="${project.id}">${escapeHtml(t('actions.view', 'عرض'))}</button>
-        ${deleteButton}
+        <div class="projects-table__actions">
+          <button class="ui-button ui-button--outline btn btn-sm btn-outline-primary" data-action="view-details" data-id="${project.id}">${escapeHtml(t('actions.view', 'عرض'))}</button>
+          ${deleteButton}
+        </div>
       </td>
     </tr>
   `;
@@ -426,7 +485,7 @@ function renderTimeline(projectsForTimeline) {
       const title = (project.title || '').trim() || t('projects.fallback.untitled', 'Untitled project');
       const displayLabel = truncateText(title, 26);
       const client = state.customers.find((c) => String(c.id) === String(project.clientId));
-      const clientName = client?.customerName || t('projects.fallback.unknownClient', 'Unknown client');
+      const clientName = resolveProjectClientName(project, client, t('projects.fallback.unknownClient', 'Unknown client'));
       const companyName = (project.clientCompany || client?.companyName || '').trim();
       const typeLabel = getProjectTypeLabel(project.type);
       const startLabel = formatDateTime(startDate.toISOString());
@@ -481,245 +540,12 @@ export function renderFocusCards() {
   renderFocusCardsInternal();
 }
 
-function renderFocusCardsInternal(projectsOverride = null, { totalPagesOverride = null, currentPageOverride = null, prePaged = false } = {}) {
-  if (!dom.focusCards) return;
-
-  const sourceProjects = Array.isArray(projectsOverride)
-    ? projectsOverride
-    : (state.visibleProjects.length ? state.visibleProjects : getFilteredProjects());
-  const pagination = ensureFocusPagination();
-  const pageSize = Number.isFinite(pagination.pageSize) ? pagination.pageSize : FOCUS_CARDS_PER_PAGE;
-  const totalPages = totalPagesOverride ?? Math.max(1, Math.ceil(sourceProjects.length / pageSize));
-  const currentPage = currentPageOverride ?? Math.min(Math.max(1, pagination.page || 1), totalPages);
-  pagination.page = currentPage;
-  pagination.totalPages = totalPages;
-
-  const pageCards = prePaged
-    ? sourceProjects
-    : sourceProjects.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-
-  if (!pageCards.length) {
-    const emptyMessage = escapeHtml(t('projects.focus.empty', dom.focusCards.dataset.empty || 'لا توجد مشاريع لليوم أو هذا الأسبوع.'));
-    dom.focusCards.innerHTML = `<div class="project-card-grid__item project-card-grid__item--full"><div class="alert alert-info mb-0 text-center">${emptyMessage}</div></div>`;
-    renderProjectsPagination(1, 1);
-    return;
-  }
-
-  dom.focusCards.innerHTML = pageCards.map((project) => renderFocusCard(project, 'list')).join('');
-  renderProjectsPagination(totalPages, currentPage);
-
-  // Sections are always visible; no toggle required
-}
-
-function renderProjectsPagination(totalPages, currentPage) {
-  const containers = [dom.focusPagination, dom.tablePagination].filter(Boolean);
-  if (!containers.length) return;
-
-  const clampedTotal = Math.max(1, totalPages);
-  const clampedCurrent = Math.min(Math.max(1, currentPage || 1), clampedTotal);
-
-  const visiblePages = [];
-  const windowSize = 5;
-  let start = Math.max(1, clampedCurrent - 2);
-  let end = Math.min(clampedTotal, start + windowSize - 1);
-  if ((end - start + 1) < windowSize && start > 1) {
-    start = Math.max(1, end - windowSize + 1);
-  }
-  for (let p = start; p <= end; p += 1) {
-    visiblePages.push(p);
-  }
-
-  const buttonsHtml = `
-    <button type="button" class="btn btn-sm btn-outline-primary" data-page="${clampedCurrent - 1}" ${clampedCurrent === 1 ? 'disabled' : ''} aria-label="${escapeHtml(t('projects.pagination.prev', 'السابق'))}">‹</button>
-    ${visiblePages.map((page) => {
-      const active = page === clampedCurrent;
-      const cls = active ? 'btn btn-sm btn-primary active' : 'btn btn-sm btn-outline-primary';
-      return `<button type="button" class="${cls}" data-page="${page}">${page}</button>`;
-    }).join('')}
-    <button type="button" class="btn btn-sm btn-outline-primary" data-page="${clampedCurrent + 1}" ${clampedCurrent === clampedTotal ? 'disabled' : ''} aria-label="${escapeHtml(t('projects.pagination.next', 'التالي'))}">›</button>
-  `;
-
-  containers.forEach((container) => {
-    container.innerHTML = `<div class="btn-group" role="group" aria-label="Projects pagination">${buttonsHtml}</div>`;
-    container.onclick = (event) => {
-      const target = event.target instanceof HTMLElement
-        ? event.target.closest('button[data-page]')
-        : null;
-      if (!target) return;
-      if (target.disabled) return;
-      const page = Number.parseInt(target.dataset.page || '0', 10);
-      if (!Number.isInteger(page) || page < 1 || page > clampedTotal || page === clampedCurrent) return;
-      const pagination = ensureFocusPagination();
-      pagination.page = page;
-      renderProjects();
-    };
-  });
-}
-
-function buildFocusCards(projectsPool = [], options = {}) {
-  const allowFallback = options.allowFallback !== false;
-  const limitRaw = options.limit;
-  const limit = limitRaw === undefined ? MAX_FOCUS_CARDS : limitRaw;
-  const initial = Array.isArray(projectsPool) ? projectsPool : [];
-  const source = initial.length ? initial : (allowFallback ? state.projects : []);
-  if (!Array.isArray(source) || !source.length) return [];
-
-  const today = source.filter(isProjectToday);
-  const thisWeek = source.filter((project) => !isProjectToday(project) && isProjectThisWeek(project));
-
-  const cards = [];
-  const seen = new Set();
-
-  const addCard = (project, category) => {
-    if (!project || seen.has(project.id)) return;
-    if (limit !== null && Number.isFinite(limit) && cards.length >= limit) return;
-    seen.add(project.id);
-    cards.push(renderFocusCard(project, category));
-  };
-
-  today
-    .sort((a, b) => getProjectStartTimestamp(a) - getProjectStartTimestamp(b))
-    .forEach((project) => addCard(project, 'today'));
-
-  thisWeek
-    .sort((a, b) => getProjectStartTimestamp(a) - getProjectStartTimestamp(b))
-    .forEach((project) => addCard(project, 'thisWeek'));
-
-  if (cards.length < limit) {
-    const now = Date.now();
-    const upcomingProjects = [...source]
-      .filter((project) => !seen.has(project.id))
-      .filter((project) => {
-        const startTime = getProjectStartTimestamp(project);
-        return Number.isFinite(startTime) && startTime >= now;
-      })
-      .sort((a, b) => getProjectStartTimestamp(a) - getProjectStartTimestamp(b));
-
-    upcomingProjects.forEach((project) => addCard(project, 'upcoming'));
-  }
-
-  // Fallback: include undated or invalid-date projects as most recent
-  if (cards.length < limit) {
-    const undated = [...source]
-      .filter((project) => !seen.has(project.id))
-      .filter((project) => !Number.isFinite(getProjectStartTimestamp(project)))
-      .sort((a, b) => getProjectCreatedTimestamp(b) - getProjectCreatedTimestamp(a));
-    undated.forEach((project) => addCard(project, 'recent'));
-  }
-
-  // Last-resort fallback: show latest projects by start/created when nothing qualifies
-  if (cards.length === 0) {
-    const latest = [...source]
-      .sort((a, b) => getProjectCreatedTimestamp(b) - getProjectCreatedTimestamp(a))
-      .slice(0, Number.isFinite(limit) ? limit : undefined);
-    latest.forEach((project) => addCard(project, 'recent'));
-  }
-
-  if (cards.length < limit) {
-    const fallbackProjects = [...source]
-      .filter((project) => !seen.has(project.id))
-      .sort((a, b) => getProjectCreatedTimestamp(b) - getProjectCreatedTimestamp(a));
-
-    fallbackProjects.forEach((project) => addCard(project, 'recent'));
-  }
-
-  return cards;
-}
-
-function renderFocusCard(project, category) {
-  const client = state.customers.find((c) => String(c.id) === String(project.clientId));
-  const clientName = client?.customerName || t('projects.fallback.unknownClient', 'عميل غير معروف');
-  const companyName = (project.clientCompany || client?.companyName || '').trim();
-  const crewCount = Array.isArray(project.technicians) ? project.technicians.length : 0;
-  const reservationsForProject = getReservationsForProject(project.id);
-  const reservationsCount = reservationsForProject.length;
-  const expensesTotal = getProjectExpenses(project);
-  const servicesClientPrice = Number(project?.servicesClientPrice ?? 0);
-  const { subtotal: projectSubtotal, applyTax } = resolveProjectTotals(project);
-  const description = (project.description || '').trim();
-  const descriptionText = description
-    ? truncateText(description, 110)
-    : t('projects.fallback.noDescription', 'لا يوجد وصف');
-  const typeLabel = getProjectTypeLabel(project.type);
-  // Derive payment status from combined total (project subtotal + linked reservations + combined VAT)
-  const baseTotals = resolveProjectTotals(project) || {};
-  // Use the same taxable base used in modal: (subtotalAfterDiscount + companyShareAmount)
-  // In this module, resolveProjectTotals returns this base as `subtotal`.
-  const projectTaxableBase = Number(baseTotals.subtotal || 0);
-  const combinedReservationsTotal = (reservationsForProject || []).reduce((sum, res) => sum + (Number(res?.totalAmount) || resolveReservationNetTotal(res) || 0), 0);
-  const combinedTax = baseTotals.applyTax
-    ? Number(((projectTaxableBase + combinedReservationsTotal) * PROJECT_TAX_RATE).toFixed(2))
-    : 0;
-  const combinedTotalWithTax = Number((projectTaxableBase + combinedReservationsTotal + combinedTax).toFixed(2));
-  const projHistory = project.paymentHistory || project.payments || [];
-  const projProgress = calculatePaymentProgress({
-    totalAmount: combinedTotalWithTax,
-    // إذا كان لدينا سجل دفعات فعلي، لا نمرّر paidAmount/paidPercent حتى لا تتكرر القيم
-    paidAmount: projHistory.length ? 0 : project.paidAmount,
-    paidPercent: projHistory.length ? 0 : project.paidPercent,
-    history: projHistory,
-  });
-  const paymentStatus = determinePaymentStatus({
-    manualStatus: null,
-    paidAmount: projProgress.paidAmount,
-    paidPercent: projProgress.paidPercent,
-    totalAmount: combinedTotalWithTax,
-  });
-  const paymentStatusLabel = t(
-    `projects.paymentStatus.${paymentStatus}`,
-    paymentStatus === 'paid' ? 'Paid' : paymentStatus === 'partial' ? 'Partially Paid' : 'Unpaid'
-  );
-  const paymentChipClass = paymentStatus === 'paid'
-    ? 'status-paid'
-    : paymentStatus === 'partial'
-      ? 'status-partial'
-      : 'status-unpaid';
-  const cardPaymentClass = paymentStatus === 'paid'
-    ? 'project-focus-card--paid'
-    : 'project-focus-card--unpaid';
-  const isConfirmed = project.confirmed === true || project.confirmed === 'true';
-  const projectIdAttr = escapeHtml(String(project.id));
-  const projectCodeValue = project.projectCode || `PRJ-${normalizeNumbers(String(project.id))}`;
-  const projectCodeDisplay = normalizeNumbers(projectCodeValue);
-
-  // Optional debug hook via ?paymentDebug=1
-  try {
-    const url = new URL(window.location.href);
-    const v = (url.searchParams.get('paymentDebug') || '').toLowerCase();
-    const debug = v === '1' || v === 'true' || v === 'yes';
-    if (debug) {
-      // eslint-disable-next-line no-console
-      console.debug('[PaymentDebug][card]', {
-        projectId: project?.id,
-        projectTaxableBase,
-        combinedReservationsTotal,
-        combinedTax,
-        combinedTotalWithTax,
-        paidAmount: projProgress.paidAmount,
-        paidPercent: projProgress.paidPercent,
-        paymentStatus,
-      });
-    }
-  } catch (_) { /* ignore debug errors */ }
-
-  const categoryKeyMap = {
-    today: 'projects.focus.today',
-    thisWeek: 'projects.focus.thisWeek',
-    upcoming: 'projects.focus.upcoming',
-    recent: 'projects.focus.recent'
-  };
-  const categoryFallbackMap = {
-    today: "Today's Projects",
-    thisWeek: 'This Week',
-    upcoming: 'Upcoming Projects',
-    recent: 'Latest Projects'
-  };
-  const categoryKey = categoryKeyMap[category] || categoryKeyMap.recent;
-  const categoryLabel = t(categoryKey, categoryFallbackMap[category] || categoryFallbackMap.recent);
+function resolveFocusLifecycle(project) {
   const statusBase = determineProjectStatus(project);
-  const status = (project?.cancelled === true || project?.status === 'cancelled' || project?.status === 'canceled') ? 'cancelled' : statusBase;
-  const statusLabel = t(`projects.status.${status}`, statusFallbackLabels[status] || status);
-  // Detect scheduling conflicts (overlap with any other project interval)
+  const status = (project?.cancelled === true || project?.status === 'cancelled' || project?.status === 'canceled')
+    ? 'cancelled'
+    : statusBase;
+
   const hasConflict = (() => {
     try {
       const startA = project.start ? new Date(project.start) : null;
@@ -732,12 +558,280 @@ function renderFocusCard(project, category) {
         if (!startB || !endB || Number.isNaN(startB.getTime()) || Number.isNaN(endB.getTime())) return false;
         const latestStart = Math.max(startA.getTime(), startB.getTime());
         const earliestEnd = Math.min(endA.getTime(), endB.getTime());
-        return latestStart < earliestEnd; // overlap
+        return latestStart < earliestEnd;
       });
-    } catch (_) { return false; }
+    } catch (_) {
+      return false;
+    }
   })();
-  // Unify visuals with timeline legend
+
   const statusKey = (hasConflict && (status === 'upcoming' || status === 'ongoing')) ? 'conflict' : status;
+  const group = (statusKey === 'completed' || statusKey === 'cancelled') ? 'archive' : 'live';
+
+  return { status, statusKey, group, hasConflict };
+}
+
+function sortProjectsForFocusSection(projects, groupKey) {
+  const priorityMap = groupKey === 'archive'
+    ? { completed: 0, cancelled: 1 }
+    : { ongoing: 0, conflict: 1, upcoming: 2 };
+
+  return [...projects].sort((left, right) => {
+    const leftLifecycle = resolveFocusLifecycle(left);
+    const rightLifecycle = resolveFocusLifecycle(right);
+    const leftPriority = priorityMap[leftLifecycle.statusKey] ?? 99;
+    const rightPriority = priorityMap[rightLifecycle.statusKey] ?? 99;
+    if (leftPriority !== rightPriority) return leftPriority - rightPriority;
+    return resolveProjectOrderValue(right) - resolveProjectOrderValue(left);
+  });
+}
+
+function renderFocusSectionPagination({ sectionKey, totalItems, totalPages, currentPage, pageSize }) {
+  if (totalPages <= 1) {
+    return '';
+  }
+
+  const navLabel = t('projects.pagination.navigation', 'Projects pagination');
+  const prevLabel = t('projects.pagination.prev', 'Previous page');
+  const nextLabel = t('projects.pagination.next', 'Next page');
+  const pageLabelTemplate = t('projects.pagination.page', 'Page {page}');
+  const rangeTemplate = t('projects.pagination.range', 'Showing {from}-{to} of {total}');
+  const rangeStart = totalItems === 0 ? 0 : ((currentPage - 1) * pageSize) + 1;
+  const rangeEnd = totalItems === 0 ? 0 : Math.min(totalItems, currentPage * pageSize);
+  const rangeText = rangeTemplate
+    .replace('{from}', normalizeNumbers(String(rangeStart)))
+    .replace('{to}', normalizeNumbers(String(rangeEnd)))
+    .replace('{total}', normalizeNumbers(String(totalItems)));
+
+  const buttonsHtml = buildProjectsPageWindow(currentPage, totalPages)
+    .filter((page) => page >= 1 && page <= totalPages)
+    .map((page) => {
+      const active = page === currentPage;
+      const pageLabel = pageLabelTemplate.replace('{page}', normalizeNumbers(String(page)));
+      return `<button type="button" class="btn btn-sm ${active ? 'btn-primary' : 'btn-outline-primary'}" data-focus-section="${escapeHtml(sectionKey)}" data-focus-section-page="${page}" aria-label="${escapeHtml(pageLabel)}" ${active ? 'aria-current="page"' : ''}>${normalizeNumbers(String(page))}</button>`;
+    })
+    .join('');
+
+  return `
+    <div class="list-pagination project-focus-group__pagination" data-focus-section-pagination="${escapeHtml(sectionKey)}">
+      <div class="list-pagination__summary text-muted small">${escapeHtml(rangeText)}</div>
+      <div class="list-pagination__controls btn-group" role="group" aria-label="${escapeHtml(navLabel)}">
+        <button type="button" class="btn btn-sm btn-outline-primary" data-focus-section="${escapeHtml(sectionKey)}" data-focus-section-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''} aria-label="${escapeHtml(prevLabel)}">‹</button>
+        ${buttonsHtml}
+        <button type="button" class="btn btn-sm btn-outline-primary" data-focus-section="${escapeHtml(sectionKey)}" data-focus-section-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''} aria-label="${escapeHtml(nextLabel)}">›</button>
+      </div>
+    </div>
+  `;
+}
+
+function buildFocusCardSections(projects) {
+  const groups = {
+    live: [],
+    archive: [],
+  };
+
+  projects.forEach((project) => {
+    const lifecycle = resolveFocusLifecycle(project);
+    groups[lifecycle.group].push(project);
+  });
+
+  return [
+    {
+      key: 'live',
+      title: t('projects.focus.sections.liveTitle', '⚡ مراجعة سريعة للمشاريع الحية'),
+      hint: t('projects.focus.sections.liveHint', 'يعرض المشاريع الجارية والنشطة لتبدأ بالمهم أولاً.'),
+      empty: t('projects.focus.sections.emptyLive', 'لا توجد مشاريع جارية أو نشطة ضمن النتائج الحالية.'),
+      projects: sortProjectsForFocusSection(groups.live, 'live'),
+    },
+    {
+      key: 'archive',
+      title: t('projects.focus.sections.archiveTitle', '🗂️ الأرشيف'),
+      hint: t('projects.focus.sections.archiveHint', 'يعرض المشاريع المغلقة والملغاة بشكل منفصل للمراجعة الهادئة.'),
+      empty: t('projects.focus.sections.emptyArchive', 'لا توجد مشاريع مغلقة أو ملغاة ضمن النتائج الحالية.'),
+      projects: sortProjectsForFocusSection(groups.archive, 'archive'),
+    }
+  ];
+}
+
+function renderFocusSection(section) {
+  return `
+    <section class="project-focus-group project-focus-group--${section.key}">
+      <header class="project-focus-group__header">
+        <div class="project-focus-group__title-wrap">
+          <h6 class="project-focus-group__title">${escapeHtml(section.title)}</h6>
+          <p class="project-focus-group__hint">${escapeHtml(section.hint)}</p>
+        </div>
+        <span class="ui-badge ui-badge--soft badge-soft project-focus-group__count">${normalizeNumbers(String(section.totalItems))}</span>
+      </header>
+      ${
+        section.pagedProjects.length
+          ? `<div class="project-card-grid project-focus-group__grid">${section.pagedProjects.map((project) => renderFocusCard(project)).join('')}</div>`
+          : `<p class="linked-records-empty-copy project-card-grid__item project-card-grid__item--full project-card-grid__empty-line project-focus-group__empty">${escapeHtml(section.empty)}</p>`
+      }
+      ${renderFocusSectionPagination({
+        sectionKey: section.key,
+        totalItems: section.totalItems,
+        totalPages: section.totalPages,
+        currentPage: section.currentPage,
+        pageSize: section.pageSize
+      })}
+    </section>
+  `;
+}
+
+function bindFocusPagination(host) {
+  if (!host) return;
+  host.onclick = (event) => {
+    const target = event.target instanceof HTMLElement
+      ? event.target.closest('button[data-focus-section-page]')
+      : null;
+    if (!target) return;
+    if (target.disabled) return;
+
+    const sectionKey = target.dataset.focusSection;
+    const page = Number.parseInt(target.dataset.focusSectionPage || '0', 10);
+    if (!sectionKey || !Number.isInteger(page) || page < 1) return;
+
+    const sectionPagination = ensureFocusSectionPagination(sectionKey);
+    if (page > sectionPagination.totalPages || page === sectionPagination.page) return;
+
+    const paginationHost = target.closest('[data-focus-section-pagination]') || target;
+    sectionPagination.page = page;
+    jumpPaginationSectionToStart(paginationHost);
+    renderFocusCardsInternal();
+    settlePaginationSectionToStart(paginationHost, { behavior: 'smooth' });
+  };
+}
+
+function renderFocusCardsInternal(projectsOverride = null) {
+  if (!dom.focusCards) return;
+
+  const sourceProjects = Array.isArray(projectsOverride)
+    ? projectsOverride
+    : (state.visibleProjects.length ? state.visibleProjects : getFilteredProjects());
+
+  const sections = buildFocusCardSections(sourceProjects).map((section) => {
+    const pagination = ensureFocusSectionPagination(section.key);
+    const pageSize = Number.isFinite(pagination.pageSize) ? pagination.pageSize : FOCUS_CARDS_PER_PAGE;
+    const totalItems = section.projects.length;
+    const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+    const currentPage = Math.min(Math.max(1, pagination.page || 1), totalPages);
+    pagination.page = currentPage;
+    pagination.totalPages = totalPages;
+    const pagedProjects = section.projects.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+    return {
+      ...section,
+      totalItems,
+      pageSize,
+      totalPages,
+      currentPage,
+      pagedProjects,
+    };
+  });
+
+  const liveSection = sections.find((section) => section.key === 'live');
+  const archiveSection = sections.find((section) => section.key === 'archive');
+
+  dom.focusCards.innerHTML = liveSection ? renderFocusSection(liveSection) : '';
+
+  if (dom.archiveCards) {
+    dom.archiveCards.innerHTML = archiveSection ? renderFocusSection(archiveSection) : '';
+  }
+  if (dom.archiveCount) {
+    dom.archiveCount.textContent = normalizeNumbers(String(archiveSection?.totalItems ?? 0));
+  }
+
+  bindFocusPagination(dom.focusCards);
+  bindFocusPagination(dom.archiveCards);
+}
+
+function renderProjectsPagination(totalPages, currentPage) {
+  const containers = [dom.tablePagination].filter(Boolean);
+  if (!containers.length) return;
+
+  const clampedTotal = Math.max(1, totalPages);
+  const clampedCurrent = Math.min(Math.max(1, currentPage || 1), clampedTotal);
+  const visibleProjects = Array.isArray(state.visibleProjects) ? state.visibleProjects.length : 0;
+  const pageSize = ensureTablePagination().pageSize || FOCUS_CARDS_PER_PAGE;
+  const rangeStart = visibleProjects === 0 ? 0 : ((clampedCurrent - 1) * pageSize) + 1;
+  const rangeEnd = visibleProjects === 0 ? 0 : Math.min(visibleProjects, clampedCurrent * pageSize);
+  const navLabel = t('projects.pagination.navigation', 'Projects pagination');
+  const prevLabel = t('projects.pagination.prev', 'Previous page');
+  const nextLabel = t('projects.pagination.next', 'Next page');
+  const pageLabelTemplate = t('projects.pagination.page', 'Page {page}');
+  const rangeTemplate = t('projects.pagination.range', 'Showing {from}-{to} of {total}');
+
+  containers.forEach((container) => {
+    container.hidden = clampedTotal <= 1;
+    if (clampedTotal <= 1) {
+      container.innerHTML = '';
+    }
+  });
+  if (clampedTotal <= 1) return;
+
+  const pagesList = buildProjectsPageWindow(clampedCurrent, clampedTotal);
+
+  const buttonsHtml = pagesList
+    .filter((page) => page >= 1 && page <= clampedTotal)
+    .map((page) => {
+      const active = page === clampedCurrent;
+      const pageLabel = pageLabelTemplate.replace('{page}', normalizeNumbers(String(page)));
+      return `<button type="button" class="btn btn-sm ${active ? 'btn-primary' : 'btn-outline-primary'}" data-page="${page}" aria-label="${escapeHtml(pageLabel)}" ${active ? 'aria-current="page"' : ''}>${normalizeNumbers(String(page))}</button>`;
+    })
+    .join('');
+
+  const rangeText = rangeTemplate
+    .replace('{from}', normalizeNumbers(String(rangeStart)))
+    .replace('{to}', normalizeNumbers(String(rangeEnd)))
+    .replace('{total}', normalizeNumbers(String(visibleProjects)));
+
+  containers.forEach((container) => {
+    container.innerHTML = `
+      <div class="list-pagination__summary text-muted small">${escapeHtml(rangeText)}</div>
+      <div class="list-pagination__controls btn-group" role="group" aria-label="${escapeHtml(navLabel)}">
+        <button type="button" class="btn btn-sm btn-outline-primary" data-page="${clampedCurrent - 1}" ${clampedCurrent === 1 ? 'disabled' : ''} aria-label="${escapeHtml(prevLabel)}">‹</button>
+        ${buttonsHtml}
+        <button type="button" class="btn btn-sm btn-outline-primary" data-page="${clampedCurrent + 1}" ${clampedCurrent === clampedTotal ? 'disabled' : ''} aria-label="${escapeHtml(nextLabel)}">›</button>
+      </div>
+    `;
+    container.onclick = (event) => {
+      const target = event.target instanceof HTMLElement
+        ? event.target.closest('button[data-page]')
+        : null;
+      if (!target) return;
+      if (target.disabled) return;
+      const page = Number.parseInt(target.dataset.page || '0', 10);
+      if (!Number.isInteger(page) || page < 1 || page > clampedTotal || page === clampedCurrent) return;
+      const pagination = ensureTablePagination();
+      pagination.page = page;
+      jumpPaginationSectionToStart(container);
+      renderProjects();
+      settlePaginationSectionToStart(container, { behavior: 'smooth' });
+    };
+  });
+}
+
+function renderFocusCard(project) {
+  const client = state.customers.find((c) => String(c.id) === String(project.clientId));
+  const clientName = resolveProjectClientName(project, client, t('projects.fallback.unknownClient', 'عميل غير معروف'));
+  const crewCount = Array.isArray(project.technicians) ? project.technicians.length : 0;
+  const reservationsForProject = getReservationsForProject(project.id);
+  const reservationsCount = reservationsForProject.length;
+  const servicesClientPrice = Number(project?.servicesClientPrice ?? 0);
+  const expensesTotal = getProjectExpenses(project);
+  const { applyTax } = resolveProjectTotals(project);
+  const description = (project.description || '').trim();
+  const descriptionText = description
+    ? truncateText(description, 110)
+    : t('projects.fallback.noDescription', 'لا يوجد وصف');
+  const typeLabel = getProjectTypeLabel(project.type);
+  const isConfirmed = project.confirmed === true || project.confirmed === 'true';
+  const projectIdAttr = escapeHtml(String(project.id));
+  const projectCodeValue = project.projectCode || `PRJ-${normalizeNumbers(String(project.id))}`;
+  const projectCodeDisplay = normalizeNumbers(projectCodeValue);
+
+  const { statusKey } = resolveFocusLifecycle(project);
   const statusChipClass = statusKey === 'upcoming'
     ? 'timeline-status-badge timeline-status-badge--upcoming'
     : statusKey === 'ongoing'
@@ -748,18 +842,24 @@ function renderFocusCard(project, category) {
           ? 'timeline-status-badge timeline-status-badge--cancelled'
           : 'timeline-status-badge timeline-status-badge--conflict';
   const title = (project.title || '').trim() || t('projects.fallback.untitled', 'Untitled project');
-  const cardStateClasses = statusKey === 'cancelled' ? [] : [cardPaymentClass];
-  if (statusKey === 'cancelled') {
-    cardStateClasses.push('project-focus-card--cancelled');
-  } else if (isConfirmed) {
-    // لا نظهر حالة مؤكد إذا كان المشروع ملغياً
+  const lifecycleCardClass = statusKey === 'cancelled'
+    ? 'project-focus-card--cancelled'
+    : statusKey === 'completed'
+      ? 'project-focus-card--completed'
+      : statusKey === 'ongoing'
+        ? 'project-focus-card--ongoing'
+        : statusKey === 'conflict'
+          ? 'project-focus-card--conflict'
+          : 'project-focus-card--upcoming';
+  const cardStateClasses = [lifecycleCardClass];
+  if (isConfirmed && statusKey !== 'cancelled' && statusKey !== 'completed') {
     cardStateClasses.push('project-focus-card--confirmed');
   }
 
   // Aggregate reservation totals in a tax-neutral way to avoid double counting tax
   const agg = reservationsForProject.reduce((acc, res) => {
     const items = Array.isArray(res.items) ? res.items : [];
-    const crewAssignments = Array.isArray(res.crewAssignments) ? res.crewAssignments : [];
+    const crewAssignments = resolveProjectReservationCrewAssignments(res);
     const techniciansOrAssignments = crewAssignments.length
       ? crewAssignments
       : (Array.isArray(res.technicians) ? res.technicians : []);
@@ -773,36 +873,21 @@ function renderFocusCard(project, category) {
       start: res.start,
       end: res.end,
       companySharePercent: null,
+      groupingSource: res,
     });
     const net = resolveReservationNetTotal(res);
-    const equipmentCount = (() => {
-      try {
-        const { groups } = buildReservationDisplayGroups(res);
-        return (groups || []).reduce((sum, g) => {
-          const type = String(g?.type || '').toLowerCase();
-          if (type === 'package') {
-            const items = Array.isArray(g?.packageItems) ? g.packageItems : [];
-            const uniq = new Set(items.map((it) => (it?.normalizedBarcode || it?.barcode || it?.equipmentId || '').toString()));
-            return sum + uniq.size;
-          }
-          const c = Number.isFinite(Number(g?.count)) ? Number(g.count)
-            : (Number.isFinite(Number(g?.quantity)) ? Number(g.quantity) : 1);
-          return sum + (c > 0 ? c : 1);
-        }, 0);
-      } catch (_) {
-        const items = Array.isArray(res?.items) ? res.items : [];
-        return items.length || 0;
-      }
-    })();
-    const crewCountLocal = (res.technicians || []).length;
+    const equipmentCount = computeReservationEquipmentCount(res);
+    const crewCountLocal = resolveProjectReservationCrewCount(res);
     return {
       netTotal: acc.netTotal + net,
       equipmentMoney: acc.equipmentMoney + Number(breakdown.equipmentTotal || 0),
       crewMoney: acc.crewMoney + Number(breakdown.crewTotal || 0),
+      equipmentCost: acc.equipmentCost + Number(breakdown.equipmentCostTotal || 0),
+      crewCost: acc.crewCost + Number(breakdown.crewCostTotal || 0),
       equipmentCount: acc.equipmentCount + equipmentCount,
       crewCount: acc.crewCount + crewCountLocal,
     };
-  }, { netTotal: 0, equipmentMoney: 0, crewMoney: 0, equipmentCount: 0, crewCount: 0 });
+  }, { netTotal: 0, equipmentMoney: 0, crewMoney: 0, equipmentCost: 0, crewCost: 0, equipmentCount: 0, crewCount: 0 });
 
   const reservationsTotal = Number(agg.netTotal.toFixed(2));
   const equipmentCountTotal = agg.equipmentCount;
@@ -810,40 +895,54 @@ function renderFocusCard(project, category) {
   // Compute final total using the same formula as project details/cards
   // Align with project details modal: use services client price (not expenses cost)
   const servicesNumber = Number(servicesClientPrice || 0);
-  const grossBeforeDiscount = Number((agg.equipmentMoney + agg.crewMoney + servicesNumber).toFixed(2));
   const discountVal = Number.parseFloat(project?.discount ?? project?.discountValue ?? 0) || 0;
   const discountType = project?.discountType === 'amount' ? 'amount' : 'percent';
-  let discountAmount = discountType === 'amount' ? discountVal : (grossBeforeDiscount * (discountVal / 100));
-  if (!Number.isFinite(discountAmount) || discountAmount < 0) discountAmount = 0;
-  if (discountAmount > grossBeforeDiscount) discountAmount = grossBeforeDiscount;
-  const baseAfterDiscount = Math.max(0, grossBeforeDiscount - discountAmount);
-  const shareEnabled = project?.companyShareEnabled === true
-    || project?.companyShareEnabled === 'true'
-    || project?.company_share_enabled === true
-    || project?.company_share_enabled === 'true';
-  const rawShare = Number.parseFloat(
-    project?.companySharePercent
-    ?? project?.company_share_percent
-    ?? project?.companyShare
-    ?? project?.company_share
-    ?? 0
-  ) || 0;
-  // New rule: company share applies only when VAT is enabled
-  const sharePercent = (shareEnabled && applyTax && rawShare > 0) ? rawShare : 0;
-  const companyShareAmount = Number(((baseAfterDiscount) * (sharePercent / 100)).toFixed(2));
-  const taxAmountAfterShare = applyTax
-    ? Number(((baseAfterDiscount + companyShareAmount) * PROJECT_TAX_RATE).toFixed(2))
-    : 0;
-  const finalTotal = Number((baseAfterDiscount + companyShareAmount + taxAmountAfterShare).toFixed(2));
+  const { sharePercent, enabled: companyShareEnabled } = resolveProjectOverheadSettings(project, { applyTaxRaw: applyTax });
+  const clientAmounts = calculateProjectLineFinancials({
+    equipmentRevenue: agg.equipmentMoney,
+    crewRevenue: agg.crewMoney,
+    servicesRevenue: servicesNumber,
+    equipmentCost: agg.equipmentCost,
+    crewCost: agg.crewCost,
+    servicesCost: Number(expensesTotal || 0),
+    discountValue: discountVal,
+    discountType,
+    applyTax,
+    companyShareEnabled,
+    companySharePercent: sharePercent,
+  });
+  const discountAmount = clientAmounts.discountAmount;
+  const baseAfterDiscount = clientAmounts.subtotalAfterDiscount;
+  const companyShareAmount = clientAmounts.companyShareAmount;
+  const taxAmountAfterShare = clientAmounts.taxAmount;
+  const finalTotal = clientAmounts.totalWithTax;
+  const profit = clientAmounts.profit;
 
   const projectCodeBadge = `<span class="project-code-badge project-focus-card__code">#${escapeHtml(projectCodeDisplay)}</span>`;
   // Hide top type badge; we will highlight type inside the project summary
   const typeBadge = '';
   // Remove category tag (e.g., Today's Projects) from the card header per request
   const categoryMetaTag = '';
-  const statusText = t(`projects.status.${statusKey}`, statusKey);
+  const statusText = statusKey === 'upcoming'
+    ? t('projects.focus.status.active', 'نشط')
+    : statusKey === 'ongoing'
+      ? t('projects.focus.status.running', 'جاري')
+      : statusKey === 'completed'
+        ? t('projects.focus.status.closed', 'مغلق')
+        : t(`projects.status.${statusKey}`, statusKey);
   const statusChip = `<span class="${statusChipClass}">${escapeHtml(statusText)}</span>`;
-  const paymentChip = `<span class="reservation-chip ${paymentChipClass} project-focus-card__payment-chip">${escapeHtml(paymentStatusLabel)}</span>`;
+  const paymentStatusValue = getProjectPaymentStatus(project) || 'unpaid';
+  const paymentChipClass = paymentStatusValue === 'paid'
+    ? 'status-paid'
+    : paymentStatusValue === 'partial'
+      ? 'status-partial'
+      : 'status-unpaid';
+  const paymentChipText = paymentStatusValue === 'paid'
+    ? t('reservations.list.payment.paid', '💳 مدفوع')
+    : paymentStatusValue === 'partial'
+      ? t('reservations.list.payment.partial', '💳 مدفوع جزئياً')
+      : t('reservations.list.payment.unpaid', '💳 غير مدفوع');
+  const paymentChip = `<span class="reservation-chip ${paymentChipClass} project-focus-card__payment-chip">${escapeHtml(paymentChipText)}</span>`;
 
   const buildRow = (icon, label, value) => {
     const valueStr = String(value || '');
@@ -867,7 +966,7 @@ function renderFocusCard(project, category) {
     { icon: '👤', label: t('projects.details.client', 'العميل'), value: clientName },
     // Hide company on the card per request
     // companyName ? { icon: '🏢', label: t('projects.details.company', 'شركة العميل'), value: companyName } : null,
-    { icon: '🏷️', label: t('projects.details.type', 'نوع المشروع'), value: `<span class=\"project-type-chip project-type-chip--${(project.type || 'default')}\">${escapeHtml(typeLabel)}</span>` },
+    { icon: '🏷️', label: t('projects.details.type', 'نوع المشروع'), value: `<span class=\"project-type-chip project-type-chip--${getProjectTypeClass(project.type)}\">${escapeHtml(typeLabel)}</span>` },
     { icon: '📅', label: t('projects.focus.summary.range', 'الفترة الزمنية'), value: projectDateHtml },
     projectTimeText ? { icon: '⏰', label: t('projects.focus.summary.time', 'الوقت'), value: projectTimeText } : null
   ].filter(Boolean).map(({ icon, label, value }) => buildRow(icon, label, value)).join('');
@@ -881,6 +980,7 @@ function renderFocusCard(project, category) {
     // Hide total expenses on the card per request
     // { icon: '💸', label: t('projectCards.stats.expensesTotal', 'خدمات إنتاجية (التكلفة)'), value: formatCurrency(expensesTotal) },
     { icon: '💼', label: t('projectCards.stats.servicesClientPrice', 'الخدمات الإنتاجية'), value: formatCurrency(servicesClientPrice) },
+    { icon: '💵', label: t('projects.details.summary.netProfit', 'صافي الربح'), value: formatCurrency(profit) },
     { icon: '💵', label: finalTotalLabel, value: formatCurrency(finalTotal) }
   ].map(({ icon, label, value }) => buildRow(icon, label, value)).join('');
 
@@ -906,7 +1006,7 @@ function renderFocusCard(project, category) {
 
   return `
     <div class="project-card-grid__item">
-      <article class="project-focus-card ${[...cardStateClasses, (statusKey === 'completed' ? 'project-focus-card--completed' : '')].filter(Boolean).join(' ')}" data-project-id="${projectIdAttr}">
+      <article class="project-focus-card ${cardStateClasses.filter(Boolean).join(' ')}" data-project-id="${projectIdAttr}">
         <div class="project-focus-card__accent"></div>
         <div class="project-focus-card__top">
           ${projectCodeBadge}
@@ -1007,89 +1107,271 @@ export function getProjectExpenses(project) {
     return project.expensesTotal;
   }
   if (Array.isArray(project.expenses)) {
-    return project.expenses.reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0);
+    return project.expenses.reduce((sum, expense) => {
+      const days = Math.max(1, Number.parseInt(String(expense?.service_days ?? expense?.days ?? 1), 10) || 1);
+      return sum + ((Number(expense?.amount) || 0) * days);
+    }, 0);
   }
   return 0;
+}
+
+function resolveReservationDisplayRevenue(reservation) {
+  const storedTotal = Number(reservation?.totalAmount ?? reservation?.total_amount ?? 0);
+  if (Number.isFinite(storedTotal) && storedTotal > 0) {
+    return storedTotal;
+  }
+  return resolveReservationNetTotal(reservation);
+}
+
+function aggregateReservationDisplayCosts(reservations = []) {
+  return (Array.isArray(reservations) ? reservations : []).reduce((acc, reservation) => {
+    const items = Array.isArray(reservation?.items) ? reservation.items : [];
+    const crewAssignments = resolveProjectReservationCrewAssignments(reservation);
+    const techniciansOrAssignments = crewAssignments.length
+      ? crewAssignments
+      : (Array.isArray(reservation?.technicians) ? reservation.technicians : []);
+    const useAssignments = Array.isArray(techniciansOrAssignments)
+      && techniciansOrAssignments.length
+      && typeof techniciansOrAssignments[0] === 'object';
+    const useTechnicianIds = Array.isArray(techniciansOrAssignments)
+      && techniciansOrAssignments.length
+      && typeof techniciansOrAssignments[0] !== 'object';
+
+    const breakdown = calculateDraftFinancialBreakdown({
+      items,
+      technicianIds: useTechnicianIds ? techniciansOrAssignments : [],
+      crewAssignments: useAssignments ? techniciansOrAssignments : [],
+      discount: reservation?.discount ?? 0,
+      discountType: reservation?.discountType || 'percent',
+      applyTax: false,
+      start: reservation?.start,
+      end: reservation?.end,
+      groupingSource: reservation,
+    });
+
+    acc.equipmentCost += Number(breakdown?.equipmentCostTotal || 0);
+    acc.crewCost += Number(breakdown?.crewCostTotal || 0);
+    return acc;
+  }, { equipmentCost: 0, crewCost: 0 });
+}
+
+function aggregateReservationDisplayFinancials(reservations = []) {
+  return (Array.isArray(reservations) ? reservations : []).reduce((acc, reservation) => {
+    const items = Array.isArray(reservation?.items) ? reservation.items : [];
+    const crewAssignments = resolveProjectReservationCrewAssignments(reservation);
+    const techniciansOrAssignments = crewAssignments.length
+      ? crewAssignments
+      : (Array.isArray(reservation?.technicians) ? reservation.technicians : []);
+    const useAssignments = Array.isArray(techniciansOrAssignments)
+      && techniciansOrAssignments.length
+      && typeof techniciansOrAssignments[0] === 'object';
+    const useTechnicianIds = Array.isArray(techniciansOrAssignments)
+      && techniciansOrAssignments.length
+      && typeof techniciansOrAssignments[0] !== 'object';
+
+    const breakdown = calculateDraftFinancialBreakdown({
+      items,
+      technicianIds: useTechnicianIds ? techniciansOrAssignments : [],
+      crewAssignments: useAssignments ? techniciansOrAssignments : [],
+      discount: reservation?.discount ?? 0,
+      discountType: reservation?.discountType || 'percent',
+      applyTax: false,
+      start: reservation?.start,
+      end: reservation?.end,
+      groupingSource: reservation,
+    });
+
+    acc.equipmentRevenue += Number(breakdown?.equipmentTotal || 0);
+    acc.crewRevenue += Number(breakdown?.crewTotal || 0);
+    acc.equipmentCost += Number(breakdown?.equipmentCostTotal || 0);
+    acc.crewCost += Number(breakdown?.crewCostTotal || 0);
+    return acc;
+  }, { equipmentRevenue: 0, crewRevenue: 0, equipmentCost: 0, crewCost: 0 });
+}
+
+function resolveDirectProjectRevenueTotals(project) {
+  const equipmentEstimate = Number(project?.equipmentEstimate ?? project?.equipment_estimate ?? 0) || 0;
+  const servicesClientPrice = Number(project?.servicesClientPrice ?? project?.services_client_price ?? 0) || 0;
+  const applyTaxRaw = project?.applyTax === true
+    || project?.applyTax === 'true'
+    || project?.apply_tax === true
+    || project?.apply_tax === 'true';
+
+  const discountValue = Number.parseFloat(project?.discount ?? project?.discountValue ?? 0) || 0;
+  const discountType = project?.discountType === 'amount' ? 'amount' : 'percent';
+  const { applyTax, sharePercent, enabled: companyShareEnabled } = resolveProjectOverheadSettings(project, { applyTaxRaw });
+  const clientAmounts = calculateProjectLineFinancials({
+    equipmentRevenue: equipmentEstimate,
+    servicesRevenue: servicesClientPrice,
+    discountValue,
+    discountType,
+    applyTax,
+    companyShareEnabled,
+    companySharePercent: sharePercent,
+  });
+  const discountAmount = clientAmounts.discountAmount;
+  const subtotalAfterDiscount = clientAmounts.subtotalAfterDiscount;
+  const companyShareAmount = clientAmounts.companyShareAmount;
+  const taxableAmount = clientAmounts.taxableAmount;
+  const computedTaxAmount = clientAmounts.taxAmount;
+  const computedTotalWithTax = clientAmounts.totalWithTax;
+  const directTotalWithTax = computedTotalWithTax;
+
+  return {
+    equipmentEstimate,
+    servicesClientPrice,
+    directBaseSubtotal: clientAmounts.baseSubtotal,
+    directDiscountAmount: discountAmount,
+    directSubtotalAfterDiscount: subtotalAfterDiscount,
+    directCompanyShareAmount: companyShareAmount,
+    directApplyTax: applyTax,
+    directTaxAmount: computedTaxAmount,
+    directTotalWithTax,
+  };
+}
+
+function resolveStoredProjectTotalWithTax(project) {
+  const candidates = [
+    project?.totalWithTax,
+    project?.total_with_tax,
+    project?.totalAmount,
+    project?.total_amount,
+    project?.amount,
+  ];
+  for (const candidate of candidates) {
+    const value = Number.parseFloat(normalizeNumbers(String(candidate ?? '')));
+    if (Number.isFinite(value) && value > 0) {
+      return Number(value.toFixed(2));
+    }
+  }
+  return 0;
+}
+
+export function resolveProjectCommercialDisplayTotals(project, reservationsOverride = null) {
+  const baseTotals = resolveProjectTotals(project);
+  const directRevenueTotals = resolveDirectProjectRevenueTotals(project);
+  const reservations = Array.isArray(reservationsOverride)
+    ? reservationsOverride
+    : getReservationsForProject(project?.id);
+  const reservationRevenue = reservations.reduce(
+    (sum, reservation) => sum + resolveReservationDisplayRevenue(reservation),
+    0
+  );
+  const reservationCosts = aggregateReservationDisplayCosts(reservations);
+  const reservationCostTotal = Number((reservationCosts.equipmentCost + reservationCosts.crewCost).toFixed(2));
+  const reservationFinancials = aggregateReservationDisplayFinancials(reservations);
+  const expensesTotal = Number(baseTotals.expensesTotal || 0);
+  const servicesClientPrice = Number(project?.servicesClientPrice ?? project?.services_client_price ?? 0) || 0;
+  const applyTaxRaw = project?.applyTax === true
+    || project?.applyTax === 'true'
+    || project?.apply_tax === true
+    || project?.apply_tax === 'true';
+  const discountValue = Number.parseFloat(project?.discount ?? project?.discountValue ?? 0) || 0;
+  const discountType = project?.discountType === 'amount' ? 'amount' : 'percent';
+  const { applyTax, sharePercent, enabled: companyShareEnabled } = resolveProjectOverheadSettings(project, { applyTaxRaw });
+  const linkedProjectFinancials = reservations.length
+    ? calculateProjectLineFinancials({
+      equipmentRevenue: reservationFinancials.equipmentRevenue,
+      crewRevenue: reservationFinancials.crewRevenue,
+      servicesRevenue: servicesClientPrice,
+      equipmentCost: reservationFinancials.equipmentCost,
+      crewCost: reservationFinancials.crewCost,
+      servicesCost: expensesTotal,
+      discountValue,
+      discountType,
+      applyTax,
+      companyShareEnabled,
+      companySharePercent: sharePercent,
+    })
+    : null;
+  const directTotalWithTax = Number(directRevenueTotals.directTotalWithTax || 0);
+  const storedDirectTotalWithTax = reservations.length === 0 && directTotalWithTax <= 0
+    ? resolveStoredProjectTotalWithTax(project)
+    : 0;
+  const directDisplayRevenue = reservations.length
+    ? 0
+    : Math.max(directTotalWithTax, storedDirectTotalWithTax);
+  const displayTotalWithTax = Number((directDisplayRevenue + reservationRevenue).toFixed(2));
+  const displayExpensesTotal = Number((Number(baseTotals.expensesTotal || 0) + reservationCostTotal).toFixed(2));
+
+  return {
+    ...baseTotals,
+    ...(linkedProjectFinancials || {}),
+    ...directRevenueTotals,
+    reservations,
+    reservationRevenue,
+    reservationCostTotal,
+    displayTotalWithTax,
+    displayExpensesTotal,
+  };
 }
 
 export function resolveProjectTotals(project) {
   const equipmentEstimate = Number(project?.equipmentEstimate) || 0;
   const expensesTotal = getProjectExpenses(project);
-  const baseSubtotal = equipmentEstimate + expensesTotal;
+  const servicesClientPrice = Number(project?.servicesClientPrice ?? project?.services_client_price ?? 0) || 0;
   const applyTaxRaw = project?.applyTax === true || project?.applyTax === 'true';
 
   const discountValue = Number.parseFloat(project?.discount ?? project?.discountValue ?? 0) || 0;
   const discountType = project?.discountType === 'amount' ? 'amount' : 'percent';
-  let discountAmount = discountType === 'amount'
-    ? discountValue
-    : baseSubtotal * (discountValue / 100);
-  if (!Number.isFinite(discountAmount) || discountAmount < 0) {
-    discountAmount = 0;
-  }
-  if (discountAmount > baseSubtotal) {
-    discountAmount = baseSubtotal;
-  }
-
-  const subtotalAfterDiscount = Math.max(0, baseSubtotal - discountAmount);
-
-  const companyShareEnabled = project?.companyShareEnabled === true
-    || project?.companyShareEnabled === 'true'
-    || project?.company_share_enabled === true
-    || project?.company_share_enabled === 'true';
-  const rawSharePercent = Number.parseFloat(
-    project?.companySharePercent
-      ?? project?.company_share_percent
-      ?? project?.companyShare
-      ?? project?.company_share
-      ?? 0
-  ) || 0;
-  // Couple VAT/share: if share is set, VAT is effectively ON
-  const applyTax = applyTaxRaw || (companyShareEnabled && rawSharePercent > 0);
-  const sharePercent = (companyShareEnabled && applyTax && rawSharePercent > 0) ? rawSharePercent : 0;
-  const companyShareAmount = sharePercent > 0
-    ? Number((subtotalAfterDiscount * (sharePercent / 100)).toFixed(2))
-    : 0;
-
-  const subtotal = subtotalAfterDiscount + companyShareAmount;
-
-  let taxAmount = applyTax ? subtotal * PROJECT_TAX_RATE : 0;
-  if (!Number.isFinite(taxAmount) || taxAmount < 0) {
-    taxAmount = 0;
-  }
-  taxAmount = Number(taxAmount.toFixed(2));
-
-  let totalWithTax = applyTax ? Number(project?.totalWithTax) : subtotal;
-  if (applyTax) {
-    if (!Number.isFinite(totalWithTax) || totalWithTax <= 0) {
-      totalWithTax = Number((subtotal + taxAmount).toFixed(2));
-    }
-  } else {
-    totalWithTax = subtotal;
-  }
+  const { applyTax, sharePercent, enabled: companyShareEnabled } = resolveProjectOverheadSettings(project, { applyTaxRaw });
+  const clientAmounts = calculateProjectLineFinancials({
+    equipmentRevenue: equipmentEstimate,
+    servicesRevenue: servicesClientPrice,
+    servicesCost: expensesTotal,
+    discountValue,
+    discountType,
+    applyTax,
+    companyShareEnabled,
+    companySharePercent: sharePercent,
+  });
+  const discountAmount = clientAmounts.discountAmount;
+  const subtotalAfterDiscount = clientAmounts.subtotalAfterDiscount;
+  const companyShareAmount = clientAmounts.companyShareAmount;
+  const subtotal = clientAmounts.taxableAmount;
 
   return {
     equipmentEstimate,
     expensesTotal,
-    baseSubtotal,
+    baseSubtotal: clientAmounts.baseSubtotal,
     discountAmount,
     subtotalAfterDiscount,
     companyShareAmount,
     subtotal,
     applyTax,
-    taxAmount,
-    totalWithTax
+    taxAmount: clientAmounts.taxAmount,
+    totalWithTax: clientAmounts.totalWithTax,
+    marginBeforeTax: clientAmounts.marginBeforeTax,
   };
 }
 
 export function updateSummary() {
-  const totalProjects = state.projects.length;
-  const upcoming = state.projects.filter((project) => {
+  const summaryProjects = (Array.isArray(state.projects) ? state.projects : []).filter((project) => {
+    const isConfirmed = project?.confirmed === true || project?.confirmed === 'true';
+    if (!isConfirmed) return false;
+    const status = String(project?.status || '').trim().toLowerCase();
+    const isCancelled = project?.cancelled === true
+      || project?.cancelled === 'true'
+      || status === 'cancelled'
+      || status === 'canceled'
+      || status === 'ملغي'
+      || status === 'ملغى';
+    return !isCancelled;
+  });
+
+  const totalProjects = summaryProjects.length;
+  const upcoming = summaryProjects.filter((project) => {
     const start = project.start ? new Date(project.start) : null;
     if (!start || Number.isNaN(start.getTime())) return false;
     return start > new Date();
   }).length;
-  const expensesTotal = state.projects.reduce((sum, project) => sum + resolveProjectTotals(project).expensesTotal, 0);
-  const budgetTotal = state.projects.reduce((sum, project) => sum + resolveProjectTotals(project).totalWithTax, 0);
+  const summaryBreakdown = computeProjectsRevenueBreakdown(
+    summaryProjects,
+    Array.isArray(state.reservations) ? state.reservations : [],
+    PROJECT_TAX_RATE
+  );
+  const expensesTotal = Number(summaryBreakdown?.projectExpensesTotal || 0);
+  const budgetTotal = Number(summaryBreakdown?.grossRevenue || 0);
 
   if (dom.projectsCount) dom.projectsCount.textContent = normalizeNumbers(String(totalProjects));
   if (dom.projectsUpcoming) dom.projectsUpcoming.textContent = normalizeNumbers(String(upcoming));
@@ -1105,24 +1387,49 @@ export function getReservationsForProject(projectId) {
   });
 }
 
+export function resolveProjectReservationCrewAssignments(reservation) {
+  if (Array.isArray(reservation?.crewAssignments) && reservation.crewAssignments.length) {
+    return reservation.crewAssignments;
+  }
+  if (Array.isArray(reservation?.techniciansDetails) && reservation.techniciansDetails.length) {
+    return reservation.techniciansDetails;
+  }
+  return [];
+}
+
+export function resolveProjectReservationCrewCount(reservation) {
+  const assignments = resolveProjectReservationCrewAssignments(reservation);
+  if (assignments.length) return assignments.length;
+  return Array.isArray(reservation?.technicians) ? reservation.technicians.length : 0;
+}
+
 export function resolveReservationNetTotal(reservation) {
   if (!reservation) return 0;
   const items = Array.isArray(reservation.items) ? reservation.items : [];
   const discountRaw = reservation.discount ?? 0;
   const discountValue = Number(normalizeNumbers(String(discountRaw))) || 0;
   const discountType = reservation.discountType || 'percent';
-  const crewAssignments = Array.isArray(reservation.crewAssignments) ? reservation.crewAssignments : [];
+  const crewAssignments = resolveProjectReservationCrewAssignments(reservation);
   const techniciansOrAssignments = crewAssignments.length
     ? crewAssignments
     : (Array.isArray(reservation.technicians) ? reservation.technicians : []);
-  const calculated = calculateReservationTotal(
+  const calculatedBreakdown = calculateDraftFinancialBreakdown({
     items,
-    discountValue,
+    technicianIds: Array.isArray(techniciansOrAssignments) && techniciansOrAssignments.length && typeof techniciansOrAssignments[0] !== 'object'
+      ? techniciansOrAssignments
+      : [],
+    crewAssignments: Array.isArray(techniciansOrAssignments) && techniciansOrAssignments.length && typeof techniciansOrAssignments[0] === 'object'
+      ? techniciansOrAssignments
+      : [],
+    discount: discountValue,
     discountType,
-    false,
-    techniciansOrAssignments,
-    { start: reservation.start, end: reservation.end, companySharePercent: 0 }
-  );
+    applyTax: false,
+    start: reservation.start,
+    end: reservation.end,
+    companySharePercent: 0,
+    groupingSource: reservation,
+  });
+  const calculated = Number(calculatedBreakdown?.finalTotal);
 
   if (Number.isFinite(calculated)) {
     return calculated;
@@ -1138,9 +1445,7 @@ function computeReservationEquipmentCount(reservation) {
     return (groups || []).reduce((sum, g) => {
       const type = String(g?.type || '').toLowerCase();
       if (type === 'package') {
-        const items = Array.isArray(g?.packageItems) ? g.packageItems : [];
-        const uniq = new Set(items.map((it) => (it?.normalizedBarcode || it?.barcode || it?.equipmentId || '').toString()));
-        return sum + uniq.size;
+        return sum + 1;
       }
       const c = Number.isFinite(Number(g?.count)) ? Number(g.count)
         : (Number.isFinite(Number(g?.quantity)) ? Number(g.quantity) : 1);
@@ -1157,22 +1462,40 @@ export function buildProjectReservationCard(reservation, index, project = null) 
   const reservationId = reservation.reservationId || reservation.id || `RES-${index + 1}`;
   const rawStatus = reservation.status || reservation.state || 'pending';
   const normalizedStatus = String(rawStatus).toLowerCase();
-  // Link confirmation: if project is confirmed, reflect that on the tag regardless of stale reservation.status
+  const cancelled = reservation?.cancelled === true
+    || reservation?.cancelled === 'true'
+    || normalizedStatus === 'cancelled'
+    || normalizedStatus === 'canceled'
+    || normalizedStatus === 'ملغي'
+    || normalizedStatus === 'ملغى';
+  const completed = !cancelled && isReservationCompleted(reservation);
+  // Link confirmation only after lifecycle states; cancelled/closed must keep their reservation tags.
   const { effectiveConfirmed } = resolveReservationProjectState(reservation, project);
-  const finalStatus = effectiveConfirmed ? 'confirmed' : normalizedStatus;
+  const finalStatus = cancelled
+    ? 'cancelled'
+    : completed
+      ? 'completed'
+      : effectiveConfirmed
+        ? 'confirmed'
+        : normalizedStatus;
   // Use the same translation keys used across reservations list to unify language/appearance
-  const statusLabel = t(
-    `reservations.list.status.${finalStatus}`,
-    finalStatus === 'confirmed' ? '✅ مؤكد' : finalStatus === 'pending' ? '⏳ غير مؤكد' : finalStatus
-  );
+  const statusLabel = finalStatus === 'cancelled'
+    ? stripReservationTagDecorators(t('reservations.list.lifecycle.cancelled', 'ملغي'))
+    : finalStatus === 'completed'
+      ? stripReservationTagDecorators(t('reservations.list.lifecycle.closed', 'مغلق'))
+      : t(
+          `reservations.list.status.${finalStatus}`,
+          finalStatus === 'confirmed' ? '✅ مؤكد' : finalStatus === 'pending' ? '⏳ غير مؤكد' : finalStatus
+        );
   const statusClassMap = {
-    confirmed: 'project-reservation-card__badge--confirmed',
-    pending: 'project-reservation-card__badge--pending',
-    completed: 'project-reservation-card__badge--completed',
-    in_progress: 'project-reservation-card__badge--info',
-    ongoing: 'project-reservation-card__badge--info'
+    confirmed: 'reservation-chip status-confirmed project-reservation-card__badge--confirmed',
+    pending: 'reservation-chip status-pending project-reservation-card__badge--pending',
+    completed: 'reservation-chip status-completed project-reservation-card__badge--completed',
+    cancelled: 'reservation-chip status-cancelled project-reservation-card__badge--cancelled',
+    in_progress: 'reservation-chip status-info project-reservation-card__badge--info',
+    ongoing: 'reservation-chip status-info project-reservation-card__badge--info'
   };
-  const statusClass = statusClassMap[finalStatus] || 'project-reservation-card__badge--info';
+  const statusClass = statusClassMap[finalStatus] || 'reservation-chip status-info project-reservation-card__badge--info';
   // Link payment tag: support partial
   // When linked to a project, mirror the project's payment status on the reservation card
   const projectPaidRaw = typeof project?.paymentStatus === 'string' ? project.paymentStatus.toLowerCase() : null;
@@ -1188,20 +1511,22 @@ export function buildProjectReservationCard(reservation, index, project = null) 
       ? t('reservations.list.payment.partial', '💳 مدفوع جزئياً')
       : t('reservations.list.payment.unpaid', '💳 غير مدفوع');
   const paidClass = paidStatus === 'paid'
-    ? 'project-reservation-card__badge--paid'
+    ? 'reservation-chip status-paid project-reservation-card__badge--paid'
     : paidStatus === 'partial'
-      ? 'project-reservation-card__badge--partial'
-      : 'project-reservation-card__badge--unpaid';
-  const completed = reservation.completed === true || reservation.completed === 'true';
-  const completedLabel = t('reservations.details.completed', 'مغلق');
-  const completedBadge = completed
-    ? `<span class="project-reservation-card__badge project-reservation-card__badge--completed">${escapeHtml(completedLabel)}</span>`
-    : '';
+      ? 'reservation-chip status-partial project-reservation-card__badge--partial'
+      : 'reservation-chip status-unpaid project-reservation-card__badge--unpaid';
   // Vertical meta: crew count, equipment count, and total only
-  const netTotal = resolveReservationNetTotal(reservation);
+  const { applyTax: projectApplyTax, sharePercent: projectSharePercent, enabled: projectShareEnabled } = resolveProjectOverheadSettings(project, {
+    applyTaxRaw: project?.applyTax === true || project?.applyTax === 'true',
+  });
+  const netTotal = applyProjectItemOverhead(resolveReservationNetTotal(reservation), {
+    applyTax: projectApplyTax,
+    companyShareEnabled: projectShareEnabled,
+    companySharePercent: projectSharePercent,
+  });
   const costLabel = formatCurrency(netTotal);
   const equipmentCount = computeReservationEquipmentCount(reservation);
-  const crewCount = (reservation.technicians || []).length;
+  const crewCount = resolveProjectReservationCrewCount(reservation);
   const crewTitle = t('projectCards.stats.crewCount', 'عدد الطاقم');
   const equipmentTitle = t('projectCards.stats.equipmentCount', 'عدد المعدات');
   const totalTitle = t('projectCards.stats.reservationTotal', 'إجمالي الحجز');
@@ -1213,7 +1538,6 @@ export function buildProjectReservationCard(reservation, index, project = null) 
         <div class="project-reservation-card__badges">
           <span class="project-reservation-card__badge ${statusClass}">${escapeHtml(statusLabel)}</span>
           <span class="project-reservation-card__badge ${paidClass}">${escapeHtml(paidLabel)}</span>
-          ${completedBadge}
         </div>
       </div>
       <div class="project-reservation-card__body">
@@ -1248,7 +1572,7 @@ export function buildProjectReservationsSection(project) {
   const emptyText = t('projects.details.reservations.empty', 'لا توجد حجوزات مرتبطة بهذا المشروع بعد.');
   const listMarkup = reservations.length
     ? `<div class="project-reservations-list">${reservations.map(({ reservation, index }) => buildProjectReservationCard(reservation, index, project)).join('')}</div>`
-    : `<div class="alert alert-info project-reservations-empty mb-0">${escapeHtml(emptyText)}</div>`;
+    : `<p class="linked-records-empty-copy project-reservations-empty mb-0">${escapeHtml(emptyText)}</p>`;
 
   return `
     <section class="project-reservations-section">

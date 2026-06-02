@@ -1,13 +1,9 @@
-// ✅ استيراد الدوال الخفيفة فقط بشكل مباشر
-import { renderCustomers } from "./customers.js";
-import { renderEquipment } from "./equipment.js";
-import { renderTechnicians } from "./technicians.js";
 // تمت إزالة الاستيراد الثابت لـ reservationsUI لضمان تحميل كسول فعلي
 import { getPreferences, updatePreferences, subscribePreferences, getCachedPreferences } from "./preferencesService.js";
 
 const DASHBOARD_TAB_STORAGE_KEY = "__ART_RATIO_LAST_DASHBOARD_TAB__";
 const DASHBOARD_SUB_TAB_STORAGE_KEY = "__ART_RATIO_LAST_DASHBOARD_SUB_TAB__";
-const DEFAULT_RESERVATION_SUB_TAB = "create-tab";
+const DEFAULT_RESERVATION_SUB_TAB = "my-reservations-tab";
 const TAB_ID_PATTERN = /^[a-z0-9\-]+$/i;
 
 // Development logger disabled to keep console clean
@@ -18,7 +14,7 @@ function scrollTabButtonIntoView(button) {
   try {
     const track = button.closest('[data-tab-scroll-track]');
     if (!track) return;
-    const scrollOptions = { behavior: 'smooth', block: 'nearest', inline: 'center' };
+    const scrollOptions = { behavior: 'smooth', block: 'nearest', inline: 'nearest' };
     button.scrollIntoView(scrollOptions);
     const root = track.closest('[data-tab-scroll]');
     if (root) {
@@ -30,6 +26,125 @@ function scrollTabButtonIntoView(button) {
     console.warn('⚠️ [tabs.js] Failed to keep tab visible', error);
   }
 }
+
+function mountInlineReservationCreateSection() {
+  if (typeof document === 'undefined') return null;
+  const mount = document.getElementById('reservation-create-inline-mount');
+  const createSection = document.getElementById('create-tab');
+  if (!mount || !createSection) return createSection || null;
+  if (createSection.parentElement !== mount) {
+    mount.appendChild(createSection);
+  }
+  createSection.removeAttribute('hidden');
+  createSection.removeAttribute('aria-hidden');
+  createSection.style.display = '';
+  return createSection;
+}
+
+function scrollToReservationInlineSection(targetSelector = '#create-tab') {
+  if (typeof document === 'undefined' || typeof window === 'undefined') return;
+  const target = document.querySelector(targetSelector);
+  if (!target) return;
+  const panel = target.closest('details');
+  if (panel && !panel.open) {
+    panel.open = true;
+  }
+  try {
+    (panel || target).scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+  } catch (_) {
+    (panel || target).scrollIntoView();
+  }
+  const scrollParent = (() => {
+    let node = (panel || target).parentElement;
+    while (node && node !== document.body && node !== document.documentElement) {
+      const style = window.getComputedStyle(node);
+      const overflowY = `${style.overflowY} ${style.overflow}`;
+      if (/(auto|scroll)/.test(overflowY) && node.scrollHeight > node.clientHeight) {
+        return node;
+      }
+      node = node.parentElement;
+    }
+    return null;
+  })();
+  if (scrollParent) {
+    const scrollTarget = panel || target;
+    const delta = scrollTarget.getBoundingClientRect().top - scrollParent.getBoundingClientRect().top - 96;
+    try {
+      scrollParent.scrollTo({ top: Math.max(scrollParent.scrollTop + delta, 0), behavior: 'smooth' });
+    } catch (_) {
+      scrollParent.scrollTop = Math.max(scrollParent.scrollTop + delta, 0);
+    }
+  }
+  const focusFirstField = () => {
+    const firstField = target.querySelector('[required], #res-start, input, select, textarea, button');
+    if (firstField && typeof firstField.focus === 'function') {
+      try {
+        firstField.focus({ preventScroll: true });
+      } catch (_) {
+        firstField.focus();
+      }
+      firstField.classList.add('reservation-field-focus-pulse');
+      window.setTimeout(() => {
+        firstField.classList.remove('reservation-field-focus-pulse');
+      }, 1800);
+    }
+  };
+  window.setTimeout(focusFirstField, 250);
+  window.setTimeout(focusFirstField, 750);
+  window.setTimeout(focusFirstField, 1250);
+}
+
+function normalizeReservationCreateHash() {
+  if (typeof window === 'undefined' || window.location.hash !== '#create-tab') return;
+  const nextUrl = `${window.location.pathname}${window.location.search}#reservations`;
+  try {
+    window.history.replaceState({}, document.title, nextUrl);
+  } catch (_) {
+    window.location.hash = 'reservations';
+  }
+}
+
+function openReservationCreatePanel(triggerEl = null) {
+  const targetSelector = triggerEl?.getAttribute?.('data-reservation-scroll-target') || '#create-tab';
+  if (typeof activateSubTabRef === 'function') {
+    activateSubTabRef('my-reservations-tab');
+  }
+  window.requestAnimationFrame(() => {
+    mountInlineReservationCreateSection();
+    scrollToReservationInlineSection(targetSelector);
+  });
+}
+
+function installReservationCreateClickListener() {
+  if (typeof document === 'undefined' || document.__artRatioReservationCreateClickListenerAttached) return;
+  const bindButtons = () => {
+    document.querySelectorAll('[data-reservation-scroll-target]').forEach((buttonEl) => {
+      if (buttonEl.dataset.reservationCreateDirectListenerAttached) return;
+      buttonEl.addEventListener('click', (event) => {
+        event.preventDefault();
+        const panel = document.getElementById('reservations-create-panel');
+        if (panel) panel.open = true;
+        openReservationCreatePanel(buttonEl);
+      });
+      buttonEl.dataset.reservationCreateDirectListenerAttached = 'true';
+    });
+  };
+  document.addEventListener('click', (event) => {
+    const buttonEl = event.target?.closest?.('[data-reservation-scroll-target]');
+    if (!buttonEl) return;
+    event.preventDefault();
+    const panel = document.getElementById('reservations-create-panel');
+    if (panel) panel.open = true;
+    openReservationCreatePanel(buttonEl);
+  }, true);
+  bindButtons();
+  window.setTimeout(bindButtons, 250);
+  window.setTimeout(bindButtons, 1000);
+  window.setTimeout(bindButtons, 2000);
+  document.__artRatioReservationCreateClickListenerAttached = true;
+}
+
+installReservationCreateClickListener();
 
 function readStoredTab(key) {
   try {
@@ -191,15 +306,6 @@ export function setupTabs() {
       }
     }
 
-    // 📌 استدعاء الدوال الخاصة بكل تبويب
-    if (!skipRender && target === "customers-tab") {
-      devLog("👤 Rendering customers");
-      renderCustomers();
-    }
-    if (!skipRender && target === "equipment-tab") {
-      devLog("📦 Rendering equipment");
-      renderEquipment();
-    }
     if (!skipRender && target === "maintenance-tab") {
       devLog("🛠️ Rendering maintenance");
       ensureMaintenanceModule()
@@ -217,10 +323,6 @@ export function setupTabs() {
           }
         })
         .catch((error) => console.error('❌ [tabs.js] Unable to load maintenance module', error));
-    }
-    if (!skipRender && target === "technicians-tab") {
-      devLog("🛠️ Rendering technicians");
-      renderTechnicians();
     }
     if (target === "reservations-tab") {
       if (!skipRender) {
@@ -258,6 +360,9 @@ export function setupTabs() {
   };
 
   activateTabRef = activateTab;
+  if (document.getElementById("reservations-tab")) {
+    setupSubTabs();
+  }
 
   // Keyboard navigation for tabs (Arrow keys + Home/End)
   const setupKeyboardNavigation = (tablist) => {
@@ -373,6 +478,21 @@ export function setupTabs() {
     } catch (_) { return null; }
   };
 
+  const resolveHashSubTarget = () => {
+    try {
+      const rawHash = (typeof window !== 'undefined' && window.location && typeof window.location.hash === 'string')
+        ? window.location.hash.replace(/^#/, '')
+        : '';
+      if (!rawHash) return null;
+      const params = new URLSearchParams(rawHash);
+      const subFromParam = params.get('sub');
+      if (subFromParam && TAB_ID_PATTERN.test(subFromParam) && document.getElementById(subFromParam)) {
+        return subFromParam;
+      }
+      return null;
+    } catch (_) { return null; }
+  };
+
   const applyInitialTabs = (prefs) => {
     const defaultTabButton = document.querySelector('[data-tab].active');
     const localStoredTab = readStoredTab(DASHBOARD_TAB_STORAGE_KEY);
@@ -398,6 +518,7 @@ export function setupTabs() {
     }
 
     const storedSubCandidates = [
+      resolveHashSubTarget(),
       prefs?.dashboardSubTab,
       readStoredTab(DASHBOARD_SUB_TAB_STORAGE_KEY),
     ].filter(Boolean);
@@ -422,9 +543,14 @@ export function setupTabs() {
       try {
         window.addEventListener('hashchange', () => {
           const next = resolveHashTarget();
-          if (!next || next === currentMainTab || typeof activateTabRef !== 'function') return;
-          if (document.getElementById(next)) {
+          const nextSub = resolveHashSubTarget();
+          if (next && next !== currentMainTab && typeof activateTabRef === 'function' && document.getElementById(next)) {
             activateTabRef(next, { skipStore: true });
+          }
+          if (nextSub && typeof activateSubTabRef === 'function') {
+            activateSubTabRef(nextSub, { skipStore: true });
+          } else if (nextSub) {
+            pendingSubTabPreference = nextSub;
           }
         });
         // Also re-assert active tab after language changes (text nodes get updated)
@@ -476,16 +602,18 @@ export function setupTabs() {
 
 // ✅ إدارة التبويبات الفرعية للحجوزات
 function setupSubTabs() {
+  normalizeReservationCreateHash();
+  mountInlineReservationCreateSection();
   const subTabButtons = document.querySelectorAll('#reservations-tab .sub-tab-button');
   const subTabContents = document.querySelectorAll('#reservations-tab .sub-tab');
 
-  if (!subTabButtons.length) {
-    console.warn('⚠️ [tabs.js] No reservation sub-tab buttons found');
+  if (!subTabContents.length) {
+    console.warn('⚠️ [tabs.js] No reservation sub-tab panels found');
     return;
   }
 
-  const availableSubTargets = Array.from(subTabButtons)
-    .map((btn) => btn?.getAttribute('data-sub-tab'))
+  const availableSubTargets = Array.from(subTabContents)
+    .map((panel) => panel?.id)
     .filter((value) => typeof value === 'string' && value.trim().length > 0);
 
   const resolveFallbackSubTarget = () => {
@@ -512,15 +640,15 @@ function setupSubTabs() {
 
     const subTabButton = document.querySelector(`#reservations-tab .sub-tab-button[data-sub-tab="${targetToActivate}"]`);
     const subTabContent = document.getElementById(targetToActivate);
-    if (!subTabButton || !subTabContent) {
-      console.warn('⚠️ [tabs.js] Unable to locate sub-tab button/content after fallback', {
+    if (!subTabContent) {
+      console.warn('⚠️ [tabs.js] Unable to locate sub-tab content after fallback', {
         target: targetToActivate
       });
       return;
     }
 
     const isAlreadyActive = currentSubTab === targetToActivate
-      && subTabButton.classList.contains('active')
+      && (!subTabButton || subTabButton.classList.contains('active'))
       && subTabContent.classList.contains('active')
       && subTabContent.getAttribute('aria-hidden') === 'false';
 
@@ -530,7 +658,9 @@ function setupSubTabs() {
       subTabContent.setAttribute('aria-hidden', 'false');
       currentSubTab = targetToActivate;
 
-      scrollTabButtonIntoView(subTabButton);
+      if (subTabButton) {
+        scrollTabButtonIntoView(subTabButton);
+      }
 
       if (!skipStore) {
         writeStoredTab(DASHBOARD_SUB_TAB_STORAGE_KEY, targetToActivate);
@@ -550,13 +680,15 @@ function setupSubTabs() {
       buttonEl.setAttribute('aria-selected', 'false');
       buttonEl.setAttribute('tabindex', '-1');
     });
-    subTabButton.classList.add('active');
-    if (subTabButton.classList.contains('tab')) {
-      subTabButton.classList.add('tab-active');
+    if (subTabButton) {
+      subTabButton.classList.add('active');
+      if (subTabButton.classList.contains('tab')) {
+        subTabButton.classList.add('tab-active');
+      }
+      subTabButton.setAttribute('aria-selected', 'true');
+      subTabButton.setAttribute('tabindex', '0');
+      scrollTabButtonIntoView(subTabButton);
     }
-    subTabButton.setAttribute('aria-selected', 'true');
-    subTabButton.setAttribute('tabindex', '0');
-    scrollTabButtonIntoView(subTabButton);
 
     subTabContents.forEach((subContent) => {
       const isActive = subContent.id === targetToActivate;
@@ -650,6 +782,33 @@ function setupSubTabs() {
       btn.dataset.subTabListenerAttached = 'true';
     }
   });
+
+  const reservationsRoot = document.getElementById('reservations-tab');
+  if (reservationsRoot && !reservationsRoot.dataset.reservationScrollListenerAttached) {
+    reservationsRoot.addEventListener('click', (event) => {
+      const buttonEl = event.target?.closest?.('[data-reservation-scroll-target]');
+      if (!buttonEl || !reservationsRoot.contains(buttonEl)) return;
+      event.preventDefault();
+      openReservationCreatePanel(buttonEl);
+    });
+    reservationsRoot.dataset.reservationScrollListenerAttached = 'true';
+  }
+
+  document.querySelectorAll('#reservations-tab [data-reservation-scroll-target]').forEach((buttonEl) => {
+    if (buttonEl.dataset.reservationScrollButtonListenerAttached) return;
+    buttonEl.addEventListener('click', () => {
+      openReservationCreatePanel(buttonEl);
+    });
+    buttonEl.dataset.reservationScrollButtonListenerAttached = 'true';
+  });
+
+  installReservationCreateClickListener();
+
+  if (typeof window !== 'undefined' && !window.__artRatioReservationHashListenerAttached) {
+    window.addEventListener('hashchange', normalizeReservationCreateHash);
+    window.__artRatioReservationHashListenerAttached = true;
+    normalizeReservationCreateHash();
+  }
 
   if (pendingSubTabPreference) {
     activateSubTab(pendingSubTabPreference, { skipStore: true });

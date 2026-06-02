@@ -189,6 +189,7 @@ export async function handleReservationSubmit() {
   }
 
   const crewAssignments = getSelectedCrewAssignments();
+  const unassignedCrewAssignments = crewAssignments.filter((assignment) => !assignment?.technicianId);
   const technicianIds = crewAssignments
     .map((assignment) => assignment.technicianId)
     .filter(Boolean);
@@ -196,6 +197,28 @@ export async function handleReservationSubmit() {
   if (draftItems.length === 0 && crewAssignments.length === 0) {
     reservationDebugLog('validation:no_items_or_crew', { items: draftItems.length, crew: crewAssignments.length });
     showToast(t('reservations.toast.noItems', '⚠️ يجب إضافة معدة أو عضو واحد من الطاقم الفني على الأقل'));
+    return;
+  }
+
+  if (unassignedCrewAssignments.length > 0) {
+    const labels = unassignedCrewAssignments
+      .slice(0, 3)
+      .map((assignment) => normalizeNumbers(
+        assignment?.positionLabel
+          || assignment?.position_label
+          || assignment?.position_name
+          || assignment?.role
+          || assignment?.position
+          || t('reservations.crew.positionFallback', 'منصب بدون اسم')
+      ))
+      .join(t('reservations.list.crew.separator', '، '));
+    const suffix = unassignedCrewAssignments.length > 3 ? '…' : '';
+    showToast(
+      t('reservations.toast.unassignedCrew', '⚠️ يجب تعيين عضو طاقم لكل منصب قبل حفظ الحجز')
+      + (labels ? `: ${labels}${suffix}` : ''),
+      'warning',
+      5000
+    );
     return;
   }
 
@@ -330,7 +353,7 @@ export async function handleReservationSubmit() {
       shareCheckbox.checked = false;
       shareCheckbox.disabled = true;
       shareCheckbox.classList.add('disabled');
-      shareCheckbox.title = t('reservations.toast.linkedProjectDisabled', 'لا يمكن تعديل نسبة الشركة من شاشة الحجز المرتبط. عدّل المشروع بدلًا من ذلك.');
+      shareCheckbox.title = t('reservations.toast.linkedProjectDisabled', 'لا يمكن تعديل المصاريف التشغيلية من شاشة الحجز المرتبط. عدّل المشروع بدلًا من ذلك.');
     }
     if (paymentSelect) {
       paymentSelect.value = 'unpaid';
@@ -377,7 +400,7 @@ export async function handleReservationSubmit() {
   const shareChecked = Boolean(shareCheckbox?.checked);
   if (!projectLinked && shareChecked !== applyTax) {
     reservationDebugLog('validation:company_share_requires_tax', { shareChecked, applyTax });
-    showToast(t('reservations.toast.companyShareRequiresTax', '⚠️ لا يمكن تفعيل نسبة الشركة بدون تفعيل الضريبة'));
+    showToast(t('reservations.toast.companyShareRequiresTax', '⚠️ لا يمكن تفعيل المصاريف التشغيلية بدون تفعيل الضريبة'));
     return;
   }
 

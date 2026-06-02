@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <!-- @include "./_partials/manager-page-head.html" {"titleKey":"maintenance.pageTitle","titleText":"إدارة الصيانة"} -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+<!-- @include "./_partials/tabs-manager-shell.html" {"bodyClass":"dashboard-page maintenance-page no-js","greetingLabelKey":"maintenance.pageTitle","greetingLabelText":"إدارة الصيانة","pageScript":"/src/scripts/maintenancePage.js"} -->
+<template data-slot="sidebarTabs">
+  <a class="ui-tab tab-button" href="home.html" data-close-sidebar>
+    <span class="tab-button__content"><span data-i18n data-i18n-key="dashboard.quickLinks.home">الصفحة الرئيسية</span></span>
+  </a>
+  <a class="ui-tab tab-button" href="operations.html#reservations-tab" data-close-sidebar>
+    <span class="tab-button__content"><span data-i18n data-i18n-key="tabs.reservations">📅 الحجوزات</span></span>
+  </a>
+  <a class="ui-tab tab-button" href="clients.html" data-close-sidebar>
+    <span class="tab-button__content"><span data-i18n data-i18n-key="tabs.customers">👤 العملاء</span></span>
+  </a>
+  <a class="ui-tab tab-button" href="equipment.html" data-close-sidebar>
+    <span class="tab-button__content"><span data-i18n data-i18n-key="tabs.equipment">🎥 المعدات</span></span>
+  </a>
+  <a class="ui-tab tab-button active" href="maintenance.html" data-close-sidebar aria-current="page">
+    <span class="tab-button__content"><span data-i18n data-i18n-key="tabs.maintenance">🛠️ الصيانة</span></span>
+  </a>
+  <a class="ui-tab tab-button" href="crew.html" data-close-sidebar>
+    <span class="tab-button__content"><span data-i18n data-i18n-key="tabs.technicians">😎 طاقم العمل</span></span>
+  </a>
+  <a class="ui-tab tab-button" href="projects.html" data-close-sidebar>
+    <span class="tab-button__content"><span data-i18n data-i18n-key="home.projects.title">🏗️ إدارة المشاريع</span></span>
+  </a>
+</template>
+<template data-slot="greetingPanel">
+  <div class="flex flex-col gap-4 text-start">
+    <div class="space-y-1">
+      <p class="text-sm text-base-content/60" data-i18n data-i18n-key="maintenance.pageTitle">إدارة الصيانة</p>
+      <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="maintenance.pageSummary">متابعة تذاكر الصيانة وإغلاقها كمساحة مستقلة مرتبطة بحالة المعدات.</p>
+    </div>
+  </div>
+</template>
+<template data-slot="mainContent">
+  <div class="tab-content-wrapper">
+<div class="tab active" id="maintenance-tab" role="tabpanel" aria-labelledby="maintenance-page-section-title" tabindex="0">
+        <div class="tab-section-header">
+          <h2 class="tab-section-title" id="maintenance-page-section-title" data-i18n data-i18n-key="maintenance.section.title">🛠️ إدارة الصيانة</h2>
+        </div>
+
+        <div class="ui-card ui-card--content glass-card maintenance-form-box maintenance-embedded-form-card management-form-box mb-4">
+          <div class="management-form-header">
+            <div class="management-form-icon maintenance-form-icon">🔧</div>
+            <div class="management-form-header-text">
+              <h4 data-i18n data-i18n-key="maintenance.form.title">➕ إنشاء تذكرة صيانة</h4>
+              <p class="management-form-hint maintenance-form-hint" data-i18n data-i18n-key="maintenance.form.hint">حدد المعدة المتضررة وسجّل المشكلة لإيقافها عن الاستخدام لحين الإصلاح.</p>
+            </div>
+          </div>
+          <form id="maintenance-form" class="maintenance-form management-form">
+            <div class="maintenance-embedded-form-layout">
+              <div class="maintenance-embedded-form-main">
+                <section class="maintenance-form-section-card maintenance-form-section-card--selection">
+                  <div class="maintenance-form-section-card__header">
+                    <h5 class="maintenance-form-section-card__title" data-i18n data-i18n-key="maintenance.form.sections.selection.title">اختيار المعدّة والأولوية</h5>
+                    <p class="maintenance-form-section-card__hint" data-i18n data-i18n-key="maintenance.form.sections.selection.hint">ابدأ بمسح الباركود أو البحث عن المعدّة، ثم حدّد أولوية التذكرة قبل تسجيل المشكلة.</p>
+                  </div>
+                  <div class="management-form-grid maintenance-form-grid maintenance-embedded-form-grid mt-0">
+                    <div class="form-field">
+                      <label for="maintenance-equipment-barcode" class="form-label" data-i18n data-i18n-key="maintenance.form.labels.barcode">🏷️ الباركود</label>
+                      <input type="text" id="maintenance-equipment-barcode" class="ui-input form-control" placeholder="🖨️ امسح أو أدخل الباركود ثم اضغط Enter" data-i18n data-i18n-placeholder-key="maintenance.form.placeholders.barcode">
+                    </div>
+                    <div class="form-field">
+                      <label for="maintenance-equipment-search" class="form-label" data-i18n data-i18n-key="maintenance.form.labels.search">🎥 إضافة معدة بالاسم</label>
+                      <input type="text" id="maintenance-equipment-search" class="ui-input form-control" list="maintenance-equipment-options" placeholder="اكتب اسم المعدة..." data-i18n data-i18n-placeholder-key="maintenance.form.placeholders.search">
+                      <datalist id="maintenance-equipment-options"></datalist>
+                    </div>
+                    <div class="form-field maintenance-priority-field">
+                      <label for="maintenance-priority" class="form-label" data-i18n data-i18n-key="maintenance.form.labels.priority">⚠️ الأولوية</label>
+                      <select id="maintenance-priority" class="ui-select form-select">
+                        <option value="high" data-i18n data-i18n-key="maintenance.form.options.priority.high">مرتفعة</option>
+                        <option value="medium" selected data-i18n data-i18n-key="maintenance.form.options.priority.medium">متوسطة</option>
+                        <option value="low" data-i18n data-i18n-key="maintenance.form.options.priority.low">منخفضة</option>
+                      </select>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="maintenance-form-section-card maintenance-form-section-card--issue">
+                  <div class="maintenance-form-section-card__header">
+                    <h5 class="maintenance-form-section-card__title" data-i18n data-i18n-key="maintenance.form.sections.issue.title">وصف المشكلة</h5>
+                    <p class="maintenance-form-section-card__hint" data-i18n data-i18n-key="maintenance.form.sections.issue.hint">اشرح العطل أو الأعراض الظاهرة بوضوح حتى يسهل تتبع الإصلاح لاحقًا داخل التذكرة.</p>
+                  </div>
+                  <div class="form-field form-field--full maintenance-embedded-issue-field">
+                    <label for="maintenance-issue" class="maintenance-issue-label form-label" data-i18n data-i18n-key="maintenance.form.labels.issue">📝 وصف المشكلة</label>
+                    <textarea id="maintenance-issue" class="maintenance-issue-textarea" rows="4" placeholder="اشرح المشكلة أو الأعراض الظاهرة للمعدة" required data-i18n data-i18n-placeholder-key="maintenance.form.placeholders.issue"></textarea>
+                  </div>
+                </section>
+              </div>
+
+              <aside class="maintenance-embedded-form-side">
+                <div class="maintenance-embedded-form-side-card">
+                  <div class="maintenance-form-section-card__header">
+                    <h5 class="maintenance-form-section-card__title" data-i18n data-i18n-key="maintenance.form.sections.selected.title">المعدّة المختارة</h5>
+                    <p class="maintenance-form-section-card__hint" data-i18n data-i18n-key="maintenance.form.sections.selected.hint">راجع اسم المعدّة والباركود الحالي قبل إنشاء التذكرة والتأكد من إيقافها عن الخدمة.</p>
+                  </div>
+                  <div id="maintenance-selected-info" class="maintenance-selected-info text-muted" data-i18n data-i18n-key="maintenance.form.selectedInfo">لم يتم اختيار معدة بعد.</div>
+                </div>
+              </aside>
+            </div>
+            <input type="hidden" id="maintenance-selected-barcode">
+            <div class="management-form-actions maintenance-form-actions">
+              <button type="submit" class="ui-button ui-button--primary btn btn-primary" data-i18n data-i18n-key="maintenance.form.actions.submit">🛠️ إنشاء التذكرة</button>
+            </div>
+          </form>
+        </div>
+
+        <section class="ui-card ui-card--content glass-card maintenance-list-box maintenance-records-card">
+          <div class="projects-table__header maintenance-records-card__header">
+            <div class="project-list-section-header maintenance-records-card__heading">
+              <div class="surface-heading-stack">
+                <h3 class="mb-0" data-i18n data-i18n-key="maintenance.list.title">📋 تذاكر الصيانة</h3>
+                <p class="section-support-text mb-0 maintenance-list-hint" data-i18n data-i18n-key="maintenance.list.hint">تابع حالة الأعطال وقم بإغلاق التذاكر بعد إتمام الإصلاح.</p>
+              </div>
+              <span id="maintenance-list-count" class="projects-table__count ui-badge ui-badge--soft badge-soft">0</span>
+            </div>
+          </div>
+
+          <div class="maintenance-records-card__summary">
+            <div class="maintenance-stats" id="maintenance-stats"></div>
+          </div>
+
+          <div class="maintenance-records-card__toolbar">
+            <div class="management-search-bar maintenance-records-search maintenance-status-filter">
+              <input type="text" id="maintenance-search" class="ui-input form-control" placeholder="🔍 ابحث باسم المعدة أو الباركود..." data-i18n data-i18n-placeholder-key="maintenance.filters.search.placeholder">
+              <select id="maintenance-status-filter" class="ui-select form-select maintenance-filter-control maintenance-filter-control--status" data-i18n-aria-label-key="maintenance.filters.status.label" aria-label="الحالة">
+                <option value="all" data-i18n data-i18n-key="maintenance.filters.status.all">كل الحالات</option>
+                <option value="open" data-i18n data-i18n-key="maintenance.filters.status.open">قيد الصيانة</option>
+                <option value="closed" data-i18n data-i18n-key="maintenance.filters.status.closed">مغلقة</option>
+              </select>
+              <select id="maintenance-priority-filter" class="ui-select form-select maintenance-filter-control maintenance-filter-control--priority" data-i18n-aria-label-key="maintenance.filters.priority.label" aria-label="الأولوية">
+                <option value="all" data-i18n data-i18n-key="maintenance.filters.priority.all">كل الأولويات</option>
+                <option value="high" data-i18n data-i18n-key="maintenance.filters.priority.high">مرتفعة</option>
+                <option value="medium" data-i18n data-i18n-key="maintenance.filters.priority.medium">متوسطة</option>
+                <option value="low" data-i18n data-i18n-key="maintenance.filters.priority.low">منخفضة</option>
+              </select>
+              <button type="button" class="ui-button ui-button--outline btn btn-outline btn-secondary maintenance-records-search__reset" id="maintenance-clear-filters" data-i18n data-i18n-key="actions.clearFilters">🔄 إعادة التصفية</button>
+            </div>
+          </div>
+
+          <div class="users-table-wrapper overflow-x-auto embedded-management-table-shell maintenance-table-wrapper">
+            <table class="ui-table table table-hover users-table surface-table embedded-management-table maintenance-table align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th data-i18n data-i18n-key="maintenance.table.headers.equipment">المعدة</th>
+                  <th data-i18n data-i18n-key="maintenance.table.headers.issue">وصف المشكلة</th>
+                  <th data-i18n data-i18n-key="maintenance.table.headers.priority">الأولوية</th>
+                  <th data-i18n data-i18n-key="maintenance.table.headers.created">تاريخ الإنشاء</th>
+                  <th data-i18n data-i18n-key="maintenance.table.headers.status">الحالة</th>
+                  <th class="table-actions-head" data-i18n data-i18n-key="maintenance.table.headers.actions">الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="maintenance-table-body">
+                <tr><td colspan="6" data-i18n data-i18n-key="maintenance.table.empty" class="text-center">لا توجد تذاكر بعد.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+  </div>
+</template>
+<template data-slot="afterShell">
+  <div id="toast-container"></div>
+<div class="modal fade" id="closeMaintenanceModal" tabindex="-1" aria-labelledby="maintenance-close-modal-title" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable maintenance-close-modal__dialog">
+          <div class="ui-modal__content modal-content maintenance-close-modal">
+            <form id="maintenance-close-form" class="maintenance-close-modal__form">
+              <div class="ui-modal__header modal-header maintenance-close-modal__header">
+                <div class="maintenance-close-modal__icon" aria-hidden="true">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 2h6"></path>
+                    <path d="M10 4h4"></path>
+                    <path d="M8 4h-2a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"></path>
+                    <path d="M9 12l2 2 4-4"></path>
+                  </svg>
+                </div>
+                <div class="maintenance-close-modal__heading">
+                  <h5 class="maintenance-close-modal__title" id="maintenance-close-modal-title" data-i18n data-i18n-key="maintenance.closeModal.title">🔧 إغلاق تذكرة الصيانة</h5>
+                  <p class="maintenance-close-modal__subtitle" data-i18n data-i18n-key="maintenance.closeModal.subtitle">يرجى كتابة تقرير الإصلاح قبل إغلاق هذه التذكرة.</p>
+                </div>
+                <button type="button" class="btn-close maintenance-close-modal__dismiss" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
+              </div>
+              <div class="ui-modal__body modal-body maintenance-close-modal__body">
+                <div id="maintenance-close-modal-details" class="maintenance-close-modal__ticket"></div>
+                <div class="maintenance-close-modal__field">
+                  <label for="maintenance-close-report" class="form-label maintenance-close-modal__label" data-i18n data-i18n-key="maintenance.closeModal.reportLabel">📝 تقرير الإصلاح</label>
+                  <textarea class="ui-textarea form-control maintenance-close-modal__textarea" id="maintenance-close-report" rows="4" placeholder="اكتب تفاصيل الإصلاح والإجراءات المتخذة..." data-i18n data-i18n-placeholder-key="maintenance.closeModal.reportPlaceholder"></textarea>
+                </div>
+                <div class="maintenance-close-modal__field">
+                  <label for="maintenance-close-cost" class="form-label maintenance-close-modal__label" data-i18n data-i18n-key="maintenance.closeModal.costLabel">💰 تكلفة الإصلاح (اختياري)</label>
+                  <input type="text" class="ui-input form-control maintenance-close-modal__input" id="maintenance-close-cost" inputmode="decimal" placeholder="أدخل تكلفة الإصلاح إن وجدت" data-i18n data-i18n-placeholder-key="maintenance.closeModal.costPlaceholder" />
+                  <p class="form-text maintenance-close-modal__hint" data-i18n data-i18n-key="maintenance.closeModal.costHint">يمكن ترك الحقل فارغاً إذا لم تكن هناك تكلفة.</p>
+                </div>
+              </div>
+              <div class="ui-modal__footer modal-footer maintenance-close-modal__actions">
+          <button type="button" class="btn modal-close-btn" data-bs-dismiss="modal" data-i18n data-i18n-key="maintenance.closeModal.cancel">إلغاء</button>
+          <button type="submit" class="ui-button ui-button--primary btn btn-primary" id="maintenance-close-submit" data-i18n data-i18n-key="maintenance.closeModal.confirm">إغلاق التذكرة</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<div class="modal fade" id="maintenanceReportModal" tabindex="-1" aria-labelledby="maintenance-report-modal-title" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable maintenance-report-modal__dialog">
+          <div class="ui-modal__content modal-content maintenance-report-modal">
+            <div class="ui-modal__header modal-header maintenance-report-modal__header">
+              <div class="maintenance-report-modal__icon" aria-hidden="true">📝</div>
+              <div class="maintenance-report-modal__heading">
+                <h5 class="maintenance-report-modal__title" id="maintenance-report-modal-title" data-i18n data-i18n-key="maintenance.report.modalTitle">📝 تقرير الصيانة</h5>
+                <p class="maintenance-report-modal__subtitle" data-i18n data-i18n-key="maintenance.report.modalSubtitle">تفاصيل التذكرة وتقرير الإصلاح.</p>
+              </div>
+          <button type="button" class="btn-close maintenance-report-modal__dismiss" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
+            </div>
+            <div class="ui-modal__body modal-body maintenance-report-modal__body">
+              <div id="maintenance-report-modal-content" class="maintenance-report-modal__details"></div>
+            </div>
+            <div class="ui-modal__footer modal-footer maintenance-report-modal__actions">
+              <button type="button" class="ui-button ui-button--primary btn btn-primary" id="maintenance-report-edit" hidden data-i18n data-i18n-key="maintenance.actions.editClosed">✏️ تعديل بيانات الإغلاق</button>
+              <button type="button" class="btn modal-close-btn" data-bs-dismiss="modal" data-i18n data-i18n-key="maintenance.report.modalClose">تم</button>
+            </div>
+          </div>
+        </div>
+      </div>
+</template>
+</html>

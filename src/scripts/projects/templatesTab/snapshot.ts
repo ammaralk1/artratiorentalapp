@@ -64,7 +64,11 @@ export interface RestoreTemplatesAutosaveIfPresentOptions extends Omit<ApplyTemp
   getContextKey: () => string;
   companyInfo: Pick<TemplatesCompanyInfo, 'logoUrl'>;
   normalizeTemplateHtmlLegacyUrls: (html: string, companyInfo: Pick<TemplatesCompanyInfo, 'logoUrl'>) => string;
-  ensureCellToolbar: (options: { onAfterChange: () => void }) => void;
+  ensureCellToolbar: (options: {
+    onAfterChange: () => void;
+    onRenumber?: () => void;
+    onTotalsChange?: () => void;
+  }) => void;
   onToolbarAfterChange: () => void;
   attachCallsheetLogoBehaviors: (root: HTMLElement) => void;
   unifyCrewCallTables: () => void;

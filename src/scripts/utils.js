@@ -91,6 +91,28 @@ function scheduleToastRemoval(toast, duration) {
   return { hide, timeoutId };
 }
 
+function shouldSuppressLocalBypassToast(message) {
+  try {
+    const host = window?.location?.hostname || '';
+    const isLocalhost = host === 'localhost' || host === '127.0.0.1' || host === '' || host === '::1';
+    if (!isLocalhost) return false;
+    const url = new URL(window.location.href);
+    const bypass = (url.searchParams.get('bypassAuth') || url.searchParams.get('dev') || url.searchParams.get('debug') || '').toLowerCase();
+    if (!(window.__BYPASS_AUTH__ === true || bypass === '1' || bypass === 'true')) {
+      return false;
+    }
+
+    const normalizedMessage = String(message || '').trim().toLowerCase();
+    return normalizedMessage === 'unauthorized'
+      || normalizedMessage === 'غير مصرح لك بالوصول'
+      || normalizedMessage.includes('غير مصرح')
+      || normalizedMessage.includes('ليس لديك صلاحية')
+      || normalizedMessage.includes('request failed with status 401');
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Flexible toast helper.
  * Usage examples:
@@ -100,6 +122,9 @@ function scheduleToastRemoval(toast, duration) {
  *  - showToast('Saved', 'error', 6000);
  */
 export function showToast(message, typeOrDuration = 3000, maybeDuration) {
+  if (shouldSuppressLocalBypassToast(message)) {
+    return;
+  }
   try { console.debug('[toast]', message); } catch (_) {}
   const container = ensureToastContainer();
   const toast = document.createElement('div');

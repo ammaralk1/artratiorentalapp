@@ -26,7 +26,8 @@ vi.mock('../../../src/scripts/reservationsShared.js', async () => {
 });
 
 vi.mock('../../../src/scripts/language.js', () => ({
-  t: tMock
+  t: tMock,
+  getCurrentLanguage: vi.fn(() => 'ar'),
 }));
 
 vi.mock('../../../src/scripts/utils.js', () => ({
@@ -35,7 +36,8 @@ vi.mock('../../../src/scripts/utils.js', () => ({
 }));
 
 vi.mock('../../../src/scripts/storage.js', () => ({
-  loadData: loadDataMock
+  loadData: loadDataMock,
+  migrateOldData: vi.fn(),
 }));
 
 vi.mock('../../../src/scripts/reservationsEquipment.js', () => ({
@@ -140,12 +142,44 @@ describe('reservations/list helpers', () => {
 
     const html = buildReservationTilesHtml({ entries, customersMap, techniciansMap, projectsMap });
 
-    expect(html).toContain('class="tile-confirm"');
+    expect(html).toContain('reservation-list-card__action--confirm');
     expect(html).toContain('data-reservation-index="5"');
     expect(html).toContain('data-reservation-id="RSV10" data-action="confirm"');
     expect(html).not.toContain('data-reservation-id="RSV11" data-action="confirm"');
-    expect(html).toContain('tile-completed');
-    expect(formatDateTimeMock).toHaveBeenCalledWith('2024-04-01T12:00:00Z');
+    expect(html).toContain('reservation-list-card--completed');
+    expect(html).toContain('reservation-list-card__schedule-value');
+  });
+
+  it('buildReservationTilesHtml makes project-linked reservation cards read-only', async () => {
+    const { buildReservationTilesHtml } = await import('../../../src/scripts/reservations/list/index.js');
+
+    const entries = [
+      {
+        reservation: {
+          reservationId: 'RSV12',
+          customerId: 1,
+          technicians: ['t1'],
+          confirmed: false,
+          items: [],
+          start: '2024-04-05T09:00:00Z',
+          end: '2024-04-05T18:00:00Z',
+          projectId: 55,
+        },
+        index: 8,
+      },
+    ];
+
+    const html = buildReservationTilesHtml({
+      entries,
+      customersMap: new Map([['1', { customerName: 'Client' }]]),
+      techniciansMap: new Map([['t1', { name: 'Lead' }]]),
+      projectsMap: new Map([['55', { id: 55, title: 'Project A' }]]),
+    });
+
+    expect(html).toContain('reservation-list-card--project-linked');
+    expect(html).toContain('Project A');
+    expect(html).not.toContain('data-action="confirm"');
+    expect(html).not.toContain('data-action="close"');
   });
 
   it('buildReservationDetailsHtml composes detailed view with project link', async () => {
@@ -174,7 +208,9 @@ describe('reservations/list helpers', () => {
 
     expect(html).toContain('data-action="open-project"');
     expect(html).toContain('reservation-modal-actions');
-    expect(html).toContain('summary-details-row');
+    expect(html).not.toContain('reservation-details-edit-btn');
+    expect(html).not.toContain('reservation-details-delete-btn');
+    expect(html).toContain('summary-details');
     expect(normalizeNumbersMock).toHaveBeenCalled();
     expect(resolveItemImageMock).toHaveBeenCalled();
   });

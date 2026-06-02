@@ -19,6 +19,22 @@ import { resolveReservationProjectState } from '../reservationsShared.js';
 import { state } from './state.js';
 import { renderProjects, renderFocusCards, updateSummary } from './view.js';
 
+function normalizeScheduleTimestamp(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return String(value).trim();
+  }
+  return date.toISOString();
+}
+
+function getReservationScheduleValue(reservation = {}, field) {
+  if (field === 'start') {
+    return reservation.start ?? reservation.start_datetime ?? reservation.startDatetime ?? '';
+  }
+  return reservation.end ?? reservation.end_datetime ?? reservation.endDatetime ?? '';
+}
+
 export async function removeProject(projectId) {
   const index = state.projects.findIndex((project) => String(project.id) === String(projectId));
   if (index === -1) return;
@@ -83,7 +99,6 @@ export async function updateLinkedReservationsSchedule(projectId, { start = null
   if (!targets.length) return false;
 
   let changed = false;
-  let updatedCount = 0;
   for (const reservation of targets) {
     const reservationId = reservation.id ?? reservation.reservationId;
     if (!reservationId) continue;
@@ -93,14 +108,17 @@ export async function updateLinkedReservationsSchedule(projectId, { start = null
     }
 
     const updates = {};
-    if (start) updates.start_datetime = start;
-    if (end) updates.end_datetime = end;
+    if (start && normalizeScheduleTimestamp(getReservationScheduleValue(reservation, 'start')) !== normalizeScheduleTimestamp(start)) {
+      updates.start_datetime = start;
+    }
+    if (end && normalizeScheduleTimestamp(getReservationScheduleValue(reservation, 'end')) !== normalizeScheduleTimestamp(end)) {
+      updates.end_datetime = end;
+    }
     if (Object.keys(updates).length === 0) continue;
 
     try {
       await updateReservationApi(reservationId, updates);
       changed = true;
-      updatedCount += 1;
     } catch (e) {
       console.warn('[projects] failed to update linked reservation schedule', reservationId, e);
     }
@@ -109,10 +127,6 @@ export async function updateLinkedReservationsSchedule(projectId, { start = null
   if (changed) {
     state.reservations = getReservationsState();
     try { document.dispatchEvent(new CustomEvent('reservations:changed')); } catch (_) {}
-    try {
-      const msg = t('projects.toast.linkedReservationsScheduleUpdated', 'تم تحديث توقيت الحجوزات المرتبطة ({count})', 'Updated linked reservations timing ({count})').replace('{count}', String(updatedCount));
-      showToast(msg);
-    } catch (_) { /* no-op */ }
   }
   return changed;
 }
@@ -342,6 +356,9 @@ export async function updateLinkedReservationsReopened(projectId) {
       // Reopen to confirmed (unless cancelled), do not override schedule
       const statusRaw = String(reservation.status || '').toLowerCase();
       if (statusRaw === 'cancelled' || statusRaw === 'canceled') continue;
+      const alreadyConfirmed = reservation.confirmed === true || reservation.confirmed === 'true';
+      const alreadyOpenConfirmedStatus = ['confirmed', 'in_progress', 'in-progress', 'ongoing'].includes(statusRaw);
+      if (alreadyConfirmed && alreadyOpenConfirmedStatus) continue;
       await updateReservationApi(reservationId, { status: 'confirmed', confirmed: true });
       changed = true;
     } catch (e) {

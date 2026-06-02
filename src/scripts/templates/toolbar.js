@@ -1,9 +1,9 @@
-import { addRowBelow, moveRow, deleteRow, focusFirstEditableCell, getCellIndex, isSpecialRow } from './tableTools.js';
+import { addRowBelow, moveRow, deleteRow, focusFirstEditableCell } from './tableTools.js';
 import { paginateGenericTplTables, pruneEmptyA4Pages } from './pagination.js';
 
 // Inline toolbar near focused cell (row ops for schedule, slot ops for cast)
 // onAfterChange: optional callback invoked after a structural change (history/autosave/paginate)
-export function ensureCellToolbar({ onAfterChange } = {}) {
+export function ensureCellToolbar({ onAfterChange, onRenumber, onTotalsChange } = {}) {
   const host = document.getElementById('templates-preview-host');
   if (!host) {
     const existing = document.getElementById('tpl-cell-toolbar');
@@ -20,21 +20,22 @@ export function ensureCellToolbar({ onAfterChange } = {}) {
     // Use fixed positioning on the document body to avoid overflow/transform clipping in some browsers
     Object.assign(bar.style, { position: 'fixed', display: 'none', zIndex: 2147483000 });
     bar.innerHTML = `
-      <div style="display:inline-flex;gap:4px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:4px;box-shadow:0 2px 8px rgba(15,23,42,0.12);">
-        <button type="button" data-act="row-add" class="btn btn-outline" style="height:28px;padding:0 8px">+ صف</button>
-        <button type="button" data-act="row-full" class="btn btn-outline" style="height:28px;padding:0 8px">+ صف كامل</button>
-        <button type="button" data-act="row-full-del" class="btn btn-outline btn-danger" style="height:28px;padding:0 8px">× صف كامل</button>
-        <button type="button" data-act="row-del" class="btn btn-outline btn-danger" style="height:28px;padding:0 8px">× صف</button>
-        <button type="button" data-act="row-up" class="btn btn-outline" style="height:28px;padding:0 8px">↑</button>
-        <button type="button" data-act="row-down" class="btn btn-outline" style="height:28px;padding:0 8px">↓</button>
-        <span data-sep style="width:1px;background:#e5e7eb;margin:0 4px"></span>
-        <button type="button" data-act="cast-add" class="btn btn-outline" style="height:28px;padding:0 8px">+ خانة</button>
-        <button type="button" data-act="cast-del" class="btn btn-outline btn-danger" style="height:28px;padding:0 8px">× خانة</button>
-        <button type="button" data-act="cast-add-row" class="btn btn-outline" style="height:28px;padding:0 8px">+ صف اسم/وقت</button>
-        <button type="button" data-act="cast-del-row" class="btn btn-outline btn-danger" style="height:28px;padding:0 8px">× صف اسم/وقت</button>
+      <div class="tpl-cell-toolbar__surface">
+        <button type="button" data-act="row-add" class="btn tpl-cell-toolbar__button tpl-cell-toolbar__button--neutral">+ صف</button>
+        <button type="button" data-act="row-full" class="btn tpl-cell-toolbar__button tpl-cell-toolbar__button--neutral">+ صف كامل</button>
+        <button type="button" data-act="row-full-del" class="btn tpl-cell-toolbar__button tpl-cell-toolbar__button--danger">× صف كامل</button>
+        <button type="button" data-act="row-del" class="btn tpl-cell-toolbar__button tpl-cell-toolbar__button--danger">× صف</button>
+        <button type="button" data-act="row-up" class="btn tpl-cell-toolbar__button tpl-cell-toolbar__button--neutral">↑</button>
+        <button type="button" data-act="row-down" class="btn tpl-cell-toolbar__button tpl-cell-toolbar__button--neutral">↓</button>
+        <span data-sep class="tpl-cell-toolbar__separator"></span>
+        <button type="button" data-act="cast-add" class="btn tpl-cell-toolbar__button tpl-cell-toolbar__button--neutral">+ خانة</button>
+        <button type="button" data-act="cast-del" class="btn tpl-cell-toolbar__button tpl-cell-toolbar__button--danger">× خانة</button>
+        <button type="button" data-act="cast-add-row" class="btn tpl-cell-toolbar__button tpl-cell-toolbar__button--neutral">+ صف اسم/وقت</button>
+        <button type="button" data-act="cast-del-row" class="btn tpl-cell-toolbar__button tpl-cell-toolbar__button--danger">× صف اسم/وقت</button>
       </div>`;
     document.body.appendChild(bar);
     bar.__lock = false; bar.__switchTimer = null; bar.__freezeUntil = 0;
+    bar.__callbacks = {};
     bar.addEventListener('pointerenter', () => { bar.__lock = true; });
     bar.addEventListener('pointerleave', () => { bar.__lock = false; });
     // Actions
@@ -63,7 +64,10 @@ export function ensureCellToolbar({ onAfterChange } = {}) {
       };
       const doRowMove = (dir) => { const tr = cell.closest('tr'); if (tr) moveRow(tr, dir); };
       const updateAfter = () => {
-        try { if (typeof onAfterChange === 'function') onAfterChange(); } catch (_) {}
+        const callbacks = bar.__callbacks || {};
+        try { if (typeof callbacks.onRenumber === 'function') callbacks.onRenumber(); } catch (_) {}
+        try { if (typeof callbacks.onTotalsChange === 'function') callbacks.onTotalsChange(); } catch (_) {}
+        try { if (typeof callbacks.onAfterChange === 'function') callbacks.onAfterChange(); } catch (_) {}
         try { setTimeout(() => { paginateGenericTplTables(); pruneEmptyA4Pages(); }, 30); } catch(_) {}
         // Notify host to enforce schedule sizing (Call Sheet v1)
         try { if (typeof window.__enforceCallsheetSizing === 'function') window.__enforceCallsheetSizing(); } catch(_) {}
@@ -168,6 +172,12 @@ export function ensureCellToolbar({ onAfterChange } = {}) {
     document.body.appendChild(bar);
   }
 
+  bar.__callbacks = {
+    onAfterChange,
+    onRenumber,
+    onTotalsChange,
+  };
+
   const place = (cell) => {
     if (!cell) { bar.style.display = 'none'; bar.__targetCell = null; return; }
     const sched = cell.closest('table.cs-schedule') || cell.closest('table.cs-crew') || cell.closest('table.exp-details');
@@ -184,7 +194,10 @@ export function ensureCellToolbar({ onAfterChange } = {}) {
     } catch(_) {}
     Array.from(bar.querySelectorAll('[data-act^="row-"]')).forEach((b) => b.style.display = showRowTools ? 'inline-flex' : 'none');
     Array.from(bar.querySelectorAll('[data-act^="cast-"]')).forEach((b) => b.style.display = showCastTools ? 'inline-flex' : 'none');
-    bar.querySelector('[data-sep]')?.setAttribute('style', `width:1px;background:#e5e7eb;margin:0 4px;display:${(showRowTools && showCastTools)?'inline-block':'none'}`);
+    const separator = bar.querySelector('[data-sep]');
+    if (separator instanceof HTMLElement) {
+      separator.style.display = (showRowTools && showCastTools) ? 'inline-block' : 'none';
+    }
 
     // Only show the "× صف كامل" and "+ صف كامل" for schedule/cast; hide for expenses
     try {

@@ -11,8 +11,10 @@ import {
 } from "./reservations/uiBridge.js";
 import {
   buildProjectFocusCard,
+  buildProjectFocusGroups,
   buildProjectEditMarkup,
   buildProjectEditExpensesMarkup,
+  handleProjectFocusGroupPaginationClick,
   syncProjectReservationsPayment,
   getProjectIdentifier,
   combineDateAndTime,
@@ -35,11 +37,13 @@ import {
   determinePaymentStatus
 } from "./reservationsSummary.js";
 import { resolveReservationProjectState } from "./reservationsShared.js";
+import { isLocalDetailsFixtureEnabled } from "./devFixtures.js";
 
 let lastTechnicianFilters = {};
 let technicianProjectsContext = {
   initialized: false,
   currentId: null,
+  focusSectionPagination: {},
   modal: {
     el: null,
     body: null
@@ -53,6 +57,19 @@ function normalizeSearchText(value = "") {
     .replace(/[٬،]/g, '')
     .trim()
     .toLowerCase();
+}
+
+function escapeHtml(value = '') {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function renderProjectGridEmptyCopy(message) {
+  return `<p class="linked-records-empty-copy project-card-grid__empty-line">${escapeHtml(message)}</p>`;
 }
 
 function applyQuickRangeToInputs(range, startInput, endInput) {
@@ -107,7 +124,7 @@ export async function renderTechnicianReservations(technicianId) {
   const container = document.getElementById("technician-reservations");
   if (!container) return;
 
-  if (!technicianReservationsHydrated) {
+  if (!technicianReservationsHydrated && !isLocalDetailsFixtureEnabled()) {
     try {
       // Hydrate both reservations and projects to ensure we can resolve project titles
       await Promise.all([
@@ -120,6 +137,8 @@ export async function renderTechnicianReservations(technicianId) {
       return;
     }
 
+    technicianReservationsHydrated = true;
+  } else if (isLocalDetailsFixtureEnabled()) {
     technicianReservationsHydrated = true;
   }
 
@@ -401,6 +420,13 @@ function bindTechnicianProjectCards() {
 }
 
 function handleTechnicianProjectCardClick(event) {
+  if (handleProjectFocusGroupPaginationClick(event, {
+    paginationState: technicianProjectsContext.focusSectionPagination,
+    onChange: () => updateTechnicianProjects()
+  })) {
+    return;
+  }
+
   const card = event.target.closest('.project-focus-card');
   if (!card) return;
   console.debug('[technician] card click', card.dataset.projectId);
@@ -426,14 +452,14 @@ function ensureTechnicianProjectModal() {
     // Resilient fallback: create the modal structure if missing on page
     const wrapper = document.createElement('div');
     wrapper.innerHTML = `
-      <div class="modal fade" id="projectDetailsModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-          <div class="modal-content">
-            <div class="modal-header">
+      <div class="modal fade customer-edit-modal project-shell-modal" id="projectDetailsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable customer-edit-modal__dialog project-shell-modal__dialog">
+          <div class="ui-modal__content modal-content customer-edit-modal__content">
+            <div class="ui-modal__header modal-header customer-edit-modal__header">
               <h5 class="modal-title">${t('projects.details.modalTitle', 'تفاصيل المشروع')}</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body" id="project-details-body"></div>
+            <div class="ui-modal__body modal-body customer-edit-modal__body" id="project-details-body"></div>
           </div>
         </div>
       </div>`;
@@ -602,12 +628,13 @@ function updateTechnicianProjects() {
 
   if (!filtered.length) {
     const emptyMessage = t('technicianProjects.empty', container.dataset.empty || 'لا توجد مشاريع مرتبطة بهذا العضو.');
-    container.innerHTML = `<div class="project-card-grid__item project-card-grid__item--full"><div class="alert alert-info text-center mb-0">${emptyMessage}</div></div>`;
+    container.innerHTML = renderProjectGridEmptyCopy(emptyMessage);
     return;
   }
 
-  container.innerHTML = filtered
-    .map((project) => {
+  container.innerHTML = buildProjectFocusGroups(filtered, {
+    paginationState: technicianProjectsContext.focusSectionPagination,
+    renderCard: (project) => {
       const projectKey = getProjectIdentifier(project);
       const linkedReservations = projectKey ? reservationsByProject.get(projectKey) || [] : [];
       const customer = customerMap.get(String(project.clientId)) || null;
@@ -616,8 +643,8 @@ function updateTechnicianProjects() {
         techniciansMap,
         reservations: linkedReservations
       });
-    })
-    .join('');
+    }
+  });
 
   bindTechnicianProjectCards();
 }

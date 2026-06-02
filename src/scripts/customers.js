@@ -8,6 +8,7 @@ import {
   buildCustomersPageNumbers,
   getCustomersPaginationState,
 } from "./customersPagination.js";
+import { jumpPaginationSectionToStart, settlePaginationSectionToStart } from "./ui/paginationViewport.js";
 
 const LEGACY_SIRV_BASE = 'https://art-ratio.sirv.com';
 const CLOUDFLARE_ASSETS_BASE = 'https://assets.art-ratio.com';
@@ -306,6 +307,54 @@ function getCustomers() {
 function setCustomers(customers) {
   customersState = Array.isArray(customers) ? customers.map(mapToInternalCustomer) : [];
   saveData({ customers: customersState });
+}
+
+export async function createCustomerRecord(payload = {}) {
+  const customerName = String(payload.full_name ?? payload.customerName ?? payload.name ?? '').trim();
+  const phone = normalizeNumbers(String(payload.phone ?? payload.phoneNumber ?? '').trim());
+
+  if (!customerName || !phone) {
+    throw new Error(t("customers.toast.missingFields", "يرجى تعبئة الاسم ورقم الهاتف"));
+  }
+
+  const normalizedPayload = {
+    full_name: customerName,
+    phone,
+    email: String(payload.email ?? '').trim(),
+    address: String(payload.address ?? '').trim(),
+    company: String(payload.company ?? payload.companyName ?? '').trim(),
+    notes: String(payload.notes ?? '').trim(),
+  };
+
+  const taxIdValue = String(payload.tax_id ?? payload.taxId ?? '').trim();
+  normalizedPayload.tax_id = taxIdValue;
+  normalizedPayload.taxId = taxIdValue;
+
+  if (payload.document) {
+    normalizedPayload.document = payload.document;
+  }
+
+  const response = await apiRequest('/customers/', {
+    method: 'POST',
+    body: normalizedPayload,
+  });
+  const createdCustomerRaw = mapToInternalCustomer(response?.data);
+  const fallbackDocument = normalizeCustomerDocument(normalizedPayload.document);
+  const createdCustomer = {
+    ...createdCustomerRaw,
+    document: createdCustomerRaw.document ?? fallbackDocument,
+    tax_id: createdCustomerRaw.tax_id ?? normalizedPayload.tax_id ?? '',
+    taxId: createdCustomerRaw.taxId ?? normalizedPayload.taxId ?? '',
+  };
+
+  const exists = getCustomers().some((customer) => String(customer.id) === String(createdCustomer.id));
+  const updatedList = exists
+    ? getCustomers().map((customer) => String(customer.id) === String(createdCustomer.id) ? createdCustomer : customer)
+    : [...getCustomers(), createdCustomer];
+  setCustomers(updatedList);
+  emitCustomersChanged();
+
+  return createdCustomer;
 }
 
 function getFormElements() {
@@ -639,26 +688,12 @@ async function handleCustomerSubmit(event) {
       setCustomers(updatedList);
       showToast(t('customers.toast.updateSuccess', 'تم تحديث بيانات العميل بنجاح'));
     } else {
-      const response = await apiRequest('/customers/', {
-        method: 'POST',
-        body: payload,
-      });
-      const createdCustomerRaw = mapToInternalCustomer(response?.data);
-      const fallbackDocument = normalizeCustomerDocument(payload.document);
-      const createdCustomer = {
-        ...createdCustomerRaw,
-        document: createdCustomerRaw.document ?? fallbackDocument,
-        tax_id: createdCustomerRaw.tax_id ?? payload.tax_id ?? '',
-        taxId: createdCustomerRaw.taxId ?? payload.taxId ?? '',
-      };
-      const updatedList = [...getCustomers(), createdCustomer];
-      setCustomers(updatedList);
+      await createCustomerRecord(payload);
       showToast(t('customers.toast.createSuccess', 'تمت إضافة العميل بنجاح'));
     }
 
     renderCustomers();
     resetCustomerForm();
-    emitCustomersChanged();
   } catch (error) {
     const message = error instanceof ApiError
       ? error.message
@@ -747,16 +782,21 @@ function handleCustomerSearch(event) {
   renderCustomers(filtered, { emptyMessage });
 }
 
-function renderCustomersPagination(totalItems) {
-  const host = document.getElementById("customers-list-pagination");
-  if (!host) return;
-
+function getCustomersRenderPaginationData(totalItems) {
   const paginationState = getCustomersPaginationState({
     totalItems,
     page: customersPagination.page,
     pageSize: customersPagination.pageSize,
   });
   customersPagination.page = paginationState.currentPage;
+  return paginationState;
+}
+
+function renderCustomersPagination(totalItems) {
+  const host = document.getElementById("customers-list-pagination");
+  if (!host) return;
+
+  const paginationState = getCustomersRenderPaginationData(totalItems);
 
   if (totalItems <= 0 || paginationState.totalPages <= 1) {
     host.hidden = true;
@@ -778,16 +818,16 @@ function renderCustomersPagination(totalItems) {
   const buttonsHtml = pageNumbers.map((page) => {
     const isActive = page === paginationState.currentPage;
     const pageLabel = pageLabelTemplate.replace("{page}", normalizeNumbers(String(page)));
-    return `<button type="button" class="btn btn-sm ${isActive ? "btn-primary" : "btn-outline-primary"}" data-customers-page="${page}" aria-label="${escapeHtml(pageLabel)}" ${isActive ? 'aria-current="page"' : ""}>${normalizeNumbers(String(page))}</button>`;
+    return `<button type="button" class="${isActive ? "ui-button ui-button--primary btn btn-primary btn-sm" : "ui-button ui-button--outline btn btn-outline btn-sm"}" data-customers-page="${page}" aria-label="${escapeHtml(pageLabel)}" ${isActive ? 'aria-current="page"' : ""}>${normalizeNumbers(String(page))}</button>`;
   }).join("");
 
   host.hidden = false;
   host.innerHTML = `
     <div class="list-pagination__summary text-muted small">${escapeHtml(rangeText)}</div>
     <div class="list-pagination__controls btn-group" role="group" aria-label="${escapeHtml(navLabel)}">
-      <button type="button" class="btn btn-sm btn-outline-primary" data-customers-page="${paginationState.currentPage - 1}" ${paginationState.currentPage <= 1 ? "disabled" : ""} aria-label="${escapeHtml(prevLabel)}">‹</button>
+      <button type="button" class="ui-button ui-button--outline btn btn-outline btn-sm" data-customers-page="${paginationState.currentPage - 1}" ${paginationState.currentPage <= 1 ? "disabled" : ""} aria-label="${escapeHtml(prevLabel)}">‹</button>
       ${buttonsHtml}
-      <button type="button" class="btn btn-sm btn-outline-primary" data-customers-page="${paginationState.currentPage + 1}" ${paginationState.currentPage >= paginationState.totalPages ? "disabled" : ""} aria-label="${escapeHtml(nextLabel)}">›</button>
+      <button type="button" class="ui-button ui-button--outline btn btn-outline btn-sm" data-customers-page="${paginationState.currentPage + 1}" ${paginationState.currentPage >= paginationState.totalPages ? "disabled" : ""} aria-label="${escapeHtml(nextLabel)}">›</button>
     </div>
   `;
 
@@ -795,10 +835,40 @@ function renderCustomersPagination(totalItems) {
     button.addEventListener("click", () => {
       const nextPage = Number.parseInt(button.getAttribute("data-customers-page") || "", 10);
       if (!Number.isFinite(nextPage)) return;
+      jumpPaginationSectionToStart(host);
       customersPagination.page = nextPage;
       renderCustomers();
+      settlePaginationSectionToStart(host);
     });
   });
+}
+
+function renderCustomersCount(totalItems) {
+  const countEl = document.getElementById('customers-list-count');
+  if (!(countEl instanceof HTMLElement)) return;
+
+  const filteredValue = Math.max(0, Number(totalItems) || 0);
+  const allCustomers = getCustomers();
+  const totalValue = Array.isArray(allCustomers) ? allCustomers.length : filteredValue;
+
+  if (filteredValue !== totalValue) {
+    const filteredTemplate = t('projects.customers.records.filteredCount', '{count} من {total} عميل');
+    countEl.textContent = filteredTemplate
+      .replace('{count}', normalizeNumbers(String(filteredValue)))
+      .replace('{total}', normalizeNumbers(String(totalValue)));
+    return;
+  }
+
+  const template = t('projects.customers.records.count', '{count} عميل');
+  countEl.textContent = template.replace('{count}', normalizeNumbers(String(filteredValue)));
+}
+
+function updateCustomersSearchResetButton() {
+  const resetButton = document.getElementById('customers-clear-search');
+  if (!(resetButton instanceof HTMLButtonElement)) return;
+
+  const searchValue = normalizeNumbers(document.getElementById("search-customer-input")?.value || "").trim();
+  resetButton.disabled = searchValue.length === 0;
 }
 
 function setupCustomersModuleUi() {
@@ -839,12 +909,34 @@ function setupCustomersModuleUi() {
 
   const searchInput = document.getElementById("search-customer-input");
   if (searchInput && !searchInput.dataset.listenerAttached) {
-    searchInput.addEventListener("input", handleCustomerSearch);
+    searchInput.addEventListener("input", () => {
+      updateCustomersSearchResetButton();
+      handleCustomerSearch();
+    });
     searchInput.dataset.listenerAttached = 'true';
   }
 
+  const resetSearchButton = document.getElementById('customers-clear-search');
+  if (resetSearchButton && !resetSearchButton.dataset.listenerAttached) {
+    resetSearchButton.addEventListener('click', () => {
+      if (searchInput instanceof HTMLInputElement) {
+        searchInput.value = '';
+      }
+      updateCustomersSearchResetButton();
+      renderCustomers();
+    });
+    resetSearchButton.dataset.listenerAttached = 'true';
+  }
+
   updateDocumentPreviewUI();
+  updateCustomersSearchResetButton();
   customersUiInitialised = true;
+}
+
+function renderCustomersTableState(tableBody, message, tone = 'muted') {
+  if (!(tableBody instanceof HTMLElement)) return;
+  const toneClass = tone === 'danger' ? 'text-danger' : 'text-muted';
+  tableBody.innerHTML = `<tr class="projects-table-empty-row"><td colspan='5' class='text-center ${toneClass}'>${message}</td></tr>`;
 }
 
 export function initCustomersModule({ loadData = false, showToastOnError = true } = {}) {
@@ -857,20 +949,37 @@ export function initCustomersModule({ loadData = false, showToastOnError = true 
   return Promise.resolve();
 }
 
-function bootCustomersModule() {
+export function bootCustomersModule(options = {}) {
   if (customersBootstrapped) {
     return;
   }
 
+  const { loadData: shouldLoadData = true, reloadFromStorage = false, showToastOnError = true } = options;
+  if (reloadFromStorage) {
+    const storedCustomers = loadData()?.customers;
+    if (Array.isArray(storedCustomers)) {
+      setCustomers(storedCustomers);
+    }
+  }
   customersBootstrapped = true;
-  void initCustomersModule({ loadData: true })
+  void initCustomersModule({ loadData: shouldLoadData, showToastOnError })
     .finally(() => {
       renderCustomers();
       refreshCustomerLanguageStrings();
     });
 }
 
+function hasCustomersModuleDom() {
+  return Boolean(
+    document.getElementById('customer-form')
+    || document.getElementById('customers-table')
+  );
+}
+
 document.addEventListener("DOMContentLoaded", () => {
+  if (!hasCustomersModuleDom()) {
+    return;
+  }
   bootCustomersModule();
 });
 
@@ -902,16 +1011,18 @@ export function renderCustomers(customersOverride, options = {}) {
   }
 
   tableBody.innerHTML = "";
+  renderCustomersCount(customers.length);
+  updateCustomersSearchResetButton();
 
   if (!usingOverride) {
     if (isCustomersLoading) {
-      tableBody.innerHTML = `<tr><td colspan='5'>${t("customers.table.loading", "جاري التحميل...")}</td></tr>`;
+      renderCustomersTableState(tableBody, t("customers.table.loading", "جاري التحميل..."));
       renderCustomersPagination(0);
       return;
     }
 
     if (customersErrorMessage) {
-      tableBody.innerHTML = `<tr><td colspan='5' class='text-danger'>${customersErrorMessage}</td></tr>`;
+      renderCustomersTableState(tableBody, customersErrorMessage, 'danger');
       renderCustomersPagination(0);
       return;
     }
@@ -919,22 +1030,17 @@ export function renderCustomers(customersOverride, options = {}) {
 
   if (customers.length === 0) {
     const message = options.emptyMessage || t("customers.table.empty", "لا يوجد عملاء");
-    tableBody.innerHTML = `<tr><td colspan='5'>${message}</td></tr>`;
+    renderCustomersTableState(tableBody, message);
     renderCustomersPagination(0);
     return;
   }
 
-  const paginationState = getCustomersPaginationState({
-    totalItems: customers.length,
-    page: customersPagination.page,
-    pageSize: customersPagination.pageSize,
-  });
-  customersPagination.page = paginationState.currentPage;
+  const paginationState = getCustomersRenderPaginationData(customers.length);
   const visibleCustomers = customers.slice(paginationState.startIndex, paginationState.endIndex);
 
-  const editLabel = t("customers.actions.edit", "✏️ تعديل");
-  const deleteLabel = t("customers.actions.delete", "🗑️ حذف");
-  const viewLabel = t('customers.actions.viewDocument', '📎 عرض الملف');
+  const editLabel = t("customers.actions.editCompact", "تعديل");
+  const deleteLabel = t("customers.actions.deleteCompact", "حذف");
+  const viewLabel = t('customers.actions.viewDocumentCompact', 'ملف');
   const canDelete = userCanManageDestructiveActions();
 
   visibleCustomers.forEach((customer) => {

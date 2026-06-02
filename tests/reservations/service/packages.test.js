@@ -69,7 +69,9 @@ import {
   mergePackageItemCollections,
   mergePackageCollections,
   normalizePackageItemRecord,
+  derivePackageUnitPrice,
   mergePackageRecords,
+  mapReservationPackagesFromSource,
   resolvePackageMergeKey,
 } from '../../../src/scripts/reservations/service/packages.js';
 
@@ -592,12 +594,12 @@ describe('mergePackageRecords', () => {
     expect(result.price).toBe(300);
   });
 
-  it('base unit_price is preserved when it is already non-zero', () => {
+  it('incoming unit_price replaces base when reservation data has a newer package price', () => {
     toNumber.mockImplementation((v) => Number(v) || 0);
     const base = { unit_price: 500, unit_cost: 0, packageItems: [] };
     const incoming = { unit_price: 200, unit_cost: 0, packageItems: [] };
     const result = mergePackageRecords(base, incoming);
-    expect(result.unit_price).toBe(500);
+    expect(result.unit_price).toBe(200);
   });
 
   it('incoming packageItems fills base when base packageItems is empty', () => {
@@ -635,6 +637,42 @@ describe('mergePackageRecords', () => {
     const incoming = { unit_price: 0, unit_cost: 0, packageItems: [incomingItem] };
     const result = mergePackageRecords(base, incoming);
     expect(result.packageItems).toHaveLength(2);
+  });
+});
+
+describe('derivePackageUnitPrice', () => {
+  it('prefers explicit reservation package unit_price over catalog package price', () => {
+    findPackageById.mockReturnValue({ id: 'pkg-1', price: 3010 });
+    resolvePackagePrice.mockReturnValue(3010);
+    toNumber.mockImplementation((v) => Number(v) || 0);
+
+    const result = derivePackageUnitPrice({ package_id: 'pkg-1', unit_price: 1000 }, [], 1);
+
+    expect(result).toBe(1000);
+  });
+});
+
+describe('mapReservationPackagesFromSource', () => {
+  it('maps reservation package rows with their stored unit_price instead of catalog price', () => {
+    findPackageById.mockReturnValue({ id: 'pkg-1', price: 3010 });
+    resolvePackagePrice.mockReturnValue(3010);
+    toNumber.mockImplementation((v) => Number(v) || 0);
+    toPositiveInt.mockImplementation((v) => Math.max(1, Math.round(Number(v) || 1)));
+
+    const result = mapReservationPackagesFromSource({
+      reservation_packages: [
+        {
+          package_id: 'pkg-1',
+          package_code: 'PKG-1',
+          package_name: 'Lighting kit',
+          quantity: 1,
+          unit_price: 1000,
+        },
+      ],
+    });
+
+    expect(result[0].unit_price).toBe(1000);
+    expect(result[0].price).toBe(1000);
   });
 });
 

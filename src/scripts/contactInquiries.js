@@ -1,4 +1,6 @@
 import '../styles/app.css';
+import '../styles/record-management.css';
+import '../styles/contact-inquiries.css';
 import { applyStoredTheme, initThemeToggle } from './theme.js';
 import { checkAuth, getCurrentUser, logout } from './auth.js';
 import { apiRequest, ApiError } from './apiClient.js';
@@ -6,6 +8,8 @@ import { showToast } from './utils.js';
 import { t } from './language.js';
 import { initDashboardShell } from './dashboardShell.js';
 import { normalizeNumbers } from './utils.js';
+import { getEquipmentPaginationState, buildEquipmentPageNumbers } from './equipmentPagination.js';
+import { jumpPaginationSectionToStart, settlePaginationSectionToStart } from './ui/paginationViewport.js';
 
 applyStoredTheme();
 initDashboardShell();
@@ -17,14 +21,26 @@ let listState = [];
 let selectedId = 0;
 let searchTimer = null;
 let isSaving = false;
+const inquiriesPagination = { page: 1, pageSize: 10 };
+const TABLE_COLSPAN = 8;
+const DEFAULT_STATUS_BADGE_CLASS = 'contact-inquiries-status-badge status-chip status-completed';
+
+const DETAIL_CARD_CLASS = 'contact-inquiries-detail-card ui-card ui-card--content p-4';
+const EMPTY_STATE_CLASS = 'contact-inquiries-empty-state ui-empty-state surface-empty-state';
+const PRIMARY_BUTTON_SM_CLASS = 'ui-button ui-button--primary btn btn-primary btn-sm';
+const PRIMARY_BUTTON_CLASS = 'ui-button ui-button--primary btn btn-primary';
+const OUTLINE_BUTTON_SM_CLASS = 'ui-button ui-button--outline btn btn-outline btn-sm';
+const SELECT_CLASS = 'ui-select select select-bordered w-full';
+const INPUT_CLASS = 'ui-input input input-bordered w-full';
+const TEXTAREA_CLASS = 'ui-textarea textarea textarea-bordered min-h-36 w-full';
 
 const STATUS_META = {
-  new: { badge: 'badge-neutral', fallbackAr: 'جديدة', fallbackEn: 'New', key: 'contactInquiries.status.new' },
-  in_progress: { badge: 'badge-warning', fallbackAr: 'قيد المتابعة', fallbackEn: 'In Progress', key: 'contactInquiries.status.inProgress' },
-  contacted: { badge: 'badge-info', fallbackAr: 'تم التواصل', fallbackEn: 'Contacted', key: 'contactInquiries.status.contacted' },
-  won: { badge: 'badge-success', fallbackAr: 'تم التحويل', fallbackEn: 'Won', key: 'contactInquiries.status.won' },
-  lost: { badge: 'badge-error', fallbackAr: 'مفقودة', fallbackEn: 'Lost', key: 'contactInquiries.status.lost' },
-  closed: { badge: 'badge-outline', fallbackAr: 'مغلقة', fallbackEn: 'Closed', key: 'contactInquiries.status.closed' },
+  new: { badge: 'status-chip status-confirmed', fallbackAr: 'جديدة', fallbackEn: 'New', key: 'contactInquiries.status.new' },
+  in_progress: { badge: 'status-chip status-pending', fallbackAr: 'قيد المتابعة', fallbackEn: 'In Progress', key: 'contactInquiries.status.inProgress' },
+  contacted: { badge: 'status-chip status-info', fallbackAr: 'تم التواصل', fallbackEn: 'Contacted', key: 'contactInquiries.status.contacted' },
+  won: { badge: 'status-chip status-confirmed', fallbackAr: 'تم التحويل', fallbackEn: 'Won', key: 'contactInquiries.status.won' },
+  lost: { badge: 'status-chip status-cancelled', fallbackAr: 'مفقودة', fallbackEn: 'Lost', key: 'contactInquiries.status.lost' },
+  closed: { badge: 'status-chip status-completed', fallbackAr: 'مغلقة', fallbackEn: 'Closed', key: 'contactInquiries.status.closed' },
 };
 
 function q(selector) {
@@ -90,7 +106,20 @@ function statusLabel(status) {
 function statusBadge(status) {
   const key = String(status || 'new').trim();
   const meta = STATUS_META[key] || STATUS_META.new;
-  return `<span class="badge ${meta.badge}">${escapeHtml(statusLabel(key))}</span>`;
+  return `<span class="contact-inquiries-status-chip badge ${meta.badge}">${escapeHtml(statusLabel(key))}</span>`;
+}
+
+function formatContactValue(primary, secondary = '') {
+  return `
+    <div class="contact-inquiries-table-stack">
+      <div class="contact-inquiries-table-primary">${escapeHtml(primary || '—')}</div>
+      ${secondary ? `<div class="contact-inquiries-table-secondary">${escapeHtml(secondary)}</div>` : ''}
+    </div>
+  `;
+}
+
+function emptyStateMarkup(message, paddingClass = 'p-6') {
+  return `<div class="${EMPTY_STATE_CLASS} ${paddingClass}">${message}</div>`;
 }
 
 function cacheElements() {
@@ -99,6 +128,7 @@ function cacheElements() {
   els.statusFilter = q('#contact-status-filter');
   els.searchFilter = q('#contact-search-filter');
   els.tableBody = q('#contact-inquiries-body');
+  els.pagination = q('#contact-inquiries-pagination');
   els.detailContent = q('#contact-inquiry-detail-content');
   els.workflow = q('#contact-inquiry-workflow');
   els.activityList = q('#contact-inquiry-activity-list');
@@ -148,43 +178,57 @@ function renderStats(rows) {
 function renderTable(rows) {
   if (!els.tableBody) return;
 
-  if (!Array.isArray(rows) || rows.length === 0) {
+  const list = Array.isArray(rows) ? rows : [];
+  const paginationState = getEquipmentPaginationState({
+    totalItems: list.length,
+    page: inquiriesPagination.page,
+    pageSize: inquiriesPagination.pageSize,
+  });
+  inquiriesPagination.page = paginationState.currentPage;
+
+  if (list.length === 0) {
     els.tableBody.innerHTML = `
       <tr>
-        <td colspan="8" class="text-center text-base-content/60">
+        <td colspan="${TABLE_COLSPAN}" class="text-center text-base-content/60">
           ${t('contactInquiries.table.empty', 'لا توجد رسائل مطابقة للفلترة الحالية.')}
         </td>
       </tr>
     `;
+    renderPagination(0);
     return;
   }
 
-  els.tableBody.innerHTML = rows.map((row) => {
-    const activeClass = Number(row.id) === Number(selectedId) ? 'bg-primary/5' : '';
+  const visibleRows = list.slice(paginationState.startIndex, paginationState.endIndex);
+
+  els.tableBody.innerHTML = visibleRows.map((row) => {
+    const activeClass = Number(row.id) === Number(selectedId) ? 'contact-inquiries-row-selected' : '';
     const project = row.project_type || row.company_name || '—';
     return `
       <tr class="${activeClass}">
-        <td>${escapeHtml(row.inquiry_code || '—')}</td>
+        <td>${formatContactValue(row.inquiry_code || '—')}</td>
         <td>
-          <div class="font-semibold">${escapeHtml(row.full_name || '—')}</div>
-          <div class="text-xs text-base-content/60">${escapeHtml(row.assigned_username || '—')}</div>
+          ${formatContactValue(row.full_name || '—', row.assigned_username || '—')}
         </td>
         <td>
-          <div dir="ltr">${escapeHtml(row.phone || '—')}</div>
-          <div class="text-xs text-base-content/60">${escapeHtml(row.email || '—')}</div>
+          <div class="contact-inquiries-table-stack">
+            <div class="contact-inquiries-table-primary" dir="ltr">${escapeHtml(row.phone || '—')}</div>
+            <div class="contact-inquiries-table-secondary" dir="ltr">${escapeHtml(row.email || '—')}</div>
+          </div>
         </td>
-        <td>${escapeHtml(project)}</td>
+        <td>${formatContactValue(project)}</td>
         <td>${statusBadge(row.status)}</td>
-        <td>${escapeHtml(formatDateTime(row.follow_up_at))}</td>
-        <td>${escapeHtml(formatDateTime(row.created_at))}</td>
+        <td>${formatContactValue(formatDateTime(row.follow_up_at))}</td>
+        <td>${formatContactValue(formatDateTime(row.created_at))}</td>
         <td>
-          <button type="button" class="btn btn-sm btn-primary" data-contact-select="${escapeHtml(row.id)}">
+          <button type="button" class="${PRIMARY_BUTTON_SM_CLASS} contact-inquiries-table-action" data-contact-select="${escapeHtml(row.id)}">
             ${t('actions.view', '👁️ عرض')}
           </button>
         </td>
       </tr>
     `;
   }).join('');
+
+  renderPagination(list.length);
 
   els.tableBody.querySelectorAll('[data-contact-select]').forEach((button) => {
     button.addEventListener('click', () => {
@@ -196,31 +240,93 @@ function renderTable(rows) {
   });
 }
 
+function syncPaginationToSelection(rows) {
+  if (!Array.isArray(rows) || rows.length === 0 || selectedId <= 0) return;
+
+  const selectedIndex = rows.findIndex((row) => Number(row?.id) === Number(selectedId));
+  if (selectedIndex < 0) return;
+
+  inquiriesPagination.page = Math.floor(selectedIndex / inquiriesPagination.pageSize) + 1;
+}
+
+function renderPagination(totalItems) {
+  const host = els.pagination;
+  if (!host) return;
+
+  const paginationState = getEquipmentPaginationState({
+    totalItems,
+    page: inquiriesPagination.page,
+    pageSize: inquiriesPagination.pageSize,
+  });
+  inquiriesPagination.page = paginationState.currentPage;
+
+  if (totalItems <= 0 || paginationState.totalPages <= 1) {
+    host.hidden = true;
+    host.innerHTML = '';
+    return;
+  }
+
+  const navLabel = t('contactInquiries.pagination.navigation', 'التنقل بين صفحات الرسائل');
+  const prevLabel = t('contactInquiries.pagination.prev', 'السابق');
+  const nextLabel = t('contactInquiries.pagination.next', 'التالي');
+  const pageLabelTemplate = t('contactInquiries.pagination.page', 'صفحة {page}');
+  const rangeTemplate = t('contactInquiries.pagination.range', '{from}-{to} من {total}');
+  const rangeText = rangeTemplate
+    .replace('{from}', normalizeNumbers(String(paginationState.rangeStart)))
+    .replace('{to}', normalizeNumbers(String(paginationState.rangeEnd)))
+    .replace('{total}', normalizeNumbers(String(totalItems)));
+  const pageNumbers = buildEquipmentPageNumbers(paginationState.currentPage, paginationState.totalPages);
+
+  const buttonsHtml = pageNumbers.map((page) => {
+    const isActive = page === paginationState.currentPage;
+    const pageLabel = pageLabelTemplate.replace('{page}', normalizeNumbers(String(page)));
+    return `<button type="button" class="btn btn-sm ${isActive ? 'btn-primary' : 'btn-outline-primary'}" data-contact-page="${page}" aria-label="${escapeHtml(pageLabel)}" ${isActive ? 'aria-current="page"' : ''}>${normalizeNumbers(String(page))}</button>`;
+  }).join('');
+
+  host.hidden = false;
+  host.innerHTML = `
+    <div class="list-pagination__summary text-muted small">${escapeHtml(rangeText)}</div>
+    <div class="list-pagination__controls btn-group" role="group" aria-label="${escapeHtml(navLabel)}">
+      <button type="button" class="btn btn-sm btn-outline-primary" data-contact-page="${paginationState.currentPage - 1}" ${paginationState.currentPage <= 1 ? 'disabled' : ''} aria-label="${escapeHtml(prevLabel)}">‹</button>
+      ${buttonsHtml}
+      <button type="button" class="btn btn-sm btn-outline-primary" data-contact-page="${paginationState.currentPage + 1}" ${paginationState.currentPage >= paginationState.totalPages ? 'disabled' : ''} aria-label="${escapeHtml(nextLabel)}">›</button>
+    </div>
+  `;
+
+  host.querySelectorAll('[data-contact-page]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const nextPage = Number.parseInt(button.getAttribute('data-contact-page') || '', 10);
+      if (!Number.isFinite(nextPage)) return;
+      jumpPaginationSectionToStart(host);
+      inquiriesPagination.page = nextPage;
+      renderTable(listState);
+      settlePaginationSectionToStart(host);
+    });
+  });
+}
+
 function renderDetailPlaceholder() {
   if (els.detailContent) {
-    els.detailContent.innerHTML = `
-      <div class="rounded-2xl border border-dashed border-base-300 p-6 text-center text-base-content/60">
-        ${t('contactInquiries.details.empty', 'اختر رسالة من القائمة لبدء المتابعة.')}
-      </div>
-    `;
+    els.detailContent.innerHTML = emptyStateMarkup(
+      t('contactInquiries.details.empty', 'اختر رسالة من القائمة لبدء المتابعة.'),
+      'p-6',
+    );
   }
   if (els.workflow) {
-    els.workflow.innerHTML = `
-      <div class="rounded-2xl border border-dashed border-base-300 p-6 text-center text-base-content/60">
-        ${t('contactInquiries.workflow.empty', 'اختر رسالة أولاً لتظهر أدوات التحديث.')}
-      </div>
-    `;
+    els.workflow.innerHTML = emptyStateMarkup(
+      t('contactInquiries.workflow.empty', 'اختر رسالة أولاً لتظهر أدوات التحديث.'),
+      'p-6',
+    );
   }
   if (els.activityList) {
-    els.activityList.innerHTML = `
-      <div class="rounded-2xl border border-dashed border-base-300 p-5 text-center text-base-content/60">
-        ${t('contactInquiries.activity.empty', 'لا يوجد نشاط بعد.')}
-      </div>
-    `;
+    els.activityList.innerHTML = emptyStateMarkup(
+      t('contactInquiries.activity.empty', 'لا يوجد نشاط بعد.'),
+      'p-5',
+    );
   }
   if (els.detailStatusBadge) {
     els.detailStatusBadge.textContent = '—';
-    els.detailStatusBadge.className = 'badge badge-outline';
+    els.detailStatusBadge.className = DEFAULT_STATUS_BADGE_CLASS;
   }
 }
 
@@ -240,56 +346,56 @@ function renderInquiryDetails(payload) {
 
   if (els.detailContent) {
     els.detailContent.innerHTML = `
-      <div class="grid gap-4 md:grid-cols-2">
-        <div class="rounded-2xl bg-base-200/50 p-4">
-          <div class="text-sm text-base-content/60">${t('contactInquiries.table.customer', 'العميل')}</div>
-          <div class="mt-2 text-lg font-semibold text-base-content">${escapeHtml(inquiry.full_name || '—')}</div>
-          <div class="mt-2 text-sm text-base-content/75">${escapeHtml(inquiry.company_name || '—')}</div>
+      <div class="grid gap-4 md:grid-cols-2 contact-inquiries-detail-grid">
+        <div class="${DETAIL_CARD_CLASS} space-y-2">
+          <div class="contact-inquiries-detail-label">${t('contactInquiries.table.customer', 'العميل')}</div>
+          <div class="contact-inquiries-detail-value">${escapeHtml(inquiry.full_name || '—')}</div>
+          <div class="contact-inquiries-detail-meta">${escapeHtml(inquiry.company_name || '—')}</div>
         </div>
-        <div class="rounded-2xl bg-base-200/50 p-4">
-          <div class="text-sm text-base-content/60">${t('contactInquiries.table.project', 'المشروع')}</div>
-          <div class="mt-2 text-lg font-semibold text-base-content">${escapeHtml(project)}</div>
-          <div class="mt-2 text-sm text-base-content/75">${escapeHtml(inquiry.inquiry_code || '—')}</div>
-        </div>
-      </div>
-      <div class="grid gap-4 md:grid-cols-2">
-        <div class="rounded-2xl border border-base-300 p-4">
-          <div class="text-sm text-base-content/60">${t('contactInquiries.table.contact', 'التواصل')}</div>
-          <div class="mt-2 space-y-2">
-            <div dir="ltr" class="font-medium text-base-content">${escapeHtml(inquiry.phone || '—')}</div>
-            <div class="text-sm text-base-content/75">${escapeHtml(inquiry.email || '—')}</div>
-          </div>
-        </div>
-        <div class="rounded-2xl border border-base-300 p-4">
-          <div class="text-sm text-base-content/60">${t('contactInquiries.details.meta', 'بيانات إضافية')}</div>
-          <div class="mt-2 space-y-2 text-sm text-base-content/75">
-            <div>${t('contactInquiries.details.createdAt', 'تاريخ الإنشاء')}: ${escapeHtml(formatDateTime(inquiry.created_at))}</div>
-            <div>${t('contactInquiries.details.lastContacted', 'آخر تواصل')}: ${escapeHtml(formatDateTime(inquiry.last_contacted_at))}</div>
-            <div>${t('contactInquiries.details.emailSent', 'تم إرسال الإيميل')}: ${escapeHtml(emailStatus)}</div>
-          </div>
+        <div class="${DETAIL_CARD_CLASS} space-y-2">
+          <div class="contact-inquiries-detail-label">${t('contactInquiries.table.project', 'المشروع')}</div>
+          <div class="contact-inquiries-detail-value">${escapeHtml(project)}</div>
+          <div class="contact-inquiries-detail-meta">${escapeHtml(inquiry.inquiry_code || '—')}</div>
         </div>
       </div>
-      <div class="rounded-2xl border border-base-300 p-4">
-        <div class="text-sm text-base-content/60">${t('contactInquiries.details.message', 'الرسالة')}</div>
-        <div class="mt-3 leading-8 text-base-content">${nl2br(inquiry.message || '—')}</div>
+      <div class="grid gap-4 md:grid-cols-2 contact-inquiries-detail-grid">
+        <div class="${DETAIL_CARD_CLASS} space-y-2">
+          <div class="contact-inquiries-detail-label">${t('contactInquiries.table.contact', 'التواصل')}</div>
+          <div class="space-y-2">
+            <div dir="ltr" class="contact-inquiries-detail-value">${escapeHtml(inquiry.phone || '—')}</div>
+            <div dir="ltr" class="contact-inquiries-detail-meta">${escapeHtml(inquiry.email || '—')}</div>
+          </div>
+        </div>
+        <div class="${DETAIL_CARD_CLASS} space-y-2">
+          <div class="contact-inquiries-detail-label">${t('contactInquiries.details.meta', 'بيانات إضافية')}</div>
+          <div class="contact-inquiries-detail-meta-list">
+            <div><span>${t('contactInquiries.details.createdAt', 'تاريخ الإنشاء')}</span><strong>${escapeHtml(formatDateTime(inquiry.created_at))}</strong></div>
+            <div><span>${t('contactInquiries.details.lastContacted', 'آخر تواصل')}</span><strong>${escapeHtml(formatDateTime(inquiry.last_contacted_at))}</strong></div>
+            <div><span>${t('contactInquiries.details.emailSent', 'تم إرسال الإيميل')}</span><strong>${escapeHtml(emailStatus)}</strong></div>
+          </div>
+        </div>
+      </div>
+      <div class="${DETAIL_CARD_CLASS} space-y-3">
+        <div class="contact-inquiries-detail-label">${t('contactInquiries.details.message', 'الرسالة')}</div>
+        <div class="contact-inquiries-message-body">${nl2br(inquiry.message || '—')}</div>
       </div>
     `;
   }
 
   if (els.workflow) {
     els.workflow.innerHTML = `
-      <div class="space-y-4">
-        <div class="flex flex-wrap items-center gap-2">
-          <button type="button" class="btn btn-outline btn-sm" id="contact-assign-btn">
+      <div class="space-y-4 contact-inquiries-workflow-stack">
+        <div class="flex flex-wrap items-center gap-2 contact-inquiries-workflow-actions">
+          <button type="button" class="${OUTLINE_BUTTON_SM_CLASS}" id="contact-assign-btn">
             ${t('contactInquiries.workflow.assignToMe', 'تعيين لي')}
           </button>
-          <button type="button" class="btn btn-outline btn-sm" id="contact-mark-contacted-btn">
+          <button type="button" class="${OUTLINE_BUTTON_SM_CLASS}" id="contact-mark-contacted-btn">
             ${t('contactInquiries.workflow.markContacted', 'تسجيل تم التواصل')}
           </button>
         </div>
         <div class="flex flex-col gap-2">
           <label for="contact-detail-status" class="font-medium text-base-content">${t('contactInquiries.workflow.status', 'الحالة')}</label>
-          <select id="contact-detail-status" class="select select-bordered w-full">
+          <select id="contact-detail-status" class="${SELECT_CLASS}">
             ${Object.keys(STATUS_META).map((status) => `
               <option value="${escapeHtml(status)}" ${status === inquiry.status ? 'selected' : ''}>${escapeHtml(statusLabel(status))}</option>
             `).join('')}
@@ -297,13 +403,13 @@ function renderInquiryDetails(payload) {
         </div>
         <div class="flex flex-col gap-2">
           <label for="contact-detail-follow-up" class="font-medium text-base-content">${t('contactInquiries.workflow.followUpAt', 'موعد المتابعة القادم')}</label>
-          <input id="contact-detail-follow-up" type="datetime-local" class="input input-bordered w-full" value="${escapeHtml(toDateTimeLocalValue(inquiry.follow_up_at))}">
+          <input id="contact-detail-follow-up" type="datetime-local" class="${INPUT_CLASS}" value="${escapeHtml(toDateTimeLocalValue(inquiry.follow_up_at))}">
         </div>
         <div class="flex flex-col gap-2">
           <label for="contact-detail-notes" class="font-medium text-base-content">${t('contactInquiries.workflow.internalNotes', 'ملاحظات داخلية')}</label>
-          <textarea id="contact-detail-notes" class="textarea textarea-bordered min-h-36 w-full">${escapeHtml(inquiry.internal_notes || '')}</textarea>
+          <textarea id="contact-detail-notes" class="${TEXTAREA_CLASS}">${escapeHtml(inquiry.internal_notes || '')}</textarea>
         </div>
-        <button type="button" class="btn btn-primary w-full" id="contact-save-btn">
+        <button type="button" class="${PRIMARY_BUTTON_CLASS} w-full" id="contact-save-btn">
           ${t('contactInquiries.workflow.save', 'حفظ التحديثات')}
         </button>
       </div>
@@ -316,26 +422,25 @@ function renderInquiryDetails(payload) {
 
   if (els.activityList) {
     if (!activities.length) {
-      els.activityList.innerHTML = `
-        <div class="rounded-2xl border border-dashed border-base-300 p-5 text-center text-base-content/60">
-          ${t('contactInquiries.activity.empty', 'لا يوجد نشاط بعد.')}
-        </div>
-      `;
+      els.activityList.innerHTML = emptyStateMarkup(
+        t('contactInquiries.activity.empty', 'لا يوجد نشاط بعد.'),
+        'p-5',
+      );
     } else {
       els.activityList.innerHTML = activities.map((item) => `
-        <article class="rounded-2xl border border-base-300 p-4">
+        <article class="${DETAIL_CARD_CLASS} contact-inquiries-activity-card space-y-2">
           <div class="flex items-center justify-between gap-2 flex-wrap">
-            <strong class="text-base-content">${escapeHtml(item.username || 'system')}</strong>
-            <span class="text-xs text-base-content/60">${escapeHtml(formatDateTime(item.created_at))}</span>
+            <strong class="contact-inquiries-activity-user">${escapeHtml(item.username || 'system')}</strong>
+            <span class="contact-inquiries-activity-time">${escapeHtml(formatDateTime(item.created_at))}</span>
           </div>
-          <p class="mt-2 text-sm leading-7 text-base-content/80">${escapeHtml(item.message || '')}</p>
+          <p class="contact-inquiries-activity-message">${escapeHtml(item.message || '')}</p>
         </article>
       `).join('');
     }
   }
 
   if (els.detailStatusBadge) {
-    els.detailStatusBadge.className = `badge ${STATUS_META[inquiry.status]?.badge || 'badge-outline'}`;
+    els.detailStatusBadge.className = `contact-inquiries-status-badge ${STATUS_META[inquiry.status]?.badge || 'status-chip status-completed'}`;
     els.detailStatusBadge.textContent = statusLabel(inquiry.status);
   }
 }
@@ -345,7 +450,7 @@ async function loadInquiries({ preserveSelection = true } = {}) {
 
   els.tableBody.innerHTML = `
     <tr>
-      <td colspan="8" class="text-center text-base-content/60">
+      <td colspan="${TABLE_COLSPAN}" class="text-center text-base-content/60">
         ${t('contactInquiries.table.loading', '⏳ جارٍ تحميل الرسائل...')}
       </td>
     </tr>
@@ -362,10 +467,11 @@ async function loadInquiries({ preserveSelection = true } = {}) {
     const response = await apiRequest(`/contact/admin.php?${params.toString()}`);
     listState = Array.isArray(response?.data) ? response.data : [];
     renderStats(listState);
-    renderTable(listState);
 
     if (!preserveSelection) {
+      inquiriesPagination.page = 1;
       selectedId = 0;
+      renderTable(listState);
       renderDetailPlaceholder();
       return;
     }
@@ -373,15 +479,19 @@ async function loadInquiries({ preserveSelection = true } = {}) {
     if (selectedId > 0) {
       const exists = listState.some((row) => Number(row.id) === Number(selectedId));
       if (exists) {
+        syncPaginationToSelection(listState);
+        renderTable(listState);
         await loadInquiryDetails(selectedId, { silentOnError: true });
         return;
       }
     }
 
     if (listState.length > 0) {
-      await loadInquiryDetails(Number(listState[0].id), { silentOnError: true });
+      renderTable(listState);
+        await loadInquiryDetails(Number(listState[0].id), { silentOnError: true });
     } else {
       selectedId = 0;
+      renderTable(listState);
       renderDetailPlaceholder();
     }
   } catch (error) {
@@ -389,11 +499,15 @@ async function loadInquiries({ preserveSelection = true } = {}) {
     renderStats([]);
     els.tableBody.innerHTML = `
       <tr>
-        <td colspan="8" class="text-center text-error">
+        <td colspan="${TABLE_COLSPAN}" class="text-center text-error">
           ${escapeHtml(error instanceof ApiError ? error.message : t('contactInquiries.table.error', 'تعذر تحميل رسائل التواصل.'))}
         </td>
       </tr>
     `;
+    if (els.pagination) {
+      els.pagination.hidden = true;
+      els.pagination.innerHTML = '';
+    }
     renderDetailPlaceholder();
   }
 }

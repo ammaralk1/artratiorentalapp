@@ -317,8 +317,6 @@ describe('reservations/editForm module', () => {
       end: '2024-02-03T00:00'
     }));
     expect(summary.innerHTML).toBe('<div>summary</div>');
-    expect(paidSelect.dataset.listenerAttached).toBe('true');
-    expect(updatePaymentStatusAppearanceMock).toHaveBeenCalled();
   });
 
   it('removeEditReservationItem updates state and re-renders', async () => {

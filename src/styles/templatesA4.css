@@ -4,6 +4,12 @@
 #templates-a4-root { direction: rtl; text-align: right; font-family: 'Tajawal', 'Arial', 'Tahoma', sans-serif; color:#000; }
 /* Keep root white, and allow children backgrounds */
 #templates-a4-root { background:#fff !important; }
+#templates-a4-root {
+  --tpl-accent-strong: #567E56;
+  --tpl-accent-soft-strong: rgba(86, 126, 86, 0.30);
+  --tpl-accent-soft: rgba(86, 126, 86, 0.18);
+  --tpl-accent-soft-subtle: rgba(86, 126, 86, 0.12);
+}
 #templates-a4-root * { color:#000 !important; box-shadow:none !important; letter-spacing: normal !important; word-spacing: normal !important; font-kerning: normal !important; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
 
 /* Force white surfaces inside A4 regardless of dark-mode */
@@ -63,7 +69,7 @@
   background-image: none !important;
   background-color: transparent !important;
   caret-color: #000 !important;
-  accent-color: #2563EB !important;
+  accent-color: var(--tpl-accent-strong) !important;
 }
 /* Re-apply needed backgrounds explicitly (safe hex/rgb values) */
 #templates-a4-root[data-render-context="export"] .a4-page,
@@ -74,8 +80,8 @@
 #templates-a4-root[data-render-context="export"] table.tpl-table td { background: #ffffff !important; background-color:#ffffff !important; color:#000 !important; }
 #templates-a4-root[data-render-context="export"] table.exp-top-table th,
 #templates-a4-root[data-render-context="export"] table.exp-details thead th,
-#templates-a4-root[data-render-context="export"] tr.exp-subheader th { background: rgba(37, 99, 235, 0.30) !important; background-color: rgba(37,99,235,0.30) !important; }
-#templates-a4-root[data-render-context="export"] .exp-group-bar { background: #2563EB !important; background-color: #2563EB !important; color:#ffffff !important; }
+#templates-a4-root[data-render-context="export"] tr.exp-subheader th { background: var(--tpl-accent-soft-strong) !important; background-color: var(--tpl-accent-soft-strong) !important; }
+#templates-a4-root[data-render-context="export"] .exp-group-bar { background: var(--tpl-accent-strong) !important; background-color: var(--tpl-accent-strong) !important; color:#ffffff !important; }
 #templates-a4-root[data-render-context="export"] tr[data-subgroup-subtotal] td { background: rgba(0,0,0,0.07) !important; background-color: rgba(0,0,0,0.07) !important; }
 /* In export: allow cell text to wrap and grow row height so content never gets clipped */
 #templates-a4-root[data-render-context="export"] table.exp-table td,
@@ -117,8 +123,8 @@ table.tpl-table { width:100%; border-collapse:collapse; font-size:11px; table-la
 #templates-a4-root table.tpl-table th { background:#ffffff !important; color:#000 !important; border:1.5px solid #9ca3af; padding:8px 10px; text-align:right; height:28px; }
 #templates-a4-root table.tpl-table td { background:#ffffff !important; border:1.5px solid #9ca3af; padding:6px 8px; text-align:right; vertical-align:middle; height:26px; }
 /* Ensure same in dark-mode */
-:is(html.dark-mode, body.dark-mode) #templates-a4-root table.tpl-table th { background:#ffffff !important; color:#000 !important; }
-:is(html.dark-mode, body.dark-mode) #templates-a4-root table.tpl-table td { background:#ffffff !important; }
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #templates-a4-root table.tpl-table th { background:#ffffff !important; color:#000 !important; }
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #templates-a4-root table.tpl-table td { background:#ffffff !important; }
 /* Repeat thead in print/export for generic templates tables */
 table.tpl-table thead { display: table-header-group; }
 
@@ -138,7 +144,7 @@ table.exp-top-table .exp-top-col-total { width: 20%; }
 #templates-a4-root table.exp-top-table td.exp-top-label { text-align: left !important; }
 #templates-a4-root[dir="ltr"] table.exp-top-table td.exp-top-label { text-align: left !important; }
 /* Top sheet header tint */
-table.exp-top-table th { background: rgba(37, 99, 235, 0.30) !important; color:#000; }
+table.exp-top-table th { background: var(--tpl-accent-soft-strong) !important; color:#000; }
 /* Top sheet caption as colored section bar */
 table.exp-top-table > caption { caption-side: top; padding: 0; margin: 0 0 2px; }
 table.exp-top-table > caption .exp-group-bar { border-radius: 0; text-align: left !important; padding-left: 12px; }
@@ -170,7 +176,7 @@ table.exp-top-table td, table.exp-top-table th { box-shadow: none !important; ou
 .tpl-section { margin:6mm 0 3mm; font-size:13px; font-weight:800; }
 .tpl-section-bar { border-radius:10px; padding:6px 10px; color:#fff; font-weight:800; margin:4mm 0 3mm; display:inline-block; }
 .tpl-section--atl { background:#BE185D; } /* Above the Line -> rose */
-.tpl-section--prod { background:#2563EB; } /* Production Expenses -> blue */
+.tpl-section--prod { background:var(--tpl-accent-strong); }
 .tpl-section--post { background:#6D28D9; } /* Post Production -> purple */
 
 /* Subtotal rows */
@@ -190,9 +196,9 @@ table.exp-top-table td, table.exp-top-table th { box-shadow: none !important; ou
 .callsheet-v1 *:not(.cs-label):not(.cs-notes-h):not(.cs-section):not(.cs-cast-title):not(.cs-crew-title):not(.cs-schedule-title) { background:#ffffff !important; background-image:none !important; box-shadow:none !important; }
 .cs-header { display:grid; grid-template-columns: 1fr 2fr 1fr; align-items:center; gap:8px; margin-bottom:6px; }
 .cs-header { position: relative; z-index: 50; background:#ffffff; }
-.cs-logo { min-height:48px; height:auto; padding:4px; display:flex; align-items:center; justify-content:center; border:1px solid #e5e7eb; border-radius:6px; background:#ffffff; position:relative; overflow:visible; z-index:51; }
+.cs-logo { min-height:82px; height:auto; padding:6px; display:flex; align-items:center; justify-content:center; border:1px solid #e5e7eb; border-radius:6px; background:#ffffff; position:relative; overflow:visible; z-index:51; }
 .cs-logo::before { content:""; position:absolute; inset:-3px; background:#ffffff; border-radius:6px; z-index:-1; }
-.cs-logo img { height:56px; width:auto; max-height:none; max-width:none; display:block; transform-origin: top left; }
+.cs-logo img { height:96px; width:auto; max-height:none; max-width:none; display:block; transform-origin: top left; }
 .cs-logo--left img { cursor:move; user-select:none; -webkit-user-drag:none; }
 .cs-logo--right img { cursor:move; user-select:none; -webkit-user-drag:none; }
 /* Hide secondary logo box entirely if no URL */
@@ -213,11 +219,11 @@ table.cs-info td { border:1.5px solid #9ca3af; vertical-align:top; }
 table.cs-info > tbody > tr > td { width:33.3333%; }
 table.cs-info table { width:100%; border-collapse:collapse; table-layout:fixed; }
 .cs-roles td { border:1.5px solid #9ca3af; padding:6px 8px; height:26px; }
-.cs-label { background: rgba(37, 99, 235, 0.18); color:#000; font-weight:700; width:40%; }
+.cs-label { background: var(--tpl-accent-soft); color:#000; font-weight:700; width:40%; }
 .cs-center td { border:1.5px solid #9ca3af; padding:6px 8px; }
-.cs-notes-h { background: rgba(37, 99, 235, 0.18); font-weight:700; text-align:center; }
+.cs-notes-h { background: var(--tpl-accent-soft); font-weight:700; text-align:center; }
 .cs-notes { line-height:1.35; min-height:54px; }
-.cs-section { background: rgba(37, 99, 235, 0.18); color:#000; text-align:center; font-weight:800; }
+.cs-section { background: var(--tpl-accent-soft); color:#000; text-align:center; font-weight:800; }
 .cs-locations { height:36px; }
 .cs-times td { border:1.5px solid #9ca3af; padding:6px 8px; height:26px; }
 
@@ -225,7 +231,7 @@ table.cs-info table { width:100%; border-collapse:collapse; table-layout:fixed; 
 table.cs-cast { width:100%; border-collapse:collapse; table-layout:fixed; margin:2mm 0 3mm; }
 table.cs-cast { border:2px solid #9ca3af; }
 table.cs-cast td { border:1.5px solid #9ca3af; padding:6px 8px; text-align:center; vertical-align:middle; height:26px; }
-.cs-cast-title { background: rgba(37, 99, 235, 0.18); color:#000; font-weight:800; text-align:center; }
+.cs-cast-title { background: var(--tpl-accent-soft); color:#000; font-weight:800; text-align:center; }
 .cs-weather { text-align:center; font-weight:700; background:#ffffff; }
 .cs-weather .cs-city { font-size:14px; margin-bottom:4px; }
 .cs-weather .cs-temp, .cs-weather .cs-wind, .cs-weather .cs-rain { font-size:12px; margin-top:2px; font-weight:700; }
@@ -236,11 +242,11 @@ table.cs-cast td { border:1.5px solid #9ca3af; padding:6px 8px; text-align:cente
 /* Correct display roles to avoid layout artifacts (e.g., dark strip) */
 .cs-schedule thead tr { display: table-row !important; }
 .cs-schedule thead th { display: table-cell !important; }
-/* Hard reset + blue header shading */
+/* Hard reset + green header shading */
 #templates-a4-root .cs-schedule thead,
 #templates-a4-root .cs-schedule thead tr,
 #templates-a4-root .cs-schedule thead th {
-  background: rgba(37, 99, 235, 0.18) !important;
+  background: var(--tpl-accent-soft) !important;
   border-color:#9ca3af !important;
   box-shadow:none !important;
   outline:none !important;
@@ -261,13 +267,14 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
 .cs-schedule th, .cs-schedule td { text-align: center !important; vertical-align: middle; }
 .callsheet-v1 .cs-schedule th { font-size: 10px; }
 .callsheet-v1 .cs-schedule td { font-size: 10px; }
-/* Maximize usable width on the Crew Call page (2nd page) */
-#templates-a4-root .a4-page:nth-child(2) .a4-inner { padding-left: 0mm; padding-right: 0mm; }
-/* Remove only vertical page borders on 2nd page in preview to avoid side clipping */
-#templates-a4-root .a4-page:nth-child(2) { border-left: none !important; border-right: none !important; }
+/* Maximize usable width on the Call Sheet crew page only. Keep this scoped so
+   Expenses page 2 does not inherit Call Sheet full-bleed behavior in export. */
+#templates-a4-root .a4-page:nth-child(2):has(.callsheet-v1) .a4-inner { padding-left: 0mm; padding-right: 0mm; }
+/* Remove only vertical page borders on the Call Sheet crew page in preview */
+#templates-a4-root .a4-page:nth-child(2):has(.callsheet-v1) { border-left: none !important; border-right: none !important; }
 
 /* Ensure full-width in export as well (override global export padding) */
-#templates-a4-root[data-render-context="export"] .a4-page:nth-child(2) .a4-inner {
+#templates-a4-root[data-render-context="export"] .a4-page:nth-child(2):has(.callsheet-v1) .a4-inner {
   padding-left: 0mm !important;
   padding-right: 0mm !important;
 }
@@ -403,7 +410,7 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
   align-items:center;
   line-height: 1.3;
   height: 28px;
-  background: #2563EB !important;
+  background: var(--tpl-accent-strong) !important;
   color:#ffffff !important;
 }
 .callsheet-v1 .cs-crew { table-layout: fixed; width: 90% !important; margin-top:6px; margin-left:auto; margin-right:auto; }
@@ -412,10 +419,10 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
 .callsheet-v1 .cs-crew th,
 .callsheet-v1 .cs-crew td { text-align:center !important; vertical-align:middle; font-size:10px; }
 .callsheet-v1 .cs-crew thead th { display:flex; align-items:center; justify-content:center; padding:6px 4px; line-height:1.2; white-space:normal; overflow:hidden; text-overflow:ellipsis; text-align: center !important; font-size: 18px !important; }
-.callsheet-v1 table.cs-crew thead tr:nth-child(2) th { background: rgba(37, 99, 235, 0.18) !important; }
+.callsheet-v1 table.cs-crew thead tr:nth-child(2) th { background: var(--tpl-accent-soft) !important; }
 .callsheet-v1 .cs-schedule tbody td { white-space: normal !important; word-break: break-word; overflow-wrap: anywhere; }
 .cs-row-note td { background: rgba(255, 154, 154, 0.35) !important; font-weight:700; text-align:center; }
-.cs-row-strong td { background: rgba(37, 99, 235, 0.18) !important; font-weight:800; text-align:center; }
+.cs-row-strong td { background: var(--tpl-accent-soft) !important; font-weight:800; text-align:center; }
 /* Remove any zebra tint entirely */
 .cs-schedule tbody tr:nth-child(odd) td,
 .cs-schedule tbody tr:nth-child(even) td { background:#ffffff !important; }
@@ -446,13 +453,13 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
   background-color: var(--shade, rgba(255, 245, 157, 0.4)) !important;
 }
 /* Re-apply Crew Call colors in export despite the generic white override above */
-#templates-a4-root[data-render-context="export"] .callsheet-v1 table.cs-crew thead th.cs-crew-title { background:#2563EB !important; color:#ffffff !important; }
-#templates-a4-root[data-render-context="export"] .callsheet-v1 table.cs-crew thead tr:nth-child(2) th { background: rgba(37,99,235,0.18) !important; }
+#templates-a4-root[data-render-context="export"] .callsheet-v1 table.cs-crew thead th.cs-crew-title { background:var(--tpl-accent-strong) !important; color:#ffffff !important; }
+#templates-a4-root[data-render-context="export"] .callsheet-v1 table.cs-crew thead tr:nth-child(2) th { background: var(--tpl-accent-soft) !important; }
 /* Re-apply Cast Calls title color in export as well */
-#templates-a4-root[data-render-context="export"] .callsheet-v1 table.cs-cast .cs-cast-title { background:#2563EB !important; color:#ffffff !important; }
+#templates-a4-root[data-render-context="export"] .callsheet-v1 table.cs-cast .cs-cast-title { background:var(--tpl-accent-strong) !important; color:#ffffff !important; }
 /* Schedule title (dark) and header (light) */
-#templates-a4-root .callsheet-v1 table.cs-schedule thead th.cs-schedule-title { background:#2563EB !important; color:#ffffff !important; font-size:18px !important; }
-#templates-a4-root .callsheet-v1 table.cs-schedule thead tr:nth-child(2) th { background: rgba(37,99,235,0.18) !important; }
+#templates-a4-root .callsheet-v1 table.cs-schedule thead th.cs-schedule-title { background:var(--tpl-accent-strong) !important; color:#ffffff !important; font-size:18px !important; }
+#templates-a4-root .callsheet-v1 table.cs-schedule thead tr:nth-child(2) th { background: var(--tpl-accent-soft) !important; }
 
 /* Preview-only: make table outlines clearer and visibly closed */
 #templates-a4-root[data-render-context="preview"] table.cs-info,
@@ -474,10 +481,10 @@ table.cs-cast tbody tr:last-child td,
 #templates-a4-root .callsheet-v1 table th:not(.cs-crew-title):not(.cs-schedule-title):not(.cs-cast-title):not(.cs-crew-head):not(.cs-schedule-head),
 #templates-a4-root .callsheet-v1 table td:not(.cs-label):not(.cs-notes-h):not(.cs-section):not(.cs-cast-title),
 #templates-a4-root .callsheet-v1 .cs-wrap { background:#ffffff !important; color:#000 !important; }
-#templates-a4-root .callsheet-v1 table.cs-crew thead th.cs-crew-title { background:#2563EB !important; color:#ffffff !important; }
-#templates-a4-root .callsheet-v1 table.cs-crew thead tr:nth-child(2) th { background: rgba(37, 99, 235, 0.18) !important; }
-/* Make Cast Calls header match Crew Call (solid blue title) */
-#templates-a4-root .callsheet-v1 table.cs-cast .cs-cast-title { background:#2563EB !important; color:#ffffff !important; }
+#templates-a4-root .callsheet-v1 table.cs-crew thead th.cs-crew-title { background:var(--tpl-accent-strong) !important; color:#ffffff !important; }
+#templates-a4-root .callsheet-v1 table.cs-crew thead tr:nth-child(2) th { background: var(--tpl-accent-soft) !important; }
+/* Make Cast Calls header match Crew Call (solid green title) */
+#templates-a4-root .callsheet-v1 table.cs-cast .cs-cast-title { background:var(--tpl-accent-strong) !important; color:#ffffff !important; }
 /* Keep font sizes in export context as well */
 #templates-a4-root[data-render-context="export"] .callsheet-v1 table.cs-crew thead th { font-size: 14px !important; }
 #templates-a4-root[data-render-context="export"] .callsheet-v1 table.cs-crew thead th.cs-crew-title { font-size: 18px !important; }
@@ -488,35 +495,35 @@ table.cs-cast tbody tr:last-child td,
 #templates-a4-root .callsheet-v1 .cs-brand { font-size: 16px; font-weight: 800; text-align:center; }
 #templates-a4-root .callsheet-v1 .cs-date { font-size: 13px; font-weight: 700; text-align:center; }
 #templates-a4-root .callsheet-v1 .tpl-table thead th { background:#ffffff !important; }
-/* Explicit light-blue for crew and shot list column headers (preview + export) */
+/* Explicit light-green for crew and shot list column headers (preview + export) */
 #templates-a4-root .callsheet-v1 th.cs-crew-head,
-#templates-a4-root .callsheet-v1 th.cs-schedule-head { background: rgba(37, 99, 235, 0.18) !important; }
-/* Re-apply light-blue shading for column header row of Crew Call after generic white reset */
-#templates-a4-root .callsheet-v1 table.cs-crew thead tr:nth-child(2) th { background: rgba(37, 99, 235, 0.18) !important; }
+#templates-a4-root .callsheet-v1 th.cs-schedule-head { background: var(--tpl-accent-soft) !important; }
+/* Re-apply light-green shading for column header row of Crew Call after generic white reset */
+#templates-a4-root .callsheet-v1 table.cs-crew thead tr:nth-child(2) th { background: var(--tpl-accent-soft) !important; }
 .callsheet-v1 .cs-crew { table-layout: fixed; width: 90% !important; margin-top:6px; margin-left:auto; margin-right:auto; }
 /* Page 2 (Crew): zero side padding so table uses full width */
-#templates-a4-root .a4-page:nth-child(2) .a4-inner { padding-left: 0mm; padding-right: 0mm; }
+#templates-a4-root .a4-page:nth-child(2):has(.callsheet-v1) .a4-inner { padding-left: 0mm; padding-right: 0mm; }
 .callsheet-v1 .cs-crew th,
 .callsheet-v1 .cs-crew td { text-align:center !important; vertical-align:middle; font-size:10px; }
 .callsheet-v1 .cs-crew thead th { display:flex; align-items:center; justify-content:center; padding:6px 4px; line-height:1.2; white-space:normal; overflow:hidden; text-overflow:ellipsis; text-align: center !important; }
 
-/* Light blue shading for page-1 labels (preview + export) */
+/* Light green shading for page-1 labels (preview + export) */
 .callsheet-v1 .cs-roles td.cs-label,
-.callsheet-v1 .cs-times td.cs-label { background: rgba(37, 99, 235, 0.12) !important; font-weight: 700; }
+.callsheet-v1 .cs-times td.cs-label { background: var(--tpl-accent-soft-subtle) !important; font-weight: 700; }
 .callsheet-v1 .cs-center .cs-notes-h,
-.callsheet-v1 .cs-center .cs-section { background: rgba(37, 99, 235, 0.12) !important; font-weight: 700; }
+.callsheet-v1 .cs-center .cs-section { background: var(--tpl-accent-soft-subtle) !important; font-weight: 700; }
 /* Export context too */
 #templates-a4-root[data-render-context="export"] .callsheet-v1 .cs-roles td.cs-label,
 #templates-a4-root[data-render-context="export"] .callsheet-v1 .cs-times td.cs-label,
 #templates-a4-root[data-render-context="export"] .callsheet-v1 .cs-center .cs-notes-h,
-#templates-a4-root[data-render-context="export"] .callsheet-v1 .cs-center .cs-section { background: rgba(37, 99, 235, 0.12) !important; font-weight: 700; }
+#templates-a4-root[data-render-context="export"] .callsheet-v1 .cs-center .cs-section { background: var(--tpl-accent-soft-subtle) !important; font-weight: 700; }
 
 /* Also enforce Cast Calls title in preview context */
-.callsheet-v1 table.cs-cast .cs-cast-title { background:#2563EB !important; color:#ffffff !important; }
+.callsheet-v1 table.cs-cast .cs-cast-title { background:var(--tpl-accent-strong) !important; color:#ffffff !important; }
 
 /* Non-export preview shading for schedule headers */
-.callsheet-v1 table.cs-schedule thead th.cs-schedule-title { background:#2563EB !important; color:#ffffff !important; }
-#templates-a4-root .callsheet-v1 table.cs-schedule thead tr:nth-child(2) th { background: rgba(37, 99, 235, 0.18) !important; }
+.callsheet-v1 table.cs-schedule thead th.cs-schedule-title { background:var(--tpl-accent-strong) !important; color:#ffffff !important; }
+#templates-a4-root .callsheet-v1 table.cs-schedule thead tr:nth-child(2) th { background: var(--tpl-accent-soft) !important; }
 .tpl-summary-total { font-weight:800; border-top:1px dashed #e5e7eb; margin-top:4px; padding-top:6px; }
 
 /* Allow custom shading on cells when requested */
@@ -536,30 +543,92 @@ table.cs-cast tbody tr:last-child td,
 .tpl-print-footer .page-num { font-weight:700; }
 
 /* Expenses A4 specific layout */
-.exp-masthead { direction:rtl; background:#fff; color:#000 !important; border-radius:10px; padding:12px 14px; margin-bottom:6mm; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+#templates-a4-root[data-exp-mode="multipage"] .a4-page .a4-inner {
+  padding-left: 10mm;
+  padding-right: 10mm;
+}
+#templates-a4-root[data-exp-mode="multipage"][data-render-context="export"] .a4-page .a4-inner {
+  padding-left: 10mm !important;
+  padding-right: 10mm !important;
+}
+#expenses-top-sheet {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2.9mm;
+  align-items: start;
+}
+.exp-top-table--grand {
+  grid-column: auto;
+}
+.exp-masthead { direction:rtl; background:#fff; color:#000 !important; border-radius:10px; padding:12px 14px; margin-bottom:5.25mm; display:flex; align-items:center; justify-content:space-between; gap:14px; }
 .exp-masthead .title { font-size:18px; font-weight:800; color:#fff !important; }
 .exp-masthead .title-wrap { display:flex; flex-direction:column; gap:4px; align-items:flex-start; }
-.exp-masthead .date { font-size:11px; color:#334155 !important; font-weight:600; }
-.exp-masthead .brand-info { flex:1; text-align:center; display:flex; flex-direction:column; align-items:center; gap:6px; }
-.exp-masthead .brand-info .text { font-weight:800; font-size:14px; color:#000 !important; }
-.exp-masthead .brand-info .meta { display:flex; flex-direction:row; gap:12px; flex-wrap:wrap; font-size:11px; color:#334155 !important; justify-content:center; }
+.exp-masthead .date { font-size:10px; color:#334155 !important; font-weight:600; }
+.exp-masthead .brand-info { flex:1; text-align:center; display:flex; flex-direction:column; align-items:center; gap:5px; }
+.exp-masthead .brand-info .text { font-weight:800; font-size:13.5px; color:#000 !important; }
+.exp-masthead .brand-info .meta { display:flex; flex-direction:row; gap:10px; flex-wrap:wrap; font-size:10.5px; color:#334155 !important; justify-content:center; }
 .exp-masthead .brand-info .meta .line { margin:0; padding:0; }
 .exp-masthead .brand-logo { flex:0 0 auto; align-self:center; }
-.exp-masthead .brand-logo img { height:84px; width:auto; object-fit:contain; display:block; }
+.exp-masthead .brand-logo img { height:80px; width:auto; object-fit:contain; display:block; }
 .exp-masthead .brand .text { font-weight:800; font-size:14px; color:#000 !important; }
 .exp-masthead .brand .meta { display:flex; flex-direction:row; gap:12px; flex-wrap:wrap; font-size:11px; color:#334155 !important; }
 .exp-masthead .brand .meta .line { margin:0; padding:0; }
 
-table.exp-table { position:relative; width:100%; border-collapse:collapse; table-layout:fixed; font-size:11px; border:1.5px solid #94a3b8; }
-/* Ensure outer vertical borders are always visible, even with sub-pixel rounding */
+table.exp-table {
+  position:relative;
+  width:100%;
+  border-collapse:collapse;
+  table-layout:fixed;
+  font-size:11px;
+  border:1.5px solid #94a3b8;
+  outline:1.5px solid #94a3b8;
+  outline-offset:-1px;
+}
+#templates-a4-root[data-exp-mode="multipage"] table.exp-table {
+  width: calc(100% - 4mm);
+  margin-left: auto;
+  margin-right: auto;
+}
+/* Avoid synthetic side rails; let the actual cell borders define the table edge
+   so preview and exported PDF use the same closure logic. */
 table.exp-table::before,
-table.exp-table::after { content:""; position:absolute; top:0; bottom:0; width:1.5px; background:#94a3b8; pointer-events:none; }
-table.exp-table::before { left:0; }
-table.exp-table::after { right:0; }
+table.exp-table::after { content:none; display:none; }
 /* Remove header shading */
 /* Light, print-safe header background */
 table.exp-table th { background:#fff !important; border:1.5px solid #94a3b8; padding:8px 8px; text-align:center; font-weight:700; }
 table.exp-table td { border:1.5px solid #cbd5e1; padding:6px 8px; text-align:center; vertical-align:middle; height:auto; min-height:26px; line-height:1.2; }
+#expenses-top-sheet table.exp-top-table th {
+  padding: 6px 7px;
+  font-size: 10.5px;
+  line-height: 1.1;
+}
+#expenses-top-sheet table.exp-top-table td {
+  padding: 5px 7px;
+  min-height: 24px;
+  font-size: 10.5px;
+  line-height: 1.1;
+}
+#expenses-top-sheet table.exp-top-table caption {
+  margin-bottom: 2px;
+}
+#expenses-top-sheet .exp-group-bar {
+  padding: 8px 10px;
+  font-size: 11.5px;
+  line-height: 1.15;
+}
+#expenses-top-sheet .exp-top-label,
+#expenses-top-sheet .exp-grand-total-label {
+  text-align: right;
+}
+#templates-a4-root[dir="ltr"] #expenses-top-sheet .exp-top-label,
+#templates-a4-root[dir="ltr"] #expenses-top-sheet .exp-grand-total-label {
+  text-align: left;
+}
+#expenses-top-sheet .exp-grand-total-row td {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  font-size: 11.5px;
+}
 #templates-a4-root[dir="ltr"] table.exp-table td { text-align:center; }
 table.exp-table td.code { text-align:center; font-weight:700; color:#334155; }
 #templates-a4-root[dir="ltr"] table.exp-table td.code { text-align:left; }
@@ -567,7 +636,7 @@ table.exp-table td.total, table.exp-table td.subtotal { font-weight:800; }
 /* Numeric cells: enforce LTR order but keep right alignment */
 table.exp-table td[data-num], table.exp-table td.total { direction:ltr; unicode-bidi: plaintext; text-align:center; white-space: nowrap; }
 /* Sub-headers tint ~30% of brand for readability */
-table.exp-table tr.exp-subheader th { background: rgba(37, 99, 235, 0.30) !important; color:#000 !important; font-weight:800; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+table.exp-table tr.exp-subheader th { background: var(--tpl-accent-soft-strong) !important; color:#000 !important; font-weight:800; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 /* Default: don't force-hide thead; allow per-table control */
 table.exp-table thead { display: table-header-group; }
 /* Top sheet header should repeat as well */
@@ -575,12 +644,13 @@ table.exp-top-table thead { display: table-header-group; }
 /* Details tables: show thead and let it repeat on page breaks (print + export capture) */
 table.exp-details thead { display: table-header-group !important; }
 /* Tint details thead for readability */
-table.exp-details thead th { background: rgba(37, 99, 235, 0.30) !important; color:#000 !important; }
+table.exp-details thead th { background: var(--tpl-accent-soft-strong) !important; color:#000 !important; }
 /* Ensure borders are continuous on sub-header rows */
 table.exp-table tr.exp-subheader th { border:1.5px solid #94a3b8 !important; }
-/* Main section bars unified in brand blue; fill whole cell width */
+/* Main section bars unified in brand green; fill whole cell width */
 table.exp-table tr[data-group-bar] td, table.exp-table tr[data-group-bar] th { padding:0 !important; }
-.exp-group-bar { background: var(--clr-primary, #2563EB) !important; color:#fff !important; font-weight:800; border-radius:0; padding:10px 12px; margin:0; display:block; width:100%; }
+.exp-table tr[data-group-bar] th { border:1.5px solid #94a3b8 !important; }
+.exp-group-bar { background: var(--tpl-accent-strong) !important; color:#fff !important; font-weight:800; border-radius:0; padding:10px 12px; margin:0; display:block; width:100%; }
 /* Avoid clipped header in preview by nudging group bar slightly down */
 table.exp-details thead tr[data-group-title] th .exp-group-bar { margin-top: 2px; }
 .exp-group-bar--atl { background: inherit; }
@@ -589,6 +659,20 @@ table.exp-details thead tr[data-group-title] th .exp-group-bar { margin-top: 2px
 
 .exp-summary-row { font-weight:800; }
 .exp-grand-total { background:#fff; color:#000 !important; font-weight:900; font-size:12px; }
+
+#templates-a4-root[data-exp-mode="multipage"] .tpl-meta {
+  gap: 9px;
+  margin-bottom: 4mm;
+}
+#templates-a4-root[data-exp-mode="multipage"] .tpl-meta .meta-item {
+  padding: 9px 10px;
+}
+#templates-a4-root[data-exp-mode="multipage"] .tpl-meta .meta-label {
+  font-size: 10.5px;
+}
+#templates-a4-root[data-exp-mode="multipage"] .tpl-meta .meta-value {
+  font-size: 11.5px;
+}
 
 /* Column widths for expenses table */
 /* New order/rations (TAB removed, width added to No. of Days):
@@ -628,14 +712,14 @@ table.exp-details tbody td:nth-child(2) {
 #templates-a4-root table.exp-details tbody tr[data-subgroup-header] td.label { text-align: left !important; font-weight:800; padding-left:8px; }
 #templates-a4-root[dir="ltr"] table.exp-details tbody tr[data-subgroup-header] td.label { text-align: left !important; }
 table.exp-details tbody tr[data-subgroup-header] td.exp-subheader-fill {
-  background: rgba(37, 99, 235, 0.18) !important;
-  background-color: rgba(37, 99, 235, 0.18) !important;
+  background: var(--tpl-accent-soft) !important;
+  background-color: var(--tpl-accent-soft) !important;
   border-color: #cbd5e1 !important;
 }
 /* Ensure the fill tint is preserved in PDF export */
 #templates-a4-root[data-render-context="export"] table.exp-details tbody tr[data-subgroup-header] td.exp-subheader-fill {
-  background: rgba(37, 99, 235, 0.18) !important;
-  background-color: rgba(37, 99, 235, 0.18) !important;
+  background: var(--tpl-accent-soft) !important;
+  background-color: var(--tpl-accent-soft) !important;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
@@ -653,13 +737,41 @@ table.exp-details tbody td:last-child .tpl-action-btn { padding: 1px 5px; font-s
 /* Remove zebra under headers per request */
 table.exp-table tbody tr.exp-row-alt td { background:transparent !important; }
 /* Highlight only the SUBTOTAL rows across the full width */
-table.exp-table tbody tr[data-subgroup-subtotal] td { background:rgba(0,0,0,0.07) !important; }
+table.exp-table tbody tr[data-subgroup-subtotal] td {
+  background:rgba(0,0,0,0.07) !important;
+  border-top:1.5px solid #94a3b8 !important;
+  border-bottom:1.5px solid #94a3b8 !important;
+}
 /* Group TOTAL rows (e.g., Above the Line totals) should not be shaded */
 table.exp-table tbody tr[data-group-total] td { background:#fff !important; }
 /* Keep ordinary item rows clear */
 table.exp-table tbody tr.exp-row-alt td { background:transparent !important; }
 /* Ensure backgrounds render in print */
 table.exp-table { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+table.exp-top-table tbody tr[data-top-group-total-row] td,
+.exp-grand-total-row td,
+table.exp-details tbody tr:last-child td,
+table.exp-top-table tbody tr:last-child td {
+  border-bottom:1.5px solid #94a3b8 !important;
+}
+table.exp-top-table tbody tr[data-top-group-total-row] td,
+.exp-grand-total-row td {
+  border-top:1.5px solid #94a3b8 !important;
+}
+table.exp-top-table tbody tr[data-top-group-total-row] td:first-child,
+.exp-grand-total-row td:first-child,
+table.exp-details tbody tr[data-subgroup-subtotal] td:first-child,
+table.exp-details tbody tr:last-child td:first-child,
+table.exp-top-table tbody tr:last-child td:first-child {
+  border-left:1.5px solid #94a3b8 !important;
+}
+table.exp-top-table tbody tr[data-top-group-total-row] td:last-child,
+.exp-grand-total-row td:last-child,
+table.exp-details tbody tr[data-subgroup-subtotal] td:last-child,
+table.exp-details tbody tr:last-child td:last-child,
+table.exp-top-table tbody tr:last-child td:last-child {
+  border-right:1.5px solid #94a3b8 !important;
+}
 
 /* Hide actions in export (PDF) and collapse last column for details tables */
 #templates-a4-root[data-render-context="export"] .tpl-actions,
@@ -719,43 +831,7 @@ table.exp-top-table td[data-top-count], table.exp-top-table td[data-top-total], 
   table.exp-table td, table.exp-table th { white-space: normal !important; text-overflow: clip !important; overflow: visible !important; height: auto !important; min-height: 26px !important; line-height: 1.2 !important; }
   table.exp-table td[data-num], table.exp-table td.total { white-space: nowrap !important; }
 }
-/* Templates preview zoom controls (match quote preview style) */
-.tpl-zoom-controls { display:inline-flex; align-items:center; gap:8px; margin-bottom:0; background: rgba(15,23,42,0.06); border-radius:999px; padding:6px 12px; }
-:is(html.dark-mode, body.dark-mode) .tpl-zoom-controls { background: rgba(30,41,59,0.72); border: 1px solid rgba(93,133,255,0.32); }
-.tpl-zoom-btn { border:none; background:#ffffff; border-radius:999px; width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; font-weight:600; cursor:pointer; box-shadow:0 2px 6px rgba(15,23,42,0.12); transition: transform 120ms ease, box-shadow 120ms ease; }
-:is(html.dark-mode, body.dark-mode) .tpl-zoom-btn { background: rgba(51,65,85,0.9); color: rgba(226,232,240,0.92); box-shadow: 0 2px 6px rgba(15,23,42,0.35); }
-.tpl-zoom-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(15,23,42,0.16); }
-:is(html.dark-mode, body.dark-mode) .tpl-zoom-btn:hover { box-shadow: 0 4px 12px rgba(8,47,73,0.45); }
-.tpl-zoom-value { min-width:48px; text-align:center; font-weight:600; color:#1f2937; }
-:is(html.dark-mode, body.dark-mode) .tpl-zoom-value { color: rgba(226,232,240,0.9); }
-#tpl-zoom-controls { width: fit-content; }
-
-@media (max-width: 768px) {
-  #tpl-zoom-controls {
-    width: 100%;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-
-  .tpl-zoom-btn {
-    width: 28px;
-    height: 28px;
-    font-size: 0.88rem;
-  }
-
-  .tpl-zoom-value {
-    min-width: 56px;
-  }
-}
 #templates-a4-root .dir-ltr { direction: ltr; unicode-bidi: plaintext; }
-/* Floating cell toolbar dark-mode treatment */
-#tpl-cell-toolbar > div { background:#ffffff; border:1px solid #e5e7eb; border-radius:8px; box-shadow:0 2px 8px rgba(15,23,42,0.12); }
-:is(html.dark-mode, body.dark-mode) #tpl-cell-toolbar > div { background: rgba(30,41,59,0.95); color: rgba(226,232,240,0.92); border-color: rgba(93,133,255,0.32); box-shadow: 0 2px 10px rgba(8,47,73,0.45); }
-#tpl-cell-toolbar .btn { background: #ffffff; }
-#tpl-cell-toolbar button { background: transparent; }
-:is(html.dark-mode, body.dark-mode) #tpl-cell-toolbar .btn { background: rgba(51,65,85,0.92) !important; color: rgba(226,232,240,0.92) !important; border-color: rgba(148,163,184,0.5) !important; }
-:is(html.dark-mode, body.dark-mode) #tpl-cell-toolbar button { color: rgba(226,232,240,0.92); border-color: rgba(148,163,184,0.5); }
 
 /* ===== Final overrides (strongest) ===== */
 #templates-a4-root .callsheet-v1 table.cs-crew,

@@ -254,9 +254,9 @@ export function buildCallSheetPage(project, reservations, opts = {}) {
   leftBrandLogo.appendChild(leftImg); hdr.appendChild(leftBrandLogo);
   const titleBox = el('div', { class: 'cs-titlebox' }, [
     // Show project title (not client/company) above the date
-    el('div', { class: 'cs-brand', 'data-editable': 'true', contenteditable: 'true', text: (project?.title || 'WKK.') }),
+    el('div', { class: 'cs-brand', 'data-callsheet-meta': 'projectTitle', 'data-editable': 'true', contenteditable: 'true', text: (project?.title || 'WKK.') }),
     // Always default to today's date when building the call sheet
-    el('div', { class: 'cs-date', 'data-editable': 'true', contenteditable: 'true', text: (new Date().toLocaleDateString('en-GB')) }),
+    el('div', { class: 'cs-date', 'data-callsheet-meta': 'date', 'data-editable': 'true', contenteditable: 'true', text: (new Date().toLocaleDateString('en-GB')) }),
     el('div', { class: 'cs-title', text: 'CALL SHEET' })
   ]);
   hdr.appendChild(titleBox);
@@ -277,7 +277,20 @@ export function buildCallSheetPage(project, reservations, opts = {}) {
   const leftVal = (text = '') => el('td', { 'data-editable': 'true', contenteditable: 'true', text });
   const leftTable = el('table', { class: 'cs-roles' });
   const ltBody = el('tbody');
-  ['Producer', 'Director', 'DOP', 'Production Manager', 'Assistant Director'].forEach((lab) => { const r = el('tr'); r.appendChild(leftCol(`${lab}:`)); r.appendChild(leftVal('')); ltBody.appendChild(r); });
+  [
+    ['Producer', 'producer'],
+    ['Director', 'director'],
+    ['DOP', 'dop'],
+    ['Production Manager', 'productionManager'],
+    ['Assistant Director', 'assistantDirector'],
+  ].forEach(([lab, roleKey]) => {
+    const r = el('tr');
+    r.appendChild(leftCol(`${lab}:`));
+    const valueCell = leftVal('');
+    valueCell.setAttribute('data-callsheet-role', roleKey);
+    r.appendChild(valueCell);
+    ltBody.appendChild(r);
+  });
   leftTable.appendChild(ltBody);
   // Attempt to auto-fill key roles from the selected reservation (Crew Assignments)
   try { if (res) autoFillHeaderRolesFromReservation(leftTable, res); } catch(_) {}
@@ -285,21 +298,28 @@ export function buildCallSheetPage(project, reservations, opts = {}) {
   const centerTable = el('table', { class: 'cs-center' });
   const ctBody = el('tbody');
   ctBody.appendChild(makeRow(el('td', { class: 'cs-notes-h', text: 'Important Notes' })));
-  ctBody.appendChild(makeRow(el('td', { class: 'cs-notes', 'data-editable': 'true', contenteditable: 'true', html: 'Please be on Time<br>Have Fun and make Art<br>If you need any help please contact the AD or Production manager' })));
+  ctBody.appendChild(makeRow(el('td', { class: 'cs-notes', 'data-callsheet-field': 'notes', 'data-editable': 'true', contenteditable: 'true', html: 'Please be on Time<br>Have Fun and make Art<br>If you need any help please contact the AD or Production manager' })));
   ctBody.appendChild(makeRow(el('td', { class: 'cs-section', text: 'Locations' })));
-  ctBody.appendChild(makeRow(el('td', { class: 'cs-locations', 'data-editable': 'true', contenteditable: 'true', text: '' })));
+  ctBody.appendChild(makeRow(el('td', { class: 'cs-locations', 'data-callsheet-field': 'locations', 'data-editable': 'true', contenteditable: 'true', text: '' })));
   centerTable.appendChild(ctBody);
 
   const rightTable = el('table', { class: 'cs-times' });
   const rtBody = el('tbody');
   [
-    ['Call Time',''],
+    ['Call Time','', 'callTime'],
     // Put company/client name into the Client field by default
-    ['Client', (project?.clientCompany || project?.clientName || project?.client || '')],
-    ['Ready to shoot',''],
-    ['Lunch',''],
-    ['Est. Wrap','']
-  ].forEach(([lab, val]) => { const r = el('tr'); r.appendChild(leftCol(`${lab}:`)); r.appendChild(leftVal(val)); rtBody.appendChild(r); });
+    ['Client', (project?.clientCompany || project?.clientName || project?.client || ''), 'client'],
+    ['Ready to shoot','', 'readyToShoot'],
+    ['Lunch','', 'lunch'],
+    ['Est. Wrap','', 'estWrap']
+  ].forEach(([lab, val, fieldKey]) => {
+    const r = el('tr');
+    r.appendChild(leftCol(`${lab}:`));
+    const valueCell = leftVal(val);
+    if (fieldKey) valueCell.setAttribute('data-callsheet-field', fieldKey);
+    r.appendChild(valueCell);
+    rtBody.appendChild(r);
+  });
   // Weather box under Est. Wrap (second cell only)
   const wRow = el('tr');
   wRow.appendChild(leftCol(''));
@@ -323,7 +343,7 @@ export function buildCallSheetPage(project, reservations, opts = {}) {
   const castCg = el('colgroup'); for (let i=0;i<8;i+=1) castCg.appendChild(el('col', { style: 'width:12.5%' }));
   cast.appendChild(castCg);
   // Header cell spans all columns
-  cb.appendChild(makeRow(el('td', { class: 'cs-cast-title', text: 'Cast Calls', colspan: '8', style: 'background:#2563EB !important;color:#ffffff !important;' })));
+  cb.appendChild(makeRow(el('td', { class: 'cs-cast-title', text: 'Cast Calls', colspan: '8' })));
   // Two data rows
   const castRow1 = el('tr');
   const castRow2 = el('tr');

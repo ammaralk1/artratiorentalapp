@@ -1,3 +1,6 @@
+import { initEnhancedSelects } from './ui/enhancedSelect.js';
+import { initDateTimePickers } from './ui/dateTimePicker.js';
+
 function getElements() {
   const sidebar = document.getElementById('dashboard-sidebar');
   const backdrop = document.getElementById('sidebar-backdrop');
@@ -67,6 +70,9 @@ function initDashboardGreetingToggle() {
 }
 
 export function initDashboardShell() {
+  initEnhancedSelects(document);
+  initDateTimePickers(document);
+
   const elements = getElements();
   const { sidebar, backdrop, openTrigger, closeTrigger } = elements;
 

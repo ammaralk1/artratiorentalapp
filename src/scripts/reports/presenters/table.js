@@ -12,7 +12,7 @@ export function renderReservationsTable(reservations, customers, technicians) {
     .filter((reservation) => ensureReportStatus(reservation)?.confirmed);
 
   if (confirmedReservations.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" class="text-base-content/60">${translate('reservations.reports.table.emptyPeriod', 'لا توجد بيانات في هذه الفترة.', 'No data for this period.')}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" class="text-base-content/60">${translate('reservations.reports.table.emptyPeriod', 'لا توجد بيانات في هذه الفترة.', 'No data for this period.')}</td></tr>`;
     return [];
   }
 
@@ -36,9 +36,9 @@ export function renderReservationsTable(reservations, customers, technicians) {
     discount: translate('reservations.reports.results.headers.discount', 'الخصم', 'Discount'),
     tax: translate('reservations.reports.results.headers.tax', 'الضريبة', 'Tax'),
     total: translate('reservations.reports.results.headers.total', 'الإجمالي', 'Total'),
-    share: translate('reservations.reports.results.headers.share', 'نسبة الشركة', 'Company share'),
-    sharePercent: translate('reservations.reports.results.headers.sharePercent', 'نسبة الشركة %', 'Company share %'),
-    shareAmount: translate('reservations.reports.results.headers.shareAmount', 'مبلغ نسبة الشركة', 'Company share amount'),
+    share: translate('reservations.reports.results.headers.share', 'المصاريف التشغيلية', 'Company overhead'),
+    sharePercent: translate('reservations.reports.results.headers.sharePercent', 'المصاريف التشغيلية %', 'Company overhead %'),
+    shareAmount: translate('reservations.reports.results.headers.shareAmount', 'مبلغ المصاريف التشغيلية', 'Company overhead amount'),
     net: translate('reservations.reports.results.headers.net', 'صافي الربح', 'Net profit'),
   };
 
@@ -196,46 +196,43 @@ function renderPagination(totalItems) {
   const rangeStart = totalItems === 0 ? 0 : (page - 1) * pageSize + 1;
   const rangeEnd = Math.min(page * pageSize, totalItems);
 
-  // إذا لم نكن بحاجة للترقيم (كل النتائج في صفحة واحدة) نخفي الأسهم وخيارات الحجم
-  if (totalItems <= pageSize) {
-    host.innerHTML = `<div class="page-info">${formatNumber(rangeStart)}–${formatNumber(rangeEnd)} / ${formatNumber(totalItems)}</div>`;
+  if (totalPages <= 1) {
+    host.hidden = true;
+    host.innerHTML = '';
     return;
   }
 
+  const navLabel = translate('projects.pagination.navigation', 'التنقل بين صفحات النتائج', 'Results pagination');
+  const prevLabel = translate('projects.pagination.prev', 'السابق', 'Previous page');
+  const nextLabel = translate('projects.pagination.next', 'التالي', 'Next page');
+  const pageLabelTemplate = translate('projects.pagination.page', 'صفحة {page}', 'Page {page}');
+  const rangeTemplate = translate('projects.pagination.range', '{from}-{to} من {total}', '{from}-{to} of {total}');
+  const rangeText = rangeTemplate
+    .replace('{from}', formatNumber(rangeStart))
+    .replace('{to}', formatNumber(rangeEnd))
+    .replace('{total}', formatNumber(totalItems));
+  const pages = Array.from({ length: totalPages }, (_, index) => index + 1);
+
+  host.hidden = false;
   host.innerHTML = `
-    <div class="pager">
-      <button type="button" ${prevDisabled} data-page="prev">◀</button>
-      <button type="button" ${nextDisabled} data-page="next">▶</button>
-    </div>
-    <div class="page-info">${formatNumber(rangeStart)}–${formatNumber(rangeEnd)} / ${formatNumber(totalItems)}</div>
-    <div class="pager page-size">
-      <label>${translate('reservations.reports.pageSize', 'لكل صفحة', 'Per page')}</label>
-      <button type="button" data-size="25">25</button>
-      <button type="button" data-size="50">50</button>
-      <button type="button" data-size="100">100</button>
+    <div class="list-pagination__summary text-muted small">${escapeHtml(rangeText)}</div>
+    <div class="list-pagination__controls btn-group" role="group" aria-label="${escapeHtml(navLabel)}">
+      <button type="button" class="btn btn-sm btn-outline-primary" data-reports-table-page="${Math.max(1, page - 1)}" ${prevDisabled} aria-label="${escapeHtml(prevLabel)}">‹</button>
+      ${pages.map((pageNumber) => {
+        const isActive = pageNumber === page;
+        const label = pageLabelTemplate.replace('{page}', formatNumber(pageNumber));
+        return `<button type="button" class="btn btn-sm ${isActive ? 'btn-primary' : 'btn-outline-primary'}" data-reports-table-page="${pageNumber}" aria-label="${escapeHtml(label)}" ${isActive ? 'aria-current="page"' : ''}>${escapeHtml(formatNumber(pageNumber))}</button>`;
+      }).join('')}
+      <button type="button" class="btn btn-sm btn-outline-primary" data-reports-table-page="${Math.min(totalPages, page + 1)}" ${nextDisabled} aria-label="${escapeHtml(nextLabel)}">›</button>
     </div>
   `;
-  host.querySelector('[data-page="prev"]')?.addEventListener('click', () => {
-    if (reportsState.pagination.page > 1) {
-      reportsState.pagination.page -= 1;
+
+  host.querySelectorAll('[data-reports-table-page]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const nextPage = Number(button.getAttribute('data-reports-table-page'));
+      if (!Number.isFinite(nextPage) || nextPage < 1 || nextPage === reportsState.pagination.page) return;
+      reportsState.pagination.page = nextPage;
       reportsState.callbacks.onRender?.();
-    }
-  });
-  host.querySelector('[data-page="next"]')?.addEventListener('click', () => {
-    const totalPagesLocal = Math.max(1, Math.ceil(totalItems / reportsState.pagination.pageSize));
-    if (reportsState.pagination.page < totalPagesLocal) {
-      reportsState.pagination.page += 1;
-      reportsState.callbacks.onRender?.();
-    }
-  });
-  host.querySelectorAll('[data-size]')?.forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const size = Number(btn.dataset.size);
-      if (Number.isFinite(size) && size > 0) {
-        reportsState.pagination.pageSize = size;
-        reportsState.pagination.page = 1;
-        reportsState.callbacks.onRender?.();
-      }
     });
   });
 }
@@ -270,16 +267,36 @@ function formatReservationRow(reservation, customerMap, technicianMap) {
   const totalLabel = formatCurrency(financials.finalTotal);
   const shareLabel = financials.companySharePercent > 0
     ? `${formatNumber(financials.companySharePercent)}% (${formatCurrency(financials.companyShareAmount)})`
-    : translate('reservations.reports.results.share.none', 'بدون نسبة الشركة', 'No company share');
+    : translate('reservations.reports.results.share.none', 'بدون المصاريف التشغيلية', 'No operating overhead');
   const netLabel = formatCurrency(financials.netProfit);
   const equipmentCostLabel = formatCurrency(financials.equipmentCostTotal ?? 0);
 
-  const customerHtml = escapeHtml(customerName);
+  const companyName = typeof customer?.companyName === 'string' ? customer.companyName.trim() : '';
+  const customerPhone = typeof customer?.phone === 'string' ? customer.phone.trim() : '';
+  const customerMeta = [companyName, customerPhone].filter(Boolean).join(' • ');
+  const customerHtml = `
+    <div class="reports-row-title">
+      <span class="reports-row-title__main">${escapeHtml(customerName)}</span>
+      ${customerMeta ? `<span class="reports-row-title__sub">${escapeHtml(customerMeta)}</span>` : ''}
+    </div>
+  `;
+  const dateMain = reservation?.start ? formatDateInput(reservation.start) : translate('common.placeholder.empty', '—', '—');
+  const daysLabel = translate(
+    'reservations.reports.results.meta.daysCount',
+    '{count} أيام',
+    '{count} days',
+  ).replace('{count}', formatNumber(financials.rentalDays ?? 0));
+  const dateHtml = `
+    <div class="reports-date-stack">
+      <span class="reports-date-stack__main">${escapeHtml(dateMain)}</span>
+      <span class="reports-date-stack__sub">${escapeHtml(daysLabel)}</span>
+    </div>
+  `;
 
   return {
     code: { html: escapeHtml(codeText), text: codeText },
     customer: { html: customerHtml, text: customerName },
-    date: { html: escapeHtml(dateLabel), text: dateLabel },
+    date: { html: dateHtml, text: dateLabel },
     status: statusChip,
     payment: { html: paymentHtml, text: paymentChip.text },
     total: { html: escapeHtml(totalLabel), text: totalLabel },

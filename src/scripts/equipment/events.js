@@ -26,7 +26,8 @@ import {
   getEquipmentFormElements,
 } from './modal.js';
 import { clearEquipmentVariants, getVariantsForItem } from './variants.js';
-import { downloadEquipmentToExcel } from './excel.js';
+import { downloadEquipmentToExcel, uploadEquipmentFromExcel } from './excel.js';
+import { refreshEnhancedSelect } from '../ui/enhancedSelect.js';
 
 // ── List event delegation ─────────────────────────────────────────────────────
 
@@ -126,13 +127,59 @@ function handleEquipmentSearch() {
   renderEquipment();
 }
 
+function handleEquipmentClearSearch() {
+  const searchInput = document.getElementById('search-equipment');
+  const statusSelect = document.getElementById('filter-status');
+  const categorySelect = document.getElementById('filter-category');
+  const subSelect = document.getElementById('filter-sub');
+
+  if (searchInput) searchInput.value = '';
+  if (statusSelect) {
+    statusSelect.value = '';
+    refreshEnhancedSelect(statusSelect);
+  }
+  if (categorySelect) {
+    categorySelect.value = '';
+    refreshEnhancedSelect(categorySelect);
+  }
+  if (subSelect) {
+    subSelect.value = '';
+    refreshEnhancedSelect(subSelect);
+  }
+
+  state.lastFilterSignature = '';
+  state.pagination.page = 1;
+  renderEquipment();
+}
+
 // ── Main UI wiring ────────────────────────────────────────────────────────────
 
 function wireUpEquipmentUI() {
-  document.getElementById('search-equipment')?.addEventListener('input', handleEquipmentSearch);
-  document.getElementById('filter-category')?.addEventListener('change', handleEquipmentSearch);
-  document.getElementById('filter-sub')?.addEventListener('change', handleEquipmentSearch);
-  document.getElementById('filter-status')?.addEventListener('change', handleEquipmentSearch);
+  const searchInput = document.getElementById('search-equipment');
+  if (searchInput && !searchInput.dataset.listenerAttached) {
+    searchInput.addEventListener('input', handleEquipmentSearch);
+    searchInput.dataset.listenerAttached = 'true';
+  }
+  const categoryFilter = document.getElementById('filter-category');
+  if (categoryFilter && !categoryFilter.dataset.listenerAttached) {
+    categoryFilter.addEventListener('change', handleEquipmentSearch);
+    categoryFilter.dataset.listenerAttached = 'true';
+  }
+  const subFilter = document.getElementById('filter-sub');
+  if (subFilter && !subFilter.dataset.listenerAttached) {
+    subFilter.addEventListener('change', handleEquipmentSearch);
+    subFilter.dataset.listenerAttached = 'true';
+  }
+  const statusFilter = document.getElementById('filter-status');
+  if (statusFilter && !statusFilter.dataset.listenerAttached) {
+    statusFilter.addEventListener('change', handleEquipmentSearch);
+    statusFilter.dataset.listenerAttached = 'true';
+  }
+  const clearSearchButton = document.getElementById('equipment-clear-search');
+  if (clearSearchButton && !clearSearchButton.dataset.listenerAttached) {
+    clearSearchButton.addEventListener('click', handleEquipmentClearSearch);
+    clearSearchButton.dataset.listenerAttached = 'true';
+  }
   document.getElementById('add-equipment-form')?.addEventListener('submit', handleAddEquipmentSubmit);
 
   attachEnglishDigitNormalizer(document.getElementById('new-equipment-barcode'));
@@ -172,6 +219,25 @@ function wireUpEquipmentUI() {
       });
     });
     excelDownloadBtn.dataset.listenerAttached = 'true';
+  }
+
+  const excelUploadInput = document.getElementById('excel-upload');
+  const excelUploadTrigger = document.getElementById('excel-upload-trigger');
+  if (excelUploadTrigger && excelUploadInput && !excelUploadTrigger.dataset.listenerAttached) {
+    excelUploadTrigger.addEventListener('click', (event) => {
+      event.preventDefault();
+      excelUploadInput.click();
+    });
+    excelUploadTrigger.dataset.listenerAttached = 'true';
+  }
+  if (excelUploadInput && !excelUploadInput.dataset.listenerAttached) {
+    excelUploadInput.addEventListener('change', async (event) => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      await uploadEquipmentFromExcel(file);
+      event.target.value = '';
+    });
+    excelUploadInput.dataset.listenerAttached = 'true';
   }
 
   const equipmentList = document.getElementById('equipment-list');
@@ -249,11 +315,7 @@ document.getElementById('save-equipment-changes')?.addEventListener('click', asy
 
 // ── DOM lifecycle & cross-module events ──────────────────────────────────────
 
-document.addEventListener('DOMContentLoaded', () => {
-  wireUpEquipmentUI();
-  renderEquipment();
-  refreshEquipmentFromApi();
-
+function setupEquipmentModalLifecycle() {
   const cancelEditBtn = document.getElementById('equipment-edit-cancel');
   if (cancelEditBtn && !cancelEditBtn.dataset.listenerAttached) {
     cancelEditBtn.addEventListener('click', () => {
@@ -279,6 +341,38 @@ document.addEventListener('DOMContentLoaded', () => {
     saveButton.dataset.listenerAttached = 'true';
     if (!saveButton.dataset.mode) saveButton.dataset.mode = 'view';
   }
+
+  const modalElement = document.getElementById('editEquipmentModal');
+  if (modalElement && !modalElement.dataset.variantsListenerAttached) {
+    modalElement.addEventListener('show.bs.modal', () => {
+      document.body.classList.add('equipment-details-modal-open');
+    });
+    modalElement.addEventListener('hidden.bs.modal', () => {
+      document.body.classList.remove('equipment-details-modal-open');
+      state.currentVariantsContext  = null;
+      state.activeEquipmentIndex    = null;
+      state.currentEquipmentSnapshot = null;
+      clearEquipmentVariants();
+      setEquipmentEditMode(false);
+    });
+    modalElement.dataset.variantsListenerAttached = 'true';
+  }
+}
+
+export function initEquipmentModule({ loadData = true, showToastOnError = true } = {}) {
+  wireUpEquipmentUI();
+  renderEquipment();
+  if (loadData) {
+    refreshEquipmentFromApi({ showToastOnError });
+  }
+  setupEquipmentModalLifecycle();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (!document.getElementById('equipment-tab')) {
+    return;
+  }
+  initEquipmentModule();
 });
 
 document.addEventListener('language:changed', () => {
@@ -310,20 +404,6 @@ document.addEventListener('equipment:changed', () => {
 document.addEventListener('reservations:changed', () => {
   syncEquipmentStatuses();
   renderEquipment();
-});
-
-document.addEventListener('DOMContentLoaded', () => {
-  const modalElement = document.getElementById('editEquipmentModal');
-  if (modalElement && !modalElement.dataset.variantsListenerAttached) {
-    modalElement.addEventListener('hidden.bs.modal', () => {
-      state.currentVariantsContext  = null;
-      state.activeEquipmentIndex    = null;
-      state.currentEquipmentSnapshot = null;
-      clearEquipmentVariants();
-      setEquipmentEditMode(false);
-    });
-    modalElement.dataset.variantsListenerAttached = 'true';
-  }
 });
 
 if (typeof document !== 'undefined' && !state.selectionChangeListenerAttached) {

@@ -1,6 +1,7 @@
 import { t } from './language.js';
 import { loadData } from './storage.js';
 import { showToast, normalizeNumbers } from './utils.js';
+import mountReservationModalsIfNeeded from './reservations/modals.js';
 import {
   resolveReservationProjectState,
   resolveEquipmentIdentifier,
@@ -128,6 +129,115 @@ function updateConfirmedControls(value, { disable = false } = {}) {
 
 function isReservationConfirmed() {
   return document.getElementById('edit-res-confirmed')?.value === 'true';
+}
+
+function getEditReservationModalElement() {
+  return document.getElementById('editReservationModal');
+}
+
+function setEditReservationCompletedState(value) {
+  const modal = getEditReservationModalElement();
+  if (!modal) return;
+  modal.dataset.reservationCompleted = value ? 'true' : 'false';
+}
+
+function isEditReservationCompleted() {
+  return getEditReservationModalElement()?.dataset?.reservationCompleted === 'true';
+}
+
+function getEditReservationLifecycleState() {
+  const cancelled = document.getElementById('edit-res-cancelled')?.checked === true;
+  if (cancelled) return 'cancelled';
+  if (isEditReservationCompleted()) return 'completed';
+  return isReservationConfirmed() ? 'confirmed' : 'pending';
+}
+
+function getEditReservationStatusBadgeConfig(state) {
+  switch (state) {
+    case 'confirmed':
+      return {
+        text: t('reservations.edit.status.current.confirmed', '✅ مؤكد'),
+        className: 'reservation-edit-status-badge--confirmed',
+      };
+    case 'completed':
+      return {
+        text: t('reservations.edit.status.current.completed', '🔒 مغلق'),
+        className: 'reservation-edit-status-badge--completed',
+      };
+    case 'cancelled':
+      return {
+        text: t('reservations.edit.status.current.cancelled', '❌ ملغي'),
+        className: 'reservation-edit-status-badge--cancelled',
+      };
+    default:
+      return {
+        text: t('reservations.edit.status.current.pending', '⏳ غير مؤكد'),
+        className: 'reservation-edit-status-badge--pending',
+      };
+  }
+}
+
+function buildEditReservationStatusActions({ state, projectLinked = false } = {}) {
+  if (projectLinked) return [];
+
+  switch (state) {
+    case 'completed':
+      return [
+        { value: 'reopen', label: t('reservations.edit.statusActions.reopen', 'إلغاء الإغلاق') },
+      ];
+    case 'cancelled':
+      return [
+        { value: 'restoreCancelled', label: t('reservations.edit.statusActions.restoreCancelled', 'إلغاء الإلغاء') },
+      ];
+    case 'confirmed':
+      return [
+        { value: 'markPending', label: t('reservations.edit.statusActions.markPending', 'إرجاعه إلى غير مؤكد') },
+        { value: 'cancel', label: t('reservations.edit.statusActions.cancel', 'إلغاء الحجز') },
+        { value: 'close', label: t('reservations.edit.statusActions.close', 'إغلاق الحجز') },
+      ];
+    default:
+      return [
+        { value: 'confirm', label: t('reservations.edit.statusActions.confirm', 'تأكيد الحجز') },
+        { value: 'cancel', label: t('reservations.edit.statusActions.cancel', 'إلغاء الحجز') },
+      ];
+  }
+}
+
+function refreshEditReservationStatusCard({ projectLinked = false } = {}) {
+  const badge = document.getElementById('edit-res-status-badge');
+  const actionSelect = document.getElementById('edit-res-status-action');
+  const applyButton = document.getElementById('edit-res-status-apply');
+  const hint = getEditReservationModalElement()?.querySelector('.reservation-status-card__hint');
+  const state = getEditReservationLifecycleState();
+  const badgeConfig = getEditReservationStatusBadgeConfig(state);
+  const actions = buildEditReservationStatusActions({ state, projectLinked });
+
+  if (badge) {
+    badge.textContent = badgeConfig.text;
+    badge.className = `reservation-edit-status-badge ${badgeConfig.className}`;
+  }
+
+  if (actionSelect) {
+    const currentValue = actionSelect.value;
+    const placeholder = t('reservations.edit.statusCard.actionPlaceholder', 'اختر الإجراء');
+    actionSelect.innerHTML = [
+      `<option value="">${placeholder}</option>`,
+      ...actions.map((action) => `<option value="${action.value}">${action.label}</option>`),
+    ].join('');
+    actionSelect.value = actions.some((action) => action.value === currentValue) ? currentValue : '';
+    actionSelect.disabled = projectLinked || actions.length === 0;
+  }
+
+  if (applyButton) {
+    const hasAction = Boolean(actionSelect?.value);
+    applyButton.disabled = projectLinked || !hasAction;
+  }
+
+  if (hint) {
+    hint.textContent = projectLinked
+      ? t('reservations.edit.statusActions.linkedHint', 'تتبع حالة هذا الحجز المشروع المرتبط به.')
+      : t('reservations.edit.statusActions.emptyHint', 'اختر الإجراء المناسب ثم طبقه على الحجز.');
+  }
 }
 
 export function getEditingState() {
@@ -728,7 +838,7 @@ function syncEditTaxAndShare(source) {
 
       if (taxCheckbox.disabled) {
         shareCheckbox.checked = false;
-        showToast(t('reservations.toast.companyShareRequiresTax', '⚠️ لا يمكن تفعيل نسبة الشركة بدون تفعيل الضريبة'));
+        showToast(t('reservations.toast.companyShareRequiresTax', '⚠️ لا يمكن تفعيل المصاريف التشغيلية بدون تفعيل الضريبة'));
         finalize();
         return;
       }
@@ -800,6 +910,7 @@ export async function editReservation(index, {
     effectiveConfirmed: initialConfirmed,
     projectLinked
   } = resolveReservationProjectState(reservation, project);
+  const initialLifecycleStatus = String(reservation?.status || reservation?.reservationStatus || '').toLowerCase();
 
   const normalizedItems = reservation.items
     ? reservation.items.map(item => ({
@@ -901,20 +1012,7 @@ export async function editReservation(index, {
   }
 
   updateConfirmedControls(initialConfirmed, { disable: projectLinked });
-  const closeBtnInit = document.getElementById('edit-res-close-btn');
-  const reopenBtnInit = document.getElementById('edit-res-reopen-btn');
-  if (closeBtnInit) closeBtnInit.disabled = !(initialConfirmed && !projectLinked) || String(reservation.status || '').toLowerCase() === 'completed';
-  if (reopenBtnInit) reopenBtnInit.disabled = String(reservation.status || '').toLowerCase() !== 'completed';
-
-  const paidSelect = document.getElementById('edit-res-paid');
-  const initialPaidStatus = reservation.paidStatus
-    ?? (reservation.paid === true || reservation.paid === 'paid' ? 'paid' : 'unpaid');
-  if (paidSelect) {
-    paidSelect.value = initialPaidStatus;
-    if (paidSelect.dataset) {
-      delete paidSelect.dataset.userSelected;
-    }
-  }
+  setEditReservationCompletedState(initialLifecycleStatus === 'completed');
 
   const paymentProgressTypeSelect = document.getElementById('edit-res-payment-progress-type');
   const paymentProgressValueInput = document.getElementById('edit-res-payment-progress-value');
@@ -932,8 +1030,7 @@ export async function editReservation(index, {
   // Initialize cancelled control if present
   const cancelledCheckboxInit = document.getElementById('edit-res-cancelled');
   if (cancelledCheckboxInit) {
-    const rawStatus = String(reservation?.status || reservation?.reservationStatus || '').toLowerCase();
-    cancelledCheckboxInit.checked = ['cancelled', 'canceled'].includes(rawStatus);
+    cancelledCheckboxInit.checked = ['cancelled', 'canceled'].includes(initialLifecycleStatus);
     if (cancelledCheckboxInit.checked) {
       updateConfirmedControls(initialConfirmed, { disable: true });
     }
@@ -966,9 +1063,14 @@ export async function editReservation(index, {
   }
   updateEditProjectTaxState();
   updateEditReservationSummary?.();
+  refreshEditReservationStatusCard({ projectLinked });
 
   const modalElement = document.getElementById('editReservationModal');
+  mountReservationModalsIfNeeded();
   modalInstance = ensureModalInstance(modalElement, ensureModal);
+  if (modalElement) {
+    document.body.classList.add('reservation-modal-open');
+  }
   modalInstance?.show?.();
 
   // Ensure action handlers are (re)attached after modal content is present
@@ -1006,9 +1108,7 @@ export async function saveReservationChanges({
   let discount = parseFloat(discountRaw) || 0;
   let discountType = document.getElementById('edit-res-discount-type')?.value || 'percent';
   const confirmed = isReservationConfirmed();
-  const paymentSelect = document.getElementById('edit-res-paid');
-  const manualPaidOverride = paymentSelect?.dataset?.userSelected === 'true';
-  const paidStatus = manualPaidOverride ? (paymentSelect?.value || 'unpaid') : 'unpaid';
+  const paidStatus = 'unpaid';
   const paymentProgressTypeSelect = document.getElementById('edit-res-payment-progress-type');
   const paymentProgressValueInput = document.getElementById('edit-res-payment-progress-value');
   const paymentProgressType = getEditPaymentProgressType(paymentProgressTypeSelect);
@@ -1049,6 +1149,31 @@ export async function saveReservationChanges({
 
   if (!Array.isArray(editingItems) || (editingItems.length === 0 && crewAssignments.length === 0)) {
     showToast(t('reservations.toast.updateNoItems', '⚠️ يجب إضافة معدة أو عضو واحد من الطاقم الفني على الأقل للحجز'));
+    return;
+  }
+
+  const unassignedCrewAssignments = Array.isArray(crewAssignments)
+    ? crewAssignments.filter((assignment) => !assignment?.technicianId)
+    : [];
+  if (unassignedCrewAssignments.length > 0) {
+    const labels = unassignedCrewAssignments
+      .slice(0, 3)
+      .map((assignment) => normalizeNumbers(
+        assignment?.positionLabel
+          || assignment?.position_label
+          || assignment?.position_name
+          || assignment?.role
+          || assignment?.position
+          || t('reservations.crew.positionFallback', 'منصب بدون اسم')
+      ))
+      .join(t('reservations.list.crew.separator', '، '));
+    const suffix = unassignedCrewAssignments.length > 3 ? '…' : '';
+    showToast(
+      t('reservations.toast.unassignedCrew', '⚠️ يجب تعيين عضو طاقم لكل منصب قبل حفظ الحجز')
+      + (labels ? `: ${labels}${suffix}` : ''),
+      'warning',
+      5000
+    );
     return;
   }
 
@@ -1292,7 +1417,7 @@ export async function saveReservationChanges({
   }
 
   if (!helperProjectLinked && shareChecked !== taxChecked) {
-    showToast(t('reservations.toast.companyShareRequiresTax', '⚠️ لا يمكن تفعيل نسبة الشركة بدون تفعيل الضريبة'));
+    showToast(t('reservations.toast.companyShareRequiresTax', '⚠️ لا يمكن تفعيل المصاريف التشغيلية بدون تفعيل الضريبة'));
     return;
   }
 
@@ -1451,12 +1576,6 @@ export async function saveReservationChanges({
     paidPercent: paymentProgress.paidPercent,
     totalAmount,
   });
-  if (paymentSelect && !manualPaidOverride) {
-    paymentSelect.value = effectivePaidStatus;
-    if (paymentSelect.dataset) {
-      delete paymentSelect.dataset.userSelected;
-    }
-  }
 
   let statusForPayload = reservation.status ?? 'pending';
   if (helperProjectLinked) {
@@ -1587,6 +1706,97 @@ export async function saveReservationChanges({
   }
 }
 
+function openEditReservationCloseFlow() {
+  try {
+    const { index } = getEditingState();
+    const modal = document.getElementById('closeReservationModal');
+    const notesArea = document.getElementById('close-reservation-notes');
+    const submit = document.getElementById('close-reservation-submit');
+    const currentNotes = document.getElementById('edit-res-notes')?.value || '';
+    if (notesArea) notesArea.value = currentNotes;
+    if (submit && submit.__tmpCloseListener) {
+      submit.removeEventListener('click', submit.__tmpCloseListener);
+      submit.__tmpCloseListener = null;
+    }
+    if (submit) {
+      const handler = async () => {
+        const notes = notesArea?.value || '';
+        try {
+          await closeReservationAction(index, notes, { onAfterChange: modalEventsContext?.handleReservationsMutation });
+          setEditReservationCompletedState(true);
+          refreshEditReservationStatusCard({ projectLinked: Boolean(document.getElementById('edit-res-project')?.value) });
+        } finally {
+          try {
+            const inst = (window.bootstrap?.Modal || bootstrap?.Modal)?.getInstance?.(modal) || (window.bootstrap?.Modal || bootstrap?.Modal)?.getOrCreateInstance?.(modal);
+            inst?.hide?.();
+          } catch (_) { /* ignore */ }
+        }
+      };
+      submit.__tmpCloseListener = handler;
+      submit.addEventListener('click', handler, { once: true });
+    }
+    if (modal && (window.bootstrap?.Modal || (typeof bootstrap !== 'undefined' && bootstrap?.Modal))) {
+      const inst = (window.bootstrap?.Modal || bootstrap.Modal).getOrCreateInstance(modal);
+      inst.show();
+    }
+  } catch (e) {
+    console.warn('[reservationsEdit] failed to open close modal', e);
+  }
+}
+
+async function reopenEditReservation() {
+  const { index } = getEditingState();
+  await reopenReservationAction(index, { onAfterChange: modalEventsContext?.handleReservationsMutation });
+  setEditReservationCompletedState(false);
+  refreshEditReservationStatusCard({ projectLinked: Boolean(document.getElementById('edit-res-project')?.value) });
+}
+
+function applyEditReservationStatusAction(updateEditReservationSummary) {
+  const actionSelect = document.getElementById('edit-res-status-action');
+  const cancelledCheckbox = document.getElementById('edit-res-cancelled');
+  if (!actionSelect || !actionSelect.value) return;
+
+  const projectLinked = Boolean(document.getElementById('edit-res-project')?.value);
+  const action = actionSelect.value;
+
+  switch (action) {
+    case 'confirm':
+      if (cancelledCheckbox) cancelledCheckbox.checked = false;
+      updateConfirmedControls(true, { disable: false });
+      break;
+    case 'markPending':
+      if (cancelledCheckbox) cancelledCheckbox.checked = false;
+      updateConfirmedControls(false, { disable: false });
+      break;
+    case 'cancel':
+      if (cancelledCheckbox) cancelledCheckbox.checked = true;
+      updateConfirmedControls(isReservationConfirmed(), { disable: true });
+      break;
+    case 'restoreCancelled':
+      if (cancelledCheckbox) cancelledCheckbox.checked = false;
+      updateConfirmedControls(isReservationConfirmed(), { disable: projectLinked });
+      break;
+    case 'close':
+      openEditReservationCloseFlow();
+      actionSelect.value = '';
+      refreshEditReservationStatusCard({ projectLinked });
+      return;
+    case 'reopen':
+      reopenEditReservation().catch((error) => {
+        console.warn('[reservationsEdit] failed to reopen reservation', error);
+      });
+      actionSelect.value = '';
+      refreshEditReservationStatusCard({ projectLinked });
+      return;
+    default:
+      return;
+  }
+
+  actionSelect.value = '';
+  refreshEditReservationStatusCard({ projectLinked });
+  updateEditReservationSummary?.();
+}
+
 export function setupEditReservationModalEvents(context = {}) {
   modalEventsContext = { ...context };
 
@@ -1679,38 +1889,39 @@ export function setupEditReservationModalEvents(context = {}) {
       };
       const { effectiveConfirmed, projectLinked } = resolveReservationProjectState(reservationState, selectedProject);
       updateConfirmedControls(effectiveConfirmed, { disable: projectLinked });
+      refreshEditReservationStatusCard({ projectLinked });
       updateEditReservationSummary?.();
     });
     projectSelect.dataset.listenerAttached = 'true';
   }
 
-  const confirmedToggleBtn = document.getElementById('edit-res-confirmed-btn');
-  if (confirmedToggleBtn && !confirmedToggleBtn.dataset.listenerAttached) {
-    confirmedToggleBtn.addEventListener('click', () => {
-      if (confirmedToggleBtn.disabled) return;
-      const nextValue = !isReservationConfirmed();
-      updateConfirmedControls(nextValue);
-      const closeBtn = document.getElementById('edit-res-close-btn');
-      if (closeBtn) closeBtn.disabled = !nextValue;
-      updateEditReservationSummary?.();
-    });
-    confirmedToggleBtn.dataset.listenerAttached = 'true';
-  }
-
   const cancelledCheckbox = document.getElementById('edit-res-cancelled');
   if (cancelledCheckbox && !cancelledCheckbox.dataset.listenerAttached) {
     cancelledCheckbox.addEventListener('change', () => {
-      // Disable/enable the confirm toggle based on cancelled state
-      const btn = document.getElementById('edit-res-confirmed-btn');
-      if (btn) {
-        updateConfirmedControls(isReservationConfirmed(), { disable: cancelledCheckbox.checked });
-      }
-      const closeBtn = document.getElementById('edit-res-close-btn');
-      if (closeBtn) closeBtn.disabled = cancelledCheckbox.checked || !isReservationConfirmed();
+      updateConfirmedControls(isReservationConfirmed(), { disable: cancelledCheckbox.checked });
+      refreshEditReservationStatusCard({ projectLinked: Boolean(document.getElementById('edit-res-project')?.value) });
       updateEditReservationSummary?.();
     });
     cancelledCheckbox.dataset.listenerAttached = 'true';
   }
+
+  const statusActionSelect = document.getElementById('edit-res-status-action');
+  if (statusActionSelect && !statusActionSelect.dataset.listenerAttached) {
+    statusActionSelect.addEventListener('change', () => {
+      refreshEditReservationStatusCard({ projectLinked: Boolean(document.getElementById('edit-res-project')?.value) });
+    });
+    statusActionSelect.dataset.listenerAttached = 'true';
+  }
+
+  const statusApplyButton = document.getElementById('edit-res-status-apply');
+  if (statusApplyButton && !statusApplyButton.dataset.listenerAttached) {
+    statusApplyButton.addEventListener('click', () => {
+      applyEditReservationStatusAction(updateEditReservationSummary);
+    });
+    statusApplyButton.dataset.listenerAttached = 'true';
+  }
+
+  refreshEditReservationStatusCard({ projectLinked: Boolean(document.getElementById('edit-res-project')?.value) });
 
   const saveBtn = document.getElementById('save-reservation-changes');
   if (saveBtn && !saveBtn.dataset.listenerAttached) {
@@ -1720,64 +1931,6 @@ export function setupEditReservationModalEvents(context = {}) {
       });
     });
     saveBtn.dataset.listenerAttached = 'true';
-  }
-
-  const editCloseBtn = document.getElementById('edit-res-close-btn');
-  if (editCloseBtn && !editCloseBtn.dataset.listenerAttached) {
-    editCloseBtn.addEventListener('click', () => {
-      // Open the shared close modal and prepare a one-off submit for this editing index
-      try {
-        const { index } = getEditingState();
-        const modal = document.getElementById('closeReservationModal');
-        const notesArea = document.getElementById('close-reservation-notes');
-        const submit = document.getElementById('close-reservation-submit');
-        const currentNotes = document.getElementById('edit-res-notes')?.value || '';
-        if (notesArea) notesArea.value = currentNotes;
-        // Remove previous temporary listener if any
-        if (submit && submit.__tmpCloseListener) {
-          submit.removeEventListener('click', submit.__tmpCloseListener);
-          submit.__tmpCloseListener = null;
-        }
-        if (submit) {
-          const handler = async () => {
-            const notes = notesArea?.value || '';
-            try {
-              await closeReservationAction(index, notes, { onAfterChange: modalEventsContext?.handleReservationsMutation });
-            } finally {
-              try {
-                const inst = (window.bootstrap?.Modal || bootstrap?.Modal)?.getInstance?.(modal) || (window.bootstrap?.Modal || bootstrap?.Modal)?.getOrCreateInstance?.(modal);
-                inst?.hide?.();
-              } catch (_) { /* ignore */ }
-            }
-          };
-          submit.__tmpCloseListener = handler;
-          submit.addEventListener('click', handler, { once: true });
-        }
-        if (modal && (window.bootstrap?.Modal || (typeof bootstrap !== 'undefined' && bootstrap?.Modal))) {
-          const inst = (window.bootstrap?.Modal || bootstrap.Modal).getOrCreateInstance(modal);
-          inst.show();
-        }
-      } catch (e) {
-        console.warn('[reservationsEdit] failed to open close modal', e);
-      }
-    });
-    editCloseBtn.dataset.listenerAttached = 'true';
-  }
-
-  const editReopenBtn = document.getElementById('edit-res-reopen-btn');
-  if (editReopenBtn && !editReopenBtn.dataset.listenerAttached) {
-    editReopenBtn.addEventListener('click', async () => {
-      try {
-        const { index } = getEditingState();
-        await reopenReservationAction(index, { onAfterChange: modalEventsContext?.handleReservationsMutation });
-        // Reflect state in UI
-        try { document.getElementById('edit-res-close-btn').disabled = false; } catch (_) {}
-        try { editReopenBtn.disabled = true; } catch (_) {}
-      } catch (e) {
-        console.warn('[reservationsEdit] failed to reopen reservation', e);
-      }
-    });
-    editReopenBtn.dataset.listenerAttached = 'true';
   }
 
   const barcodeInput = document.getElementById('edit-res-equipment-barcode');

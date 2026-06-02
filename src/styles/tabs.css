@@ -37,11 +37,11 @@ body[dir="ltr"] .sub-tab-buttons {
   --tab-primary: var(--bo-color-action);
   --tab-primary-soft: var(--bo-color-action-soft);
   --tab-border: color-mix(in srgb, var(--tab-primary) 25%, transparent);
-  --tab-bg: linear-gradient(135deg, #f8faff, #e6edff);
-  --tab-bg-hover: linear-gradient(135deg, #eff4ff, #d6e1ff);
-  --tab-bg-active: linear-gradient(135deg, var(--tab-primary), var(--tab-primary-soft));
-  --tab-shadow-hover: 0 8px 18px color-mix(in srgb, var(--tab-primary) 20%, transparent), 0 0 0 4px color-mix(in srgb, var(--tab-primary) 18%, transparent);
-  --tab-shadow-active: 0 10px 24px color-mix(in srgb, var(--tab-primary) 28%, transparent), 0 0 18px color-mix(in srgb, var(--tab-primary-soft) 25%, transparent);
+  --tab-bg: var(--bo-color-tab-shell-bg);
+  --tab-bg-hover: var(--bo-color-tab-hover-bg);
+  --tab-bg-active: var(--bo-color-tab-active-bg);
+  --tab-shadow-hover: var(--bo-color-tab-hover-shadow);
+  --tab-shadow-active: var(--bo-color-tab-active-shadow);
 
   border: 1px solid var(--tab-border);
   background: var(--tab-bg);
@@ -51,7 +51,7 @@ body[dir="ltr"] .sub-tab-buttons {
   border-radius: 999px;
   font-weight: 600;
   transition: all 0.2s ease-in-out;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.06);
+  box-shadow: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -75,25 +75,25 @@ body[dir="ltr"] .sub-tab-buttons {
   border-color: transparent;
 }
 
-:is(html.dark-mode, body.dark-mode) .tab-button,
-:is(html.dark-mode, body.dark-mode) .sub-tab-button {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .tab-button,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .sub-tab-button {
   border: 1px solid color-mix(in srgb, var(--tab-primary) 25%, transparent);
-  background: linear-gradient(135deg, rgba(30, 42, 68, 0.95), rgba(24, 38, 64, 0.85));
+  background: var(--bo-color-content-muted-bg);
   color: var(--clr-text);
-  box-shadow: 0 4px 10px rgba(4, 10, 25, 0.55);
+  box-shadow: none;
 }
 
-:is(html.dark-mode, body.dark-mode) .tab-button:hover,
-:is(html.dark-mode, body.dark-mode) .sub-tab-button:hover {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .tab-button:hover,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .sub-tab-button:hover {
   background: var(--bo-color-tab-hover-bg);
   border-color: var(--bo-color-tab-hover-border);
   color: var(--bo-color-tab-active-fg);
   box-shadow: var(--bo-color-tab-hover-shadow);
 }
 
-:is(html.dark-mode, body.dark-mode) .tab-button.active,
-:is(html.dark-mode, body.dark-mode) .sub-tab-button.active,
-:is(html.dark-mode, body.dark-mode) .sub-tab-button.tab-active {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .tab-button.active,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .sub-tab-button.active,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .sub-tab-button.tab-active {
   background: var(--bo-color-tab-active-bg);
   border-color: var(--bo-color-tab-active-border);
   box-shadow: var(--bo-color-tab-active-shadow);
@@ -263,7 +263,7 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 }
 
 .crew-picker-modal__dialog {
-  max-width: min(96vw, 1080px);
+  max-width: min(98vw, 1280px);
 }
 
 /* Technicians: position summary alert themed styling */
@@ -275,7 +275,7 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   box-shadow: 0 10px 26px hsl(var(--bc) / 0.08);
 }
 
-:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .technician-position-summary {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .technician-position-summary {
   border-color: hsl(var(--p) / 0.3);
   background: linear-gradient(135deg, hsl(var(--b1) / 0.96), hsl(var(--b2) / 0.9));
   color: hsl(var(--bc));
@@ -284,13 +284,12 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 
 .crew-picker-modal {
   border-radius: 26px;
-  border: 1px solid hsl(var(--bc) / 0.08);
-  background: linear-gradient(145deg, hsl(var(--b1)), hsl(var(--b2) / 0.94));
-  box-shadow: 0 28px 64px hsl(var(--bc) / 0.14);
+  border: 1px solid var(--bo-color-content-border);
+  background: var(--bo-color-content-bg);
+  box-shadow: var(--bo-color-content-shadow-elevated);
   overflow: hidden;
-  /* Outline color used for position cards (fallbacks if theme vars missing) */
-  /* Use themed primary (blue) as outline, with safe fallback */
-  --crew-outline: hsl(var(--p, 220 90% 56%));
+  display: flex;
+  flex-direction: column;
 }
 
 .crew-picker-modal__header,
@@ -303,13 +302,13 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   display: flex;
   align-items: center;
   gap: 1rem;
-  border-bottom: 1px solid hsl(var(--bc) / 0.1);
+  border-bottom: 1px solid var(--bo-color-content-border);
 }
 
 .crew-picker-modal__title {
   margin: 0;
   font-weight: 700;
-  color: hsl(var(--bc));
+  color: var(--bo-color-text-primary);
   display: flex;
   align-items: center;
   gap: 0.6rem;
@@ -328,9 +327,10 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 /* Table colors aligned with global customer/technician tables */
 .positions-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 0.97rem;
-  background: var(--bo-color-table-row-bg);
+  background: transparent;
   color: var(--bo-color-text-primary, #1f2937);
 }
 
@@ -339,20 +339,22 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   color: var(--bo-color-table-head-fg);
   font-weight: 700;
   padding: 1.05rem 1.35rem;
-  border: 1px solid var(--bo-color-table-head-border);
+  border: 0;
+  border-bottom: 1px solid var(--bo-color-table-head-border);
   text-align: center;
   letter-spacing: 0.01em;
-  box-shadow: inset 0 -1px 0 var(--bo-color-table-head-border);
+  box-shadow: none;
 }
 
 .positions-table tbody td {
   padding: 1rem 1.35rem;
-  border: 1px solid var(--bo-color-table-row-border);
-  background: var(--bo-color-table-row-bg);
+  border: 0;
+  border-bottom: 1px solid var(--bo-color-table-row-border);
+  background: transparent;
   color: var(--bo-color-text-primary, #1f2937);
 }
 
-.positions-table tbody tr:hover { background: var(--bo-color-table-row-edit-bg); }
+.positions-table tbody tr:hover > * { background: var(--bo-color-table-row-edit-bg); }
 
 .positions-table .table-actions-head,
 .positions-table .table-actions-cell {
@@ -360,96 +362,128 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   white-space: nowrap;
 }
 
-:is(html.dark-mode, body.dark-mode, html.dark, body.dark) .positions-list-box .table-responsive {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .positions-list-box .table-responsive {
   border-color: var(--bo-color-content-border);
   background: var(--bo-color-content-bg);
   box-shadow: var(--bo-color-content-shadow-elevated);
 }
 
-:is(html.dark-mode, body.dark-mode, html.dark, body.dark) .positions-table {
-  background: var(--bo-color-table-row-bg);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .positions-table {
+  background: transparent;
   color: var(--bo-color-table-head-fg);
 }
 
-:is(html.dark-mode, body.dark-mode, html.dark, body.dark) .positions-table thead th {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .positions-table thead th {
   background: var(--bo-color-table-head-bg);
   border-color: var(--bo-color-table-head-border);
   color: var(--bo-color-table-head-fg);
+  box-shadow: none;
 }
 
-:is(html.dark-mode, body.dark-mode, html.dark, body.dark) .positions-table tbody td {
-  background: var(--bo-color-table-row-bg);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .positions-table tbody td {
+  background: transparent;
   border-color: var(--bo-color-table-row-border);
   color: var(--bo-color-table-head-fg);
 }
 
-:is(html.dark-mode, body.dark-mode, html.dark, body.dark) .positions-table tbody tr:hover {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .positions-table tbody tr:hover > * {
   background: var(--bo-color-table-row-edit-bg);
 }
 
 .crew-picker-modal__body {
-  background: hsl(var(--b1) / 0.98);
+  background: var(--bo-color-content-bg);
   padding: clamp(1rem, 3vw, 1.9rem) clamp(1.2rem, 3.2vw, 2.1rem);
+  max-height: calc(100dvh - 10.5rem);
+  overflow-y: auto;
 }
 
 .crew-picker-layout {
   --crew-picker-gap: clamp(1rem, 3vw, 1.4rem);
+  display: grid;
+  grid-template-columns: minmax(20rem, 24rem) minmax(0, 1fr);
+  column-gap: var(--crew-picker-gap);
   row-gap: var(--crew-picker-gap);
+  align-items: start;
 }
 
 .crew-picker-layout > * {
   margin-bottom: 0;
+  min-width: 0;
+  width: 100% !important;
+  max-width: 100% !important;
+  flex: none !important;
 }
 
 .crew-picker-panel {
-  background: hsl(var(--b1));
-  border: 1px solid hsl(var(--bc) / 0.1);
+  background: var(--bo-color-content-muted-bg);
+  border: 1px solid var(--bo-color-content-border);
   border-radius: 22px;
   padding: clamp(1rem, 3vw, 1.5rem);
-  box-shadow: 0 18px 40px hsl(var(--bc) / 0.08);
+  box-shadow: none;
   display: flex;
   flex-direction: column;
   gap: clamp(0.85rem, 2.4vw, 1.2rem);
-  min-height: 100%;
+  min-height: 0;
   overflow: visible;
+}
+
+.crew-picker-panel__hint {
+  margin: -0.2rem 0 0.8rem;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--bo-color-text-secondary);
+}
+
+.crew-picker-panel--positions {
+  gap: 0.85rem;
 }
 
 .crew-picker-panel--assignments {
   gap: clamp(0.85rem, 2vw, 1.1rem);
 }
 
-.crew-picker-panel--assignments .crew-assignment-table-wrapper {
+.crew-picker-panel--assignments .crew-assignment-table-shell {
   flex: 1;
+  min-height: 21rem;
+  max-height: min(50vh, 36rem);
+  overflow: auto;
+}
+
+@media (min-width: 768px) {
+  .crew-picker-panel--assignments {
+    position: sticky;
+    top: 0;
+  }
 }
 
 .crew-picker-label {
   font-weight: 700;
-  color: hsl(var(--bc) / 0.85);
+  color: var(--bo-color-text-primary);
   margin-bottom: 0;
 }
 
 .crew-picker-search {
   border-radius: 16px;
-  border: 1px solid hsl(var(--bc) / 0.16);
+  border: 1px solid var(--bo-color-control-border);
   padding: 0.75rem 1rem;
-  background: hsl(var(--b1));
-  color: inherit;
+  background: var(--bo-color-control-bg, var(--bo-color-content-bg));
+  color: var(--bo-color-text-primary);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .crew-picker-search::placeholder {
-  color: hsl(var(--bc) / 0.45);
+  color: var(--bo-color-text-secondary);
 }
 
 .crew-picker-search:focus {
-  border-color: hsl(var(--p));
-  box-shadow: 0 0 0 3px hsl(var(--p) / 0.2);
+  border-color: var(--bo-color-control-focus-border);
+  box-shadow: 0 0 0 3px rgba(86, 126, 86, 0.14);
 }
 
 .crew-picker-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: clamp(0.75rem, 2.4vw, 1.1rem);
+  gap: 0.7rem;
   align-content: flex-start;
   max-height: clamp(20rem, 58vh, 30rem);
   overflow-y: auto;
@@ -461,16 +495,17 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 }
 
 .crew-picker-list::-webkit-scrollbar-thumb {
-  background: hsl(var(--bc) / 0.24);
+  background: var(--bo-color-content-border);
   border-radius: 999px;
 }
 
 .crew-picker-selection-info {
   font-size: 0.9rem;
+  color: var(--bo-color-text-secondary);
 }
 
 .crew-picker-modal__footer {
-  border-top: 1px solid hsl(var(--bc) / 0.08);
+  border-top: 1px solid var(--bo-color-content-border);
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -483,13 +518,12 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 .crew-picker-apply-btn {
   padding-inline: 1.8rem;
   font-weight: 700;
-  box-shadow: 0 14px 32px hsl(var(--p) / 0.35);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: var(--bo-color-action-shadow);
+  transition: box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .crew-picker-apply-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 18px 40px hsl(var(--p) / 0.4);
+  box-shadow: var(--bo-color-action-shadow-hover);
 }
 
 
@@ -497,37 +531,34 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: clamp(0.85rem, 2.6vw, 1.2rem);
-  padding: clamp(1rem, 3vw, 1.45rem);
-  border-radius: 20px;
-  background: hsl(var(--b1));
-  /* Crisp red outline, themed with safe fallback */
-  border: 1px solid var(--crew-outline);
-  box-shadow:
-    0 0 0 2px var(--crew-outline) inset,
-    0 18px 40px hsl(var(--b1) / 0.14);
+  gap: 0.7rem;
+  padding: 0.82rem 0.88rem;
+  border-radius: 18px;
+  background: var(--bo-color-content-bg);
+  border: 1px solid var(--bo-color-content-border);
+  box-shadow: none;
   cursor: pointer;
-  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
 .crew-position-card__badge {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  min-width: 28px;
-  height: 28px;
-  padding: 0 8px;
+  top: 0.68rem;
+  right: 0.68rem;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 7px;
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: 0.72rem;
   line-height: 1;
-  background: hsl(var(--a) / 0.15);
-  color: hsl(var(--a));
-  border: 1px solid hsl(var(--a) / 0.5);
-  box-shadow: 0 6px 14px hsl(var(--a) / 0.25);
+  background: rgba(86, 126, 86, 0.14);
+  color: var(--bo-color-action-fg);
+  border: 1px solid rgba(86, 126, 86, 0.24);
+  box-shadow: none;
   pointer-events: none;
 }
 
@@ -537,11 +568,9 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 .crew-position-card:hover,
 .crew-position-card:focus-visible,
 .crew-position-card:focus-within {
-  border-color: var(--crew-outline);
-  box-shadow:
-    0 0 0 2px var(--crew-outline) inset,
-    0 22px 48px hsl(var(--p, 220 90% 56%) / 0.25);
-  transform: translateY(-4px);
+  border-color: var(--bo-color-action-border);
+  box-shadow: var(--bo-color-content-shadow);
+  background: var(--bo-color-content-bg);
 }
 
 .crew-position-card:hover::before,
@@ -552,27 +581,27 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 }
 
 .crew-position-card:focus-visible {
-  outline: 3px solid var(--crew-outline);
+  outline: 3px solid var(--bo-color-control-focus-border);
   outline-offset: 2px;
 }
 
 .crew-position-card__header {
   display: flex;
   align-items: center;
-  gap: clamp(0.9rem, 2.6vw, 1.2rem);
+  gap: 0.78rem;
 }
 
 .crew-position-card__icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 48px;
-  min-height: 48px;
-  border-radius: 14px;
-  background: hsl(var(--p) / 0.15);
-  color: hsl(var(--p));
-  font-size: 1.5rem;
-  box-shadow: inset 0 0 0 1px hsl(var(--p) / 0.4);
+  min-width: 40px;
+  min-height: 40px;
+  border-radius: 12px;
+  background: var(--bo-color-content-muted-bg);
+  color: var(--bo-color-action-fg);
+  font-size: 1.2rem;
+  box-shadow: inset 0 0 0 1px var(--bo-color-content-border);
 }
 
 .crew-position-card__titles {
@@ -580,83 +609,85 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.18rem;
 }
 
 .crew-position-card__title {
   margin: 0;
   font-weight: 700;
-  font-size: clamp(1.05rem, 2vw, 1.2rem);
-  color: hsl(var(--bc));
+  font-size: clamp(0.96rem, 1.65vw, 1.06rem);
+  color: var(--bo-color-text-primary);
+  line-height: 1.35;
 }
 
 .crew-position-card__subtitle {
-  font-size: 0.85rem;
-  color: hsl(var(--bc) / 0.6);
+  font-size: 0.79rem;
+  color: var(--bo-color-text-secondary);
+  line-height: 1.35;
 }
 
 .crew-position-card__metrics {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: clamp(0.7rem, 2.4vw, 1.1rem);
+  grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+  gap: 0.55rem;
 }
 
 .crew-position-card__metric {
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
-  padding: 0.75rem 0.9rem;
-  border-radius: 16px;
-  border: 1px solid hsl(var(--bc) / 0.14);
-  background: hsl(var(--b1) / 0.98);
-  box-shadow: inset 0 0 0 1px hsl(var(--bc) / 0.04);
+  gap: 0.28rem;
+  padding: 0.58rem 0.72rem;
+  border-radius: 14px;
+  border: 1px solid var(--bo-color-content-border);
+  background: var(--bo-color-content-muted-bg);
+  box-shadow: none;
 }
 
 .crew-position-card__metric--accent {
-  border-color: hsl(var(--p) / 0.38);
-  background: hsl(var(--p) / 0.12);
-  box-shadow: inset 0 0 0 1px hsl(var(--p) / 0.2);
+  border-color: rgba(86, 126, 86, 0.26);
+  background: rgba(86, 126, 86, 0.08);
+  box-shadow: none;
 }
 
 .crew-position-card__metric-label {
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: hsl(var(--bc) / 0.55);
+  color: var(--bo-color-text-secondary);
 }
 
 .crew-position-card__metric--accent .crew-position-card__metric-label {
-  color: hsl(var(--p));
+  color: var(--bo-color-action-fg);
 }
 
 .crew-position-card__metric-value {
   font-weight: 700;
-  font-size: 1rem;
-  color: hsl(var(--bc));
+  font-size: 0.92rem;
+  color: var(--bo-color-text-primary);
 }
 
 .crew-position-card__metric--accent .crew-position-card__metric-value {
-  color: hsl(var(--p));
+  color: var(--bo-color-action-fg);
 }
 
 .crew-position-card__footer {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
   flex-wrap: wrap;
 }
 
 .crew-position-add-btn {
-  min-width: 120px;
+  min-width: 102px;
   font-weight: 600;
   border-radius: 999px;
-  padding-inline: 1.2rem;
+  padding-inline: 0.9rem;
+  min-height: 2.15rem;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .crew-position-add-btn:hover {
-  transform: translateY(-2px);
   box-shadow: var(--bo-color-action-shadow-hover);
 }
 
@@ -669,10 +700,11 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 
 /* Smaller edit button to avoid overflow */
 .crew-position-edit-btn {
-  min-width: 120px;
+  min-width: 102px;
   font-weight: 600;
   border-radius: 999px;
-  padding-inline: 1.0rem;
+  padding-inline: 0.82rem;
+  min-height: 2.15rem;
 }
 
 .crew-assignment-column {
@@ -681,7 +713,7 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 }
 
 #crew-position-list {
-  max-height: clamp(20rem, 58vh, 30rem);
+  max-height: clamp(22rem, 62vh, 34rem);
   overflow-y: auto;
 }
 
@@ -690,43 +722,47 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   flex-direction: column;
 }
 
-.crew-assignment-table-wrapper {
+.crew-assignment-table-shell {
   position: relative;
-  overflow: visible;
+  overflow: hidden;
   border-radius: 18px;
-  border: 1px solid hsl(var(--bc) / 0.12);
-  box-shadow: 0 16px 36px hsl(var(--bc) / 0.08);
-  background: hsl(var(--b1) / 0.98);
-  padding: clamp(0.75rem, 3vw, 1.3rem);
+  border: 1px solid var(--bo-color-content-border);
+  box-shadow: none;
+  background: var(--bo-color-content-bg);
+  padding: 0;
+  min-height: 21rem;
 }
 
-.crew-assignment-table-wrapper table {
+.crew-assignment-table-shell .crew-assignment-table {
   margin-bottom: 0;
   border-collapse: separate;
-  border-spacing: 0 8px;
+  border-spacing: 0;
   overflow: visible;
+  table-layout: fixed;
+  min-width: 58rem;
 }
 
-.crew-assignment-table-wrapper tbody tr {
-  background: hsl(var(--b1));
-  box-shadow: 0 8px 24px hsl(var(--bc) / 0.08);
-  border-radius: 16px;
-  border: 1px solid hsl(var(--bc) / 0.12);
+.crew-assignment-table-shell .crew-assignment-table tbody tr {
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+  border: none;
   position: relative;
   overflow: visible;
   z-index: 1;
   isolation: isolate;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: background-color 0.2s ease;
 }
 
-.crew-assignment-table-wrapper tbody tr td {
+.crew-assignment-table-shell .crew-assignment-table tbody tr td {
   border: none;
   vertical-align: middle;
   overflow: visible;
+  background: transparent;
 }
 
 .crew-assignment-cell-index {
-  width: 48px;
+  width: 4rem;
   text-align: center;
   font-weight: 600;
   color: hsl(var(--bc) / 0.85);
@@ -734,7 +770,8 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 }
 
 .crew-assignment-cell-position {
-  min-width: 160px;
+  width: 100%;
+  min-width: 18rem;
 }
 
 .crew-assignment-index-badge {
@@ -753,8 +790,8 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 
 .crew-assignment-position-card {
   border-radius: 14px;
-  border: 1px solid hsl(var(--bc) / 0.12);
-  background: hsl(var(--b1) / 0.98);
+  border: 1px solid var(--bo-color-content-border);
+  background: var(--bo-color-content-muted-bg);
   padding: 0.7rem 0.85rem;
   display: flex;
   flex-direction: column;
@@ -763,14 +800,14 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 
 .crew-assignment-position {
   font-weight: 600;
-  color: hsl(var(--bc) / 0.92);
+  color: var(--bo-color-text-primary);
 }
 
 .crew-assignment-position + small,
 .crew-assignment-cell-position .text-muted {
   display: block;
   font-size: 0.8rem;
-  color: hsl(var(--bc) / 0.6) !important;
+  color: var(--bo-color-text-secondary) !important;
 }
 
 .crew-assignment-price-chip {
@@ -779,39 +816,46 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   justify-content: center;
   border-radius: 999px;
   padding: 0.4rem 0.95rem;
-  background: hsl(var(--p) / 0.12);
-  color: hsl(var(--p));
+  background: rgba(86, 126, 86, 0.08);
+  color: var(--bo-color-action-fg);
   font-weight: 600;
-  min-width: 140px;
+  min-width: 11rem;
   text-align: center;
-  box-shadow: inset 0 0 0 1px hsl(var(--p) / 0.18);
+  box-shadow: inset 0 0 0 1px rgba(86, 126, 86, 0.18);
 }
 
-.crew-assignment-autocomplete-wrapper {
+.crew-assignment-select-wrapper {
   position: relative;
   width: 100%;
+  min-width: 0;
 }
 
-.crew-assignment-autocomplete {
+.crew-assignment-select-wrapper .enhanced-select,
+.crew-assignment-select-wrapper .enhanced-select__trigger,
+.crew-assignment-select {
   width: 100%;
+}
+
+.crew-assignment-select-wrapper .enhanced-select__trigger,
+.crew-assignment-select {
+  min-height: 3.1rem;
   border-radius: 14px;
-  border: 1px solid hsl(var(--bc) / 0.16);
-  background: hsl(var(--b1));
-  color: inherit;
   font-weight: 600;
-  padding: 0.55rem 0.95rem;
-  box-shadow: 0 10px 24px hsl(var(--bc) / 0.08);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
-.crew-assignment-autocomplete:focus {
-  border-color: hsl(var(--p));
-  box-shadow: 0 12px 28px hsl(var(--p) / 0.25);
-  outline: none;
+.crew-assignment-select-wrapper .enhanced-select__trigger {
+  text-align: start;
+  padding-inline: 1rem 2.7rem;
 }
 
-.crew-assignment-autocomplete::placeholder {
-  color: hsl(var(--bc) / 0.45);
+:where(html[dir='rtl']) .crew-assignment-select-wrapper .enhanced-select__trigger {
+  text-align: right;
+  padding-inline: 1rem 3rem;
+}
+
+:where(html[dir='rtl']) .crew-assignment-select-wrapper .enhanced-select__trigger::after {
+  inset-inline-start: 1.1rem;
+  inset-inline-end: auto;
 }
 
 .crew-assignment-empty-row td {
@@ -826,10 +870,11 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   justify-content: center;
   gap: 0.65rem;
   border-radius: 18px;
-  border: 1px dashed hsl(var(--bc) / 0.2);
-  background: hsl(var(--b1) / 0.96);
-  padding: 1.8rem clamp(1rem, 4vw, 2rem);
-  color: hsl(var(--bc) / 0.72);
+  border: 1px dashed var(--bo-color-content-border);
+  background: var(--bo-color-content-muted-bg);
+  padding: 2.25rem clamp(1rem, 4vw, 2rem);
+  color: var(--bo-color-text-secondary);
+  min-height: 15rem;
 }
 
 .crew-assignment-empty-icon {
@@ -840,7 +885,7 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 .crew-assignment-empty-text {
   margin: 0;
   font-weight: 600;
-  color: hsl(var(--bc) / 0.85);
+  color: var(--bo-color-text-primary);
 }
 
 .crew-assignment-empty-hint {
@@ -850,26 +895,31 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 
 .crew-assignment-cell-price {
   white-space: nowrap;
-  color: hsl(var(--bc) / 0.92);
+  color: var(--bo-color-text-primary);
   font-weight: 600;
   vertical-align: middle;
+  width: 13.25rem;
+  min-width: 13.25rem;
 }
 
 .crew-assignment-cell-member {
-  min-width: 220px;
+  width: 23.5rem;
+  min-width: 23.5rem;
   position: relative;
   overflow: visible;
   z-index: 200;
 }
 
 .crew-assignment-cell-actions {
-  width: 56px;
+  width: 8.5rem;
+  min-width: 8.5rem;
   text-align: center;
 }
 
 .crew-assignment-remove {
   border-radius: 999px;
-  padding-inline: 1.2rem;
+  width: 100%;
+  padding-inline: 0.9rem;
   font-weight: 600;
 }
 
@@ -882,42 +932,69 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   overflow: visible;
 }
 
-.crew-assignment-table-wrapper tbody tr:hover {
-  transform: translateY(-1px);
+.crew-assignment-table-shell .crew-assignment-table tbody tr:hover {
+  background: var(--bo-color-table-row-edit-bg);
   z-index: 10;
 }
 
-.crew-assignment-table-wrapper tbody tr:focus-within {
+.crew-assignment-table-shell .crew-assignment-table tbody tr:focus-within {
   z-index: 12;
-  box-shadow: 0 10px 28px hsl(var(--p) / 0.22);
-  border-color: hsl(var(--p) / 0.28);
+  background: var(--bo-color-table-row-edit-bg);
 }
 
-.crew-assignment-table-wrapper tbody tr td:first-child {
+.crew-assignment-table-shell .crew-assignment-table tbody tr td:first-child {
   border-top-left-radius: 12px;
   border-bottom-left-radius: 12px;
 }
 
-.crew-assignment-table-wrapper tbody tr td:last-child {
+.crew-assignment-table-shell .crew-assignment-table tbody tr td:last-child {
   border-top-right-radius: 12px;
   border-bottom-right-radius: 12px;
 }
 
-.crew-assignment-table-wrapper .table thead > tr > th {
+.crew-assignment-table-shell .crew-assignment-table thead > tr > th {
   border: none;
-  color: hsl(var(--bc) / 0.65);
+  color: var(--bo-color-table-head-fg);
   font-weight: 600;
+  white-space: nowrap;
+  text-align: center;
+  vertical-align: middle;
+  padding: 1rem 0.95rem;
 }
 
-.crew-assignment-table-wrapper .table thead {
+.crew-assignment-table-shell .technician-picker-col-index {
+  width: 4rem;
+}
+
+.crew-assignment-table-shell .technician-picker-col-position {
+  width: 30%;
+}
+
+.crew-assignment-table-shell .technician-picker-col-price {
+  width: 16%;
+}
+
+.crew-assignment-table-shell .technician-picker-col-member {
+  width: 36%;
+}
+
+.crew-assignment-table-shell .technician-picker-col-actions {
+  width: 8.5rem;
+}
+
+.crew-assignment-table-shell .crew-assignment-table thead {
   background: transparent;
 }
 
-.crew-assignment-table-wrapper .table tbody {
+.crew-assignment-table-shell .crew-assignment-table tbody {
   overflow: visible;
 }
 
 @media (max-width: 991.98px) {
+  .crew-picker-layout {
+    grid-template-columns: minmax(17rem, 21rem) minmax(0, 1fr);
+  }
+
   .crew-picker-modal__dialog {
     max-width: 95vw;
     margin-inline: auto;
@@ -934,6 +1011,15 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 }
 
 @media (max-width: 767.98px) {
+  .crew-picker-layout {
+    grid-template-columns: 1fr;
+    row-gap: 1rem;
+  }
+
+  .crew-picker-panel--assignments {
+    order: -1;
+  }
+
   .crew-picker-modal {
     border-radius: 22px;
   }
@@ -954,8 +1040,15 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
     gap: 1rem;
   }
 
-  .crew-picker-panel--assignments .crew-assignment-table-wrapper {
+  .crew-picker-panel--assignments .crew-assignment-table-shell {
+    min-height: 16rem;
+    max-height: none;
     overflow-x: auto;
+    overflow-y: visible;
+  }
+
+  .crew-assignment-table-shell .crew-assignment-table {
+    min-width: 54rem;
   }
 
   .crew-assignment-price-chip {
@@ -964,155 +1057,120 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   }
 }
 
-/* Stronger specificity to guarantee outline inside the technicians picker modal */
-#selectTechniciansModal .crew-position-card {
-  border-color: var(--crew-outline);
-  box-shadow:
-    0 0 0 2px var(--crew-outline) inset,
-    0 18px 40px hsl(var(--b1) / 0.14);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-picker-modal {
+  background: var(--bo-color-content-bg);
+  border-color: var(--bo-color-content-border);
+  box-shadow: var(--bo-color-content-shadow-elevated);
 }
 
-#selectTechniciansModal .crew-position-card:hover,
-#selectTechniciansModal .crew-position-card:focus-visible,
-#selectTechniciansModal .crew-position-card:focus-within {
-  border-color: var(--crew-outline);
-  box-shadow:
-    0 0 0 2px var(--crew-outline) inset,
-    0 22px 48px hsl(var(--p, 220 90% 56%) / 0.25);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-picker-modal__body {
+  background: var(--bo-color-content-bg);
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-picker-modal {
-  background: linear-gradient(145deg, hsla(var(--b2) / 0.92), hsla(var(--p) / 0.2));
-  border-color: hsla(var(--p) / 0.38);
-  box-shadow: 0 32px 68px hsla(var(--b1) / 0.42);
-  /* Dark mode primary variant */
-  --crew-outline: hsl(var(--p, 210 80% 60%));
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-picker-modal__header,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-picker-modal__footer {
+  border-color: var(--bo-color-content-border);
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-picker-modal__body {
-  background: hsla(var(--b2) / 0.86);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-picker-panel {
+  background: var(--bo-color-content-muted-bg);
+  border-color: var(--bo-color-content-border);
+  box-shadow: none;
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-picker-modal__header,
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-picker-modal__footer {
-  border-color: hsla(var(--p) / 0.35);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-picker-label {
+  color: var(--bo-color-text-primary);
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-picker-panel {
-  background: hsla(var(--b1) / 0.28);
-  border-color: hsla(var(--p) / 0.32);
-  box-shadow: 0 22px 46px hsla(var(--b1) / 0.32);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-picker-search {
+  background: var(--bo-color-content-bg);
+  border-color: var(--bo-color-control-border);
+  color: var(--bo-color-text-primary);
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-picker-label {
-  color: hsla(var(--bc) / 0.88);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-picker-search::placeholder {
+  color: var(--bo-color-text-secondary);
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-picker-search {
-  background: hsla(var(--b1) / 0.22);
-  border-color: hsla(var(--p) / 0.38);
-  color: hsla(var(--bc) / 0.96);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-picker-list::-webkit-scrollbar-thumb {
+  background: var(--bo-color-content-border);
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-picker-search::placeholder {
-  color: hsla(var(--bc) / 0.6);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-picker-selection-info {
+  color: var(--bo-color-text-secondary);
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-picker-list::-webkit-scrollbar-thumb {
-  background: hsla(var(--p) / 0.45);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-picker-apply-btn {
+  box-shadow: var(--bo-color-action-shadow);
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-picker-selection-info {
-  color: hsla(var(--bc) / 0.75);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card {
+  background: var(--bo-color-content-bg);
+  border-color: var(--bo-color-content-border);
+  box-shadow: none;
+  color: var(--bo-color-text-primary);
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-picker-apply-btn {
-  box-shadow: 0 18px 42px hsla(var(--p) / 0.55);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__badge {
+  background: rgba(86, 126, 86, 0.16);
+  color: var(--bo-color-action-fg);
+  border-color: rgba(86, 126, 86, 0.24);
+  box-shadow: none;
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card {
-  background: hsla(var(--b2) / 0.72);
-  border-color: var(--crew-outline);
-  box-shadow:
-    0 0 0 2px var(--crew-outline) inset,
-    0 24px 52px hsla(var(--b1) / 0.35);
-  color: hsla(var(--bc) / 0.96);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card:hover,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card:focus-visible,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card:focus-within {
+  border-color: var(--bo-color-action-border);
+  box-shadow: var(--bo-color-content-shadow);
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__badge {
-  background: hsla(var(--a) / 0.3);
-  color: hsla(var(--ac));
-  border-color: hsla(var(--a) / 0.7);
-  box-shadow: 0 8px 18px hsla(var(--a) / 0.45);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card:focus-visible {
+  outline-color: var(--bo-color-control-focus-border);
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card::before {
-  border-color: hsla(var(--p) / 0.4);
-  opacity: 0.7;
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__icon {
+  background: var(--bo-color-content-muted-bg);
+  color: var(--bo-color-action-fg);
+  box-shadow: inset 0 0 0 1px var(--bo-color-content-border);
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card:hover,
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card:focus-visible,
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card:focus-within {
-  border-color: var(--crew-outline);
-  box-shadow:
-    0 0 0 2px var(--crew-outline) inset,
-    0 30px 60px hsla(var(--p, 210 80% 60%) / 0.35);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__title {
+  color: var(--bo-color-text-primary);
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card:hover::before,
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card:focus-visible::before,
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card:focus-within::before {
-  border-color: hsla(var(--p) / 0.75);
-  opacity: 0.95;
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__subtitle {
+  color: var(--bo-color-text-secondary);
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card:focus-visible {
-  outline-color: hsla(var(--p) / 0.65);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__metric {
+  background: var(--bo-color-content-muted-bg);
+  border-color: var(--bo-color-content-border);
+  box-shadow: none;
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__icon {
-  background: hsla(var(--p) / 0.32);
-  color: hsla(var(--pc));
-  box-shadow: inset 0 0 0 1px hsla(var(--p) / 0.55);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__metric--accent {
+  background: rgba(86, 126, 86, 0.12);
+  border-color: rgba(86, 126, 86, 0.22);
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__title {
-  color: hsla(var(--bc) / 0.97);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__metric-label {
+  color: var(--bo-color-text-secondary);
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__subtitle {
-  color: hsla(var(--bc) / 0.8);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__metric--accent .crew-position-card__metric-label {
+  color: var(--bo-color-action-fg);
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__metric {
-  background: hsla(var(--b1) / 0.3);
-  border-color: hsla(var(--p) / 0.45);
-  box-shadow: inset 0 0 0 1px hsla(var(--p) / 0.25);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__metric-value {
+  color: var(--bo-color-text-primary);
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__metric--accent {
-  background: hsla(var(--p) / 0.32);
-  border-color: hsla(var(--p) / 0.7);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__metric--accent .crew-position-card__metric-value {
+  color: var(--bo-color-action-fg);
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__metric-label {
-  color: hsla(var(--bc) / 0.78);
-}
-
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__metric--accent .crew-position-card__metric-label {
-  color: hsla(var(--pc));
-}
-
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__metric-value {
-  color: hsla(var(--bc) / 0.96);
-}
-
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__metric--accent .crew-position-card__metric-value {
-  color: hsla(var(--pc));
-}
-
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-add-btn:hover { box-shadow: var(--bo-color-action-shadow-hover); }
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-add-btn:hover { box-shadow: var(--bo-color-action-shadow-hover); }
 
 /* Stronger specificity inside the technicians modal */
 #selectTechniciansModal .crew-position-add-btn { /* keep default .btn-primary visuals, only enhance elevation */ box-shadow: var(--bo-color-action-shadow); }
@@ -1120,67 +1178,67 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 #selectTechniciansModal .crew-position-add-btn:hover,
 #selectTechniciansModal .crew-position-add-btn:focus-visible { box-shadow: var(--bo-color-action-shadow-hover); }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-empty {
-  background: hsla(var(--b1) / 0.22);
-  border-color: hsla(var(--p) / 0.38);
-  color: hsla(var(--bc) / 0.72);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-empty {
+  background: var(--bo-color-content-muted-bg);
+  border-color: var(--bo-color-content-border);
+  color: var(--bo-color-text-secondary);
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-empty-text {
-  color: hsla(var(--bc) / 0.9);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-empty-text {
+  color: var(--bo-color-text-primary);
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-table-wrapper {
-  background: hsla(var(--b2) / 0.86);
-  border-color: hsla(var(--p) / 0.28);
-  box-shadow: 0 18px 40px hsla(var(--b1) / 0.3);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-table-shell {
+  background: var(--bo-color-content-bg);
+  border-color: var(--bo-color-content-border);
+  box-shadow: none;
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-table-wrapper tbody tr {
-  background: hsla(var(--b2) / 0.94);
-  box-shadow: 0 12px 24px hsla(var(--b1) / 0.24);
-  border-color: hsla(var(--p) / 0.3);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-table-shell .crew-assignment-table tbody tr {
+  background: transparent;
+  box-shadow: none;
+  border-color: transparent;
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-cell-price {
-  color: hsla(var(--bc) / 0.92);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-cell-price {
+  color: var(--bo-color-text-primary);
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-index-badge {
-  background: hsla(var(--p) / 0.25);
-  color: hsla(var(--pc));
-  box-shadow: inset 0 0 0 1px hsla(var(--p) / 0.4);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-index-badge {
+  background: rgba(86, 126, 86, 0.14);
+  color: var(--bo-color-action-fg);
+  box-shadow: inset 0 0 0 1px rgba(86, 126, 86, 0.2);
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-position-card {
-  background: hsla(var(--b1) / 0.25);
-  border-color: hsla(var(--p) / 0.28);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-position-card {
+  background: var(--bo-color-content-muted-bg);
+  border-color: var(--bo-color-content-border);
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-price-chip {
-  background: hsla(var(--p) / 0.28);
-  color: hsla(var(--pc));
-  box-shadow: inset 0 0 0 1px hsla(var(--p) / 0.45);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-price-chip {
+  background: rgba(86, 126, 86, 0.12);
+  color: var(--bo-color-action-fg);
+  box-shadow: inset 0 0 0 1px rgba(86, 126, 86, 0.2);
 }
 
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-autocomplete {
-  background: hsla(var(--b2) / 0.82);
-  border-color: hsla(var(--p) / 0.32);
-  color: hsla(var(--bc) / 0.94);
-  box-shadow: 0 14px 32px hsla(var(--b1) / 0.28);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-autocomplete {
+  background: var(--bo-color-content-bg);
+  border-color: var(--bo-color-control-border);
+  color: var(--bo-color-text-primary);
+  box-shadow: none;
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-autocomplete:focus {
-  border-color: hsla(var(--p) / 0.6);
-  box-shadow: 0 18px 40px hsla(var(--p) / 0.32);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-autocomplete:focus {
+  border-color: var(--bo-color-control-focus-border);
+  box-shadow: 0 0 0 3px rgba(86, 126, 86, 0.14);
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-autocomplete::placeholder {
-  color: hsla(var(--bc) / 0.65);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-autocomplete::placeholder {
+  color: var(--bo-color-text-secondary);
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-remove {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-remove {
   background: hsla(var(--er) / 0.22);
   color: hsl(var(--erc));
 }
@@ -1197,14 +1255,14 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   background: var(--bo-color-tab-shell-bg);
   border: 1px solid var(--bo-color-tab-shell-border);
   box-shadow: var(--bo-color-tab-shell-shadow);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   text-align: center;
 }
 
-:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .reservations-subtabs-container .tabs,
-:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .tech-subtabs-container .tabs,
-:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .dashboard-subtabbar .tabs {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reservations-subtabs-container .tabs,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .tech-subtabs-container .tabs,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .dashboard-subtabbar .tabs {
   background: var(--bo-color-tab-shell-bg);
   border: 1px solid var(--bo-color-tab-shell-border);
   box-shadow: var(--bo-color-tab-shell-shadow);
@@ -1225,15 +1283,15 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   color: #ffffff;
 }
 
-:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .reservations-subtabs-container .tab,
-:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .tech-subtabs-container .tab,
-:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .dashboard-subtabbar .tab {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reservations-subtabs-container .tab,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .tech-subtabs-container .tab,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .dashboard-subtabbar .tab {
   color: rgba(226, 232, 240, 0.82);
 }
 
-:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .reservations-subtabs-container .tab.tab-active,
-:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .tech-subtabs-container .tab.tab-active,
-:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .dashboard-subtabbar .tab.tab-active {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reservations-subtabs-container .tab.tab-active,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .tech-subtabs-container .tab.tab-active,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .dashboard-subtabbar .tab.tab-active {
   color: #f8fafc;
 }
 
@@ -1252,7 +1310,7 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   border-radius: 999px;
   border: 1px solid var(--bo-color-tab-shell-border);
   background: var(--bo-color-tab-shell-bg);
-  box-shadow: var(--bo-color-content-shadow);
+  box-shadow: none;
   color: var(--bo-color-tab-text);
   display: inline-flex;
   align-items: center;
@@ -1285,27 +1343,27 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   box-shadow: var(--bo-color-tab-active-shadow);
 }
 
-:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .reservations-subtabs-container .sub-tab-button.tab,
-:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .tech-subtabs-container .sub-tab-button.tab,
-:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .dashboard-subtabbar .sub-tab-button.tab {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reservations-subtabs-container .sub-tab-button.tab,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .tech-subtabs-container .sub-tab-button.tab,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .dashboard-subtabbar .sub-tab-button.tab {
   background: var(--bo-color-tab-shell-bg);
   border-color: var(--bo-color-tab-shell-border);
   color: var(--bo-color-tab-text);
-  box-shadow: var(--bo-color-content-shadow);
+  box-shadow: none;
 }
 
-:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .reservations-subtabs-container .sub-tab-button.tab:hover,
-:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .tech-subtabs-container .sub-tab-button.tab:hover,
-:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .dashboard-subtabbar .sub-tab-button.tab:hover {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reservations-subtabs-container .sub-tab-button.tab:hover,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .tech-subtabs-container .sub-tab-button.tab:hover,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .dashboard-subtabbar .sub-tab-button.tab:hover {
   background: var(--bo-color-tab-hover-bg);
   border-color: var(--bo-color-tab-hover-border);
   color: var(--bo-color-tab-active-fg);
   box-shadow: var(--bo-color-tab-hover-shadow);
 }
 
-:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .reservations-subtabs-container .sub-tab-button.tab.tab-active,
-:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .tech-subtabs-container .sub-tab-button.tab.tab-active,
-:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .dashboard-subtabbar .sub-tab-button.tab.tab-active {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reservations-subtabs-container .sub-tab-button.tab.tab-active,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .tech-subtabs-container .sub-tab-button.tab.tab-active,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .dashboard-subtabbar .sub-tab-button.tab.tab-active {
   background: var(--bo-color-tab-active-bg);
   border-color: var(--bo-color-tab-active-border);
   box-shadow: var(--bo-color-tab-active-shadow);
@@ -1342,14 +1400,14 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   border-color: var(--bo-color-tab-active-border);
 }
 
-:is(html.dark-mode, body.dark-mode) .sub-tab-button:not(.tab) {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .sub-tab-button:not(.tab) {
   border: 1px solid var(--bo-color-tab-shell-border);
   background: var(--bo-color-tab-shell-bg);
   color: var(--bo-color-tab-text);
   box-shadow: var(--bo-color-content-shadow);
 }
 
-:is(html.dark-mode, body.dark-mode) .sub-tab-button:not(.tab):hover {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .sub-tab-button:not(.tab):hover {
   background: var(--bo-color-tab-hover-bg);
   border-color: var(--bo-color-tab-hover-border);
   color: var(--bo-color-tab-active-fg);
@@ -1411,13 +1469,13 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
     padding-inline: clamp(1rem, 5vw, 2.4rem);
     scroll-padding-inline: clamp(1rem, 5vw, 2.4rem);
   }
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-remove {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-remove {
   background: hsla(var(--er) / 0.22);
   color: hsl(var(--erc));
 }
 
 @media (max-width: 992px) {
-  .crew-assignment-table-wrapper {
+  .crew-assignment-table-shell {
     margin-top: 1rem;
   }
 }
@@ -1434,12 +1492,27 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 
 /* Center crew management (technicians) sub-tabs on wider screens */
 @media (min-width: 769px) {
+  .reservations-subtabs-container .tabs {
+    justify-content: center;
+    margin-inline: auto;
+  }
+  .reservations-subtabs-container .tab-scroll-track {
+    justify-content: center;
+  }
   .tech-subtabs-container .tabs {
     justify-content: center;
     margin-inline: auto;
   }
   .tech-subtabs-container .tab-scroll-track {
     justify-content: center;
+  }
+  .projects-page .dashboard-subtabbar .tab-scroll-track {
+    display: flex;
+    justify-content: center;
+  }
+  .projects-page .dashboard-subtabbar .tabs {
+    justify-content: center;
+    margin-inline: auto;
   }
 }
 
@@ -1510,6 +1583,21 @@ body[dir="rtl"] #reservations-tab > h2 {
   order: 2;
   align-self: flex-end;
 }
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-table-wrapper tbody tr:focus-within {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-table-shell .crew-assignment-table tbody tr:focus-within {
   box-shadow: 0 16px 34px hsla(var(--p) / 0.35);
+}
+
+@media (min-width: 769px) {
+  .dashboard-page .reservations-subtabs-container .tab-scroll-track,
+  .reservations-subtabs-container .tab-scroll-track {
+    justify-content: center !important;
+  }
+
+  .dashboard-page .reservations-subtabs-container .tabs,
+  .reservations-subtabs-container .tabs {
+    width: auto !important;
+    min-width: 0 !important;
+    margin-inline: auto !important;
+    justify-content: center !important;
+  }
 }

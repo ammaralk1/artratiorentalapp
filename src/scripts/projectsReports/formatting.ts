@@ -53,7 +53,10 @@ export function formatPercent(value: unknown, language: string = getCurrentLangu
     maximumFractionDigits: 1,
   }).format(number);
 
-  return `${normalizeNumbers(formatted)}%`;
+  // Wrap in Unicode First Strong Isolate (U+2068...U+2069) to prevent the RTL
+  // bidi algorithm from reordering the decimal point or % sign when this
+  // percentage string is embedded inside Arabic text.
+  return `\u2068${normalizeNumbers(formatted)}%\u2069`;
 }
 
 export function formatCompactNumber(value: unknown, language: string = getCurrentLanguage()): string {

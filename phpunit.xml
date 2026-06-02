@@ -15,6 +15,7 @@
     <source>
         <include>
             <directory suffix=".php">backend/repositories</directory>
+            <directory suffix=".php">backend/services</directory>
         </include>
     </source>
 

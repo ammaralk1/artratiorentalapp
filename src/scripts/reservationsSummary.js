@@ -292,6 +292,48 @@ export function calculateReservationDays(start, end) {
   return Math.max(1, Math.ceil(diffDays));
 }
 
+export function calculateOverheadInclusiveAmounts({
+  baseSubtotal = 0,
+  discountValue = 0,
+  discountType = 'percent',
+  companySharePercent = 0,
+} = {}) {
+  const rawBaseSubtotal = sanitizePriceValue(baseSubtotal);
+  const sharePercent = Number.isFinite(Number(companySharePercent)) && Number(companySharePercent) > 0
+    ? Number(companySharePercent)
+    : 0;
+  const overheadMultiplier = sharePercent > 0 ? 1 + (sharePercent / 100) : 1;
+  const clientSubtotalBeforeDiscount = sanitizePriceValue(rawBaseSubtotal * overheadMultiplier);
+  const normalizedDiscountValue = Number.isFinite(Number(discountValue)) ? Number(discountValue) : 0;
+  let discountAmount = discountType === 'amount'
+    ? normalizedDiscountValue
+    : clientSubtotalBeforeDiscount * (normalizedDiscountValue / 100);
+
+  if (!Number.isFinite(discountAmount) || discountAmount < 0) {
+    discountAmount = 0;
+  }
+  if (discountAmount > clientSubtotalBeforeDiscount) {
+    discountAmount = clientSubtotalBeforeDiscount;
+  }
+  discountAmount = sanitizePriceValue(discountAmount);
+
+  const taxableAmount = sanitizePriceValue(Math.max(0, clientSubtotalBeforeDiscount - discountAmount));
+  const companyShareAmount = sharePercent > 0
+    ? sanitizePriceValue(taxableAmount * (sharePercent / (100 + sharePercent)))
+    : 0;
+  const subtotalAfterDiscount = sanitizePriceValue(Math.max(0, taxableAmount - companyShareAmount));
+
+  return {
+    rawBaseSubtotal,
+    clientSubtotalBeforeDiscount,
+    discountAmount,
+    subtotalAfterDiscount,
+    companyShareAmount,
+    taxableAmount,
+    companySharePercent: sharePercent,
+  };
+}
+
 export function calculateDraftFinancialBreakdown({
   items = [],
   technicianIds = [],
@@ -415,30 +457,21 @@ export function calculateDraftFinancialBreakdown({
   const crewTotal = sanitizePriceValue(totalPerDay * rentalDays);
   const crewCostTotal = sanitizePriceValue(costPerDay * rentalDays);
 
-  const discountBase = sanitizePriceValue(equipmentTotal + crewTotal);
-  const discountValue = Number(discount) || 0;
-  let discountAmount = discountType === 'amount'
-    ? discountValue
-    : discountBase * (discountValue / 100);
-
-  if (!Number.isFinite(discountAmount) || discountAmount < 0) {
-    discountAmount = 0;
-  }
-  if (discountAmount > discountBase) {
-    discountAmount = discountBase;
-  }
-
-  const subtotalAfterDiscount = Math.max(0, discountBase - discountAmount);
-
-  // Use company share only when an explicit positive value is provided
+  // Use operating overhead only when an explicit positive value is provided
   const sharePercent = Number.isFinite(companySharePercent) && Number(companySharePercent) > 0
     ? Number(companySharePercent)
     : 0;
-  const companyShareAmount = sharePercent > 0
-    ? Math.max(0, subtotalAfterDiscount * (sharePercent / 100))
-    : 0;
+  const clientAmounts = calculateOverheadInclusiveAmounts({
+    baseSubtotal: equipmentTotal + crewTotal,
+    discountValue: discount,
+    discountType,
+    companySharePercent: sharePercent,
+  });
 
-  const taxableAmount = subtotalAfterDiscount + companyShareAmount;
+  const discountAmount = clientAmounts.discountAmount;
+  const subtotalAfterDiscount = clientAmounts.subtotalAfterDiscount;
+  const companyShareAmount = clientAmounts.companyShareAmount;
+  const taxableAmount = clientAmounts.taxableAmount;
   let taxAmount = applyTax ? taxableAmount * 0.15 : 0;
   if (!Number.isFinite(taxAmount) || taxAmount < 0) {
     taxAmount = 0;
@@ -450,7 +483,7 @@ export function calculateDraftFinancialBreakdown({
 
   const netProfit = Math.max(
     0,
-    Math.max(0, equipmentTotal + crewTotal - discountAmount) - crewCostTotal - equipmentCostTotal
+    subtotalAfterDiscount - crewCostTotal - equipmentCostTotal
   );
 
   return {
@@ -466,6 +499,7 @@ export function calculateDraftFinancialBreakdown({
     finalTotal,
     companySharePercent: sharePercent,
     companyShareAmount,
+    clientSubtotalBeforeDiscount: clientAmounts.clientSubtotalBeforeDiscount,
     netProfit
   };
 }
@@ -566,7 +600,7 @@ export function buildSummaryHtml({
     ? 'reservations.summary.totalLabelAfterEdit'
     : 'reservations.summary.totalLabel';
   const totalLabel = t(totalLabelKey, t('reservations.summary.totalLabel', '💰 التكلفة الإجمالية'));
-  const companyShareLabel = t('reservations.summary.companyShareLabel', '🏦 نسبة الشركة');
+  const companyShareLabel = t('reservations.summary.companyShareLabel', '🏦 المصاريف التشغيلية');
   const netProfitLabel = t('reservations.details.labels.netProfit', '💵 صافي الربح');
   const netProfitValue = Number.isFinite(netProfit) ? Math.max(0, Number(netProfit)) : null;
 

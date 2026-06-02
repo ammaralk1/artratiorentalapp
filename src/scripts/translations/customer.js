@@ -3,7 +3,7 @@ import { registerTranslations } from '../language.js';
 registerTranslations({
   ar: {
     'customerDetails.pageTitle': 'معلومات العميل',
-    'customerDetails.title': '👤 بيانات العميل',
+    'customerDetails.title': 'بيانات العميل',
     'customerDetails.hero.subtitle': '👋 هذه نظرة سريعة على بيانات العميل',
     'customerDetails.fields.taxId': '🧾 الرقم الضريبي:',
     'customerDetails.fields.document': '📎 مستند العميل',
@@ -62,12 +62,14 @@ registerTranslations({
     'customerDetails.errors.loadFailed': '⚠️ تعذر تحميل بيانات العميل.',
     'customerDetails.errors.missingId': '⚠️ لا يوجد معرف عميل في الرابط.',
     'customerDetails.edit.modalTitle': '✏️ تعديل العميل',
+    'customers.form.actions.chooseDocument': 'اختيار ملف',
     'customerProjects.title': '📁 مشاريع العميل',
-    'customerProjects.empty': 'لا توجد مشاريع مرتبطة بهذا العميل.'
+    'customerProjects.empty': '⚠️ لا توجد مشاريع مرتبطة بهذا العميل.',
+    'customerProjects.noResults': '🔍 لا توجد مشاريع مطابقة للبحث.'
   },
   en: {
     'customerDetails.pageTitle': 'Customer Details',
-    'customerDetails.title': '👤 Client Profile',
+    'customerDetails.title': 'Client Profile',
     'customerDetails.hero.subtitle': '👋 Here is a quick look at this client',
     'customerDetails.fields.taxId': '🧾 Tax Number:',
     'customerDetails.fields.document': '📎 Client Document',
@@ -126,7 +128,9 @@ registerTranslations({
     'customerDetails.errors.loadFailed': '⚠️ Failed to load client information.',
     'customerDetails.errors.missingId': '⚠️ Missing client identifier in the URL.',
     'customerDetails.edit.modalTitle': '✏️ Edit Client',
+    'customers.form.actions.chooseDocument': 'Choose file',
     'customerProjects.title': '📁 Client Projects',
-    'customerProjects.empty': 'No projects are linked to this client.'
+    'customerProjects.empty': '⚠️ No projects are linked to this client.',
+    'customerProjects.noResults': '🔍 No projects match the search.'
   }
 });

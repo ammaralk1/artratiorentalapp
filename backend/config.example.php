@@ -21,6 +21,10 @@ return [
         // when the direct connection comes from one of these IPs.
         // Leave empty (or omit) to always use REMOTE_ADDR directly.
         // 'trusted_proxy_ips' => ['127.0.0.1', '10.0.0.1'],
+        // Temporary compatibility for old accounts whose password_hash value
+        // is still plain text or MD5. Keep true until affected production users
+        // are identified/reset, then set false to reject legacy hashes.
+        'allow_legacy_password_login' => true,
     ],
     'storage' => [
         // Global upload constraints (used by active provider)

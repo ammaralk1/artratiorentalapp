@@ -2,8 +2,10 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../../bootstrap.php';
+require_once __DIR__ . '/../../services/ProjectManagedReservationService.php';
 
 use ArtRatio\Repositories\ProjectRepository;
+use ArtRatio\Repositories\ReservationRepository;
 
 function projectsTimingLog(string $message): void
 {
@@ -194,7 +196,8 @@ function handleProjectsCreate(PDO $pdo, ProjectRepository $repo): void
         $payloadSize = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
         $mark('requestContentLength=' . $payloadSize);
     } catch (Throwable $_) {}
-    [$result, $errors] = validateProjectPayload(readJsonPayload(), false, $pdo, $repo);
+    $requestPayload = readJsonPayload();
+    [$result, $errors] = validateProjectPayload($requestPayload, false, $pdo, $repo);
     $mark('validateProjectPayload');
 
     if ($errors) {
@@ -208,6 +211,22 @@ function handleProjectsCreate(PDO $pdo, ProjectRepository $repo): void
         $payload['project_code'] = $repo->generateCode();
     }
     $mark('generateProjectCode');
+
+    $syncManagedReservation = shouldSyncProjectManagedReservation($requestPayload);
+    $reservationSync = $syncManagedReservation
+        ? new ProjectManagedReservationService($pdo, new ReservationRepository($pdo))
+        : null;
+    if ($reservationSync) {
+        $bookingErrors = $reservationSync->validateProjectBooking(
+            $payload,
+            normalizeProjectEquipmentForReservation($result['equipment'] ?? []),
+            normalizeProjectTechniciansForReservation($requestPayload['crew_assignments'] ?? ($result['technicians'] ?? []))
+        );
+        if ($bookingErrors) {
+            respondError('Validation failed', 422, ['errors' => $bookingErrors]);
+            return;
+        }
+    }
 
     $pdo->beginTransaction();
 
@@ -234,6 +253,17 @@ function handleProjectsCreate(PDO $pdo, ProjectRepository $repo): void
         if (!empty($result['payments'])) {
             $repo->syncPayments($projectId, $result['payments']);
             $mark('syncProjectPayments');
+        }
+
+        if ($reservationSync) {
+            $reservationSync->syncForProject(
+                $projectId,
+                array_merge($payload, ['id' => $projectId]),
+                normalizeProjectEquipmentForReservation($result['equipment'] ?? []),
+                normalizeProjectTechniciansForReservation($requestPayload['crew_assignments'] ?? ($result['technicians'] ?? [])),
+                normalizeProjectPackagesForReservation($requestPayload['reservation_packages'] ?? [])
+            );
+            $mark('syncManagedReservation');
         }
 
         $pdo->commit();
@@ -308,7 +338,8 @@ function handleProjectsUpdate(PDO $pdo, ProjectRepository $repo): void
 
     assertProjectWriteSchemaReady($pdo);
 
-    [$result, $errors] = validateProjectPayload(readJsonPayload(), true, $pdo, $repo, $id);
+    $requestPayload = readJsonPayload();
+    [$result, $errors] = validateProjectPayload($requestPayload, true, $pdo, $repo, $id);
 
     if ($errors) {
         respondError('Validation failed', 422, ['errors' => $errors]);
@@ -321,6 +352,32 @@ function handleProjectsUpdate(PDO $pdo, ProjectRepository $repo): void
 
     if (array_key_exists('project_code', $payload) && empty($payload['project_code'])) {
         $payload['project_code'] = $repo->generateCode();
+    }
+
+    $syncManagedReservation = shouldSyncProjectManagedReservation($requestPayload);
+    $reservationSync = $syncManagedReservation
+        ? new ProjectManagedReservationService($pdo, new ReservationRepository($pdo))
+        : null;
+    if ($reservationSync) {
+        $currentProject = fetchProjectById($pdo, $id);
+        $existingLinkedReservationId = $reservationSync->findLinkedReservationId($id);
+        $projectForBooking = mergeProjectForManagedReservation($currentProject, $payload);
+        $equipmentForBooking = normalizeProjectEquipmentForReservation(
+            $result['equipment'] !== null ? $result['equipment'] : fetchProjectEquipment($pdo, $id)
+        );
+        $techniciansForBooking = normalizeProjectTechniciansForReservation(
+            $requestPayload['crew_assignments'] ?? ($result['technicians'] !== null ? $result['technicians'] : fetchProjectTechnicians($pdo, $id))
+        );
+        $bookingErrors = $reservationSync->validateProjectBooking(
+            $projectForBooking,
+            $equipmentForBooking,
+            $techniciansForBooking,
+            $existingLinkedReservationId
+        );
+        if ($bookingErrors) {
+            respondError('Validation failed', 422, ['errors' => $bookingErrors]);
+            return;
+        }
     }
 
     $pdo->beginTransaction();
@@ -344,6 +401,21 @@ function handleProjectsUpdate(PDO $pdo, ProjectRepository $repo): void
 
         if ($result['payments'] !== null) {
             $repo->syncPayments($id, $result['payments']);
+        }
+
+        if ($reservationSync) {
+            $projectForBooking = mergeProjectForManagedReservation(fetchProjectById($pdo, $id), []);
+            $reservationSync->syncForProject(
+                $id,
+                $projectForBooking,
+                normalizeProjectEquipmentForReservation(
+                    $result['equipment'] !== null ? $result['equipment'] : fetchProjectEquipment($pdo, $id)
+                ),
+                normalizeProjectTechniciansForReservation(
+                    $requestPayload['crew_assignments'] ?? ($result['technicians'] !== null ? $result['technicians'] : fetchProjectTechnicians($pdo, $id))
+                ),
+                normalizeProjectPackagesForReservation($requestPayload['reservation_packages'] ?? [])
+            );
         }
 
         $pdo->commit();
@@ -521,16 +593,16 @@ function validateProjectPayload(array $payload, bool $isUpdate, PDO $pdo, Projec
     $companySharePercent = $companySharePercentExists ? (float) ($payload['company_share_percent'] ?? 0) : null;
     if ($companySharePercentExists) {
         if ($companySharePercent < 0) {
-            $errors['company_share_percent'] = 'Company share percent must be zero or greater';
+            $errors['company_share_percent'] = 'Company overhead percent must be zero or greater';
         } elseif ($companySharePercent > 100) {
-            $errors['company_share_percent'] = 'Company share percent must be 100 or less';
+            $errors['company_share_percent'] = 'Company overhead percent must be 100 or less';
         }
     }
 
     $companyShareAmountExists = array_key_exists('company_share_amount', $payload) || !$isUpdate;
     $companyShareAmount = $companyShareAmountExists ? (float) ($payload['company_share_amount'] ?? 0) : null;
     if ($companyShareAmountExists && $companyShareAmount < 0) {
-        $errors['company_share_amount'] = 'Company share amount must be zero or greater';
+        $errors['company_share_amount'] = 'Company overhead amount must be zero or greater';
     }
 
     $equipmentEstimateExists = array_key_exists('equipment_estimate', $payload) || !$isUpdate;
@@ -641,6 +713,10 @@ function validateProjectPayload(array $payload, bool $isUpdate, PDO $pdo, Projec
                 $salePrice = isset($expense['sale_price'])
                     ? (float) $expense['sale_price']
                     : (isset($expense['salePrice']) ? (float) $expense['salePrice'] : 0.0);
+                $serviceDaysRaw = $expense['service_days'] ?? ($expense['days'] ?? null);
+                $serviceDays = $serviceDaysRaw === null || $serviceDaysRaw === ''
+                    ? 1
+                    : (int) $serviceDaysRaw;
                 // Accept note synonyms (note, notes, description)
                 $noteRaw = $expense['note'] ?? ($expense['notes'] ?? ($expense['description'] ?? ''));
                 $note = trim((string) $noteRaw);
@@ -657,18 +733,22 @@ function validateProjectPayload(array $payload, bool $isUpdate, PDO $pdo, Projec
                 if ($salePrice < 0) {
                     $errors["expenses.$index.sale_price"] = 'Expense sale price must be zero or greater';
                 }
+                if ($serviceDays <= 0) {
+                    $errors["expenses.$index.service_days"] = 'Expense service days must be a positive integer';
+                }
                 if ($note !== '' && mb_strlen($note) > 1000) {
                     $errors["expenses.$index.note"] = 'Expense note must be 1000 characters or fewer';
                 }
 
-                if (!isset($errors["expenses.$index.label"]) && !isset($errors["expenses.$index.amount"]) && !isset($errors["expenses.$index.sale_price"])) {
+                if (!isset($errors["expenses.$index.label"]) && !isset($errors["expenses.$index.amount"]) && !isset($errors["expenses.$index.sale_price"]) && !isset($errors["expenses.$index.service_days"])) {
                     $normalizedExpenses[] = [
                         'label' => $label,
                         'amount' => round($amount, 2),
                         'sale_price' => round($salePrice, 2),
+                        'service_days' => $serviceDays,
                         'note' => $note !== '' ? $note : null,
                     ];
-                    $expensesTotal += round($amount, 2);
+                    $expensesTotal += round($amount, 2) * $serviceDays;
                 }
             }
         }
@@ -758,6 +838,13 @@ function validateProjectPayload(array $payload, bool $isUpdate, PDO $pdo, Projec
                     $normalizedEquipment[] = [
                         'equipment_id' => $equipmentId,
                         'quantity' => $quantity,
+                        'unit_price' => isset($item['unit_price'])
+                            ? (float) $item['unit_price']
+                            : (isset($item['unitPrice']) ? (float) $item['unitPrice'] : (isset($item['price']) ? (float) $item['price'] : 0)),
+                        'unit_cost' => isset($item['unit_cost'])
+                            ? (float) $item['unit_cost']
+                            : (isset($item['unitCost']) ? (float) $item['unitCost'] : (isset($item['cost']) ? (float) $item['cost'] : 0)),
+                        'notes' => $item['notes'] ?? null,
                     ];
                 }
             }
@@ -896,6 +983,191 @@ function validateProjectPayload(array $payload, bool $isUpdate, PDO $pdo, Projec
     ];
 }
 
+function shouldSyncProjectManagedReservation(array $payload): bool
+{
+    if (!array_key_exists('sync_managed_reservation', $payload)) {
+        return false;
+    }
+
+    return filter_var($payload['sync_managed_reservation'], FILTER_VALIDATE_BOOLEAN);
+}
+
+/**
+ * @param array<int, mixed>|null $items
+ * @return array<int, array<string, mixed>>
+ */
+function normalizeProjectEquipmentForReservation(?array $items): array
+{
+    if (!$items) {
+        return [];
+    }
+
+    $normalized = [];
+    foreach ($items as $item) {
+        if (!is_array($item)) {
+            continue;
+        }
+        $equipmentId = (int) ($item['equipment_id'] ?? $item['equipmentId'] ?? 0);
+        if ($equipmentId <= 0) {
+            continue;
+        }
+        $quantity = (int) ($item['quantity'] ?? $item['qty'] ?? 1);
+        $normalized[] = [
+            'equipment_id' => $equipmentId,
+            'quantity' => $quantity > 0 ? $quantity : 1,
+            'unit_price' => (float) ($item['unit_price'] ?? $item['unitPrice'] ?? 0),
+            'unit_cost' => (float) ($item['unit_cost'] ?? $item['unitCost'] ?? $item['cost'] ?? 0),
+            'notes' => $item['notes'] ?? null,
+        ];
+    }
+
+    return $normalized;
+}
+
+/**
+ * @param array<int, mixed>|null $packages
+ * @return array<int, array<string, mixed>>
+ */
+function normalizeProjectPackagesForReservation(?array $packages): array
+{
+    if (!$packages) {
+        return [];
+    }
+
+    $normalized = [];
+    foreach ($packages as $package) {
+        if (!is_array($package)) {
+            continue;
+        }
+
+        $itemsJson = $package['items_json'] ?? null;
+        if (is_array($itemsJson)) {
+            $itemsJson = json_encode($itemsJson, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
+        $metadataJson = $package['package_metadata'] ?? null;
+        if (is_array($metadataJson)) {
+            $metadataJson = json_encode($metadataJson, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
+
+        $quantity = (int) ($package['quantity'] ?? $package['qty'] ?? 1);
+        $packageIdRaw = $package['package_id'] ?? null;
+        $packageId = is_numeric($packageIdRaw) && (int) $packageIdRaw > 0 ? (int) $packageIdRaw : null;
+
+        $normalized[] = [
+            'package_id' => $packageId,
+            'package_code' => isset($package['package_code'])
+                ? trim((string) $package['package_code'])
+                : null,
+            'package_name' => isset($package['package_name'])
+                ? trim((string) $package['package_name'])
+                : null,
+            'name' => isset($package['name'])
+                ? trim((string) $package['name'])
+                : (isset($package['package_name']) ? trim((string) $package['package_name']) : null),
+            'quantity' => $quantity > 0 ? $quantity : 1,
+            'unit_price' => (float) ($package['unit_price'] ?? $package['unitPrice'] ?? $package['price'] ?? 0),
+            'unit_cost' => (float) ($package['unit_cost'] ?? $package['unitCost'] ?? $package['cost'] ?? 0),
+            'items_json' => is_string($itemsJson) && trim($itemsJson) !== '' ? $itemsJson : null,
+            'package_metadata' => is_string($metadataJson) && trim($metadataJson) !== '' ? $metadataJson : null,
+        ];
+    }
+
+    return $normalized;
+}
+
+/**
+ * @param array<int, mixed>|null $technicians
+ * @return array<int, array<string, mixed>>
+ */
+function normalizeProjectTechniciansForReservation(?array $technicians): array
+{
+    if (!$technicians) {
+        return [];
+    }
+
+    $normalized = [];
+    foreach ($technicians as $technician) {
+        if (is_array($technician)) {
+            $technicianId = (int) ($technician['technician_id'] ?? $technician['technicianId'] ?? $technician['id'] ?? 0);
+            if ($technicianId <= 0) {
+                continue;
+            }
+            $normalized[] = [
+                'technician_id' => $technicianId,
+                'role' => $technician['role'] ?? null,
+                'notes' => $technician['notes'] ?? null,
+                'position_id' => isset($technician['position_id']) ? (int) $technician['position_id'] : ($technician['positionId'] ?? null),
+                'position_key' => $technician['position_key'] ?? $technician['positionKey'] ?? null,
+                'position_name' => $technician['position_name'] ?? $technician['positionName'] ?? null,
+                'position_label_ar' => $technician['position_label_ar'] ?? $technician['positionLabelAr'] ?? null,
+                'position_label_en' => $technician['position_label_en'] ?? $technician['positionLabelEn'] ?? null,
+                'position_cost' => (float) ($technician['position_cost'] ?? $technician['positionCost'] ?? $technician['cost'] ?? 0),
+                'position_client_price' => (float) ($technician['position_client_price'] ?? $technician['positionClientPrice'] ?? 0),
+                'assignment_id' => $technician['assignment_id'] ?? $technician['assignmentId'] ?? null,
+            ];
+            continue;
+        }
+
+        $technicianId = (int) $technician;
+        if ($technicianId <= 0) {
+            continue;
+        }
+        $normalized[] = [
+            'technician_id' => $technicianId,
+            'role' => null,
+            'notes' => null,
+            'position_id' => null,
+            'position_key' => null,
+            'position_name' => null,
+            'position_label_ar' => null,
+            'position_label_en' => null,
+            'position_cost' => 0,
+            'position_client_price' => 0,
+            'assignment_id' => null,
+        ];
+    }
+
+    return $normalized;
+}
+
+/**
+ * @param array<string, mixed>|null $project
+ * @param array<string, mixed> $updates
+ * @return array<string, mixed>
+ */
+function mergeProjectForManagedReservation(?array $project, array $updates): array
+{
+    $base = is_array($project) ? $project : [];
+
+    $aliases = [
+        'client_id' => ['client_id', 'clientId'],
+        'title' => ['title'],
+        'start_datetime' => ['start_datetime', 'start'],
+        'end_datetime' => ['end_datetime', 'end'],
+        'status' => ['status'],
+        'payment_status' => ['payment_status', 'paymentStatus'],
+        'total_with_tax' => ['total_with_tax', 'totalWithTax'],
+        'equipment_estimate' => ['equipment_estimate', 'equipmentEstimate'],
+        'confirmed' => ['confirmed'],
+    ];
+
+    $merged = [];
+    foreach ($aliases as $canonical => $keys) {
+        foreach ($keys as $key) {
+            if (array_key_exists($key, $updates)) {
+                $merged[$canonical] = $updates[$key];
+                continue 2;
+            }
+            if (array_key_exists($key, $base)) {
+                $merged[$canonical] = $base[$key];
+                continue 2;
+            }
+        }
+    }
+
+    return $merged;
+}
+
 
 function fetchProjectById(PDO $pdo, int $id): ?array
 {
@@ -926,6 +1198,8 @@ function mapProjectRow(PDO $pdo, array $row): array
         'title' => $row['title'],
         'type' => $row['type'],
         'client_id' => (int) $row['client_id'],
+        'client_name' => $row['client_name'] ?? null,
+        'clientName' => $row['client_name'] ?? null,
         'client_company' => $row['client_company'],
         'description' => $row['description'],
         'start_datetime' => $row['start_datetime'],
@@ -1175,7 +1449,7 @@ function fetchProjectExpenses(PDO $pdo, int $projectId): array
     // Prefer selecting sale_price and note; gracefully fall back if the columns don't exist
     try {
         $statement = $pdo->prepare(
-            'SELECT id, label, amount, sale_price, note
+            'SELECT id, label, amount, sale_price, service_days, note
              FROM project_expenses
              WHERE project_id = :project_id'
         );
@@ -1183,11 +1457,13 @@ function fetchProjectExpenses(PDO $pdo, int $projectId): array
     } catch (\PDOException $e) {
         $message = strtolower($e->getMessage());
         $hasSale = !(strpos($message, "unknown column 'sale_price'") !== false || strpos($message, 'unknown column \"sale_price\"') !== false);
+        $hasDays = !(strpos($message, "unknown column 'service_days'") !== false || strpos($message, 'unknown column \"service_days\"') !== false);
         $hasNote = !(strpos($message, "unknown column 'note'") !== false || strpos($message, 'unknown column \"note\"') !== false);
         $hasNotes = projectExpensesHasColumn($pdo, 'notes');
-        if (!$hasSale || !$hasNote) {
+        if (!$hasSale || !$hasDays || !$hasNote) {
             $columns = ['id', 'label', 'amount'];
             if ($hasSale) $columns[] = 'sale_price';
+            if ($hasDays) $columns[] = 'service_days';
             if ($hasNote) {
                 $columns[] = 'note';
             } elseif ($hasNotes) {
@@ -1208,6 +1484,7 @@ function fetchProjectExpenses(PDO $pdo, int $projectId): array
             'label' => $row['label'],
             'amount' => (float) $row['amount'],
             'sale_price' => isset($row['sale_price']) ? (float) $row['sale_price'] : 0.0,
+            'service_days' => isset($row['service_days']) ? max(1, (int) $row['service_days']) : 1,
             // Unify possible legacy `notes` column
             'note' => $row['note'] ?? ($row['notes'] ?? null),
         ];
@@ -1274,6 +1551,9 @@ function assertProjectWriteSchemaReady(PDO $pdo): void
     }
     if (!projectExpensesHasColumn($pdo, 'note')) {
         $missing[] = 'project_expenses.note';
+    }
+    if (!projectExpensesHasColumn($pdo, 'service_days')) {
+        $missing[] = 'project_expenses.service_days';
     }
 
     if ($missing) {

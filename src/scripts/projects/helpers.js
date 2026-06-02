@@ -1,4 +1,53 @@
 import { formatDateTime } from './formatting.js';
+import { DEFAULT_COMPANY_SHARE_PERCENT } from '../reservationsSummary.js';
+import { normalizeNumbers } from '../utils.js';
+
+function projectFlagEnabled(...values) {
+  return values.some((value) => {
+    if (value === true || value === 1) return true;
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase();
+      return normalized === 'true' || normalized === '1' || normalized === 'yes';
+    }
+    return false;
+  });
+}
+
+function parseProjectNumber(value) {
+  const parsed = Number.parseFloat(normalizeNumbers(String(value ?? '')));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+export function resolveProjectOverheadSettings(project, { applyTaxRaw = false } = {}) {
+  const rawSharePercent = parseProjectNumber(
+    project?.companySharePercent
+      ?? project?.company_share_percent
+      ?? project?.companyShare
+      ?? project?.company_share
+      ?? 0
+  );
+  const storedShareAmount = parseProjectNumber(
+    project?.companyShareAmount
+      ?? project?.company_share_amount
+      ?? 0
+  );
+  const enabled = projectFlagEnabled(
+    project?.companyShareEnabled,
+    project?.company_share_enabled,
+    project?.companyShareApplied,
+    project?.company_share_applied
+  ) || rawSharePercent > 0 || storedShareAmount > 0;
+  const sharePercent = enabled
+    ? (rawSharePercent > 0 ? rawSharePercent : DEFAULT_COMPANY_SHARE_PERCENT)
+    : 0;
+  const applyTax = Boolean(applyTaxRaw) || (enabled && sharePercent > 0);
+
+  return {
+    enabled,
+    applyTax,
+    sharePercent: enabled && applyTax && sharePercent > 0 ? sharePercent : 0,
+  };
+}
 
 function normalizeIsoLike(value) {
   if (!value) return '';
@@ -43,6 +92,29 @@ export function truncateText(value, maxLength) {
   const text = String(value || '');
   if (text.length <= maxLength) return text;
   return `${text.slice(0, Math.max(0, maxLength - 1))}…`;
+}
+
+export function buildProjectsPageWindow(currentPage, totalPages) {
+  const safeTotal = Math.max(1, Number(totalPages) || 1);
+  const safeCurrent = Math.min(Math.max(1, Number(currentPage) || 1), safeTotal);
+
+  if (safeTotal <= 3) {
+    return Array.from({ length: safeTotal }, (_, index) => index + 1);
+  }
+
+  const windowStart = Math.min(safeCurrent, safeTotal - 1);
+  const windowEnd = Math.min(safeTotal - 1, windowStart + 1);
+  const pages = [windowStart];
+
+  if (windowEnd !== windowStart) {
+    pages.push(windowEnd);
+  }
+
+  if (pages[pages.length - 1] !== safeTotal) {
+    pages.push(safeTotal);
+  }
+
+  return pages;
 }
 
 export function formatDateRange(start, end) {

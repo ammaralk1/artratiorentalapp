@@ -26,6 +26,7 @@ import {
   buildTechniciansPageNumbers,
   getTechniciansPaginationState,
 } from "./techniciansPagination.js";
+import { jumpPaginationSectionToStart, settlePaginationSectionToStart } from "./ui/paginationViewport.js";
 
 const TECH_SUB_TAB_STORAGE_KEY = "__ART_RATIO_TECH_SUB_TAB__";
 const TECH_SUB_TAB_IDS = ["technicians-management", "technicians-positions"];
@@ -41,7 +42,9 @@ let techniciansUiInitialised = false;
 let techniciansBootstrapped = false;
 let technicianPositionsReadyPromise = null;
 const techniciansPagination = { page: 1, pageSize: DEFAULT_TECHNICIANS_PAGE_SIZE };
+const positionsPagination = { page: 1, pageSize: DEFAULT_TECHNICIANS_PAGE_SIZE };
 let lastTechniciansResultSignature = "";
+let lastPositionsResultSignature = "";
 
 const storedTechSubTab = readStoredTechSubTab();
 if (storedTechSubTab) {
@@ -90,6 +93,10 @@ function normalizePhoneValue(value = "") {
 
 function resetTechniciansPagination() {
   techniciansPagination.page = 1;
+}
+
+function resetPositionsPagination() {
+  positionsPagination.page = 1;
 }
 
 function normalizeMoneyValue(value = "") {
@@ -345,11 +352,7 @@ function setTechnicianSubmitState(mode = "add") {
 function updateTechnicianCancelVisibility(show) {
   const cancelBtn = document.getElementById("technician-cancel-btn");
   if (!cancelBtn) return;
-  if (show) {
-    cancelBtn.classList.remove("d-none");
-  } else {
-    cancelBtn.classList.add("d-none");
-  }
+  cancelBtn.hidden = !show;
   cancelBtn.textContent = t("technicians.form.actions.cancel", "إلغاء التعديل");
 }
 
@@ -700,14 +703,20 @@ function renderTechniciansTable() {
 
   if (techniciansLoading && !techniciansHasLoaded) {
     const loadingMessage = t("technicians.table.loading", "جاري التحميل...");
-    tableBody.innerHTML = `<tr><td colspan='6'>${loadingMessage}</td></tr>`;
-    renderTechniciansPagination(0);
+    renderTechniciansTableState(tableBody, {
+      message: loadingMessage,
+      tone: 'muted',
+      totalItems: 0,
+    });
     return;
   }
 
   if (techniciansErrorMessage && !techniciansHasLoaded) {
-    tableBody.innerHTML = `<tr><td colspan='6' class='text-danger'>${techniciansErrorMessage}</td></tr>`;
-    renderTechniciansPagination(0);
+    renderTechniciansTableState(tableBody, {
+      message: techniciansErrorMessage,
+      tone: 'danger',
+      totalItems: 0,
+    });
     return;
   }
 
@@ -722,28 +731,18 @@ function renderTechniciansTable() {
     lastTechniciansResultSignature = resultSignature;
   }
 
-  const filtered = technicians.filter((tech) => {
-    if (selectedRoleNormalized && normalizeText(tech.role || "") !== selectedRoleNormalized) {
-      return false;
-    }
-
-    if (!searchTerm) return true;
-
-    const haystack = normalizeText([
-      tech.name,
-      tech.phone,
-      tech.email,
-      tech.role,
-      tech.department,
-      tech.notes
-    ].filter(Boolean).join(" "));
-    return haystack.includes(searchTerm);
+  const filtered = getFilteredTechnicians(technicians, {
+    searchTerm,
+    role: selectedRoleNormalized,
   });
 
   if (filtered.length === 0) {
     const emptyMessage = t("technicians.table.empty", "لا يوجد أعضاء في الطاقم بعد.");
-    tableBody.innerHTML = `<tr><td colspan='6'>${emptyMessage}</td></tr>`;
-    renderTechniciansPagination(0);
+    renderTechniciansTableState(tableBody, {
+      message: emptyMessage,
+      tone: 'muted',
+      totalItems: 0,
+    });
     return;
   }
 
@@ -758,26 +757,8 @@ function renderTechniciansTable() {
   tableBody.innerHTML = visibleTechnicians.map((tech) => {
     const isEditing = editingTechnicianId && String(editingTechnicianId) === String(tech.id);
     const activeNow = isTechnicianActiveNow(tech.id, reservations, now);
-    const effectiveStatus = activeNow ? "busy" : (tech.status || tech.baseStatus || "available");
-    const statusInfo = effectiveStatus === "busy"
-      ? {
-          label: t("technicians.status.busy", "⛔ مشغول"),
-          className: "technician-status-badge technician-status-badge--busy"
-        }
-      : {
-          label: t("technicians.status.available", "✅ متاح"),
-          className: "technician-status-badge technician-status-badge--available"
-        };
-    const editLabel = t("technicians.actions.edit", "✏️ تعديل");
-    const deleteLabel = t("technicians.actions.delete", "🗑️ حذف");
-    const canDelete = userCanManageDestructiveActions();
-    const actionButtons = [
-      `<button type="button" class="technician-action-btn technician-action-btn--edit technician-edit-btn" data-id="${tech.id}">${editLabel}</button>`
-    ];
-
-    if (canDelete) {
-      actionButtons.push(`<button type="button" class="technician-action-btn technician-action-btn--delete technician-delete-btn" data-id="${tech.id}">${deleteLabel}</button>`);
-    }
+    const statusInfo = getTechnicianStatusInfo(tech, { activeNow });
+    const actionButtons = buildTechnicianActionButtons(tech.id);
 
     const rowClass = isEditing ? ' class="technician-table-row-editing"' : '';
 
@@ -797,7 +778,76 @@ function renderTechniciansTable() {
     `;
   }).join("");
 
+  renderTechniciansCount(filtered.length);
   renderTechniciansPagination(filtered.length);
+}
+
+function getFilteredTechnicians(technicians, {
+  searchTerm = "",
+  role = "",
+} = {}) {
+  return technicians.filter((tech) => {
+    if (role && normalizeText(tech.role || "") !== role) {
+      return false;
+    }
+
+    if (!searchTerm) return true;
+
+    const haystack = normalizeText([
+      tech.name,
+      tech.phone,
+      tech.email,
+      tech.role,
+      tech.department,
+      tech.notes
+    ].filter(Boolean).join(" "));
+    return haystack.includes(searchTerm);
+  });
+}
+
+function getTechnicianStatusInfo(technician, { activeNow = false } = {}) {
+  const effectiveStatus = activeNow
+    ? "busy"
+    : (technician?.status || technician?.baseStatus || "available");
+
+  if (effectiveStatus === "busy") {
+    return {
+      label: t("technicians.status.busy", "⛔ مشغول"),
+      className: "technician-status-badge technician-status-badge--busy",
+    };
+  }
+
+  return {
+    label: t("technicians.status.available", "✅ متاح"),
+    className: "technician-status-badge technician-status-badge--available",
+  };
+}
+
+function buildTechnicianActionButtons(technicianId) {
+  const editLabel = t("technicians.actions.editCompact", "تعديل");
+  const deleteLabel = t("technicians.actions.deleteCompact", "حذف");
+  const buttons = [
+    `<button type="button" class="technician-action-btn technician-action-btn--edit technician-edit-btn" data-id="${technicianId}">${editLabel}</button>`
+  ];
+
+  if (userCanManageDestructiveActions()) {
+    buttons.push(`<button type="button" class="technician-action-btn technician-action-btn--delete technician-delete-btn" data-id="${technicianId}">${deleteLabel}</button>`);
+  }
+
+  return buttons;
+}
+
+function renderTechniciansTableState(tableBody, {
+  message = '',
+  tone = 'muted',
+  totalItems = 0,
+} = {}) {
+  if (!(tableBody instanceof HTMLElement)) return;
+
+  const toneClass = tone === 'danger' ? 'text-danger' : 'text-muted';
+  tableBody.innerHTML = `<tr class="projects-table-empty-row"><td colspan='6' class='text-center ${toneClass}'>${message}</td></tr>`;
+  renderTechniciansCount(totalItems);
+  renderTechniciansPagination(totalItems);
 }
 
 function renderTechniciansPagination(totalItems) {
@@ -831,16 +881,16 @@ function renderTechniciansPagination(totalItems) {
   const buttonsHtml = pageNumbers.map((page) => {
     const isActive = page === paginationState.currentPage;
     const pageLabel = pageLabelTemplate.replace("{page}", normalizeNumbers(String(page)));
-    return `<button type="button" class="btn btn-sm ${isActive ? "btn-primary" : "btn-outline-primary"}" data-technicians-page="${page}" aria-label="${escapeHtml(pageLabel)}" ${isActive ? 'aria-current="page"' : ""}>${normalizeNumbers(String(page))}</button>`;
+    return `<button type="button" class="${isActive ? "ui-button ui-button--primary btn btn-primary btn-sm" : "ui-button ui-button--outline btn btn-outline btn-sm"}" data-technicians-page="${page}" aria-label="${escapeHtml(pageLabel)}" ${isActive ? 'aria-current="page"' : ""}>${normalizeNumbers(String(page))}</button>`;
   }).join("");
 
   host.hidden = false;
   host.innerHTML = `
     <div class="list-pagination__summary text-muted small">${escapeHtml(rangeText)}</div>
     <div class="list-pagination__controls btn-group" role="group" aria-label="${escapeHtml(navLabel)}">
-      <button type="button" class="btn btn-sm btn-outline-primary" data-technicians-page="${paginationState.currentPage - 1}" ${paginationState.currentPage <= 1 ? "disabled" : ""} aria-label="${escapeHtml(prevLabel)}">‹</button>
+      <button type="button" class="ui-button ui-button--outline btn btn-outline btn-sm" data-technicians-page="${paginationState.currentPage - 1}" ${paginationState.currentPage <= 1 ? "disabled" : ""} aria-label="${escapeHtml(prevLabel)}">‹</button>
       ${buttonsHtml}
-      <button type="button" class="btn btn-sm btn-outline-primary" data-technicians-page="${paginationState.currentPage + 1}" ${paginationState.currentPage >= paginationState.totalPages ? "disabled" : ""} aria-label="${escapeHtml(nextLabel)}">›</button>
+      <button type="button" class="ui-button ui-button--outline btn btn-outline btn-sm" data-technicians-page="${paginationState.currentPage + 1}" ${paginationState.currentPage >= paginationState.totalPages ? "disabled" : ""} aria-label="${escapeHtml(nextLabel)}">›</button>
     </div>
   `;
 
@@ -848,10 +898,40 @@ function renderTechniciansPagination(totalItems) {
     button.addEventListener("click", () => {
       const nextPage = Number.parseInt(button.getAttribute("data-technicians-page") || "", 10);
       if (!Number.isFinite(nextPage)) return;
+      jumpPaginationSectionToStart(host);
       techniciansPagination.page = nextPage;
       renderTechniciansTable();
+      settlePaginationSectionToStart(host);
     });
   });
+}
+
+function renderTechniciansCount(totalItems) {
+  const countEl = document.getElementById('technicians-list-count');
+  if (!(countEl instanceof HTMLElement)) return;
+
+  const filteredValue = Math.max(0, Number(totalItems) || 0);
+  const totalValue = Array.isArray(getTechnicians()) ? getTechnicians().length : filteredValue;
+
+  if (filteredValue !== totalValue) {
+    const filteredTemplate = t('projects.technicians.records.filteredCount', '{count} من {total} عضو');
+    countEl.textContent = filteredTemplate
+      .replace('{count}', normalizeNumbers(String(filteredValue)))
+      .replace('{total}', normalizeNumbers(String(totalValue)));
+    return;
+  }
+
+  const template = t('projects.technicians.records.count', '{count} عضو');
+  countEl.textContent = template.replace('{count}', normalizeNumbers(String(filteredValue)));
+}
+
+function updateTechniciansSearchResetButton() {
+  const resetButton = document.getElementById('technicians-clear-search');
+  if (!(resetButton instanceof HTMLButtonElement)) return;
+
+  const searchValue = normalizeNumbers(document.getElementById('search-technician-input')?.value || '').trim();
+  const roleValue = String(document.getElementById('technician-role-filter')?.value || '').trim();
+  resetButton.disabled = searchValue.length === 0 && roleValue.length === 0;
 }
 
 function getPositionFormElements() {
@@ -876,8 +956,8 @@ function setPositionFormMode(mode = "add") {
     submitBtn.textContent = t(key, fallback);
   }
   if (cancelBtn) {
-    cancelBtn.classList.toggle("d-none", !isUpdate);
-    cancelBtn.textContent = t("positions.form.actions.cancel", "إلغاء");
+    cancelBtn.hidden = !isUpdate;
+    cancelBtn.textContent = t("positions.form.actions.cancel", "إلغاء التعديل");
   }
 }
 
@@ -964,24 +1044,39 @@ function refreshTechnicianRoleSummaryFromInputs() {
 
 function renderPositionsTable() {
   const tableBody = document.getElementById("positions-table");
-  const countEl = document.getElementById("positions-count");
   if (!tableBody) return;
 
-  const positions = getTechnicianPositionsCache();
-  if (countEl) {
-    countEl.textContent = normalizeNumbers(String(positions.length));
+  const allPositions = getTechnicianPositionsCache();
+  const searchInput = document.getElementById('search-position-input');
+  const normalizedRawSearch = normalizeNumbers(searchInput?.value || '');
+  const searchTerm = normalizeText(normalizedRawSearch);
+
+  if (searchInput instanceof HTMLInputElement && searchInput.value !== normalizedRawSearch) {
+    searchInput.value = normalizedRawSearch;
   }
 
+  if (searchTerm !== lastPositionsResultSignature) {
+    resetPositionsPagination();
+    lastPositionsResultSignature = searchTerm;
+  }
+
+  const positions = getFilteredPositions(allPositions, searchTerm);
+
+  renderPositionsCount({
+    filteredItems: positions.length,
+    totalItems: allPositions.length,
+  });
+
   if (!positions.length) {
-    tableBody.innerHTML = `
-      <tr>
-        <td colspan="5">${t('positions.table.empty', 'لا توجد مناصب بعد.')}</td>
-      </tr>
-    `;
+    renderPositionsEmptyState(tableBody);
+    renderPositionsPagination(0);
     return;
   }
 
-  tableBody.innerHTML = positions.map((position) => {
+  const paginationState = getPositionsPaginationState(positions.length);
+  const visiblePositions = positions.slice(paginationState.startIndex, paginationState.endIndex);
+
+  tableBody.innerHTML = visiblePositions.map((position) => {
     const isEditing = editingPositionId && String(editingPositionId) === String(position.id);
     const costLabel = formatCurrencyLocalized(position.cost || 0);
     const priceLabel = position.clientPrice == null
@@ -989,8 +1084,8 @@ function renderPositionsTable() {
       : formatCurrencyLocalized(position.clientPrice);
     const nameArLabel = getPositionLabel(position, 'ar') || '—';
     const nameEnLabel = getPositionLabel(position, 'en') || '—';
-    const editLabel = t('positions.table.actions.edit', '✏️ تعديل');
-    const deleteLabel = t('positions.table.actions.delete', '🗑️ حذف');
+    const editLabel = t('positions.table.actions.editCompact', 'تعديل');
+    const deleteLabel = t('positions.table.actions.deleteCompact', 'حذف');
     return `
       <tr${isEditing ? ' class="technician-table-row-editing"' : ''}>
         <td>${escapeHtml(nameArLabel)}</td>
@@ -1006,6 +1101,111 @@ function renderPositionsTable() {
       </tr>
     `;
   }).join("");
+
+  renderPositionsPagination(positions.length);
+}
+
+function getFilteredPositions(positions, searchTerm = "") {
+  return positions.filter((position) => {
+    if (!searchTerm) return true;
+    const haystack = normalizeText([
+      position.labelAr,
+      position.labelEn,
+      position.name,
+    ].filter(Boolean).join(' '));
+    return haystack.includes(searchTerm);
+  });
+}
+
+function renderPositionsEmptyState(tableBody) {
+  tableBody.innerHTML = `
+    <tr class="projects-table-empty-row">
+      <td colspan="5" class="text-center text-muted">${t('positions.table.empty', 'لا توجد مناصب بعد.')}</td>
+    </tr>
+  `;
+}
+
+function renderPositionsCount({
+  filteredItems = 0,
+  totalItems = filteredItems,
+} = {}) {
+  const countEl = document.getElementById('positions-count');
+  if (!(countEl instanceof HTMLElement)) return;
+
+  const filteredValue = Math.max(0, Number(filteredItems) || 0);
+  const totalValue = Math.max(0, Number(totalItems) || 0);
+
+  if (filteredValue !== totalValue) {
+    const filteredTemplate = t('positions.list.filteredCount', '{count} من {total} منصب');
+    countEl.textContent = filteredTemplate
+      .replace('{count}', normalizeNumbers(String(filteredValue)))
+      .replace('{total}', normalizeNumbers(String(totalValue)));
+    return;
+  }
+
+  const template = t('positions.list.count', '{count} منصب');
+  countEl.textContent = template.replace('{count}', normalizeNumbers(String(filteredValue)));
+}
+
+function getPositionsPaginationState(totalItems) {
+  const paginationState = getTechniciansPaginationState({
+    totalItems,
+    page: positionsPagination.page,
+    pageSize: positionsPagination.pageSize,
+  });
+  positionsPagination.page = paginationState.currentPage;
+  return paginationState;
+}
+
+function renderPositionsPagination(totalItems) {
+  const host = document.getElementById('positions-list-pagination');
+  if (!host) return;
+
+  const paginationState = getPositionsPaginationState(totalItems);
+
+  if (totalItems <= 0 || paginationState.totalPages <= 1) {
+    host.hidden = true;
+    host.innerHTML = '';
+    return;
+  }
+
+  const navLabel = t('positions.pagination.navigation', 'التنقل بين صفحات المناصب');
+  const prevLabel = t('positions.pagination.prev', 'السابق');
+  const nextLabel = t('positions.pagination.next', 'التالي');
+  const pageLabelTemplate = t('positions.pagination.page', 'صفحة {page}');
+  const rangeTemplate = t('positions.pagination.range', '{from}-{to} من {total}');
+  const rangeText = rangeTemplate
+    .replace('{from}', normalizeNumbers(String(paginationState.rangeStart)))
+    .replace('{to}', normalizeNumbers(String(paginationState.rangeEnd)))
+    .replace('{total}', normalizeNumbers(String(totalItems)));
+  const pageNumbers = buildTechniciansPageNumbers(paginationState.currentPage, paginationState.totalPages);
+
+  const buttonsHtml = pageNumbers.map((page) => {
+    const isActive = page === paginationState.currentPage;
+    const pageLabel = pageLabelTemplate.replace('{page}', normalizeNumbers(String(page)));
+    return `<button type="button" class="${isActive ? 'ui-button ui-button--primary btn btn-primary btn-sm' : 'ui-button ui-button--outline btn btn-outline btn-sm'}" data-positions-page="${page}" aria-label="${escapeHtml(pageLabel)}" ${isActive ? 'aria-current="page"' : ''}>${normalizeNumbers(String(page))}</button>`;
+  }).join('');
+
+  host.hidden = false;
+  host.innerHTML = `
+    <div class="list-pagination__summary text-muted small">${escapeHtml(rangeText)}</div>
+    <div class="list-pagination__controls btn-group" role="group" aria-label="${escapeHtml(navLabel)}">
+      <button type="button" class="ui-button ui-button--outline btn btn-outline btn-sm" data-positions-page="${paginationState.currentPage - 1}" ${paginationState.currentPage <= 1 ? 'disabled' : ''} aria-label="${escapeHtml(prevLabel)}">‹</button>
+      ${buttonsHtml}
+      <button type="button" class="ui-button ui-button--outline btn btn-outline btn-sm" data-positions-page="${paginationState.currentPage + 1}" ${paginationState.currentPage >= paginationState.totalPages ? 'disabled' : ''} aria-label="${escapeHtml(nextLabel)}">›</button>
+    </div>
+  `;
+
+  host.querySelectorAll('[data-positions-page]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const nextPage = Number.parseInt(button.getAttribute('data-positions-page') || '', 10);
+      if (!Number.isFinite(nextPage)) return;
+      jumpPaginationSectionToStart(host);
+      positionsPagination.page = nextPage;
+      renderPositionsTable();
+      settlePaginationSectionToStart(host);
+    });
+  });
 }
 
 async function handlePositionSubmit(event) {
@@ -1026,6 +1226,9 @@ async function handlePositionSubmit(event) {
       : t('positions.toast.addSuccess', '✅ تم إضافة المنصب');
     showToast(successMessage);
     resetPositionForm();
+    if (!isUpdate) {
+      resetPositionsPagination();
+    }
     renderPositionsTable();
     renderPositionOptionsList();
     refreshTechnicianRoleSummaryFromInputs();
@@ -1038,6 +1241,14 @@ async function handlePositionSubmit(event) {
 
 function handlePositionCancel() {
   resetPositionForm();
+}
+
+function updatePositionsSearchResetButton() {
+  const resetButton = document.getElementById('positions-clear-search');
+  if (!(resetButton instanceof HTMLButtonElement)) return;
+
+  const searchValue = normalizeNumbers(document.getElementById('search-position-input')?.value || '').trim();
+  resetButton.disabled = searchValue.length === 0;
 }
 
 async function handlePositionsTableClick(event) {
@@ -1055,6 +1266,7 @@ async function handlePositionsTableClick(event) {
         return;
       }
       populatePositionForm(position);
+      resetPositionsPagination();
       renderPositionsTable();
       return;
     }
@@ -1067,6 +1279,9 @@ async function handlePositionsTableClick(event) {
       if (editingPositionId && String(editingPositionId) === String(id)) {
         resetPositionForm();
       }
+      const totalAfterDelete = Math.max(0, getTechnicianPositionsCache().length);
+      const maxPageAfterDelete = Math.max(1, Math.ceil(totalAfterDelete / positionsPagination.pageSize));
+      positionsPagination.page = Math.min(positionsPagination.page, maxPageAfterDelete);
       showToast(t('positions.toast.deleteSuccess', '🗑️ تم حذف المنصب'));
       renderPositionsTable();
       renderPositionOptionsList();
@@ -1305,6 +1520,7 @@ function setupTechnicianModuleUi() {
   if (searchInput && !searchInput.dataset.listenerAttached) {
     searchInput.addEventListener("input", () => {
       searchInput.value = normalizeNumbers(searchInput.value);
+      updateTechniciansSearchResetButton();
       resetTechniciansPagination();
       renderTechniciansTable();
     });
@@ -1314,10 +1530,27 @@ function setupTechnicianModuleUi() {
   const roleFilter = document.getElementById("technician-role-filter");
   if (roleFilter && !roleFilter.dataset.listenerAttached) {
     roleFilter.addEventListener("change", () => {
+      updateTechniciansSearchResetButton();
       resetTechniciansPagination();
       renderTechniciansTable();
     });
     roleFilter.dataset.listenerAttached = "true";
+  }
+
+  const resetSearchButton = document.getElementById('technicians-clear-search');
+  if (resetSearchButton && !resetSearchButton.dataset.listenerAttached) {
+    resetSearchButton.addEventListener('click', () => {
+      if (searchInput instanceof HTMLInputElement) {
+        searchInput.value = '';
+      }
+      if (roleFilter instanceof HTMLSelectElement) {
+        roleFilter.value = '';
+      }
+      updateTechniciansSearchResetButton();
+      resetTechniciansPagination();
+      renderTechniciansTable();
+    });
+    resetSearchButton.dataset.listenerAttached = 'true';
   }
 
   const modalSaveBtn = document.getElementById("save-technician-changes");
@@ -1331,6 +1564,7 @@ function setupTechnicianModuleUi() {
   }
 
   const positionsForm = document.getElementById("position-form");
+  const firstPositionsInit = positionsForm && !positionsForm.dataset.initialized;
   if (positionsForm && !positionsForm.dataset.listenerAttached) {
     positionsForm.addEventListener("submit", (event) => {
       handlePositionSubmit(event).catch((error) => {
@@ -1339,11 +1573,38 @@ function setupTechnicianModuleUi() {
     });
     positionsForm.dataset.listenerAttached = "true";
   }
+  if (positionsForm) {
+    positionsForm.dataset.initialized = "true";
+  }
 
   const positionCancelBtn = document.getElementById("position-cancel-btn");
   if (positionCancelBtn && !positionCancelBtn.dataset.listenerAttached) {
     positionCancelBtn.addEventListener("click", handlePositionCancel);
     positionCancelBtn.dataset.listenerAttached = "true";
+  }
+
+  const positionsSearchInput = document.getElementById('search-position-input');
+  if (positionsSearchInput && !positionsSearchInput.dataset.listenerAttached) {
+    positionsSearchInput.addEventListener('input', () => {
+      positionsSearchInput.value = normalizeNumbers(positionsSearchInput.value);
+      updatePositionsSearchResetButton();
+      resetPositionsPagination();
+      renderPositionsTable();
+    });
+    positionsSearchInput.dataset.listenerAttached = 'true';
+  }
+
+  const positionsResetButton = document.getElementById('positions-clear-search');
+  if (positionsResetButton && !positionsResetButton.dataset.listenerAttached) {
+    positionsResetButton.addEventListener('click', () => {
+      if (positionsSearchInput instanceof HTMLInputElement) {
+        positionsSearchInput.value = '';
+      }
+      updatePositionsSearchResetButton();
+      resetPositionsPagination();
+      renderPositionsTable();
+    });
+    positionsResetButton.dataset.listenerAttached = 'true';
   }
 
   const positionsTableBody = document.getElementById("positions-table");
@@ -1354,6 +1615,18 @@ function setupTechnicianModuleUi() {
 
   sanitizeNumericInput(document.getElementById("position-cost"), normalizeMoneyValue);
   sanitizeNumericInput(document.getElementById("position-client-price"), normalizeMoneyValue);
+  updatePositionsSearchResetButton();
+
+  if (firstInit) {
+    resetTechnicianForm();
+  }
+
+  if (firstPositionsInit) {
+    resetPositionForm();
+  }
+
+  updateTechnicianCancelVisibility(Boolean(editingTechnicianId));
+  setPositionFormMode(editingPositionId ? "update" : "add");
 
   const subTabsRoot = document.querySelector('[data-tech-tabs]');
   if (subTabsRoot && !subTabsRoot.dataset.listenerAttached) {
@@ -1386,6 +1659,7 @@ function setupTechnicianModuleUi() {
     renderPositionsTable();
   }
 
+  updateTechniciansSearchResetButton();
   techniciansUiInitialised = true;
 }
 
@@ -1400,20 +1674,33 @@ export function initTechniciansModule({ loadData = false, showToastOnError = tru
   return Promise.resolve();
 }
 
-function bootTechniciansModule() {
+export function bootTechniciansModule(options = {}) {
   if (techniciansBootstrapped) {
     return;
   }
 
+  const { loadData = true, showToastOnError = true } = options;
   techniciansBootstrapped = true;
-  void initTechniciansModule({ loadData: true })
+  void initTechniciansModule({ loadData, showToastOnError })
     .finally(() => {
       renderTechniciansTable();
       refreshTechnicianLanguageStrings();
     });
 }
 
+function hasTechniciansModuleDom() {
+  return Boolean(
+    document.getElementById('technician-form')
+    || document.getElementById('technicians-table')
+    || document.getElementById('positions-table')
+    || document.querySelector('[data-tech-tabs]')
+  );
+}
+
 window.addEventListener("DOMContentLoaded", () => {
+  if (!hasTechniciansModuleDom()) {
+    return;
+  }
   bootTechniciansModule();
 });
 

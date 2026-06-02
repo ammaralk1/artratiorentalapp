@@ -1,3 +1,3 @@
 export { filterReservationEntries } from './filter.js';
-export { buildReservationTilesHtml } from './tiles.js';
+export { buildReservationTilesHtml, resolveReservationLifecycleGroup } from './tiles.js';
 export { buildReservationDetailsHtml } from './details.js';

@@ -17,6 +17,7 @@ return [
         ],
         'session_name' => 'art_ratio_session_test',
         'enforce_https' => false,
+        'allow_legacy_password_login' => true,
     ],
     'sirv' => [
         'client_id' => 'TEST_CLIENT_ID',

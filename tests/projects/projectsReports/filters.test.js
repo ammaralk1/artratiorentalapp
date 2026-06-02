@@ -35,7 +35,7 @@ describe('projectsReports/filters', () => {
     },
     {
       id: 2,
-      title: 'Closed Edit',
+      title: 'Closed Unconfirmed Edit',
       projectCode: 'PRJ-2',
       clientName: 'Other',
       clientCompany: '',
@@ -50,6 +50,39 @@ describe('projectsReports/filters', () => {
         status: 'completed',
         paymentHistory: [{ type: 'amount', value: 1000 }],
       },
+    },
+    {
+      id: 4,
+      title: 'Closed Confirmed Edit',
+      projectCode: 'PRJ-4',
+      clientName: 'Studio',
+      clientCompany: '',
+      type: 'post',
+      description: '',
+      status: 'completed',
+      confirmed: true,
+      cancelled: false,
+      start: new Date('2026-03-02T10:00:00Z'),
+      overallTotal: 1500,
+      raw: {
+        status: 'completed',
+        paymentHistory: [{ type: 'amount', value: 1500 }],
+      },
+    },
+    {
+      id: 5,
+      title: 'Pending Confirmed Shoot',
+      projectCode: 'PRJ-5',
+      clientName: 'Pending Client',
+      clientCompany: '',
+      type: 'commercial',
+      description: '',
+      status: 'pending',
+      confirmed: true,
+      cancelled: false,
+      start: new Date('2026-04-02T10:00:00Z'),
+      overallTotal: 900,
+      raw: { status: 'pending' },
     },
     {
       id: 3,
@@ -72,14 +105,14 @@ describe('projectsReports/filters', () => {
 
   it('filters projects using status, payment, cancellation, and confirmation rules', () => {
     const result = filterProjectsForReports(projects, {
-      search: 'closed',
+      search: 'edit',
       statuses: ['completed'],
       payment: 'paid',
       confirmed: 'closed',
       range: 'all',
     }, new Date('2026-04-05T00:00:00Z'));
 
-    expect(result.map((project) => project.id)).toEqual([2]);
+    expect(result.map((project) => project.id)).toEqual([4]);
   });
 
   it('filters by custom and relative ranges', () => {
@@ -92,14 +125,14 @@ describe('projectsReports/filters', () => {
 
   it('supports custom range filtering from filterProjectsForReports', () => {
     const result = filterProjectsForReports(projects, {
-      statuses: ['upcoming', 'completed'],
+      statuses: ['upcoming', 'completed', 'pending'],
       payment: 'all',
       confirmed: 'all',
       range: 'custom',
-      startDate: '2026-03-15',
+      startDate: '2026-03-01',
       endDate: '2026-04-05',
     }, new Date('2026-04-05T00:00:00Z'));
 
-    expect(result.map((project) => project.id)).toEqual([1]);
+    expect(result.map((project) => project.id)).toEqual([1, 4, 5]);
   });
 });

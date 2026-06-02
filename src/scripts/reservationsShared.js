@@ -989,13 +989,29 @@ export function normalizeProjectStatus(value = '') {
   }
 }
 
+export function hasLinkedProjectId(value) {
+  if (value == null) return false;
+  const normalized = String(value).trim().toLowerCase();
+  if (!normalized || normalized === 'null' || normalized === 'undefined') return false;
+  if (normalized === '0') return false;
+  return true;
+}
+
+export function isTruthyReservationFlag(value) {
+  if (value === true || value === 1) return true;
+  if (value === false || value === 0) return false;
+  const normalized = String(value ?? '').trim().toLowerCase();
+  if (!normalized) return false;
+  return normalized === 'true' || normalized === '1' || normalized === 'yes';
+}
+
 export function resolveReservationProjectState(reservation = {}, project = null) {
-  const reservationConfirmed = reservation?.confirmed === true || reservation?.confirmed === 'true';
+  const reservationConfirmed = isTruthyReservationFlag(reservation?.confirmed);
   const projectId = reservation?.projectId ?? reservation?.project_id ?? null;
-  const projectLinked = projectId != null && projectId !== '' && projectId !== 'null';
+  const projectLinked = hasLinkedProjectId(projectId);
   const projectStatus = projectLinked ? normalizeProjectStatus(project?.status ?? project?.status_label ?? project?.statusLabel ?? '') : null;
   const projectConfirmed = projectLinked
-    && (project?.confirmed === true || ['confirmed', 'in_progress', 'completed'].includes(projectStatus));
+    && (isTruthyReservationFlag(project?.confirmed) || ['confirmed', 'in_progress', 'completed'].includes(projectStatus));
   const effectiveConfirmed = projectLinked ? projectConfirmed : reservationConfirmed;
 
   return {

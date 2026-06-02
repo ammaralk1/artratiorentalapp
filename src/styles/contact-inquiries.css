@@ -1,0 +1,183 @@
+body.contact-inquiries-page {
+  --records-shell-bg: rgba(248, 250, 247, 0.92);
+  --records-card-bg: rgba(242, 245, 239, 0.92);
+  --records-shell-border: rgba(42, 64, 48, 0.11);
+  --records-card-border: rgba(42, 64, 48, 0.09);
+  --records-control-bg: #f2f5ef;
+  --records-control-bg-hover: #edf2ec;
+  --records-control-border: rgba(42, 64, 48, 0.1);
+  --records-control-border-focus: rgba(42, 64, 48, 0.15);
+  --records-row-active: rgba(31, 47, 34, 0.05);
+}
+
+html.dark body.contact-inquiries-page,
+html.dark-mode body.contact-inquiries-page,
+html[data-theme='dark'] body.contact-inquiries-page,
+body.contact-inquiries-page.dark,
+body.contact-inquiries-page.dark-mode,
+body.contact-inquiries-page[data-theme='dark'] {
+  --records-shell-bg: rgba(14, 22, 18, 0.9);
+  --records-card-bg: rgba(20, 29, 25, 0.84);
+  --records-shell-border: rgba(147, 168, 137, 0.1);
+  --records-card-border: rgba(147, 168, 137, 0.08);
+  --records-control-bg: rgba(20, 30, 24, 0.96);
+  --records-control-bg-hover: rgba(24, 36, 29, 0.98);
+  --records-control-border: rgba(147, 168, 137, 0.16);
+  --records-control-border-focus: rgba(147, 168, 137, 0.26);
+  --records-row-active: rgba(86, 126, 86, 0.14);
+}
+
+.contact-inquiries-page .contact-inquiries-stat-card .ui-stat-card__label {
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.contact-inquiries-page .contact-inquiries-stat-card .ui-stat-card__value {
+  font-size: clamp(1.85rem, 2.8vw, 2.35rem);
+}
+
+.contact-inquiries-page .users-table th:nth-child(1),
+.contact-inquiries-page .users-table td:nth-child(1) {
+  width: 9%;
+}
+
+.contact-inquiries-page .users-table th:nth-child(2),
+.contact-inquiries-page .users-table td:nth-child(2) {
+  width: 18%;
+}
+
+.contact-inquiries-page .users-table th:nth-child(3),
+.contact-inquiries-page .users-table td:nth-child(3) {
+  width: 17%;
+}
+
+.contact-inquiries-page .users-table th:nth-child(4),
+.contact-inquiries-page .users-table td:nth-child(4) {
+  width: 15%;
+}
+
+.contact-inquiries-page .users-table th:nth-child(5),
+.contact-inquiries-page .users-table td:nth-child(5) {
+  width: 12%;
+  text-align: center;
+}
+
+.contact-inquiries-page .users-table th:nth-child(6),
+.contact-inquiries-page .users-table td:nth-child(6),
+.contact-inquiries-page .users-table th:nth-child(7),
+.contact-inquiries-page .users-table td:nth-child(7) {
+  width: 14%;
+}
+
+.contact-inquiries-page .users-table th:nth-child(8),
+.contact-inquiries-page .users-table td:nth-child(8) {
+  width: 11%;
+  text-align: center;
+}
+
+.contact-inquiries-page .surface-heading-stack {
+  gap: 0.35rem;
+}
+
+.contact-inquiries-page .surface-support-text {
+  max-width: 36rem;
+}
+
+.contact-inquiries-page .contact-inquiries-status-badge {
+  min-height: 2rem;
+}
+
+.contact-inquiries-page .contact-inquiries-detail-meta {
+  color: var(--bo-color-text-muted);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.contact-inquiries-page .contact-inquiries-detail-meta-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.contact-inquiries-page .contact-inquiries-detail-meta-list > div {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--bo-color-text-muted);
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
+.contact-inquiries-page .contact-inquiries-detail-meta-list > div strong {
+  color: var(--bo-color-text-primary);
+  font-weight: 600;
+  text-align: start;
+}
+
+.contact-inquiries-page #contact-inquiry-workflow .ui-button {
+  min-height: 2.65rem;
+}
+
+.contact-inquiries-page .contact-inquiries-workflow-actions {
+  padding-bottom: 0.25rem;
+}
+
+.contact-inquiries-page #contact-detail-notes {
+  min-height: 9rem;
+}
+
+.contact-inquiries-page #contact-inquiry-activity-list {
+  gap: 0.75rem;
+}
+
+.contact-inquiries-page .contact-inquiries-activity-card {
+  gap: 0.45rem;
+}
+
+.contact-inquiries-page .contact-inquiries-activity-user {
+  color: var(--bo-color-text-primary);
+  font-size: 0.92rem;
+}
+
+.contact-inquiries-page .contact-inquiries-activity-time {
+  color: var(--bo-color-text-muted);
+  font-size: 0.74rem;
+}
+
+.contact-inquiries-page .contact-inquiries-activity-message {
+  color: var(--bo-color-text-primary);
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+
+.contact-inquiries-page .contact-inquiries-status-chip {
+  white-space: nowrap;
+}
+
+@media (max-width: 1023px) {
+  .contact-inquiries-page .contact-inquiries-content-grid {
+    gap: 1.25rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .contact-inquiries-page .dashboard-main-inner {
+    gap: 1.5rem;
+  }
+
+  .contact-inquiries-page .contact-inquiries-hero-shell,
+  .contact-inquiries-page .contact-inquiries-table-shell,
+  .contact-inquiries-page .contact-inquiries-detail-shell,
+  .contact-inquiries-page .contact-inquiries-workflow-shell {
+    padding: 1rem;
+  }
+
+  .contact-inquiries-page .users-table {
+    min-width: 58rem;
+  }
+
+  .contact-inquiries-page .contact-inquiries-detail-meta-list > div {
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+}

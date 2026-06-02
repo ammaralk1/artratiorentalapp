@@ -11,7 +11,10 @@
     "autoload": {
         "psr-4": {
             "ArtRatio\\Repositories\\": "backend/repositories/"
-        }
+        },
+        "files": [
+            "backend/services/ProjectManagedReservationService.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {

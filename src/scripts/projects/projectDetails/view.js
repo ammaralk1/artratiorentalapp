@@ -15,7 +15,6 @@ import {
 } from '../view.js';
 import {
   calculateDraftFinancialBreakdown,
-  DEFAULT_COMPANY_SHARE_PERCENT,
   calculatePaymentProgress,
   determinePaymentStatus,
   calculateReservationDays,
@@ -23,13 +22,14 @@ import {
 import { exportProjectPdf } from '../../reservations/reservationPdf.js';
 import { getReservationUIHandler, waitForReservationUIHandler } from '../../reservations/uiBridge.js';
 import { removeProject } from '../actions.js';
-import { updatePreferences } from '../../preferencesService.js';
 import {
   getProjectsState,
   updateProjectApi,
   isApiError as isProjectApiError,
   closeProjectApi,
 } from '../../projectsService.js';
+import { resolveProjectOverheadSettings } from '../helpers.js';
+import { calculateProjectLineFinancials } from '../financials.js';
 import { getReservationsState } from '../../reservationsService.js';
 import { updateLinkedReservationsConfirmation, updateLinkedReservationsClosed } from '../actions.js';
 import { normalizeProjectPaymentHistoryForView, buildProjectPaymentHistoryMarkup } from './payment.js';
@@ -43,6 +43,13 @@ let _startProjectEdit = null;
 
 export function setStartProjectEdit(fn) {
   _startProjectEdit = fn;
+}
+
+function getProjectDetailsBaseTotalLabel(discountAmount) {
+  const hasDiscount = Number.isFinite(Number(discountAmount)) && Number(discountAmount) > 0;
+  return hasDiscount
+    ? t('projects.details.summary.grossAfterDiscount', 'الإجمالي بعد الخصم')
+    : t('projects.details.summary.gross', 'الإجمالي');
 }
 
 // ── openProjectDetails ────────────────────────────────────────────────────────
@@ -61,7 +68,22 @@ export function openProjectDetails(projectId) {
   const typeLabel = getProjectTypeLabel(project.type);
   const descriptionRaw = project.description?.trim();
   const descriptionDisplay = descriptionRaw || t('projects.fallback.noDescription', 'لا يوجد وصف');
-  const clientName = client?.customerName || t('projects.fallback.unknownClient', 'عميل غير معروف');
+  const clientName = String(
+    project?.clientName
+      ?? project?.client_name
+      ?? project?.customerName
+      ?? project?.customer_name
+      ?? ''
+  ).trim()
+    || String(
+      client?.customerName
+        ?? client?.fullName
+        ?? client?.full_name
+        ?? client?.customer_name
+        ?? client?.name
+        ?? ''
+    ).trim()
+    || t('projects.fallback.unknownClient', 'عميل غير معروف');
   const clientPhoneRaw = client?.phone
     ?? client?.customerPhone
     ?? project.clientPhone
@@ -91,6 +113,7 @@ export function openProjectDetails(projectId) {
   const reservationsCount = reservationsForProject.length;
 
   const { subtotal, taxAmount, applyTax, expensesTotal } = resolveProjectTotals(project);
+  const { sharePercent: detailSharePercent, enabled: detailShareEnabled } = resolveProjectOverheadSettings(project, { applyTaxRaw: applyTax === true });
   const servicesClientPriceVal = Number(project?.servicesClientPrice ?? project?.services_client_price ?? 0);
   const projectTotal = subtotal;
   const combinedTaxAmount = applyTax
@@ -180,54 +203,49 @@ export function openProjectDetails(projectId) {
       });
       acc.equipment += Number(breakdown.equipmentTotal || 0);
       acc.crew += Number(breakdown.crewTotal || 0);
+      acc.equipmentCost += Number(breakdown.equipmentCostTotal || 0);
       acc.crewCost += Number(breakdown.crewCostTotal || 0);
       return acc;
-    }, { equipment: 0, crew: 0, crewCost: 0 });
+    }, { equipment: 0, crew: 0, equipmentCost: 0, crewCost: 0 });
 
     const expensesTotalNumber = Number(expensesTotal || 0);
-    const grossBeforeDiscount = Number((agg.equipment + agg.crew + servicesClientPriceVal).toFixed(2));
-
     const discountVal = Number.parseFloat(project?.discount ?? project?.discountValue ?? 0) || 0;
     const discountType = project?.discountType === 'amount' ? 'amount' : 'percent';
-    let discountAmount = discountType === 'amount' ? discountVal : (grossBeforeDiscount * (discountVal / 100));
-    if (!Number.isFinite(discountAmount) || discountAmount < 0) discountAmount = 0;
-    if (discountAmount > grossBeforeDiscount) discountAmount = grossBeforeDiscount;
-
-    const applyTaxFlag = applyTax === true;
-    const shareEnabled = project?.companyShareEnabled === true
-      || project?.companyShareEnabled === 'true'
-      || project?.company_share_enabled === true
-      || project?.company_share_enabled === 'true';
-    const rawShare = Number.parseFloat(
-      project?.companySharePercent
-      ?? project?.company_share_percent
-      ?? project?.companyShare
-      ?? project?.company_share
-      ?? 0
-    ) || 0;
-    // Company share applies only when VAT is enabled
-    const sharePercent = (shareEnabled && applyTaxFlag && rawShare > 0) ? rawShare : 0;
-    const baseAfterDiscount = Math.max(0, grossBeforeDiscount - discountAmount);
-    const companyShareAmount = Number(((baseAfterDiscount) * (sharePercent / 100)).toFixed(2));
-
-    const taxAmountAfterShare = applyTaxFlag
-      ? Number(((baseAfterDiscount + companyShareAmount) * PROJECT_TAX_RATE).toFixed(2))
-      : 0;
-
-    const finalTotal = Number((baseAfterDiscount + companyShareAmount + taxAmountAfterShare).toFixed(2));
-    const netProfit = Number((finalTotal - companyShareAmount - taxAmountAfterShare - expensesTotalNumber - agg.crewCost).toFixed(2));
+    const { applyTax: applyTaxFlag, sharePercent, enabled: companyShareEnabled } = resolveProjectOverheadSettings(project, { applyTaxRaw: applyTax === true });
+    const clientAmounts = calculateProjectLineFinancials({
+      equipmentRevenue: agg.equipment,
+      crewRevenue: agg.crew,
+      servicesRevenue: servicesClientPriceVal,
+      equipmentCost: agg.equipmentCost,
+      crewCost: agg.crewCost,
+      servicesCost: expensesTotalNumber,
+      discountValue: discountVal,
+      discountType,
+      applyTax: applyTaxFlag,
+      companyShareEnabled,
+      companySharePercent: sharePercent,
+    });
+    const discountAmount = clientAmounts.discountAmount;
+    const baseAfterDiscount = clientAmounts.subtotalAfterDiscount;
+    const companyShareAmount = clientAmounts.companyShareAmount;
+    const taxAmountAfterShare = clientAmounts.taxAmount;
+    const finalTotal = clientAmounts.totalWithTax;
+    const netProfit = clientAmounts.marginBeforeTax;
+    const clientSubtotalBeforeDiscount = clientAmounts.clientSubtotalBeforeDiscount;
 
     if (agg.equipment > 0) summaryDetails.push({ icon: '🎛️', label: t('projects.details.summary.equipmentTotal', 'إجمالي المعدات'), value: formatCurrency(agg.equipment) });
+    if (agg.equipmentCost > 0) summaryDetails.push({ icon: '🧾', label: t('projects.details.summary.equipmentCostTotal', 'تكلفة المعدات'), value: `−${formatCurrency(agg.equipmentCost)}` });
     if (agg.crew > 0) summaryDetails.push({ icon: '😎', label: t('projects.details.summary.crewTotal', 'إجمالي الفريق'), value: formatCurrency(agg.crew) });
-    if (agg.crewCost > 0) summaryDetails.push({ icon: '🧾', label: t('projects.details.summary.crewCostTotal', 'تكلفة الفريق'), value: formatCurrency(agg.crewCost) });
+    if (agg.crewCost > 0) summaryDetails.push({ icon: '🧾', label: t('projects.details.summary.crewCostTotal', 'تكلفة الفريق'), value: `−${formatCurrency(agg.crewCost)}` });
     if (servicesClientPriceVal > 0) summaryDetails.push({ icon: '💼', label: t('projects.details.summary.servicesClientPrice', 'الخدمات الإنتاجية'), value: formatCurrency(servicesClientPriceVal) });
-    if (expensesTotalNumber > 0) summaryDetails.push({ icon: '🧾', label: t('projects.details.summary.expensesTotal', 'تكلفة الخدمات الإنتاجية'), value: formatCurrency(expensesTotalNumber) });
+    if (expensesTotalNumber > 0) summaryDetails.push({ icon: '🧾', label: t('projects.details.summary.expensesTotal', 'تكلفة الخدمات الإنتاجية'), value: `−${formatCurrency(expensesTotalNumber)}` });
+    if (discountAmount > 0) summaryDetails.push({ icon: '🧮', label: t('projects.details.summary.grossBeforeDiscount', 'الإجمالي قبل الخصم'), value: formatCurrency(clientSubtotalBeforeDiscount) });
     if (discountAmount > 0) summaryDetails.push({ icon: '🏷️', label: t('projects.details.summary.discount', 'الخصم'), value: `−${formatCurrency(discountAmount)}` });
-    summaryDetails.push({ icon: '🧮', label: t('projects.details.summary.grossAfterDiscount', 'الإجمالي بعد الخصم'), value: formatCurrency(baseAfterDiscount) });
-    if (companyShareAmount > 0) summaryDetails.push({ icon: '🏦', label: t('projects.details.summary.companyShare', 'نسبة الشركة'), value: `−${formatCurrency(companyShareAmount)}` });
+    summaryDetails.push({ icon: '🧮', label: getProjectDetailsBaseTotalLabel(discountAmount), value: formatCurrency(baseAfterDiscount) });
+    if (companyShareAmount > 0) summaryDetails.push({ icon: '🏦', label: t('projects.details.summary.companyShare', 'المصاريف التشغيلية'), value: `−${formatCurrency(companyShareAmount)}` });
     if (taxAmountAfterShare > 0) summaryDetails.push({ icon: '💸', label: t('projects.details.summary.tax', 'الضريبة (15٪)'), value: `−${formatCurrency(taxAmountAfterShare)}` });
-    summaryDetails.push({ icon: '💵', label: t('projects.details.summary.netProfit', 'صافي الربح'), value: formatCurrency(netProfit) });
     summaryDetails.push({ icon: '💰', label: t('projects.details.summary.finalTotal', 'المجموع النهائي'), value: formatCurrency(finalTotal) });
+    summaryDetails.push({ icon: '💵', label: t('projects.details.summary.netProfit', 'صافي الربح'), value: formatCurrency(netProfit) });
     paymentTotalForProgress = finalTotal;
   } else {
     const expensesTotalNumber = Number(expensesTotal || 0);
@@ -235,42 +253,34 @@ export function openProjectDetails(projectId) {
 
     const discountVal = Number.parseFloat(project?.discount ?? project?.discountValue ?? 0) || 0;
     const discountType = project?.discountType === 'amount' ? 'amount' : 'percent';
-    let discountAmount = discountType === 'amount' ? discountVal : (servicesTotal * (discountVal / 100));
-    if (!Number.isFinite(discountAmount) || discountAmount < 0) discountAmount = 0;
-    if (discountAmount > servicesTotal) discountAmount = servicesTotal;
-
-    const baseAfterDiscount = Math.max(0, servicesTotal - discountAmount);
-
-    const applyTaxFlag = applyTax === true;
-    const shareEnabled = project?.companyShareEnabled === true
-      || project?.companyShareEnabled === 'true'
-      || project?.company_share_enabled === true
-      || project?.company_share_enabled === 'true';
-    const rawShare = Number.parseFloat(
-      project?.companySharePercent
-      ?? project?.company_share_percent
-      ?? project?.companyShare
-      ?? project?.company_share
-      ?? 0
-    ) || 0;
-    const sharePercent = (shareEnabled && applyTaxFlag && rawShare > 0) ? rawShare : 0;
-    const companyShareAmount = Number(((baseAfterDiscount) * (sharePercent / 100)).toFixed(2));
-
-    const taxAmountAfterShare = applyTaxFlag
-      ? Number(((baseAfterDiscount + companyShareAmount) * PROJECT_TAX_RATE).toFixed(2))
-      : 0;
-
-    const finalTotal = Number((baseAfterDiscount + companyShareAmount + taxAmountAfterShare).toFixed(2));
-    const netProfit = Number((finalTotal - companyShareAmount - taxAmountAfterShare - expensesTotalNumber).toFixed(2));
+    const { applyTax: applyTaxFlag, sharePercent, enabled: companyShareEnabled } = resolveProjectOverheadSettings(project, { applyTaxRaw: applyTax === true });
+    const clientAmounts = calculateProjectLineFinancials({
+      servicesRevenue: servicesTotal,
+      servicesCost: expensesTotalNumber,
+      discountValue: discountVal,
+      discountType,
+      applyTax: applyTaxFlag,
+      companyShareEnabled,
+      companySharePercent: sharePercent,
+    });
+    const discountAmount = clientAmounts.discountAmount;
+    const baseAfterDiscount = clientAmounts.subtotalAfterDiscount;
+    const companyShareAmount = clientAmounts.companyShareAmount;
+    const taxAmountAfterShare = clientAmounts.taxAmount;
+    const finalTotal = clientAmounts.totalWithTax;
+    const netProfit = clientAmounts.marginBeforeTax;
+    const clientSubtotalBeforeDiscount = clientAmounts.clientSubtotalBeforeDiscount;
 
     summaryDetails = [];
     summaryDetails.push({ icon: '💼', label: t('projects.details.summary.servicesClientPrice', 'الخدمات الإنتاجية'), value: formatCurrency(servicesTotal) });
+    if (expensesTotalNumber > 0) summaryDetails.push({ icon: '🧾', label: t('projects.details.summary.expensesTotal', 'تكلفة الخدمات الإنتاجية'), value: `−${formatCurrency(expensesTotalNumber)}` });
+    if (discountAmount > 0) summaryDetails.push({ icon: '🧮', label: t('projects.details.summary.grossBeforeDiscount', 'الإجمالي قبل الخصم'), value: formatCurrency(clientSubtotalBeforeDiscount) });
     if (discountAmount > 0) summaryDetails.push({ icon: '🏷️', label: t('projects.details.summary.discount', 'الخصم'), value: `−${formatCurrency(discountAmount)}` });
-    summaryDetails.push({ icon: '🧮', label: t('projects.details.summary.grossAfterDiscount', 'الإجمالي بعد الخصم'), value: formatCurrency(baseAfterDiscount) });
-    if (companyShareAmount > 0) summaryDetails.push({ icon: '🏦', label: t('projects.details.summary.companyShare', 'نسبة الشركة'), value: `−${formatCurrency(companyShareAmount)}` });
+    summaryDetails.push({ icon: '🧮', label: getProjectDetailsBaseTotalLabel(discountAmount), value: formatCurrency(baseAfterDiscount) });
+    if (companyShareAmount > 0) summaryDetails.push({ icon: '🏦', label: t('projects.details.summary.companyShare', 'المصاريف التشغيلية'), value: `−${formatCurrency(companyShareAmount)}` });
     if (taxAmountAfterShare > 0) summaryDetails.push({ icon: '💸', label: t('projects.details.summary.tax', 'الضريبة (15٪)'), value: `−${formatCurrency(taxAmountAfterShare)}` });
-    summaryDetails.push({ icon: '💵', label: t('projects.details.summary.netProfit', 'صافي الربح'), value: formatCurrency(netProfit) });
     summaryDetails.push({ icon: '💰', label: t('projects.details.summary.finalTotal', 'المجموع النهائي'), value: formatCurrency(finalTotal) });
+    summaryDetails.push({ icon: '💵', label: t('projects.details.summary.netProfit', 'صافي الربح'), value: formatCurrency(netProfit) });
 
     paymentTotalForProgress = finalTotal;
   }
@@ -383,8 +393,24 @@ export function openProjectDetails(projectId) {
     confirmedChipHtml
   ].filter(Boolean).join('');
 
+  const expenseRowsForView = Array.isArray(project.expenses) && project.expenses.length
+    ? project.expenses
+    : (expensesTotal > 0 || servicesClientPriceVal > 0
+        ? [{
+            id: 'stored-production-services',
+            label: t('projects.details.summary.servicesClientPrice', 'الخدمات الإنتاجية'),
+            amount: expensesTotal,
+            salePrice: servicesClientPriceVal,
+            days: 1,
+            note: t('projects.details.expenses.storedTotalsNote', 'إجماليات محفوظة بدون صفوف تفصيلية'),
+          }]
+        : []);
   const expensesTableTitle = t('projects.details.expenses', 'خدمات إنتاجية ({amount})').replace('{amount}', formatCurrency(expensesTotal));
-  const expensesTableMarkup = buildProjectViewExpensesMarkup(Array.isArray(project.expenses) ? project.expenses : []);
+  const expensesTableMarkup = buildProjectViewExpensesMarkup(expenseRowsForView, {
+    applyTax,
+    companyShareEnabled: detailShareEnabled,
+    companySharePercent: detailSharePercent,
+  });
 
   const projectForReservations = { ...project, paymentStatus: paymentStatusValue };
 
@@ -421,43 +447,40 @@ export function openProjectDetails(projectId) {
     </section>
     <section class="project-details-section">
       <h5>${escapeHtml(t('reservations.paymentHistory.title', 'سجل الدفعات'))}</h5>
+      <div class="project-modal-payment-history-shell mt-3">
+        ${paymentHistoryMarkup}
+      </div>
       <div class="project-details-grid">
-        <div class="project-details-grid-item">
+        <div class="project-details-grid-item project-details-grid-item--total">
           <span>${escapeHtml(t('projects.details.paymentOverview.total', 'الإجمالي الكلي'))}</span>
           <strong>${escapeHtml(formatCurrency(paymentTotalForProgress))}</strong>
         </div>
-        <div class="project-details-grid-item">
+        <div class="project-details-grid-item project-details-grid-item--paid">
           <span>${escapeHtml(t('projects.details.paymentOverview.paid', 'المدفوع'))}</span>
           <strong>${escapeHtml(paidAmountDisplay)}</strong>
         </div>
-        <div class="project-details-grid-item">
+        <div class="project-details-grid-item project-details-grid-item--percent">
           <span>${escapeHtml(t('projects.details.paymentOverview.percent', 'نسبة المدفوع'))}</span>
           <strong>${escapeHtml(paidPercentDisplay)}</strong>
         </div>
-        <div class="project-details-grid-item">
+        <div class="project-details-grid-item project-details-grid-item--remaining">
           <span>${escapeHtml(t('projects.details.paymentOverview.remaining', 'المتبقي'))}</span>
           <strong>${escapeHtml(remainingDisplay)}</strong>
         </div>
       </div>
-      <div class="reservation-payment-history-modal mt-3">
-        ${paymentHistoryMarkup}
-      </div>
     </section>
     ${buildProjectReservationsSection(projectForReservations)}
     <div class="project-details-footer">
-      <button type="button" class="modal-action-btn modal-action-btn--primary" data-action="create-reservation">
-        ${escapeHtml(t('projects.details.reservations.create', '➕ إنشاء حجز مرتبط'))}
-      </button>
-      <button type="button" class="modal-action-btn modal-action-btn--ghost" data-action="edit-project">
+      <button type="button" class="ui-button ui-button--secondary btn btn-secondary" data-action="edit-project">
         ${escapeHtml(t('projects.details.actions.edit', '✏️ تعديل المشروع'))}
       </button>
-      <button type="button" class="modal-action-btn modal-action-btn--danger" data-action="delete-project">
+      <button type="button" class="ui-button ui-button--danger btn btn-danger" data-action="delete-project">
         ${escapeHtml(t('projects.details.actions.delete', '🗑️ حذف المشروع'))}
       </button>
-      <button type="button" class="modal-action-btn modal-action-btn--ghost" id="project-details-export-btn">
+      <button type="button" class="ui-button ui-button--outline btn btn-outline" id="project-details-export-btn">
         ${escapeHtml(t('projects.details.actions.exportPdf', 'عرض سعر'))}
       </button>
-      <button type="button" class="modal-action-btn modal-action-btn--ghost" data-bs-dismiss="modal">
+      <button type="button" class="ui-button ui-button--outline btn btn-outline" data-bs-dismiss="modal">
         ${escapeHtml(t('actions.close', 'إغلاق'))}
       </button>
     </div>
@@ -489,12 +512,21 @@ export function openProjectDetails(projectId) {
   }
 }
 
+
+
 // ── bindFocusCards ────────────────────────────────────────────────────────────
-
 export function bindFocusCards({ onOpenProject }) {
-  if (!dom.focusCards || dom.focusCards.dataset.listenerAttached === 'true') return;
+  // Attach listener to both live and archive card containers if they exist.
+  const containers = [];
+  if (dom.focusCards && dom.focusCards.dataset.listenerAttached !== 'true') {
+    containers.push(dom.focusCards);
+  }
+  if (dom.archiveCards && dom.archiveCards.dataset.listenerAttached !== 'true') {
+    containers.push(dom.archiveCards);
+  }
+  if (containers.length === 0) return;
 
-  dom.focusCards.addEventListener('click', async (event) => {
+  const clickHandler = async (event) => {
     const actionButton = event.target.closest('[data-action]');
     if (actionButton) {
       const { action, id } = actionButton.dataset;
@@ -562,10 +594,15 @@ export function bindFocusCards({ onOpenProject }) {
     if (card?.dataset.projectId) {
       onOpenProject?.(card.dataset.projectId);
     }
-  });
+  };
 
-  dom.focusCards.dataset.listenerAttached = 'true';
+  // Add listener to each container and mark it as attached.
+  containers.forEach((el) => {
+    el.addEventListener('click', clickHandler);
+    el.dataset.listenerAttached = 'true';
+  });
 }
+
 
 // ── focusProjectRow ───────────────────────────────────────────────────────────
 
@@ -589,50 +626,9 @@ export function focusProjectRow(projectId) {
 
 export function bindProjectDetailsEvents(project) {
   if (!dom.detailsBody) return;
-  const createBtn = dom.detailsBody.querySelector('[data-action="create-reservation"]');
   const editBtn = dom.detailsBody.querySelector('[data-action="edit-project"]');
   const deleteBtn = dom.detailsBody.querySelector('[data-action="delete-project"]');
   const reservationContainer = dom.detailsBody.querySelector('.project-reservations-list');
-
-  if (createBtn && project) {
-    try {
-      const linked = getReservationsForProject(project.id) || [];
-      const hasActiveLinked = linked.some((res) => {
-        const raw = String(res?.status || res?.reservationStatus || '').toLowerCase();
-        return raw !== 'cancelled' && raw !== 'canceled';
-      });
-
-      if (hasActiveLinked) {
-        createBtn.classList?.add('disabled');
-        createBtn.setAttribute?.('aria-disabled', 'true');
-        createBtn.title = t('projects.details.reservations.createDisabled', '⚠️ المشروع مربوط بحجز مسبقاً');
-        createBtn.addEventListener('click', (event) => {
-          event.preventDefault();
-          showToast(t('projects.details.reservations.createDisabledToast', '⚠️ المشروع مربوط بحجز مسبقاً'));
-        });
-      } else {
-        createBtn.disabled = false;
-        createBtn.classList?.remove('disabled');
-        createBtn.classList?.remove('btn-disabled');
-        createBtn.removeAttribute?.('aria-disabled');
-        createBtn.removeAttribute?.('title');
-        createBtn.addEventListener('click', (event) => {
-          event.preventDefault();
-          startReservationForProject(project);
-        });
-      }
-    } catch (_) {
-      createBtn.disabled = false;
-      createBtn.classList?.remove('disabled');
-      createBtn.classList?.remove('btn-disabled');
-      createBtn.removeAttribute?.('aria-disabled');
-      createBtn.removeAttribute?.('title');
-      createBtn.addEventListener('click', (event) => {
-        event.preventDefault();
-        startReservationForProject(project);
-      });
-    }
-  }
 
   if (editBtn && project) {
     editBtn.addEventListener('click', (event) => {
@@ -694,7 +690,7 @@ export function bindProjectDetailsEvents(project) {
       if (!Number.isInteger(index) || index < 0) return;
       const opened = await openReservationDetails(index);
       if (!opened) {
-        window.location.href = 'dashboard.html#reservations';
+        window.location.href = 'operations.html#reservations';
       }
     });
 
@@ -706,42 +702,6 @@ export function bindProjectDetailsEvents(project) {
       card.click();
     });
   }
-}
-
-// ── startReservationForProject ────────────────────────────────────────────────
-
-function startReservationForProject(project) {
-  if (!project) return;
-  const context = {
-    projectId: project.id,
-    customerId: project.clientId || null,
-    start: project.start || null,
-    end: project.end || null,
-    forceNotes: Boolean(project.description),
-    fromProjectForm: true,
-    draftStorageKey: 'projects:create:draft',
-    returnUrl: `projects.html?project=${encodeURIComponent(project.id)}&linked=1#projects-section`,
-  };
-  updatePreferences({
-    dashboardTab: 'reservations-tab',
-    dashboardSubTab: 'create-tab'
-  }).catch((error) => {
-    console.warn('⚠️ [projects/projectDetails/view.js] Failed to persist dashboard tab preference', error);
-  });
-
-  let encodedContext = '';
-  try {
-    encodedContext = encodeURIComponent(JSON.stringify(context));
-  } catch (error) {
-    console.warn('⚠️ [projects/projectDetails/view.js] Unable to encode reservation context', error);
-  }
-
-  if (dom.detailsModalEl && window.bootstrap?.Modal) {
-    window.bootstrap.Modal.getOrCreateInstance(dom.detailsModalEl)?.hide();
-  }
-
-  const search = encodedContext ? `?reservationProjectContext=${encodedContext}` : '';
-  window.location.href = `dashboard.html${search}#reservations`;
 }
 
 // ── confirmProject ────────────────────────────────────────────────────────────

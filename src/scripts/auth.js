@@ -13,6 +13,7 @@ const LOGIN_ERROR_MESSAGES = {
 };
 const INTERNAL_TRAFFIC_COOKIE = 'ar_internal_traffic';
 const INTERNAL_TRAFFIC_MAX_AGE = 60 * 60 * 24 * 90;
+const SKIP_PREF_KEY = '__ART_RATIO_SKIP_PREF_FETCH__';
 let currentUser = null;
 
 export const AUTH_EVENTS = {
@@ -54,6 +55,19 @@ function shouldBypassAuth() {
     return false;
   }
 }
+
+function syncBypassPreferenceFlag() {
+  try {
+    if (typeof window === 'undefined') return;
+    if (shouldBypassAuth()) {
+      window[SKIP_PREF_KEY] = true;
+    }
+  } catch {
+    // ignore access issues
+  }
+}
+
+syncBypassPreferenceFlag();
 
 function applyRoleToDocument(role) {
   if (typeof document === 'undefined') return;

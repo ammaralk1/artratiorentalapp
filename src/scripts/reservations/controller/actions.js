@@ -12,6 +12,7 @@ import { renderReservationsList, renderReservationDetails } from '../renderers.j
 import { refreshCreateReservationForm } from '../createForm.js';
 import { setReservationsUIHandlers } from '../uiBridge.js';
 import { configureEditContextHooks, getReservationsEditContext } from './editContext.js';
+import mountReservationModalsIfNeeded from '../modals.js';
 
 export function handleReservationsMutation(detail = null) {
   refreshCreateReservationForm();
@@ -76,11 +77,13 @@ function getCloseModalElements() {
   return { modal, note, submit, cancel };
 }
 export function openCloseReservationModal(index, _event = null, reservationId = null) {
+  mountReservationModalsIfNeeded();
   pendingCloseIndex = index;
   pendingCloseReservationId = reservationId ?? null;
   const { modal, note } = getCloseModalElements();
   if (note) note.value = '';
   if (modal && (window.bootstrap?.Modal || (typeof bootstrap !== 'undefined' && bootstrap?.Modal))) {
+    document.body.classList.add('reservation-modal-open');
     const inst = (window.bootstrap?.Modal || bootstrap.Modal).getOrCreateInstance(modal);
     inst.show();
   }
@@ -162,7 +165,7 @@ export function openReservationEditor(index, reservation = null) {
   });
 
   const search = params.toString();
-  const target = search ? `dashboard.html?${search}#reservations` : 'dashboard.html#reservations';
+  const target = search ? `operations.html?${search}#reservations` : 'operations.html#reservations';
   window.location.href = target;
 }
 

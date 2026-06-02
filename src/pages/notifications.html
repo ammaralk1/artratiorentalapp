@@ -14,9 +14,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/src/styles/app.css">
-  <link rel="stylesheet" href="/dist/css/sidebar.css">
 </head>
-<body class="page-shell theme-loading notifications-page" data-theme="light">
+<body class="page-shell theme-loading notifications-page">
   <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
 
   <aside id="dashboard-sidebar" class="sidebar-shell sidebar-drawer" aria-label="التنقل الجانبي" data-i18n data-i18n-aria-label-key="dashboard.nav.sidebar">
@@ -55,7 +54,7 @@
             <span data-i18n data-i18n-key="dashboard.quickLinks.home">الصفحة الرئيسية</span>
           </span>
         </a>
-        <a class="tab-button" href="dashboard.html" data-close-sidebar data-i18n data-i18n-key="dashboard.quickLinks.dashboard">
+        <a class="tab-button" href="operations.html" data-close-sidebar data-i18n data-i18n-key="dashboard.quickLinks.dashboard">
           <span class="tab-button__content">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
@@ -72,13 +71,13 @@
         <a class="tab-button" href="projects.html" data-close-sidebar data-i18n data-i18n-key="dashboard.quickLinks.projects">
           <span class="tab-button__content">🏗️ <span data-i18n data-i18n-key="dashboard.quickLinks.projects">المشاريع</span></span>
         </a>
-        <a class="tab-button" href="dashboard.html#reservations-tab" data-close-sidebar data-i18n data-i18n-key="tabs.reservations">
+        <a class="tab-button" href="operations.html#reservations-tab" data-close-sidebar data-i18n data-i18n-key="tabs.reservations">
           <span class="tab-button__content">📅 <span data-i18n data-i18n-key="tabs.reservations">الحجوزات</span></span>
         </a>
-        <a class="tab-button" href="dashboard.html#equipment-tab" data-close-sidebar data-i18n data-i18n-key="tabs.equipment">
+        <a class="tab-button" href="equipment.html" data-close-sidebar data-i18n data-i18n-key="tabs.equipment">
           <span class="tab-button__content">🎛️ <span data-i18n data-i18n-key="tabs.equipment">المعدات</span></span>
         </a>
-        <a class="tab-button" href="dashboard.html#technicians-tab" data-close-sidebar data-i18n data-i18n-key="tabs.technicians">
+        <a class="tab-button" href="crew.html" data-close-sidebar data-i18n data-i18n-key="tabs.technicians">
           <span class="tab-button__content">😎 <span data-i18n data-i18n-key="tabs.technicians">طاقم العمل</span></span>
         </a>
         <a class="tab-button hidden" href="notifications.html" data-admin-card>
@@ -136,7 +135,7 @@
                 <div class="space-y-2 text-start">
                   <p class="text-sm text-base-content/60" data-i18n data-i18n-key="notifications.subtitle">أرسل تنبيهات للفريق بخصوص الحجوزات/المشاريع، وحدد القنوات والمستلمين.</p>
                 </div>
-                <div class="flex flex-wrap items-center gap-2">
+                <div class="dashboard-greeting-actions flex flex-wrap items-center gap-2">
                   <a href="#notif-compose-section" class="btn btn-primary btn-sm" data-i18n data-i18n-key="notifications.compose.title">✉️ إنشاء رسالة</a>
                   <a href="#notif-logs-section" class="btn btn-outline btn-sm" data-i18n data-i18n-key="notifications.logs.title">📜 سجل التنبيهات</a>
                 </div>
@@ -148,7 +147,7 @@
           <button class="language-toggle-btn" id="language-toggle" data-label-ar="🇸🇦 العربية" data-label-en="🇬🇧 English" aria-pressed="false"></button>
           <label class="theme-toggle-btn swap swap-rotate" data-theme-toggle role="button">
             <input id="theme-toggle" type="checkbox" class="sr-only" aria-hidden="true">
-            <svg class="swap-off fill-current text-warning w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <svg class="swap-off fill-current w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
               <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
               <path d="M12 4v-1"></path>
               <path d="M12 21v-1"></path>
@@ -160,13 +159,13 @@
               <path d="M18.4 5.6l-.7 .7"></path>
               <path d="M16 12a4 4 0 1 0 -4 4"></path>
             </svg>
-            <svg class="swap-on fill-current text-primary w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <svg class="swap-on fill-current w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
               <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
               <path d="M12 3c.132 0 .263 0 .393 .007a7.5 7.5 0 0 0 7.098 12.675a9 9 0 1 1 -7.491 -12.682z"></path>
             </svg>
             <span class="sr-only" data-theme-label data-i18n data-i18n-key="actions.toggleTheme">🌙 الوضع الليلي</span>
           </label>
-          <button class="btn btn-error btn-sm rounded-full text-error-content" id="logout-btn" data-i18n data-i18n-key="actions.logout">🚪 تسجيل الخروج</button>
+          <button class="btn btn-error btn-sm rounded-full text-error-content dashboard-header-logout-btn" id="logout-btn" data-i18n data-i18n-key="actions.logout">🚪 تسجيل الخروج</button>
         </div>
       </div>
     </header>
@@ -174,30 +173,34 @@
     <div class="flex flex-1 flex-col">
       <main class="dashboard-main w-full">
         <div class="dashboard-main-inner space-y-8">
-          <section class="glass-card space-y-2">
+          <section class="glass-card notifications-hero-shell space-y-2">
             <div class="flex items-center justify-between">
               <h2 class="text-2xl font-bold text-base-content" data-i18n data-i18n-key="notifications.header">🔔 إدارة التنبيهات</h2>
             </div>
             <p class="text-sm text-base-content/70" data-i18n data-i18n-key="notifications.subtitle">أرسل تنبيهات للفريق بخصوص الحجوزات/المشاريع، وحدد القنوات والمستلمين.</p>
           </section>
 
-          <section class="glass-card space-y-6">
-            <div class="grid gap-4 md:grid-cols-2">
-              <div class="flex flex-col gap-2">
+          <section class="glass-card notifications-search-shell space-y-6">
+            <div class="notifications-section-copy">
+              <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="notifications.search.title">اختيار الحجز أو المشروع</h3>
+              <p class="text-sm text-base-content/70" data-i18n data-i18n-key="notifications.search.subtitle">ابحث عن الحجز أو المشروع الذي تريد إرسال التنبيه بخصوصه ثم اختره من الجدول.</p>
+            </div>
+            <div class="grid gap-4 md:grid-cols-2 notifications-filter-grid">
+              <div class="flex flex-col gap-2 notifications-field">
                 <label class="font-medium text-base-content" for="notif-entity-type" data-i18n data-i18n-key="notifications.form.entityType">النوع</label>
-                <select id="notif-entity-type" class="select select-bordered w-full">
+                <select id="notif-entity-type" class="ui-select select select-bordered w-full">
                   <option value="reservation" selected data-i18n data-i18n-key="notifications.form.entity.reservation">حجز</option>
                   <option value="project" data-i18n data-i18n-key="notifications.form.entity.project">مشروع</option>
                 </select>
               </div>
-              <div class="flex flex-col gap-2">
+              <div class="flex flex-col gap-2 notifications-field">
                 <label class="font-medium text-base-content" for="notif-search" data-i18n data-i18n-key="notifications.form.search">بحث</label>
-                <input id="notif-search" type="search" class="input input-bordered" placeholder="ابحث بالكود أو العنوان" data-i18n data-i18n-placeholder-key="notifications.form.search.placeholder">
+                <input id="notif-search" type="search" class="ui-input input input-bordered w-full" placeholder="ابحث بالكود أو العنوان" data-i18n data-i18n-placeholder-key="notifications.form.search.placeholder">
               </div>
             </div>
 
             <div class="users-table-wrapper overflow-x-auto">
-              <table class="table table-hover align-middle text-nowrap users-table" id="notif-results-table">
+              <table class="table table-hover align-middle users-table notifications-table" id="notif-results-table">
                 <thead class="table-light users-table-head">
                   <tr>
                     <th data-i18n data-i18n-key="notifications.table.headers.code">الكود</th>
@@ -214,15 +217,16 @@
                 </tbody>
               </table>
             </div>
+            <div id="notif-results-pagination" class="list-pagination" hidden></div>
           </section>
 
-          <section class="glass-card space-y-4" id="notif-compose-section" hidden>
-            <header class="flex items-center justify-between flex-wrap gap-3">
+          <section class="glass-card notifications-compose-shell space-y-4" id="notif-compose-section" hidden>
+            <header class="flex items-center justify-between flex-wrap gap-3 notifications-section-header">
               <div>
                 <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="notifications.compose.title">✉️ إنشاء رسالة</h3>
-                <p class="text-sm text-base-content/70" id="notif-selected-summary">—</p>
+                <p class="text-sm text-base-content/70 notifications-selected-summary" id="notif-selected-summary">—</p>
               </div>
-              <div class="flex gap-3">
+              <div class="flex gap-3 notifications-channel-toggles">
                 <label class="cursor-pointer flex items-center gap-2">
                   <input type="checkbox" id="notif-channel-email" class="checkbox checkbox-primary" checked>
                   <span data-i18n data-i18n-key="notifications.channels.email">إيميل</span>
@@ -234,8 +238,8 @@
               </div>
             </header>
 
-            <div class="grid gap-4 md:grid-cols-2">
-              <div class="flex flex-col gap-2">
+            <div class="grid gap-4 md:grid-cols-2 notifications-compose-grid">
+              <div class="flex flex-col gap-2 notifications-field">
                 <label class="font-medium text-base-content" for="notif-recipients" data-i18n data-i18n-key="notifications.compose.recipients">المستلمون</label>
                 <div class="flex flex-col gap-2">
                   <label class="cursor-pointer flex items-center gap-2">
@@ -246,19 +250,19 @@
                     <input type="checkbox" id="notif-to-admins" class="checkbox checkbox-error" checked>
                     <span data-i18n data-i18n-key="notifications.compose.toAdmins">الإدمن</span>
                   </label>
-                  <input id="notif-extra-emails" class="input input-bordered" placeholder="إيميلات إضافية (مفصولة بفواصل)" data-i18n data-i18n-placeholder-key="notifications.compose.extraEmails.placeholder">
-                  <input id="notif-extra-chatids" class="input input-bordered" placeholder="معرّفات تليغرام إضافية (مفصولة بفواصل)" data-i18n data-i18n-placeholder-key="notifications.compose.extraChatIds.placeholder">
+                  <input id="notif-extra-emails" class="ui-input input input-bordered w-full" placeholder="إيميلات إضافية (مفصولة بفواصل)" data-i18n data-i18n-placeholder-key="notifications.compose.extraEmails.placeholder">
+                  <input id="notif-extra-chatids" class="ui-input input input-bordered w-full" placeholder="معرّفات تليغرام إضافية (مفصولة بفواصل)" data-i18n data-i18n-placeholder-key="notifications.compose.extraChatIds.placeholder">
                 </div>
               </div>
-              <div class="flex flex-col gap-2">
+              <div class="flex flex-col gap-2 notifications-field">
                 <label class="font-medium text-base-content" for="notif-template" data-i18n data-i18n-key="notifications.compose.templateLabel">قالب الرسالة (اختياري)</label>
-                <select id="notif-template" class="select select-bordered w-full">
+                <select id="notif-template" class="ui-select select select-bordered w-full">
                   <option value="" data-i18n data-i18n-key="notifications.compose.template.none">— بدون قالب —</option>
                 </select>
                 <label class="font-medium text-base-content" for="notif-subject" data-i18n data-i18n-key="notifications.compose.subject">الموضوع</label>
-                <input id="notif-subject" class="input input-bordered" placeholder="تنبيه إداري" data-i18n data-i18n-placeholder-key="notifications.compose.subject.placeholder">
+                <input id="notif-subject" class="ui-input input input-bordered w-full" placeholder="تنبيه إداري" data-i18n data-i18n-placeholder-key="notifications.compose.subject.placeholder">
                 <label class="font-medium text-base-content" for="notif-body" data-i18n data-i18n-key="notifications.compose.body">نص الرسالة</label>
-                <textarea id="notif-body" class="textarea textarea-bordered min-h-[140px]" placeholder="اكتب رسالتك هنا" data-i18n data-i18n-placeholder-key="notifications.compose.body.placeholder"></textarea>
+                <textarea id="notif-body" class="ui-textarea textarea textarea-bordered min-h-[140px] w-full" placeholder="اكتب رسالتك هنا" data-i18n data-i18n-placeholder-key="notifications.compose.body.placeholder"></textarea>
                 <div class="flex gap-2">
                   <button type="button" class="btn btn-outline btn-sm" id="notif-template-reminder" data-i18n data-i18n-key="notifications.compose.templates.reminder">📌 تذكير</button>
                   <button type="button" class="btn btn-outline btn-sm" id="notif-template-note" data-i18n data-i18n-key="notifications.compose.templates.note">📝 ملاحظة إدارية</button>
@@ -266,9 +270,9 @@
               </div>
             </div>
 
-              <div class="flex justify-between items-center gap-2 flex-wrap">
-              <div id="notif-preview" class="text-sm text-base-content/70"></div>
-              <div class="flex gap-2">
+              <div class="flex justify-between items-center gap-2 flex-wrap notifications-compose-actions">
+              <div id="notif-preview" class="text-sm text-base-content/70 notifications-preview-box"></div>
+              <div class="flex gap-2 notifications-action-group">
                 <button type="button" class="btn btn-outline" id="notif-preview-btn" data-i18n data-i18n-key="notifications.compose.preview">👁️ معاينة المستلمين</button>
                 <button type="button" class="btn btn-outline" id="notif-retry-last" hidden data-i18n data-i18n-key="notifications.compose.retryLast">🔁 إعادة إرسال الفاشلة (آخر دفعة)</button>
                 <button type="button" class="btn btn-primary" id="notif-send-btn" data-i18n data-i18n-key="notifications.compose.send">🚀 إرسال</button>
@@ -276,37 +280,37 @@
             </div>
           </section>
 
-          <section class="glass-card space-y-4" id="notif-logs-section">
-            <header class="flex items-center justify-between flex-wrap gap-3">
+          <section class="glass-card notifications-logs-shell space-y-4" id="notif-logs-section">
+            <header class="flex items-center justify-between flex-wrap gap-3 notifications-section-header">
               <div>
                 <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="notifications.logs.title">📜 سجل التنبيهات</h3>
                 <p class="text-sm text-base-content/70" data-i18n data-i18n-key="notifications.logs.subtitle">تابع آخر عمليات الإرسال وحالة كل رسالة.</p>
                 <p id="notif-logs-failed-summary" class="text-sm text-error hidden"></p>
               </div>
-              <div class="flex flex-wrap gap-2 items-center">
-                <select id="log-filter-entity" class="select select-bordered select-sm">
+              <div class="flex flex-wrap gap-2 items-center notifications-log-filters">
+                <select id="log-filter-entity" class="ui-select select select-bordered select-sm">
                   <option value="" data-i18n data-i18n-key="notifications.logs.filters.allEntities">كل الأنواع</option>
                   <option value="reservation" data-i18n data-i18n-key="notifications.form.entity.reservation">حجز</option>
                   <option value="project" data-i18n data-i18n-key="notifications.form.entity.project">مشروع</option>
                 </select>
-                <select id="log-filter-channel" class="select select-bordered select-sm">
+                <select id="log-filter-channel" class="ui-select select select-bordered select-sm">
                   <option value="" data-i18n data-i18n-key="notifications.logs.filters.allChannels">كل القنوات</option>
                   <option value="email" data-i18n data-i18n-key="notifications.channels.email">إيميل</option>
                   <option value="telegram" data-i18n data-i18n-key="notifications.channels.telegram">تليغرام</option>
                 </select>
-                <select id="log-filter-status" class="select select-bordered select-sm">
+                <select id="log-filter-status" class="ui-select select select-bordered select-sm">
                   <option value="" data-i18n data-i18n-key="notifications.logs.filters.allStatuses">كل الحالات</option>
                   <option value="sent" data-i18n data-i18n-key="notifications.logs.filters.sent">مرسلة</option>
                   <option value="failed" data-i18n data-i18n-key="notifications.logs.filters.failed">فاشلة</option>
                 </select>
-                <input id="log-filter-batch" type="search" class="input input-bordered input-sm" placeholder="batch_id">
-                <input id="log-filter-q" type="search" class="input input-bordered input-sm" placeholder="بحث بالمستلم/الرقم" data-i18n data-i18n-placeholder-key="notifications.logs.filters.q.placeholder">
+                <input id="log-filter-batch" type="search" class="ui-input input input-bordered input-sm" placeholder="batch_id">
+                <input id="log-filter-q" type="search" class="ui-input input input-bordered input-sm" placeholder="بحث بالمستلم/الرقم" data-i18n data-i18n-placeholder-key="notifications.logs.filters.q.placeholder">
                 <button type="button" class="btn btn-outline btn-sm" id="log-refresh-btn" data-i18n data-i18n-key="notifications.logs.refresh">🔄 تحديث</button>
                 <button type="button" class="btn btn-outline btn-sm" id="log-clear-btn" data-i18n data-i18n-key="notifications.logs.clear">🗑️ مسح السجل</button>
               </div>
             </header>
               <div class="users-table-wrapper overflow-x-auto">
-                <table class="table table-hover align-middle text-nowrap users-table" id="notif-logs-table">
+                <table class="table table-hover align-middle users-table notifications-table" id="notif-logs-table">
                   <thead class="table-light users-table-head">
                     <tr>
                       <th data-i18n data-i18n-key="notifications.logs.headers.time">الوقت</th>
@@ -324,12 +328,12 @@
                 </tbody>
               </table>
             </div>
-            <div id="log-pagination" class="flex flex-wrap gap-1 items-center justify-center mt-3"></div>
+            <div id="log-pagination" class="list-pagination" hidden></div>
           </section>
 
           <!-- ✅ Templates Manager -->
-          <section class="glass-card space-y-4" id="templates-manager-section">
-            <header class="flex items-center justify-between flex-wrap gap-3">
+          <section class="glass-card notifications-templates-shell space-y-4" id="templates-manager-section">
+            <header class="flex items-center justify-between flex-wrap gap-3 notifications-section-header">
               <div>
                 <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="notifications.templates.title">🧩 إدارة القوالب</h3>
                 <p class="text-sm text-base-content/70" data-i18n data-i18n-key="notifications.templates.subtitle">إنشاء/تعديل قوالب الرسائل بمتغيرات.</p>
@@ -340,7 +344,7 @@
                 <button type="button" class="btn btn-outline" id="tpl-vars" data-i18n data-i18n-key="notifications.templates.actions.vars">🧠 دليل المتغيرات</button>
               </div>
             </header>
-            <div id="tpl-vars-box" class="hidden text-sm bg-base-200/60 rounded p-3">
+            <div id="tpl-vars-box" class="hidden text-sm bg-base-200/60 rounded p-3 notifications-inline-note">
               <div data-i18n data-i18n-key="notifications.templates.vars.help">استخدم صيغة {{variable}}. أمثلة متاحة:</div>
               <ul class="list-disc ms-6">
                 <li>{{reservation.code}}, {{reservation.title}}, {{reservation.start_datetime}}, {{reservation.customer_name}}</li>
@@ -349,7 +353,7 @@
               </ul>
             </div>
             <div class="users-table-wrapper overflow-x-auto">
-              <table class="table table-hover align-middle text-nowrap users-table" id="tpl-table">
+              <table class="table table-hover align-middle users-table notifications-table" id="tpl-table">
                 <thead class="table-light users-table-head"><tr>
                   <th data-i18n data-i18n-key="notifications.templates.table.headers.name">الاسم</th>
                   <th data-i18n data-i18n-key="notifications.templates.table.headers.channel">القناة</th>
@@ -359,25 +363,25 @@
                 <tbody id="tpl-body"><tr><td colspan="4" class="text-center text-muted" data-i18n data-i18n-key="common.placeholder.empty">—</td></tr></tbody>
               </table>
             </div>
-              <div class="grid gap-3 md:grid-cols-2" id="tpl-form" hidden>
+              <div class="grid gap-3 md:grid-cols-2 notifications-template-form" id="tpl-form" hidden>
                 <input id="tpl-id" type="hidden">
                 <div class="flex flex-col gap-2">
                   <label class="font-medium" data-i18n data-i18n-key="notifications.templates.form.labels.name">الاسم</label>
-                  <input id="tpl-name" class="input input-bordered" placeholder="اسم القالب" data-i18n data-i18n-placeholder-key="notifications.templates.form.placeholders.name">
+                  <input id="tpl-name" class="ui-input input input-bordered w-full" placeholder="اسم القالب" data-i18n data-i18n-placeholder-key="notifications.templates.form.placeholders.name">
                   <label class="font-medium" data-i18n data-i18n-key="notifications.templates.form.labels.channel">القناة</label>
-                  <select id="tpl-channel" class="select select-bordered"><option value="both">both</option><option value="email">email</option><option value="telegram">telegram</option></select>
+                  <select id="tpl-channel" class="ui-select select select-bordered w-full"><option value="both">both</option><option value="email">email</option><option value="telegram">telegram</option></select>
                   <label class="font-medium" data-i18n data-i18n-key="notifications.templates.form.labels.attachment">رابط صورة (اختياري لتيليغرام)</label>
-                  <input id="tpl-attachment" class="input input-bordered" placeholder="https://...jpg" data-i18n data-i18n-placeholder-key="notifications.templates.form.placeholders.attachment">
+                  <input id="tpl-attachment" class="ui-input input input-bordered w-full" placeholder="https://...jpg" data-i18n data-i18n-placeholder-key="notifications.templates.form.placeholders.attachment">
                   <label class="font-medium" data-i18n data-i18n-key="notifications.templates.form.labels.attachments">روابط صور متعددة (كل سطر رابط)</label>
-                  <textarea id="tpl-attachments" class="textarea textarea-bordered min-h-[100px]" placeholder="https://..1.jpg\nhttps://..2.jpg\n..." data-i18n data-i18n-placeholder-key="notifications.templates.form.placeholders.attachments"></textarea>
+                  <textarea id="tpl-attachments" class="ui-textarea textarea textarea-bordered min-h-[100px] w-full" placeholder="https://..1.jpg\nhttps://..2.jpg\n..." data-i18n data-i18n-placeholder-key="notifications.templates.form.placeholders.attachments"></textarea>
                 </div>
                 <div class="flex flex-col gap-2">
                   <label class="font-medium" data-i18n data-i18n-key="notifications.templates.form.labels.subject">الموضوع</label>
-                  <input id="tpl-subject" class="input input-bordered" placeholder="مثال: إشعار..." data-i18n data-i18n-placeholder-key="notifications.templates.form.placeholders.subject">
+                  <input id="tpl-subject" class="ui-input input input-bordered w-full" placeholder="مثال: إشعار..." data-i18n data-i18n-placeholder-key="notifications.templates.form.placeholders.subject">
                   <label class="font-medium" data-i18n data-i18n-key="notifications.templates.form.labels.text">النص (Text)</label>
-                  <textarea id="tpl-text" class="textarea textarea-bordered min-h-[120px]" placeholder="نص الرسالة (سيُستخدم أيضاً كتسمية للصورة)" data-i18n data-i18n-placeholder-key="notifications.templates.form.placeholders.text"></textarea>
+                  <textarea id="tpl-text" class="ui-textarea textarea textarea-bordered min-h-[120px] w-full" placeholder="نص الرسالة (سيُستخدم أيضاً كتسمية للصورة)" data-i18n data-i18n-placeholder-key="notifications.templates.form.placeholders.text"></textarea>
                   <label class="font-medium" data-i18n data-i18n-key="notifications.templates.form.labels.html">HTML (اختياري للبريد)</label>
-                  <textarea id="tpl-html" class="textarea textarea-bordered min-h-[120px]" placeholder="HTML للرسالة" data-i18n data-i18n-placeholder-key="notifications.templates.form.placeholders.html"></textarea>
+                  <textarea id="tpl-html" class="ui-textarea textarea textarea-bordered min-h-[120px] w-full" placeholder="HTML للرسالة" data-i18n data-i18n-placeholder-key="notifications.templates.form.placeholders.html"></textarea>
                   <div class="flex gap-2">
                     <button type="button" class="btn btn-primary" id="tpl-save" data-i18n data-i18n-key="notifications.templates.actions.save">💾 حفظ</button>
                     <button type="button" class="btn btn-outline" id="tpl-cancel" data-i18n data-i18n-key="notifications.templates.actions.cancel">إلغاء</button>
@@ -387,17 +391,17 @@
           </section>
 
           <!-- ✅ Telegram linking helper for technicians -->
-          <section class="glass-card space-y-4" id="telegram-linking-section">
-            <header class="flex items-center justify-between flex-wrap gap-3">
+          <section class="glass-card notifications-telegram-shell space-y-4" id="telegram-linking-section">
+            <header class="flex items-center justify-between flex-wrap gap-3 notifications-section-header">
               <div>
                 <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="notifications.telegram.tech.title">✈️ ربط تيليغرام للفنيين</h3>
                 <p class="text-sm text-base-content/70" data-i18n data-i18n-key="notifications.telegram.tech.subtitle">الربط يتم مرة واحدة لكل فني. أنشئ الرابط وانسخه وأرسله للفني خارج النظام. بعد أن يفتح الرابط ويضغط Start ستصل التنبيهات تلقائياً.</p>
               </div>
             </header>
-            <div class="grid gap-3 md:grid-cols-2 items-end">
-              <div class="flex flex-col gap-2">
+            <div class="grid gap-3 md:grid-cols-2 items-end notifications-filter-grid">
+              <div class="flex flex-col gap-2 notifications-field">
                 <label class="font-medium text-base-content" for="tg-tech-search" data-i18n data-i18n-key="notifications.telegram.techSearch">بحث الفنيين</label>
-                <input id="tg-tech-search" type="search" class="input input-bordered" placeholder="ابحث بالاسم أو الجوال" data-i18n data-i18n-placeholder-key="notifications.chat.techSearch.placeholder">
+                <input id="tg-tech-search" type="search" class="ui-input input input-bordered w-full" placeholder="ابحث بالاسم أو الجوال" data-i18n data-i18n-placeholder-key="notifications.chat.techSearch.placeholder">
               </div>
               <div class="flex gap-2">
                 <button type="button" class="btn btn-outline" id="tg-tech-search-btn" data-i18n data-i18n-key="notifications.chat.searchButton">🔎 بحث</button>
@@ -405,7 +409,7 @@
               </div>
             </div>
             <div class="users-table-wrapper overflow-x-auto">
-              <table class="table table-hover align-middle text-nowrap users-table" id="tg-tech-table">
+              <table class="table table-hover align-middle users-table notifications-table" id="tg-tech-table">
                 <thead class="table-light users-table-head">
                   <tr>
                     <th data-i18n data-i18n-key="notifications.telegram.techTable.headers.tech">الفني</th>
@@ -419,11 +423,12 @@
                 </tbody>
               </table>
             </div>
+            <div id="tg-tech-pagination" class="list-pagination" hidden></div>
           </section>
 
           <!-- ✅ Admin Telegram linking helper -->
-          <section class="glass-card space-y-4" id="telegram-admin-linking-section">
-            <header class="flex items-center justify-between flex-wrap gap-3">
+          <section class="glass-card notifications-telegram-shell space-y-4" id="telegram-admin-linking-section">
+            <header class="flex items-center justify-between flex-wrap gap-3 notifications-section-header">
               <div>
                 <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="notifications.telegram.admin.title">👑 ربط تيليغرام للإدمن</h3>
                 <p class="text-sm text-base-content/70" data-i18n data-i18n-key="notifications.telegram.admin.subtitle">يُستخدم كقناة احتياطية أو أساسية لإرسال التنبيهات إلى الإدمن. الرابط يُستخدم مرة واحدة فقط.</p>
@@ -433,9 +438,9 @@
                 <button type="button" class="btn btn-outline" id="tg-admin-copy-btn" disabled data-i18n data-i18n-key="notifications.telegram.admin.copy">📋 نسخ الرابط</button>
               </div>
             </header>
-            <div id="tg-admin-link-box" class="text-sm text-base-content/70 hidden"></div>
+            <div id="tg-admin-link-box" class="text-sm text-base-content/70 hidden notifications-inline-note"></div>
             <div class="users-table-wrapper overflow-x-auto">
-              <table class="table table-hover align-middle text-nowrap users-table" id="tg-admin-table">
+              <table class="table table-hover align-middle users-table notifications-table" id="tg-admin-table">
                 <thead class="table-light users-table-head">
                   <tr>
                     <th data-i18n data-i18n-key="notifications.telegram.adminTable.headers.chatId">Chat ID</th>
@@ -451,8 +456,8 @@
           </section>
 
           <!-- ✅ Telegram Webhook status -->
-          <section class="glass-card space-y-4" id="telegram-webhook-section">
-            <header class="flex items-center justify-between flex-wrap gap-3">
+          <section class="glass-card notifications-telegram-shell space-y-4" id="telegram-webhook-section">
+            <header class="flex items-center justify-between flex-wrap gap-3 notifications-section-header">
               <div>
                 <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="notifications.telegram.webhook.title">🔗 حالة Webhook لتليغرام</h3>
                 <p class="text-sm text-base-content/70" data-i18n data-i18n-key="notifications.telegram.webhook.subtitle">تعرض حالة الربط وتسمح بضبطه تلقائياً.</p>
@@ -462,12 +467,12 @@
                 <button type="button" class="btn" id="tg-webhook-set" data-i18n data-i18n-key="notifications.telegram.webhook.actions.fix">⚙️ ضبط/إصلاح Webhook</button>
               </div>
             </header>
-            <div id="tg-webhook-info" class="text-sm text-base-content/70">—</div>
+            <div id="tg-webhook-info" class="text-sm text-base-content/70 notifications-inline-note">—</div>
           </section>
 
           <!-- ✅ Diagnostics -->
-          <section class="glass-card space-y-4" id="notifications-diagnostics-section">
-            <header class="flex items-center justify-between flex-wrap gap-3">
+          <section class="glass-card notifications-diagnostics-shell space-y-4" id="notifications-diagnostics-section">
+            <header class="flex items-center justify-between flex-wrap gap-3 notifications-section-header">
               <div>
                 <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="notifications.diagnostics.title">🧪 Diagnostics</h3>
                 <p class="text-sm text-base-content/70" data-i18n data-i18n-key="notifications.diagnostics.subtitle">فحص الجداول والأعمدة المطلوبة للتنبيهات والتليغرام.</p>
@@ -477,7 +482,7 @@
               </div>
             </header>
             <div class="users-table-wrapper overflow-x-auto">
-              <table class="table table-hover align-middle text-nowrap users-table" id="notif-diag-table">
+              <table class="table table-hover align-middle users-table notifications-table" id="notif-diag-table">
                 <thead class="table-light users-table-head"><tr>
                   <th data-i18n data-i18n-key="notifications.diagnostics.headers.item">العنصر</th>
                   <th data-i18n data-i18n-key="notifications.diagnostics.headers.status">الحالة</th>
@@ -489,26 +494,26 @@
           </section>
 
           <!-- ✅ Simple Telegram Chat (beta) -->
-          <section class="glass-card space-y-4" id="telegram-chat-section">
-            <header class="flex items-center justify-between flex-wrap gap-3">
+          <section class="glass-card notifications-chat-shell space-y-4" id="telegram-chat-section">
+            <header class="flex items-center justify-between flex-wrap gap-3 notifications-section-header">
               <div>
                 <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="notifications.chat.title">💬 محادثة تيليغرام (تجريبي)</h3>
                 <p class="text-sm text-base-content/70" data-i18n data-i18n-key="notifications.chat.subtitle">اختر فني لعرض آخر الرسائل والرد عليه.</p>
               </div>
             </header>
-            <div class="grid gap-3 md:grid-cols-3">
+            <div class="grid gap-3 md:grid-cols-3 notifications-chat-grid">
               <div class="col-span-1">
                 <div class="flex items-center justify-between mb-2">
                   <div class="text-sm font-medium" data-i18n data-i18n-key="notifications.chat.recent">المحادثات الأخيرة</div>
                   <button type="button" class="btn btn-outline btn-xs" id="tg-chat-list-refresh" data-i18n data-i18n-key="notifications.chat.refreshButton">تحديث</button>
                 </div>
-                <ul id="tg-chat-list" class="menu bg-base-200 rounded-box max-h-80 overflow-y-auto"></ul>
+                <ul id="tg-chat-list" class="menu bg-base-200 rounded-box max-h-80 overflow-y-auto notifications-chat-list"></ul>
               </div>
               <div class="col-span-2">
-              <div class="grid gap-3 md:grid-cols-3 items-end">
-              <div class="flex flex-col gap-2">
+              <div class="grid gap-3 md:grid-cols-3 items-end notifications-filter-grid">
+              <div class="flex flex-col gap-2 notifications-field">
                 <label class="font-medium text-base-content" for="tg-chat-tech-search" data-i18n data-i18n-key="notifications.chat.pickTechnician">اختيار فني</label>
-                <input id="tg-chat-tech-search" type="search" class="input input-bordered" placeholder="ابحث بالاسم أو الجوال" data-i18n data-i18n-placeholder-key="notifications.chat.techSearch.placeholder">
+                <input id="tg-chat-tech-search" type="search" class="ui-input input input-bordered w-full" placeholder="ابحث بالاسم أو الجوال" data-i18n data-i18n-placeholder-key="notifications.chat.techSearch.placeholder">
               </div>
               <div class="flex gap-2">
                 <button type="button" class="btn" id="tg-chat-pick-btn" data-i18n data-i18n-key="notifications.chat.searchButton">🔎 بحث</button>
@@ -526,11 +531,11 @@
                 <div class="text-xs opacity-70"><span data-i18n data-i18n-key="notifications.chat.lastSeen">آخر مشاهدة:</span> <span id="tg-chat-last-seen">—</span></div>
               </div>
               </div>
-              <div class="border rounded-lg p-3 max-h-80 overflow-y-auto bg-base-200/40" id="tg-chat-messages">
+              <div class="border rounded-lg p-3 max-h-80 overflow-y-auto bg-base-200/40 notifications-chat-messages" id="tg-chat-messages">
                 <div class="text-center text-muted" data-i18n data-i18n-key="common.placeholder.empty">—</div>
               </div>
-              <div class="flex flex-wrap gap-2 items-center">
-                <input id="tg-chat-input" class="input input-bordered flex-1" placeholder="اكتب رسالة…" data-i18n data-i18n-placeholder-key="notifications.chat.input.placeholder">
+              <div class="flex flex-wrap gap-2 items-center notifications-chat-actions">
+                <input id="tg-chat-input" class="ui-input input input-bordered flex-1" placeholder="اكتب رسالة…" data-i18n data-i18n-placeholder-key="notifications.chat.input.placeholder">
                 <button type="button" class="btn btn-primary" id="tg-chat-send" data-i18n data-i18n-key="notifications.chat.send">إرسال</button>
                 <button type="button" class="btn btn-outline" id="tg-chat-send-photo" data-i18n data-i18n-key="notifications.chat.sendPhoto">📷 صورة</button>
                 <button type="button" class="btn btn-outline" id="tg-chat-send-photos" data-i18n data-i18n-key="notifications.chat.sendPhotos">🖼️ صور متعددة</button>

@@ -33,7 +33,17 @@ export function ensureReportModalElements() {
   }
 
   if (!modalEl.dataset.listenerAttached) {
+    modalEl.addEventListener('show.bs.modal', () => {
+      document.body.classList.add('maintenance-modal-open');
+    });
     modalEl.addEventListener('hidden.bs.modal', resetReportModalContent);
+    modalEl.addEventListener('hidden.bs.modal', () => {
+      const closeModal = document.getElementById('closeMaintenanceModal');
+      const isCloseOpen = closeModal?.classList.contains('show');
+      if (!isCloseOpen) {
+        document.body.classList.remove('maintenance-modal-open');
+      }
+    });
     modalEl.dataset.listenerAttached = 'true';
   }
 

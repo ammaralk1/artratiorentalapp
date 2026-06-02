@@ -3,6 +3,7 @@ import { loadData, saveData } from '../storage.js';
 import { t } from '../language.js';
 import { apiRequest } from '../apiClient.js';
 import { userCanManageDestructiveActions, notifyPermissionDenied } from '../auth.js';
+import { isLocalDashboardFixtureEnabled } from '../fixtureRuntime.js';
 import { state, getAllEquipment, setEquipment } from './state.js';
 import {
   toInternalEquipment,
@@ -124,6 +125,13 @@ export async function refreshEquipmentFromApi({ showToastOnError = true } = {}) 
   renderEquipment();
 
   try {
+    if (isLocalDashboardFixtureEnabled()) {
+      const snapshot = loadData();
+      const localEquipment = Array.isArray(snapshot?.equipment) ? snapshot.equipment : [];
+      setEquipment(localEquipment);
+      return;
+    }
+
     const response = await apiRequest('/equipment/?all=1');
     const payload  = response?.data ?? response;
     let rawItems   = [];

@@ -25,7 +25,8 @@ const saveDataMock = vi.hoisted(() => vi.fn());
 
 vi.mock('../../src/scripts/storage.js', () => ({
   loadData: loadDataMock,
-  saveData: saveDataMock
+  saveData: saveDataMock,
+  migrateOldData: vi.fn()
 }));
 
 vi.mock('../../src/scripts/language.js', () => ({

@@ -7,12 +7,40 @@ import { getReservationFilters } from '../reservationsFilters.js';
 import {
   filterReservationEntries,
   buildReservationTilesHtml,
+  resolveReservationLifecycleGroup,
   buildReservationDetailsHtml
 } from './list/index.js';
 import { exportReservationPdf, exportReservationChecklistPdf } from './reservationPdf.js';
 import { ensureTechnicianPositionsLoaded } from '../technicianPositions.js';
+import mountReservationModalsIfNeeded from './modals.js';
 
 const PAGE_SIZE = 8;
+const PAGINATION_HOST_ID = 'reservations-list-pagination';
+const SECTION_PAGINATION_STATE = new Map();
+
+function isMobileReservationsLayout() {
+  return typeof window !== 'undefined'
+    && typeof window.matchMedia === 'function'
+    && window.matchMedia('(max-width: 640px)').matches;
+}
+
+function updateReservationsListCount({ filteredCount = 0, totalCount = 0 } = {}) {
+  const countEl = document.getElementById('reservations-list-count');
+  if (!countEl) return;
+
+  const hasActiveFilters = filteredCount !== totalCount;
+  const template = hasActiveFilters
+    ? t('reservations.list.filteredCount', '{count} من {total} حجوزات')
+    : t('reservations.list.count', '{count} حجوزات');
+
+  countEl.textContent = template
+    .replace('{count}', String(filteredCount))
+    .replace('{total}', String(totalCount));
+}
+
+function renderLinkedRecordsEmptyCopy(message) {
+  return `<p class="linked-records-empty-copy">${message}</p>`;
+}
 
 function clampPage(value, totalPages) {
   const pageNumber = Number.parseInt(value, 10);
@@ -42,36 +70,147 @@ function resolvePageNumbers(currentPage, totalPages) {
   return pages;
 }
 
-function buildPaginationHtml({ currentPage, totalPages, totalItems }) {
+function getSectionPaginationState(sectionKey) {
+  const current = SECTION_PAGINATION_STATE.get(sectionKey) || { page: 1 };
+  const normalized = {
+    page: Number.isFinite(current.page) && current.page > 0 ? current.page : 1,
+  };
+  SECTION_PAGINATION_STATE.set(sectionKey, normalized);
+  return normalized;
+}
+
+function clearReservationsPaginationHost(paginationHost) {
+  if (!paginationHost) return;
+  paginationHost.hidden = true;
+  paginationHost.innerHTML = '';
+}
+
+function renderReservationSectionHtml(section, { customersMap, techniciansMap, projectsMap }) {
+  return `
+    <section class="project-focus-group project-focus-group--${section.key}">
+      <header class="project-focus-group__header">
+        <div class="project-focus-group__title-wrap">
+          <div class="project-focus-group__title-row">
+            <h6 class="project-focus-group__title">${section.title}</h6>
+            <span class="ui-badge ui-badge--soft badge-soft project-focus-group__count project-focus-group__count--inline">${String(section.totalItems)}</span>
+          </div>
+          <p class="project-focus-group__hint">${section.hint}</p>
+        </div>
+      </header>
+      ${
+        section.pageEntries.length
+          ? `<div class="project-card-grid reservations-grid reservations-grid--benchmark">${buildReservationTilesHtml({
+              entries: section.pageEntries,
+              customersMap,
+              techniciansMap,
+              projectsMap
+            })}</div>`
+          : `<p class="linked-records-empty-copy project-card-grid__item project-card-grid__item--full project-card-grid__empty-line project-focus-group__empty">${section.empty}</p>`
+      }
+      ${buildSectionPaginationHtml({
+        sectionKey: section.key,
+        currentPage: section.currentPage,
+        totalPages: section.totalPages,
+        totalItems: section.totalItems,
+        pageSize: PAGE_SIZE,
+      })}
+    </section>
+  `;
+}
+
+function buildGroupedReservationSections(entries) {
+  const groups = {
+    live: [],
+    archive: [],
+  };
+
+  entries.forEach((entry) => {
+    const lifecycle = resolveReservationLifecycleGroup(entry.reservation);
+    groups[lifecycle.group].push(entry);
+  });
+
+  return [
+    {
+      key: 'live',
+      title: t('reservations.list.sections.liveTitle', '⚡ الحجوزات النشطة'),
+      hint: t('reservations.list.sections.liveHint', 'يعرض الحجوزات المفتوحة والجارية لتبدأ بما يحتاج متابعة الآن.'),
+      empty: t('reservations.list.sections.emptyLive', 'لا توجد حجوزات نشطة ضمن النتائج الحالية.'),
+      entries: groups.live,
+    },
+    {
+      key: 'archive',
+      title: t('reservations.list.sections.archiveTitle', '🗂️ الأرشيف'),
+      hint: t('reservations.list.sections.archiveHint', 'يعرض الحجوزات المغلقة والملغاة بشكل منفصل للرجوع الهادئ.'),
+      empty: t('reservations.list.sections.emptyArchive', 'لا توجد حجوزات مغلقة أو ملغاة ضمن النتائج الحالية.'),
+      entries: groups.archive,
+    },
+  ];
+}
+
+function buildRenderableReservationSections(entries, { filtersChanged = false } = {}) {
+  const mobileLayout = isMobileReservationsLayout();
+  return buildGroupedReservationSections(entries).map((section) => {
+    const pagination = getSectionPaginationState(section.key);
+    if (filtersChanged) {
+      pagination.page = 1;
+    }
+    const totalItems = section.entries.length;
+    const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
+    const currentPage = clampPage(pagination.page, totalPages);
+    pagination.page = currentPage;
+    const start = mobileLayout ? 0 : (currentPage - 1) * PAGE_SIZE;
+    const end = mobileLayout ? currentPage * PAGE_SIZE : start + PAGE_SIZE;
+    const pageEntries = section.entries.slice(start, end);
+
+    return {
+      ...section,
+      totalItems,
+      totalPages,
+      currentPage,
+      pageEntries,
+    };
+  });
+}
+
+function buildSectionPaginationHtml({ sectionKey, currentPage, totalPages, totalItems, pageSize }) {
   if (totalPages <= 1) return '';
 
   const prevLabel = t('reservations.list.pagination.prev', 'السابق');
   const nextLabel = t('reservations.list.pagination.next', 'التالي');
   const pageLabelTemplate = t('reservations.list.pagination.page', 'صفحة {page}');
   const rangeTemplate = t('reservations.list.pagination.range', '{from}-{to} من {total}');
-  const rangeStart = ((currentPage - 1) * PAGE_SIZE) + 1;
-  const rangeEnd = Math.min(totalItems, currentPage * PAGE_SIZE);
+  const rangeStart = totalItems === 0 ? 0 : ((currentPage - 1) * pageSize) + 1;
+  const rangeEnd = totalItems === 0 ? 0 : Math.min(totalItems, currentPage * pageSize);
   const rangeText = rangeTemplate
-    .replace('{from}', rangeStart)
-    .replace('{to}', rangeEnd)
-    .replace('{total}', totalItems);
+    .replace('{from}', String(rangeStart))
+    .replace('{to}', String(rangeEnd))
+    .replace('{total}', String(totalItems));
+  const navLabel = t('reservations.list.pagination.nav', 'صفحات الحجوزات');
+  const rawLoadMoreLabel = t('reservations.list.pagination.loadMore', 'تحميل المزيد');
+  const loadMoreLabel = rawLoadMoreLabel && rawLoadMoreLabel.trim()
+    ? rawLoadMoreLabel
+    : 'تحميل المزيد';
 
   const pageButtons = resolvePageNumbers(currentPage, totalPages).map((page) => {
-    const label = pageLabelTemplate.replace('{page}', page);
+    const label = pageLabelTemplate.replace('{page}', String(page));
     const isActive = page === currentPage;
-    const activeAttrs = isActive ? ' aria-current="page"' : '';
-    const activeClass = isActive ? ' is-active' : '';
-    return `<button type="button" class="reservation-page-btn${activeClass}" data-page="${page}" aria-label="${label}"${activeAttrs}>${page}</button>`;
+    const className = isActive
+      ? 'ui-button ui-button--primary btn btn-primary btn-sm'
+      : 'ui-button ui-button--outline btn btn-outline-primary btn-sm';
+    return `<button type="button" class="${className}" data-reservation-section="${sectionKey}" data-reservation-section-page="${page}" aria-label="${label}" ${isActive ? 'aria-current="page"' : ''}>${page}</button>`;
   }).join('');
 
   return `
-    <div class="reservations-pagination" data-total-pages="${totalPages}">
-      <div class="reservations-pagination__controls">
-        <button type="button" class="reservation-page-nav" data-page="${currentPage - 1}" ${currentPage <= 1 ? 'disabled' : ''} aria-label="${prevLabel}">‹</button>
-        <div class="reservation-page-list">${pageButtons}</div>
-        <button type="button" class="reservation-page-nav" data-page="${currentPage + 1}" ${currentPage >= totalPages ? 'disabled' : ''} aria-label="${nextLabel}">›</button>
+    <div class="list-pagination project-focus-group__pagination" data-reservation-section-pagination="${sectionKey}">
+      <div class="list-pagination__summary text-muted small">${rangeText}</div>
+      <div class="list-pagination__controls btn-group" role="group" aria-label="${navLabel}">
+        <button type="button" class="ui-button ui-button--outline btn btn-outline-primary btn-sm" data-reservation-section="${sectionKey}" data-reservation-section-page="${currentPage - 1}" ${currentPage <= 1 ? 'disabled' : ''} aria-label="${prevLabel}">‹</button>
+        ${pageButtons}
+        <button type="button" class="ui-button ui-button--outline btn btn-outline-primary btn-sm" data-reservation-section="${sectionKey}" data-reservation-section-page="${currentPage + 1}" ${currentPage >= totalPages ? 'disabled' : ''} aria-label="${nextLabel}">›</button>
       </div>
-      <div class="reservations-pagination__summary">${rangeText}</div>
+      ${currentPage < totalPages
+        ? `<button type="button" class="ui-button ui-button--outline btn btn-outline-primary btn-sm reservations-mobile-load-more" data-reservation-section="${sectionKey}" data-reservation-section-page="${currentPage + 1}">${loadMoreLabel}</button>`
+        : ''}
     </div>
   `;
 }
@@ -100,13 +239,20 @@ export function renderReservationsList({
   const projectsMap = new Map((projects || []).map((project) => [String(project.id), project]));
 
   const container = document.getElementById(containerId);
+  const archiveContainer = document.getElementById('reservations-archive-list');
+  const paginationHost = document.getElementById(PAGINATION_HOST_ID);
   if (!container) {
     console.warn('⚠️ [reservations/renderers] container not found', containerId);
     return;
   }
 
   if (!reservations || reservations.length === 0) {
-    container.innerHTML = `<p>${t('reservations.list.empty', '⚠️ لا توجد حجوزات بعد.')}</p>`;
+    updateReservationsListCount({ filteredCount: 0, totalCount: 0 });
+    container.innerHTML = renderLinkedRecordsEmptyCopy(
+      t('reservations.list.empty', '⚠️ لا توجد حجوزات بعد.')
+    );
+    if (archiveContainer) archiveContainer.innerHTML = '';
+    clearReservationsPaginationHost(paginationHost);
     return;
   }
 
@@ -123,22 +269,25 @@ export function renderReservationsList({
   });
 
   if (filteredEntries.length === 0) {
-    container.innerHTML = `<p>${t('reservations.list.noResults', '🔍 لا توجد حجوزات مطابقة للبحث.')}</p>`;
+    updateReservationsListCount({ filteredCount: 0, totalCount: normalizedReservations.length });
+    container.innerHTML = renderLinkedRecordsEmptyCopy(
+      t('reservations.list.noResults', '🔍 لا توجد حجوزات مطابقة للبحث.')
+    );
+    if (archiveContainer) archiveContainer.innerHTML = '';
+    clearReservationsPaginationHost(paginationHost);
     container.dataset.reservationsPage = '1';
     container.dataset.reservationsFilters = fingerprintFilters(activeFilters);
     return;
   }
 
-  const totalPages = Math.ceil(filteredEntries.length / PAGE_SIZE);
   const filtersFingerprint = fingerprintFilters(activeFilters);
   const storedFingerprint = container.dataset.reservationsFilters || '';
   const filtersChanged = storedFingerprint !== filtersFingerprint;
-  const storedPage = clampPage(container.dataset.reservationsPage, totalPages);
-  let currentPage = filtersChanged ? 1 : storedPage;
   container.dataset.reservationsFilters = filtersFingerprint;
 
   const bindTileActions = () => {
-    container.querySelectorAll('[data-action="details"]').forEach((tile) => {
+    const actionRoots = [container, archiveContainer].filter(Boolean);
+    actionRoots.forEach((root) => root.querySelectorAll('[data-action="details"]').forEach((tile) => {
       const index = Number(tile.dataset.reservationIndex);
       const reservationId = tile.dataset.reservationId || null;
       if (Number.isNaN(index)) return;
@@ -147,9 +296,9 @@ export function renderReservationsList({
           onShowDetails(index, reservationId);
         }
       });
-    });
+    }));
 
-    container.querySelectorAll('button[data-action="confirm"]').forEach((btn) => {
+    actionRoots.forEach((root) => root.querySelectorAll('button[data-action="confirm"]').forEach((btn) => {
       const index = Number(btn.dataset.reservationIndex);
       const reservationId = btn.dataset.reservationId || null;
       if (Number.isNaN(index)) return;
@@ -159,9 +308,9 @@ export function renderReservationsList({
           onConfirmReservation(index, event, reservationId);
         }
       });
-    });
+    }));
 
-    container.querySelectorAll('button[data-action="close"]').forEach((btn) => {
+    actionRoots.forEach((root) => root.querySelectorAll('button[data-action="close"]').forEach((btn) => {
       const index = Number(btn.dataset.reservationIndex);
       const reservationId = btn.dataset.reservationId || null;
       if (Number.isNaN(index)) return;
@@ -171,46 +320,64 @@ export function renderReservationsList({
           onCloseReservation(index, event, reservationId);
         }
       });
-    });
+    }));
   };
 
   const bindPaginationActions = () => {
-    const navButtons = container.querySelectorAll('.reservations-pagination [data-page]');
+    const actionRoots = [container, archiveContainer].filter(Boolean);
+    const navButtons = actionRoots.flatMap((root) => Array.from(root.querySelectorAll('[data-reservation-section-page]')));
     navButtons.forEach((btn) => {
-      const target = Number.parseInt(btn.dataset.page, 10);
+      const sectionKey = btn.dataset.reservationSection;
+      const target = Number.parseInt(btn.dataset.reservationSectionPage, 10);
       if (!Number.isFinite(target)) return;
+      if (!sectionKey) return;
       btn.addEventListener('click', (event) => {
         if (btn.disabled) return;
         event.preventDefault();
         event.stopPropagation();
-        renderPage(target);
+        const pagination = getSectionPaginationState(sectionKey);
+        pagination.page = target;
+        renderSections();
       });
     });
   };
 
-  const renderPage = (pageNumber) => {
-    currentPage = clampPage(pageNumber, totalPages);
-    container.dataset.reservationsPage = String(currentPage);
-    const start = (currentPage - 1) * PAGE_SIZE;
-    const pageEntries = filteredEntries.slice(start, start + PAGE_SIZE);
-    const tilesHtml = buildReservationTilesHtml({
-      entries: pageEntries,
-      customersMap,
-      techniciansMap,
-      projectsMap
-    });
-    const paginationHtml = buildPaginationHtml({
-      currentPage,
-      totalPages,
-      totalItems: filteredEntries.length
+  const renderSections = () => {
+    updateReservationsListCount({
+      filteredCount: filteredEntries.length,
+      totalCount: normalizedReservations.length,
     });
 
-    container.innerHTML = `<div class="reservations-grid">${tilesHtml}</div>${paginationHtml}`;
+    const sections = buildRenderableReservationSections(filteredEntries, { filtersChanged });
+
+    if (archiveContainer) {
+      const [liveSection, archiveSection] = sections;
+      container.innerHTML = `<div class="project-focus-groups reservations-focus-groups reservations-focus-groups--live">${renderReservationSectionHtml(liveSection, {
+        customersMap,
+        techniciansMap,
+        projectsMap,
+      })}</div>`;
+      const archiveCount = document.getElementById('reservations-archive-count');
+      if (archiveCount) archiveCount.textContent = String(archiveSection.totalItems);
+      archiveContainer.innerHTML = `<div class="project-focus-groups reservations-focus-groups reservations-focus-groups--archive">${renderReservationSectionHtml(archiveSection, {
+        customersMap,
+        techniciansMap,
+        projectsMap,
+      })}</div>`;
+    } else {
+      container.innerHTML = `<div class="project-focus-groups reservations-focus-groups">${sections.map((section) => renderReservationSectionHtml(section, {
+        customersMap,
+        techniciansMap,
+        projectsMap,
+      })).join('')}</div>`;
+    }
+
+    clearReservationsPaginationHost(paginationHost);
     bindTileActions();
     bindPaginationActions();
   };
 
-  renderPage(currentPage);
+  renderSections();
 
   // Reopen is handled only inside the edit modal; no button on tiles.
 }
@@ -220,6 +387,7 @@ export function renderReservationDetails(index, {
   onDelete,
   getEditContext
 } = {}) {
+  mountReservationModalsIfNeeded();
   const { reservations: rawReservations = [], customers = [], projects = [] } = loadData();
   const normalizedReservations = rawReservations.map((reservation) => {
     const normalized = toInternalReservation(reservation);
@@ -388,6 +556,7 @@ export function renderReservationDetails(index, {
   }
 
   if (modalEl && window.bootstrap?.Modal) {
+    document.body.classList.add('reservation-modal-open');
     window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
   }
 

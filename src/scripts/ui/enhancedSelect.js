@@ -1,9 +1,22 @@
-const SELECT_SELECTOR = "select.form-select:not([data-no-enhance]):not([multiple])";
+const SELECT_SELECTOR = "select:is(.form-select,.ui-select):not([data-no-enhance]):not([multiple])";
 const STATE_MAP = new WeakMap();
 
 let globalObserver = null;
 let outsideClickHandlerAttached = false;
+let viewportHandlerAttached = false;
 let openWrapper = null;
+let languageRefreshBound = false;
+
+function hideNativeSelect(select) {
+  if (!(select instanceof HTMLSelectElement)) return;
+
+  select.classList.remove('select', 'select-bordered');
+  select.classList.add("enhanced-select__native");
+  select.setAttribute("tabindex", "-1");
+  select.setAttribute("aria-hidden", "true");
+  select.hidden = true;
+  select.style.setProperty("display", "none", "important");
+}
 
 export function initEnhancedSelects(root = document) {
   if (!root) return;
@@ -32,6 +45,19 @@ export function initEnhancedSelects(root = document) {
     outsideClickHandlerAttached = true;
     document.addEventListener("pointerdown", handleDocumentPointerDown, { capture: true });
   }
+
+  if (!viewportHandlerAttached) {
+    viewportHandlerAttached = true;
+    window.addEventListener("resize", handleViewportChange, { passive: true });
+    window.addEventListener("scroll", handleViewportChange, { passive: true, capture: true });
+  }
+
+  if (!languageRefreshBound && root === document) {
+    languageRefreshBound = true;
+    const refreshAll = () => refreshAllEnhancedSelects();
+    document.addEventListener("language:changed", refreshAll);
+    document.addEventListener("language:translationsReady", refreshAll);
+  }
 }
 
 export function refreshEnhancedSelect(select) {
@@ -42,12 +68,21 @@ export function refreshEnhancedSelect(select) {
     return;
   }
 
+  hideNativeSelect(select);
+
   const wrapper = select.closest(".enhanced-select");
   if (!wrapper) return;
 
   buildOptions(wrapper);
   updateTriggerLabel(wrapper);
   updateDisabledState(wrapper);
+}
+
+export function refreshAllEnhancedSelects(root = document) {
+  if (!root?.querySelectorAll) return;
+  root.querySelectorAll(`${SELECT_SELECTOR}[data-enhanced-select="true"]`).forEach((select) => {
+    refreshEnhancedSelect(select);
+  });
 }
 
 function enhanceSelect(select) {
@@ -64,6 +99,9 @@ function enhanceSelect(select) {
 
   const wrapper = document.createElement("div");
   wrapper.className = "enhanced-select";
+  if (select.classList.contains('w-full')) {
+    wrapper.classList.add('enhanced-select--full');
+  }
 
   const parent = select.parentNode;
   if (parent) {
@@ -72,9 +110,7 @@ function enhanceSelect(select) {
   wrapper.appendChild(select);
 
   select.dataset.enhancedSelect = "true";
-  select.classList.add("enhanced-select__native");
-  select.setAttribute("tabindex", "-1");
-  select.setAttribute("aria-hidden", "true");
+  hideNativeSelect(select);
 
   const trigger = document.createElement("button");
   trigger.type = "button";
@@ -87,7 +123,8 @@ function enhanceSelect(select) {
   menu.setAttribute("role", "listbox");
   menu.setAttribute("tabindex", "-1");
 
-  wrapper.append(trigger, menu);
+  wrapper.append(trigger);
+  document.body.appendChild(menu);
 
   const state = {
     select,
@@ -196,8 +233,10 @@ function updateTriggerLabel(wrapper) {
 
   const selectedOption = select.selectedOptions?.[0] ?? select.options?.[select.selectedIndex];
   const label = selectedOption?.textContent?.trim() || selectedOption?.value || "";
+  const isPlaceholder = !selectedOption?.value;
 
   trigger.textContent = label;
+  trigger.classList.toggle("is-placeholder", isPlaceholder);
 }
 
 function highlightSelectedOption(wrapper) {
@@ -250,6 +289,8 @@ function openMenu(wrapper) {
 
   wrapper.setAttribute("data-open", "true");
   state.trigger.setAttribute("aria-expanded", "true");
+  state.menu.classList.add("is-open");
+  positionMenu(wrapper);
   openWrapper = wrapper;
 
   const selected = state.menu.querySelector('.enhanced-select__option[aria-selected="true"]')
@@ -268,6 +309,7 @@ function closeMenu(wrapper, { focusTrigger = true } = {}) {
 
   wrapper.setAttribute("data-open", "false");
   state.trigger.setAttribute("aria-expanded", "false");
+  state.menu.classList.remove("is-open");
 
   if (focusTrigger) {
     state.trigger.focus({ preventScroll: true });
@@ -284,9 +326,17 @@ function handleDocumentPointerDown(event) {
   const target = event.target;
   if (!(target instanceof Node)) return;
 
-  if (!openWrapper.contains(target)) {
+  const state = STATE_MAP.get(openWrapper);
+  const clickedInsideMenu = !!state?.menu?.contains(target);
+
+  if (!openWrapper.contains(target) && !clickedInsideMenu) {
     closeMenu(openWrapper, { focusTrigger: false });
   }
+}
+
+function handleViewportChange() {
+  if (!openWrapper) return;
+  positionMenu(openWrapper);
 }
 
 function handleTriggerKeydown(event, wrapper) {
@@ -356,4 +406,44 @@ function selectOption(optionElement, wrapper) {
   }
 
   closeMenu(wrapper);
+}
+
+function positionMenu(wrapper) {
+  const state = STATE_MAP.get(wrapper);
+  if (!state) return;
+
+  const { trigger, menu } = state;
+  if (!trigger || !menu) return;
+
+  const rect = trigger.getBoundingClientRect();
+  const viewportPadding = 12;
+  const menuGap = 6;
+  const minWidth = Math.max(rect.width, 180);
+  const maxWidth = Math.min(window.innerWidth - (viewportPadding * 2), 560);
+
+  menu.style.width = 'max-content';
+  menu.style.minWidth = `${minWidth}px`;
+  menu.style.maxWidth = `${maxWidth}px`;
+
+  const measuredWidth = Math.min(
+    Math.max(minWidth, menu.scrollWidth || 0),
+    maxWidth,
+  );
+  menu.style.width = `${measuredWidth}px`;
+
+  const left = Math.min(
+    Math.max(viewportPadding, rect.left),
+    Math.max(viewportPadding, window.innerWidth - measuredWidth - viewportPadding),
+  );
+
+  menu.style.left = `${left}px`;
+  menu.style.top = `${rect.bottom + menuGap}px`;
+
+  const menuHeight = menu.offsetHeight || 0;
+  const wouldOverflowBottom = rect.bottom + menuGap + menuHeight > window.innerHeight - viewportPadding;
+
+  if (wouldOverflowBottom) {
+    const top = Math.max(viewportPadding, rect.top - menuHeight - menuGap);
+    menu.style.top = `${top}px`;
+  }
 }

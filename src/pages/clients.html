@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <!-- @include "./_partials/manager-page-head.html" {"titleKey":"clients.pageTitle","titleText":"إدارة العملاء"} -->
+</head>
+<!-- @include "./_partials/tabs-manager-shell.html" {"bodyClass":"dashboard-page clients-page no-js","greetingLabelKey":"clients.pageTitle","greetingLabelText":"إدارة العملاء","pageScript":"/src/scripts/clientsPage.js"} -->
+<template data-slot="sidebarTabs">
+  <a class="ui-tab tab-button" href="home.html" data-close-sidebar>
+    <span class="tab-button__content">🏠 <span data-i18n data-i18n-key="dashboard.quickLinks.home">الصفحة الرئيسية</span></span>
+  </a>
+  <a class="ui-tab tab-button" href="operations.html#reservations-tab" data-close-sidebar>
+    <span class="tab-button__content">📅 <span data-i18n data-i18n-key="tabs.reservations">الحجوزات</span></span>
+  </a>
+  <a class="ui-tab tab-button active" href="clients.html" data-close-sidebar aria-current="page">
+    <span class="tab-button__content">👤 <span data-i18n data-i18n-key="tabs.customers">العملاء</span></span>
+  </a>
+  <a class="ui-tab tab-button" href="crew.html" data-close-sidebar>
+    <span class="tab-button__content">😎 <span data-i18n data-i18n-key="tabs.technicians">طاقم العمل</span></span>
+  </a>
+  <a class="ui-tab tab-button" href="projects.html" data-close-sidebar>
+    <span class="tab-button__content">🏗️ <span data-i18n data-i18n-key="home.projects.title">إدارة المشاريع</span></span>
+  </a>
+
+</template>
+<template data-slot="greetingPanel">
+  <div class="flex flex-col gap-4 text-start">
+    <div class="space-y-1">
+      <p class="text-sm text-base-content/60" data-i18n data-i18n-key="clients.pageTitle">إدارة العملاء</p>
+      <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="clients.pageSummary">إدارة سجلات العملاء كمساحة مستقلة بعيداً عن عمليات الحجوزات اليومية.</p>
+    </div>
+  </div>
+</template>
+<template data-slot="mainContent">
+  <div class="tab-content-wrapper">
+      <!-- ✅ تبويب: العملاء -->
+      <div class="tab active" id="customers-tab" role="tabpanel" aria-labelledby="clients-page-section-title" tabindex="0">
+        <div class="tab-section-header">
+          <h2 class="tab-section-title" id="clients-page-section-title" data-i18n data-i18n-key="customers.section.title">📋 إدارة العملاء</h2>
+          <p class="section-support-text" data-i18n data-i18n-key="customers.section.support">حدّث بيانات العملاء هنا قبل ربطهم بالحجوزات أو استخدامهم في سير العمل اليومي.</p>
+        </div>
+
+        <!-- ✅ نموذج إضافة عميل -->
+        <div class="ui-card ui-card--content glass-card customer-form-box customer-embedded-form-card management-form-box mb-4">
+          <div class="management-form-header">
+            <div class="management-form-icon">👤</div>
+            <div class="management-form-header-text">
+              <h4 data-i18n data-i18n-key="customers.form.title">إضافة / تعديل عميل</h4>
+              <p class="management-form-hint" data-i18n data-i18n-key="customers.form.hint">حدّث بيانات العميل وسيتم مزامنتها مع الحجوزات والفواتير.</p>
+            </div>
+          </div>
+          <form id="customer-form" class="management-form">
+            <input type="hidden" id="customer-id">
+            <div class="customer-embedded-form-layout">
+              <div class="customer-embedded-form-main">
+                <div class="management-form-grid customer-embedded-form-grid">
+                  <div class="form-field">
+                    <label for="customer-name" class="form-label" data-i18n data-i18n-key="customers.form.labels.name">👤 الاسم</label>
+                    <input type="text" class="ui-input form-control" id="customer-name" required data-i18n data-i18n-placeholder-key="customers.form.placeholders.name">
+                  </div>
+                  <div class="form-field">
+                    <label for="customer-phone" class="form-label" data-i18n data-i18n-key="customers.form.labels.phone">📞 الجوال</label>
+                    <input type="tel" class="ui-input form-control" id="customer-phone" required data-i18n data-i18n-placeholder-key="customers.form.placeholders.phone">
+                  </div>
+                  <div class="form-field">
+                    <label for="customer-email" class="form-label" data-i18n data-i18n-key="customers.form.labels.email">📧 البريد</label>
+                    <input type="email" class="ui-input form-control" id="customer-email" dir="ltr" data-i18n data-i18n-placeholder-key="customers.form.placeholders.email">
+                  </div>
+                  <div class="form-field">
+                    <label for="customer-address" class="form-label" data-i18n data-i18n-key="customers.form.labels.address">📍 العنوان</label>
+                    <input type="text" class="ui-input form-control" id="customer-address" data-i18n data-i18n-placeholder-key="customers.form.placeholders.address">
+                  </div>
+                  <div class="form-field">
+                    <label for="customer-company" class="form-label" data-i18n data-i18n-key="customers.form.labels.company">🏢 الشركة</label>
+                    <input type="text" class="ui-input form-control" id="customer-company" data-i18n data-i18n-placeholder-key="customers.form.placeholders.company">
+                  </div>
+                  <div class="form-field">
+                    <label for="customer-tax-id" class="form-label" data-i18n data-i18n-key="customers.form.labels.taxId">🧾 الرقم الضريبي</label>
+                    <input type="text" class="ui-input form-control" id="customer-tax-id" placeholder="1234567890" data-i18n data-i18n-placeholder-key="customers.form.placeholders.taxId">
+                  </div>
+                </div>
+              </div>
+              <aside class="customer-embedded-form-side">
+                <div class="customer-embedded-form-side-card">
+                  <div class="form-field customer-embedded-upload-field">
+                    <label for="customer-document" class="form-label" data-i18n data-i18n-key="customers.form.labels.document">📎 مستند العميل</label>
+                    <div class="customer-upload-inline">
+                      <input type="file" class="customer-upload-input" id="customer-document" accept="application/pdf,image/*">
+                      <label for="customer-document" class="ui-button ui-button--secondary btn btn-secondary customer-upload-trigger" data-i18n data-i18n-key="customers.form.actions.chooseDocument">اختيار ملف</label>
+                      <button type="button" class="ui-button ui-button--outline btn btn-outline btn-secondary" id="customer-document-preview" disabled data-i18n data-i18n-key="customers.form.actions.previewDocument">عرض الملف</button>
+                      <small class="customer-upload-hint" id="customer-document-name" data-i18n data-i18n-key="customers.form.document.empty">لم يتم اختيار ملف بعد</small>
+                    </div>
+                  </div>
+                  <div class="form-field form-field-notes customer-embedded-notes-field">
+                    <label for="customer-notes" class="form-label" data-i18n data-i18n-key="customers.form.labels.notes">📝 الملاحظات</label>
+                    <textarea class="ui-textarea form-control" id="customer-notes" rows="6" placeholder="معلومات إضافية أو تذكيرات" data-i18n data-i18n-placeholder-key="customers.form.placeholders.notes"></textarea>
+                  </div>
+                </div>
+              </aside>
+            </div>
+            <div class="management-form-actions">
+              <button type="button" class="ui-button ui-button--outline btn btn-outline btn-secondary d-none" id="customer-cancel-btn" data-i18n data-i18n-key="customers.form.actions.cancel">إلغاء التعديل</button>
+              <button type="submit" class="ui-button ui-button--primary btn btn-primary" id="submit-btn" data-i18n data-i18n-key="customers.form.actions.submit">➕ إضافة عميل</button>
+            </div>
+          </form>
+        </div>
+
+        <section class="ui-card ui-card--content glass-card customer-records-card">
+          <div class="projects-table__header customer-records-card__header">
+            <div class="project-list-section-header customer-records-card__heading">
+              <div class="surface-heading-stack">
+                <h3 class="mb-0" data-i18n data-i18n-key="projects.customers.records.title">سجل العملاء</h3>
+                <p class="section-support-text mb-0" data-i18n data-i18n-key="projects.customers.records.hint">ابحث، راجع، وعدّل العملاء المرتبطين بسير العمل من نفس السطح.</p>
+              </div>
+              <span id="customers-list-count" class="projects-table__count ui-badge ui-badge--soft badge-soft">0</span>
+            </div>
+          </div>
+
+          <div class="customer-records-card__toolbar">
+            <div class="management-search-bar customer-records-search">
+              <input
+                type="text"
+                id="search-customer-input"
+                class="ui-input form-control"
+                placeholder="🔍 ابحث عن عميل بالاسم أو الجوال أو الشركة..."
+                data-i18n data-i18n-placeholder-key="customers.search.placeholder"
+              >
+              <button type="button" class="ui-button ui-button--outline btn btn-outline btn-secondary customer-records-search__reset" id="customers-clear-search" data-i18n data-i18n-key="actions.clearFilters">🔄 إعادة التصفية</button>
+            </div>
+          </div>
+
+          <div class="users-table-wrapper overflow-x-auto embedded-management-table-shell">
+            <table class="ui-table table table-hover users-table surface-table embedded-management-table customer-table align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th data-i18n data-i18n-key="customers.table.headers.name">👤 الاسم</th>
+                  <th data-i18n data-i18n-key="customers.table.headers.phone">📞 الجوال</th>
+                  <th data-i18n data-i18n-key="customers.table.headers.company">🏢 الشركة</th>
+                  <th class="table-notes-head" data-i18n data-i18n-key="customers.table.headers.notes">📝 ملاحظات</th>
+                  <th class="table-actions-head" data-i18n data-i18n-key="customers.table.headers.actions">⚙️ الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="customers-table">
+                <tr>
+                  <td colspan="5" class="text-center" data-i18n data-i18n-key="customers.table.loading">جاري التحميل...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div id="customers-list-pagination" class="list-pagination customer-records-card__pagination" hidden></div>
+        </section>
+
+      </div> <!-- نهاية تبويب العملاء -->
+
+
+  </div>
+</template>
+</html>

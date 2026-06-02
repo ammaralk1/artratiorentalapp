@@ -17,8 +17,8 @@ export function formatCurrency(value) {
   const locale = lang === 'ar' ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US';
   const formatted = new Intl.NumberFormat(locale, {
     minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(Math.round(number));
+    maximumFractionDigits: 2
+  }).format(number);
   const currencyLabel = 'SR';
   return `${normalizeNumbers(formatted)} ${currencyLabel}`;
 }

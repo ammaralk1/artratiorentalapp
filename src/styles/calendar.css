@@ -6,9 +6,9 @@
 .calendar-surface {
   position: relative;
   border-radius: 28px;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(14, 165, 233, 0.06));
-  border: 1px solid rgba(79, 70, 229, 0.12);
-  box-shadow: 0 40px 80px rgba(15, 23, 42, 0.14);
+  background: var(--bo-color-content-bg);
+  border: 1px solid var(--bo-color-card-border);
+  box-shadow: 0 26px 54px rgba(18, 34, 24, 0.12);
   padding: clamp(1.25rem, 1.8vw, 1.75rem);
   display: flex;
   flex-direction: column;
@@ -34,23 +34,52 @@
 .calendar-heading {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.55rem;
+  max-width: 42rem;
 }
 
 .calendar-heading__title {
   font-size: clamp(1.35rem, 2.4vw, 1.6rem);
   font-weight: 700;
-  color: var(--tw-prose-headings, var(--fc-neutral, #0f172a));
+  color: var(--bo-color-text-primary);
+  margin: 0;
 }
 
 .calendar-heading__subtitle {
   margin: 0;
   font-size: 0.95rem;
-  color: rgba(15, 23, 42, 0.62);
+  color: var(--bo-color-text-secondary);
 }
 
-:where(html.dark, body.dark, html.dark-mode, body.dark-mode) .calendar-heading__subtitle {
-  color: rgba(226, 232, 240, 0.65);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .calendar-heading__subtitle {
+  color: var(--bo-color-text-secondary);
+}
+
+.calendar-summary-badge {
+  width: fit-content;
+  min-height: 2rem;
+  padding-inline: 0.9rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.calendar-legend-shell {
+  width: 100%;
+  border-radius: 1.1rem;
+  background: var(--bo-color-content-muted-bg);
+  border: 1px solid var(--bo-color-card-border);
+  padding: 0.75rem;
+}
+
+.calendar-legend-shell[hidden] {
+  display: none !important;
+}
+
+@media (min-width: 1024px) {
+  .calendar-legend-shell {
+    width: min(32rem, 100%);
+    margin-inline-start: auto;
+  }
 }
 
 .calendar-legend {
@@ -70,13 +99,6 @@
   padding-inline: 0.85rem;
   padding-block: 0.35rem;
   box-shadow: none;
-  background: rgba(15, 23, 42, 0.06);
-  border: 1px solid rgba(15, 23, 42, 0.08);
-}
-
-:where(html.dark, body.dark, html.dark-mode, body.dark-mode) .calendar-legend__chip {
-  background: rgba(148, 163, 184, 0.18);
-  border-color: rgba(148, 163, 184, 0.24);
 }
 
 .calendar-surface__body {
@@ -86,9 +108,9 @@
 .calendar-shell {
   position: relative;
   border-radius: 24px;
-  background: rgba(248, 250, 255, 0.82);
-  border: 1px solid rgba(148, 163, 255, 0.18);
-  box-shadow: 0 32px 75px rgba(30, 41, 59, 0.18);
+  background: var(--bo-color-content-muted-bg);
+  border: 1px solid var(--bo-color-card-border);
+  box-shadow: 0 24px 52px rgba(18, 34, 24, 0.12);
   padding: clamp(1rem, 1.5vw, 1.5rem);
 }
 
@@ -101,6 +123,57 @@
 @media (max-width: 768px) {
   #calendar.calendar-shell {
     min-height: 68vh;
+  }
+}
+
+@media (max-width: 768px) {
+  #calendar.calendar-shell {
+    overflow-x: auto;
+    overflow-y: visible;
+    max-width: 100%;
+    padding: 0.75rem;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x pan-y;
+    scrollbar-color: rgba(86, 126, 86, 0.55) rgba(86, 126, 86, 0.12);
+  }
+
+  #calendar.calendar-shell::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  #calendar.calendar-shell::-webkit-scrollbar-track {
+    background: rgba(86, 126, 86, 0.12);
+    border-radius: 999px;
+  }
+
+  #calendar.calendar-shell::-webkit-scrollbar-thumb {
+    background: rgba(86, 126, 86, 0.55);
+    border-radius: 999px;
+  }
+
+  #calendar.fc .fc-dayGridMonth-view,
+  #calendar .fc .fc-dayGridMonth-view,
+  #calendar.fc .fc-dayGridMonth-view .fc-scrollgrid,
+  #calendar .fc .fc-dayGridMonth-view .fc-scrollgrid {
+    min-width: 720px;
+  }
+
+  #calendar.fc .fc-dayGridMonth-view .fc-col-header,
+  #calendar.fc .fc-dayGridMonth-view .fc-scrollgrid-sync-table,
+  #calendar.fc .fc-dayGridMonth-view .fc-daygrid-body,
+  #calendar.fc .fc-dayGridMonth-view .fc-daygrid-body table,
+  #calendar .fc .fc-dayGridMonth-view .fc-col-header,
+  #calendar .fc .fc-dayGridMonth-view .fc-scrollgrid-sync-table,
+  #calendar .fc .fc-dayGridMonth-view .fc-daygrid-body,
+  #calendar .fc .fc-dayGridMonth-view .fc-daygrid-body table {
+    width: 720px !important;
+    min-width: 720px;
+  }
+
+  #calendar.fc .fc-dayGridMonth-view .fc-daygrid-day-frame,
+  #calendar .fc .fc-dayGridMonth-view .fc-daygrid-day-frame {
+    min-height: 82px;
   }
 }
 
@@ -119,38 +192,91 @@
 }
 
 /* Calendar day palette (light) */
-:root,
-html,
-body {
-  --calendar-day-bg: rgba(248, 250, 255, 0.82);
-  --calendar-day-bg-hover: rgba(224, 231, 255, 0.55);
-  --calendar-day-bg-today: linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(14, 165, 233, 0.16));
-}
-
-:where(html.dark, body.dark, html.dark-mode, body.dark-mode) .calendar-shell {
-  background: rgba(15, 23, 42, 0.92);
-  border-color: rgba(99, 102, 241, 0.35);
-  box-shadow: 0 40px 80px rgba(4, 7, 15, 0.6);
+:root:where(:not(.dark):not(.dark-mode):not([data-theme="dark"])),
+html:where(:not(.dark):not(.dark-mode):not([data-theme="dark"])),
+body:where(:not(.dark):not(.dark-mode):not([data-theme="dark"])) {
+  --calendar-day-bg: rgba(248, 250, 247, 0.84);
+  --calendar-day-bg-hover: rgba(232, 240, 234, 0.64);
+  --calendar-day-bg-today: linear-gradient(135deg, rgba(154, 170, 145, 0.2), rgba(86, 126, 86, 0.14));
+  --calendar-month-bg: linear-gradient(180deg, rgba(247, 250, 246, 0.95), rgba(238, 244, 239, 0.9));
+  --calendar-month-bg-hover: rgba(226, 236, 229, 0.82);
+  --calendar-month-bg-today: linear-gradient(135deg, rgba(154, 170, 145, 0.18), rgba(86, 126, 86, 0.12));
+  --calendar-timegrid-bg: rgba(246, 249, 245, 0.96);
+  --calendar-timegrid-alt-bg: rgba(239, 244, 240, 0.92);
+  --calendar-allday-bg: rgba(243, 247, 242, 0.98);
+  --calendar-timegrid-text: rgba(53, 76, 63, 0.82);
 }
 
 /* Calendar day palette (dark) */
-:where(html.dark, body.dark, html.dark-mode, body.dark-mode) {
-  --calendar-day-bg: rgba(17, 24, 39, 0.75);
-  --calendar-day-bg-hover: rgba(30, 64, 175, 0.18);
-  --calendar-day-bg-today: linear-gradient(135deg, rgba(99, 102, 241, 0.22), rgba(14, 165, 233, 0.18));
+:where(:root.dark, :root.dark-mode, :root[data-theme="dark"], html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) {
+  --calendar-day-bg: rgba(20, 30, 24, 0.78);
+  --calendar-day-bg-hover: rgba(86, 126, 86, 0.18);
+  --calendar-day-bg-today: linear-gradient(135deg, rgba(154, 170, 145, 0.22), rgba(86, 126, 86, 0.16));
+  --calendar-month-bg: linear-gradient(180deg, rgba(24, 36, 29, 0.82), rgba(16, 25, 21, 0.9));
+  --calendar-month-bg-hover: rgba(86, 126, 86, 0.24);
+  --calendar-month-bg-today: linear-gradient(135deg, rgba(154, 170, 145, 0.24), rgba(86, 126, 86, 0.2));
+  --calendar-timegrid-bg: rgba(20, 30, 24, 0.78);
+  --calendar-timegrid-alt-bg: rgba(18, 28, 22, 0.84);
+  --calendar-allday-bg: rgba(24, 36, 29, 0.82);
+  --calendar-timegrid-text: rgba(206, 223, 212, 0.84);
 }
 
-/* Unify month view background with day/week: remove gray and use deep blue palette */
+#calendar.fc,
+#calendar .fc {
+  color-scheme: light;
+  --calendar-day-bg: rgba(248, 250, 247, 0.84);
+  --calendar-day-bg-hover: rgba(232, 240, 234, 0.64);
+  --calendar-day-bg-today: linear-gradient(135deg, rgba(154, 170, 145, 0.2), rgba(86, 126, 86, 0.14));
+  --calendar-month-bg: linear-gradient(180deg, rgba(247, 250, 246, 0.95), rgba(238, 244, 239, 0.9));
+  --calendar-month-bg-hover: rgba(226, 236, 229, 0.82);
+  --calendar-month-bg-today: linear-gradient(135deg, rgba(154, 170, 145, 0.18), rgba(86, 126, 86, 0.12));
+  --calendar-timegrid-bg: rgba(246, 249, 245, 0.96);
+  --calendar-timegrid-alt-bg: rgba(239, 244, 240, 0.92);
+  --calendar-allday-bg: rgba(243, 247, 242, 0.98);
+  --calendar-timegrid-text: rgba(53, 76, 63, 0.82);
+  --fc-page-bg-color: rgba(248, 250, 247, 0.96);
+  --fc-neutral-bg-color: rgba(243, 247, 242, 0.98);
+  --fc-neutral-text-color: rgba(53, 76, 63, 0.82);
+  --fc-border-color: rgba(148, 163, 184, 0.22);
+  --fc-today-bg-color: rgba(154, 170, 145, 0.12);
+  --fc-list-event-hover-bg-color: rgba(232, 240, 234, 0.64);
+  --fc-more-link-bg-color: rgba(154, 170, 145, 0.14);
+  --fc-more-link-text-color: rgba(42, 64, 48, 0.92);
+  --fc-now-indicator-color: rgba(120, 154, 111, 0.92);
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc {
+  color-scheme: dark;
+  --calendar-day-bg: rgba(20, 30, 24, 0.78);
+  --calendar-day-bg-hover: rgba(86, 126, 86, 0.18);
+  --calendar-day-bg-today: linear-gradient(135deg, rgba(154, 170, 145, 0.22), rgba(86, 126, 86, 0.16));
+  --calendar-month-bg: linear-gradient(180deg, rgba(24, 36, 29, 0.82), rgba(16, 25, 21, 0.9));
+  --calendar-month-bg-hover: rgba(86, 126, 86, 0.24);
+  --calendar-month-bg-today: linear-gradient(135deg, rgba(154, 170, 145, 0.24), rgba(86, 126, 86, 0.2));
+  --calendar-timegrid-bg: rgba(20, 30, 24, 0.78);
+  --calendar-timegrid-alt-bg: rgba(18, 28, 22, 0.84);
+  --calendar-allday-bg: rgba(24, 36, 29, 0.82);
+  --calendar-timegrid-text: rgba(206, 223, 212, 0.84);
+  --fc-page-bg-color: rgba(20, 30, 24, 0.78);
+  --fc-neutral-bg-color: rgba(24, 36, 29, 0.82);
+  --fc-neutral-text-color: rgba(206, 223, 212, 0.84);
+  --fc-border-color: rgba(71, 85, 105, 0.55);
+  --fc-today-bg-color: rgba(154, 170, 145, 0.16);
+  --fc-list-event-hover-bg-color: rgba(86, 126, 86, 0.18);
+  --fc-more-link-bg-color: rgba(86, 126, 86, 0.24);
+  --fc-more-link-text-color: rgba(232, 240, 235, 0.88);
+  --fc-now-indicator-color: rgba(154, 170, 145, 0.94);
+}
+
 .fc .fc-dayGridMonth-view {
-  /* Override day color tokens for month only */
-  --calendar-day-bg: linear-gradient(180deg, rgba(30, 64, 175, 0.22), rgba(17, 24, 39, 0.86));
-  --calendar-day-bg-hover: rgba(30, 64, 175, 0.32);
-  --calendar-day-bg-today: linear-gradient(135deg, rgba(99, 102, 241, 0.28), rgba(14, 165, 233, 0.24));
+  --calendar-day-bg: var(--calendar-month-bg);
+  --calendar-day-bg-hover: var(--calendar-month-bg-hover);
+  --calendar-day-bg-today: var(--calendar-month-bg-today);
 }
 
-/* Improve day number contrast on darker month tiles */
 .fc .fc-dayGridMonth-view .fc-daygrid-day-number {
-  color: #e2e8f0;
+  color: var(--calendar-timegrid-text);
   padding: 0.35rem;
   font-size: 0.86rem;
 }
@@ -202,6 +328,19 @@ body {
 
 .calendar-status-card {
   pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  min-height: 16rem;
+  width: min(32rem, calc(100% - 2rem));
+  padding: 2rem;
+  border-radius: 1.75rem;
+  border: 1px solid var(--bo-color-card-border);
+  background: var(--bo-color-content-bg);
+  color: var(--bo-color-text-primary);
+  box-shadow: 0 24px 56px rgba(18, 34, 24, 0.16);
 }
 
 .calendar-status-card__icon {
@@ -223,7 +362,7 @@ body {
   color: rgba(30, 41, 59, 0.75);
 }
 
-:where(html.dark, body.dark, html.dark-mode, body.dark-mode) .calendar-status-card--empty {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .calendar-status-card--empty {
   color: rgba(226, 232, 240, 0.82);
 }
 
@@ -241,8 +380,20 @@ body {
   margin-bottom: 1.5rem;
   padding: 0.5rem 0.75rem;
   border-radius: 14px;
-  background: rgba(99, 102, 241, 0.10);
-  border: 1px solid rgba(99, 102, 241, 0.22);
+  background: var(--bo-color-content-bg);
+  border: 1px solid var(--bo-color-card-border);
+}
+
+.calendar-toolbar .fc-toolbar-chunk:first-child {
+  order: 2;
+}
+
+.calendar-toolbar .fc-toolbar-chunk:nth-child(2) {
+  order: 1;
+}
+
+.calendar-toolbar .fc-toolbar-chunk:last-child {
+  order: 3;
 }
 
 .calendar-toolbar__chunk {
@@ -258,37 +409,54 @@ body {
   color: var(--tw-prose-headings, var(--fc-neutral, #0f172a));
 }
 
-:where(html.dark, body.dark, html.dark-mode, body.dark-mode) .calendar-toolbar__title {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .calendar-toolbar__title {
   color: rgba(226, 232, 240, 0.92);
 }
 
 .calendar-toolbar__button {
   border-radius: 999px !important;
-  border: 1px solid var(--bo-color-tab-shell-border) !important;
-  background: var(--bo-color-tab-shell-bg) !important;
-  color: var(--bo-color-tab-text) !important;
+  border: 1px solid rgba(147, 168, 137, 0.22) !important;
+  background: rgba(248, 250, 247, 0.94) !important;
+  color: rgba(42, 64, 48, 0.92) !important;
   font-weight: 600 !important;
   padding: 0.42rem 1.2rem !important;
+  box-shadow: 0 10px 20px rgba(42, 64, 48, 0.08) !important;
   transition: all 0.18s ease !important;
 }
 
 .calendar-toolbar__button:hover {
-  background: var(--bo-color-tab-hover-bg) !important;
-  color: var(--bo-color-tab-text) !important;
-  border-color: var(--bo-color-tab-hover-border) !important;
+  background: rgba(238, 244, 239, 0.98) !important;
+  color: rgba(32, 49, 38, 0.96) !important;
+  border-color: rgba(147, 168, 137, 0.3) !important;
+  box-shadow: 0 12px 24px rgba(42, 64, 48, 0.1) !important;
 }
 
 .fc .calendar-toolbar__button.fc-button-active {
-  background: var(--bo-color-tab-active-bg) !important;
-  border-color: var(--bo-color-tab-active-border) !important;
-  color: var(--bo-color-tab-active-fg) !important;
-  box-shadow: var(--bo-color-tab-active-shadow);
+  background: rgba(120, 154, 111, 0.9) !important;
+  border-color: rgba(120, 154, 111, 0.94) !important;
+  color: #f7fbf7 !important;
+  box-shadow: 0 14px 28px rgba(86, 126, 86, 0.18) !important;
 }
 
-:where(html.dark, body.dark, html.dark-mode, body.dark-mode) .calendar-toolbar__button {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .calendar-toolbar__button {
   background: var(--bo-color-tab-shell-bg) !important;
   color: var(--bo-color-tab-text) !important;
   border-color: var(--bo-color-tab-shell-border) !important;
+  box-shadow: none !important;
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .calendar-toolbar__button:hover {
+  background: var(--bo-color-tab-hover-bg) !important;
+  color: var(--bo-color-tab-text) !important;
+  border-color: var(--bo-color-tab-hover-border) !important;
+  box-shadow: none !important;
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .fc .calendar-toolbar__button.fc-button-active {
+  background: var(--bo-color-tab-active-bg) !important;
+  border-color: var(--bo-color-tab-active-border) !important;
+  color: var(--bo-color-tab-active-fg) !important;
+  box-shadow: var(--bo-color-tab-active-shadow) !important;
 }
 
 /* FullCalendar base adjustments */
@@ -305,8 +473,8 @@ body {
   border-color: rgba(148, 163, 184, 0.22);
 }
 
-:where(html.dark, body.dark, html.dark-mode, body.dark-mode) .fc-theme-standard td,
-:where(html.dark, body.dark, html.dark-mode, body.dark-mode) .fc-theme-standard th {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .fc-theme-standard td,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .fc-theme-standard th {
   border-color: rgba(71, 85, 105, 0.55);
 }
 
@@ -318,15 +486,15 @@ body {
 
 .fc .fc-col-header-cell {
   padding-block: 0.6rem;
-  background: rgba(99, 102, 241, 0.12);
-  color: rgba(30, 41, 59, 0.8);
+  background: rgba(154, 170, 145, 0.14);
+  color: rgba(232, 240, 235, 0.88);
   font-weight: 600;
   font-size: 0.85rem;
 }
 
-:where(html.dark, body.dark, html.dark-mode, body.dark-mode) .fc .fc-col-header-cell {
-  background: rgba(99, 102, 241, 0.22);
-  color: rgba(226, 232, 240, 0.85);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .fc .fc-col-header-cell {
+  background: rgba(86, 126, 86, 0.2);
+  color: rgba(232, 240, 235, 0.88);
 }
 
 /* Neutralize FC sticky section default background to avoid mismatched bands */
@@ -340,21 +508,50 @@ body {
   background: transparent !important;
 }
 
-:where(html.dark, body.dark, html.dark-mode, body.dark-mode) .calendar-toolbar {
-  background: rgba(2, 6, 23, 0.78);
-  border-color: rgba(99, 102, 241, 0.35);
-}
-
-.fc .fc-daygrid-day {
+#calendar.fc .fc-daygrid-day,
+#calendar .fc .fc-daygrid-day {
   background: var(--calendar-day-bg);
   transition: background 0.15s ease;
 }
 
-.fc .fc-daygrid-day:hover {
+#calendar.fc .fc-daygrid-day-frame,
+#calendar.fc .fc-daygrid-day-bg,
+#calendar.fc .fc-daygrid-body,
+#calendar.fc .fc-daygrid-body table,
+#calendar.fc .fc-daygrid-body tbody,
+#calendar.fc .fc-daygrid-body tr,
+#calendar.fc .fc-daygrid-body td,
+#calendar .fc .fc-daygrid-day-frame,
+#calendar .fc .fc-daygrid-day-bg,
+#calendar .fc .fc-daygrid-body,
+#calendar .fc .fc-daygrid-body table,
+#calendar .fc .fc-daygrid-body tbody,
+#calendar .fc .fc-daygrid-body tr,
+#calendar .fc .fc-daygrid-body td {
+  background: var(--calendar-day-bg);
+}
+
+#calendar.fc .fc-daygrid-day:hover,
+#calendar .fc .fc-daygrid-day:hover {
   background: var(--calendar-day-bg-hover);
 }
 
-.fc .fc-daygrid-day.fc-day-today {
+#calendar.fc .fc-daygrid-day:hover .fc-daygrid-day-frame,
+#calendar.fc .fc-daygrid-day:hover .fc-daygrid-day-bg,
+#calendar .fc .fc-daygrid-day:hover .fc-daygrid-day-frame,
+#calendar .fc .fc-daygrid-day:hover .fc-daygrid-day-bg {
+  background: var(--calendar-day-bg-hover);
+}
+
+#calendar.fc .fc-daygrid-day.fc-day-today,
+#calendar .fc .fc-daygrid-day.fc-day-today {
+  background: var(--calendar-day-bg-today);
+}
+
+#calendar.fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-frame,
+#calendar.fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-bg,
+#calendar .fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-frame,
+#calendar .fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-bg {
   background: var(--calendar-day-bg-today);
 }
 
@@ -363,18 +560,252 @@ body {
   filter: saturate(85%) opacity(0.88);
 }
 
-:where(html.dark, body.dark, html.dark-mode, body.dark-mode) .fc .fc-day-other {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .fc .fc-day-other {
   filter: saturate(90%) brightness(0.95) opacity(0.9);
 }
 
 .fc .fc-daygrid-day-number {
   font-weight: 600;
   padding: 0.75rem;
-  color: rgba(30, 41, 59, 0.78);
+  color: var(--calendar-timegrid-text);
 }
 
-:where(html.dark, body.dark, html.dark-mode, body.dark-mode) .fc .fc-daygrid-day-number {
-  color: rgba(226, 232, 240, 0.9);
+#calendar.fc .fc-timegrid-axis,
+#calendar.fc .fc-timegrid-axis-frame,
+#calendar.fc .fc-timegrid-slot-lane,
+#calendar.fc .fc-timegrid-slot,
+#calendar.fc .fc-timegrid-col,
+#calendar.fc .fc-timegrid-col-frame,
+#calendar.fc .fc-timegrid-col-bg,
+#calendar.fc .fc-timegrid-cols,
+#calendar.fc .fc-timegrid-cols table,
+#calendar.fc .fc-timegrid-cols col,
+#calendar.fc .fc-timegrid-body,
+#calendar.fc .fc-timegrid-body table,
+#calendar.fc .fc-timegrid-body col,
+#calendar.fc .fc-timegrid-slots,
+#calendar.fc .fc-timegrid-slots table,
+#calendar.fc .fc-timegrid-slots col,
+#calendar .fc .fc-timegrid-axis,
+#calendar .fc .fc-timegrid-axis-frame,
+#calendar .fc .fc-timegrid-slot-lane,
+#calendar .fc .fc-timegrid-slot,
+#calendar .fc .fc-timegrid-col,
+#calendar .fc .fc-timegrid-col-frame,
+#calendar .fc .fc-timegrid-col-bg,
+#calendar .fc .fc-timegrid-cols,
+#calendar .fc .fc-timegrid-cols table,
+#calendar .fc .fc-timegrid-cols col,
+#calendar .fc .fc-timegrid-body,
+#calendar .fc .fc-timegrid-body table,
+#calendar .fc .fc-timegrid-body col,
+#calendar .fc .fc-timegrid-slots,
+#calendar .fc .fc-timegrid-slots table,
+#calendar .fc .fc-timegrid-slots col {
+  background: var(--calendar-timegrid-bg) !important;
+}
+
+#calendar.fc .fc-timegrid-divider,
+#calendar.fc .fc-timegrid-all-day,
+#calendar.fc .fc-timegrid-all-day > *,
+#calendar.fc .fc-timegrid-all-day table,
+#calendar.fc .fc-timegrid-all-day td,
+#calendar.fc .fc-timegrid-all-day th,
+#calendar.fc .fc-timegrid-all-day-frame,
+#calendar.fc .fc-timegrid-allday,
+#calendar.fc .fc-timegrid-allday > *,
+#calendar.fc .fc-timegrid-allday table,
+#calendar.fc .fc-timegrid-allday td,
+#calendar.fc .fc-timegrid-allday th,
+#calendar.fc .fc-timegrid-allday-frame,
+#calendar.fc .fc-timegrid-divider table,
+#calendar.fc .fc-timegrid-divider td,
+#calendar.fc .fc-timegrid-divider th,
+#calendar.fc .fc-timegrid-slot-minor,
+#calendar .fc .fc-timegrid-divider,
+#calendar .fc .fc-timegrid-all-day,
+#calendar .fc .fc-timegrid-all-day > *,
+#calendar .fc .fc-timegrid-all-day table,
+#calendar .fc .fc-timegrid-all-day td,
+#calendar .fc .fc-timegrid-all-day th,
+#calendar .fc .fc-timegrid-all-day-frame,
+#calendar .fc .fc-timegrid-allday,
+#calendar .fc .fc-timegrid-allday > *,
+#calendar .fc .fc-timegrid-allday table,
+#calendar .fc .fc-timegrid-allday td,
+#calendar .fc .fc-timegrid-allday th,
+#calendar .fc .fc-timegrid-allday-frame,
+#calendar .fc .fc-timegrid-divider table,
+#calendar .fc .fc-timegrid-divider td,
+#calendar .fc .fc-timegrid-divider th,
+#calendar .fc .fc-timegrid-slot-minor {
+  background: var(--calendar-allday-bg) !important;
+}
+
+/* FullCalendar renders the all-day strip for week/day views via daygrid wrappers. */
+#calendar.fc .fc-timeGridWeek-view .fc-daygrid-body,
+#calendar.fc .fc-timeGridWeek-view .fc-daygrid-body table,
+#calendar.fc .fc-timeGridWeek-view .fc-daygrid-body tbody,
+#calendar.fc .fc-timeGridWeek-view .fc-daygrid-body tr,
+#calendar.fc .fc-timeGridWeek-view .fc-daygrid-body td,
+#calendar.fc .fc-timeGridWeek-view .fc-daygrid-day,
+#calendar.fc .fc-timeGridWeek-view .fc-daygrid-day-frame,
+#calendar.fc .fc-timeGridWeek-view .fc-timegrid-axis,
+#calendar.fc .fc-timeGridWeek-view .fc-timegrid-axis-frame,
+#calendar.fc .fc-timeGridDay-view .fc-daygrid-body,
+#calendar.fc .fc-timeGridDay-view .fc-daygrid-body table,
+#calendar.fc .fc-timeGridDay-view .fc-daygrid-body tbody,
+#calendar.fc .fc-timeGridDay-view .fc-daygrid-body tr,
+#calendar.fc .fc-timeGridDay-view .fc-daygrid-body td,
+#calendar.fc .fc-timeGridDay-view .fc-daygrid-day,
+#calendar.fc .fc-timeGridDay-view .fc-daygrid-day-frame,
+#calendar.fc .fc-timeGridDay-view .fc-timegrid-axis,
+#calendar.fc .fc-timeGridDay-view .fc-timegrid-axis-frame,
+#calendar .fc .fc-timeGridWeek-view .fc-daygrid-body,
+#calendar .fc .fc-timeGridWeek-view .fc-daygrid-body table,
+#calendar .fc .fc-timeGridWeek-view .fc-daygrid-body tbody,
+#calendar .fc .fc-timeGridWeek-view .fc-daygrid-body tr,
+#calendar .fc .fc-timeGridWeek-view .fc-daygrid-body td,
+#calendar .fc .fc-timeGridWeek-view .fc-daygrid-day,
+#calendar .fc .fc-timeGridWeek-view .fc-daygrid-day-frame,
+#calendar .fc .fc-timeGridWeek-view .fc-timegrid-axis,
+#calendar .fc .fc-timeGridWeek-view .fc-timegrid-axis-frame,
+#calendar .fc .fc-timeGridDay-view .fc-daygrid-body,
+#calendar .fc .fc-timeGridDay-view .fc-daygrid-body table,
+#calendar .fc .fc-timeGridDay-view .fc-daygrid-body tbody,
+#calendar .fc .fc-timeGridDay-view .fc-daygrid-body tr,
+#calendar .fc .fc-timeGridDay-view .fc-daygrid-body td,
+#calendar .fc .fc-timeGridDay-view .fc-daygrid-day,
+#calendar .fc .fc-timeGridDay-view .fc-daygrid-day-frame,
+#calendar .fc .fc-timeGridDay-view .fc-timegrid-axis,
+#calendar .fc .fc-timeGridDay-view .fc-timegrid-axis-frame {
+  background: var(--calendar-allday-bg) !important;
+}
+
+/* FullCalendar still paints internal table wrappers in some views.
+   Bind the dark palette directly onto the generated month/week/day surfaces,
+   not only through CSS variables, so no light fallback layer remains visible. */
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-scrollgrid,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-scrollgrid table,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-scrollgrid tbody,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-scrollgrid tr,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-daygrid-body,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-daygrid-body table,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-daygrid-body tbody,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-daygrid-body tr,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-daygrid-body td,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-daygrid-day,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-daygrid-day-frame,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-daygrid-day-bg,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-timegrid-cols,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-timegrid-cols table,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-timegrid-body,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-timegrid-body table,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-timegrid-slots,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-timegrid-slots table,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-timegrid-slot,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-timegrid-slot-lane,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-timegrid-col,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-timegrid-col-frame,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-timegrid-col-bg,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-timegrid-axis,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-timegrid-axis-frame,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-timegrid-divider,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-timegrid-all-day,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-timegrid-all-day > *,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-timegrid-allday,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-timegrid-allday > *,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-scrollgrid,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-scrollgrid table,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-scrollgrid tbody,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-scrollgrid tr,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-daygrid-body,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-daygrid-body table,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-daygrid-body tbody,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-daygrid-body tr,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-daygrid-body td,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-daygrid-day,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-daygrid-day-frame,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-daygrid-day-bg,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-timegrid-cols,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-timegrid-cols table,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-timegrid-body,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-timegrid-body table,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-timegrid-slots,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-timegrid-slots table,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-timegrid-slot,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-timegrid-slot-lane,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-timegrid-col,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-timegrid-col-frame,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-timegrid-col-bg,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-timegrid-axis,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-timegrid-axis-frame,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-timegrid-divider,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-timegrid-all-day,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-timegrid-all-day > *,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-timegrid-allday,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-timegrid-allday > * {
+  background-color: var(--calendar-timegrid-bg) !important;
+  background-image: none !important;
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-dayGridMonth-view .fc-daygrid-day,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-dayGridMonth-view .fc-daygrid-day-frame,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-dayGridMonth-view .fc-daygrid-day-bg,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-dayGridMonth-view .fc-daygrid-body,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-dayGridMonth-view .fc-daygrid-body table,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-dayGridMonth-view .fc-daygrid-body tbody,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-dayGridMonth-view .fc-daygrid-body tr,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-dayGridMonth-view .fc-daygrid-body td,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-dayGridMonth-view .fc-daygrid-day,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-dayGridMonth-view .fc-daygrid-day-frame,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-dayGridMonth-view .fc-daygrid-day-bg,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-dayGridMonth-view .fc-daygrid-body,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-dayGridMonth-view .fc-daygrid-body table,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-dayGridMonth-view .fc-daygrid-body tbody,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-dayGridMonth-view .fc-daygrid-body tr,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-dayGridMonth-view .fc-daygrid-body td {
+  background: var(--calendar-month-bg) !important;
+  background-image: none !important;
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-dayGridMonth-view .fc-daygrid-day:hover,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-dayGridMonth-view .fc-daygrid-day:hover .fc-daygrid-day-frame,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-dayGridMonth-view .fc-daygrid-day:hover,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-dayGridMonth-view .fc-daygrid-day:hover .fc-daygrid-day-frame {
+  background: var(--calendar-month-bg-hover) !important;
+  background-image: none !important;
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-dayGridMonth-view .fc-daygrid-day.fc-day-today,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-dayGridMonth-view .fc-daygrid-day.fc-day-today .fc-daygrid-day-frame,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-dayGridMonth-view .fc-daygrid-day.fc-day-today,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-dayGridMonth-view .fc-daygrid-day.fc-day-today .fc-daygrid-day-frame {
+  background: var(--calendar-month-bg-today) !important;
+  background-image: none !important;
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-timegrid-divider,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-timegrid-all-day,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-timegrid-all-day > *,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-timegrid-allday,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar.fc .fc-timegrid-allday > *,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-timegrid-divider,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-timegrid-all-day,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-timegrid-all-day > *,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-timegrid-allday,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #calendar .fc .fc-timegrid-allday > * {
+  background-color: var(--calendar-allday-bg) !important;
+}
+
+.fc .fc-timegrid-axis-cushion,
+.fc .fc-timegrid-slot-label-cushion,
+.fc .fc-timegrid-allday-cushion {
+  color: var(--calendar-timegrid-text);
+}
+
+.fc .fc-timegrid-divider {
+  border-color: rgba(71, 85, 105, 0.55);
 }
 
 .fc .fc-daygrid-event-harness { margin-block: 4px; }
@@ -413,15 +844,17 @@ body {
 
 /* Popover (more events) theming */
 .fc .fc-popover {
-  background: rgba(248, 250, 255, 0.96);
-  border: 1px solid rgba(148, 163, 255, 0.28);
-  box-shadow: 0 22px 48px rgba(15, 23, 42, 0.18);
-  border-radius: 14px;
+  background: var(--bo-color-dropdown-bg);
+  background-image: none;
+  border: 1px solid var(--bo-color-dropdown-border);
+  box-shadow: none;
+  border-radius: var(--bo-primitive-card-radius);
   overflow: hidden;
 }
 .fc .fc-popover .fc-popover-header {
-  background: rgba(99, 102, 241, 0.12);
-  color: rgba(30, 41, 59, 0.86);
+  background: var(--bo-color-dropdown-header-bg);
+  border-bottom: 1px solid var(--bo-color-dropdown-divider);
+  color: var(--bo-color-text-primary);
   font-weight: 700;
 }
 .fc .fc-popover .fc-popover-body {
@@ -431,16 +864,6 @@ body {
 .fc .fc-popover .calendar-event-card {
   padding: 0.55rem 0.7rem;
   border-radius: 12px;
-}
-
-:where(html.dark, body.dark, html.dark-mode, body.dark-mode) .fc .fc-popover {
-  background: rgba(15, 23, 42, 0.96);
-  border-color: rgba(99, 102, 241, 0.35);
-  box-shadow: 0 30px 60px rgba(4, 7, 15, 0.65);
-}
-:where(html.dark, body.dark, html.dark-mode, body.dark-mode) .fc .fc-popover .fc-popover-header {
-  background: rgba(99, 102, 241, 0.18);
-  color: rgba(226, 232, 240, 0.9);
 }
 
 /* Reduce internal padding of month day cells for a tighter grid */
@@ -485,9 +908,9 @@ body {
   width: 100%;
   border-radius: 18px;
   padding: 0.85rem 1.05rem;
-  background: rgba(248, 250, 255, 0.9);
-  border: 1px solid rgba(148, 163, 255, 0.18);
-  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.14);
+  background: rgba(18, 34, 24, 0.78);
+  border: 1px solid rgba(147, 168, 137, 0.16);
+  box-shadow: 0 10px 22px rgba(18, 34, 24, 0.12);
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
@@ -496,9 +919,16 @@ body {
   word-break: break-word;
 }
 
+.calendar-event-card__head,
+.calendar-event-card__customer,
+.calendar-event-card__chips {
+  position: relative;
+  z-index: 1;
+}
+
 .calendar-event-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 22px 44px rgba(14, 37, 89, 0.2);
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px rgba(18, 34, 24, 0.16);
 }
 
 .calendar-event-card__head {
@@ -509,7 +939,7 @@ body {
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: rgba(30, 41, 59, 0.55);
+  color: rgba(226, 232, 240, 0.68);
 }
 
 .calendar-event-card__time {
@@ -523,7 +953,7 @@ body {
 .calendar-event-card__customer {
   font-size: 0.92rem;
   font-weight: 700;
-  color: rgba(15, 23, 42, 0.92);
+  color: rgba(248, 250, 252, 0.95);
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
@@ -546,26 +976,26 @@ body {
 }
 
 .calendar-event--confirmed .calendar-event-card {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.92), rgba(14, 165, 233, 0.82));
-  border-color: rgba(59, 130, 246, 0.45);
-  color: #eef2ff;
+  background: linear-gradient(135deg, rgba(95, 126, 96, 0.84), rgba(68, 92, 70, 0.8));
+  border-color: rgba(147, 168, 137, 0.26);
+  color: #f1f5f9;
 }
 
 .calendar-event--pending .calendar-event-card {
-  background: linear-gradient(135deg, rgba(253, 224, 71, 0.92), rgba(251, 191, 36, 0.86));
-  border-color: rgba(250, 204, 21, 0.45);
-  color: #422006;
+  background: linear-gradient(135deg, rgba(214, 174, 73, 0.84), rgba(166, 122, 43, 0.8));
+  border-color: rgba(214, 173, 73, 0.32);
+  color: #231508;
 }
 
 .calendar-event--completed .calendar-event-card {
-  background: linear-gradient(135deg, rgba(100, 116, 139, 0.92), rgba(71, 85, 105, 0.88));
-  border-color: rgba(148, 163, 184, 0.45);
+  background: linear-gradient(135deg, rgba(101, 114, 131, 0.84), rgba(79, 90, 103, 0.8));
+  border-color: rgba(148, 163, 184, 0.26);
   color: #f8fafc;
 }
 
 .calendar-event--cancelled .calendar-event-card {
-  background: linear-gradient(135deg, rgba(0, 0, 0, 0.96), rgba(17, 24, 39, 0.92));
-  border-color: rgba(0, 0, 0, 0.55);
+  background: linear-gradient(135deg, rgba(120, 62, 62, 0.82), rgba(85, 40, 40, 0.78));
+  border-color: rgba(177, 95, 95, 0.24);
   color: #f8fafc;
 }
 
@@ -582,28 +1012,28 @@ body {
 }
 
 .calendar-event--pending .calendar-chip.status-pending {
-  background: rgba(30, 64, 175, 0.12);
-  color: #312e81;
+  background: rgba(154, 170, 145, 0.16);
+  color: #3d5c45;
 }
 
 .calendar-event--cancelled .calendar-chip.status-cancelled {
-  background: rgba(0, 0, 0, 0.2);
-  color: #0f172a;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
 }
 
 .calendar-event--completed .calendar-chip {
-  background: rgba(15, 23, 42, 0.18);
+  background: rgba(53, 76, 63, 0.18);
   color: #f9fafb;
 }
 
 .fc .fc-list-day {
-  background: rgba(99, 102, 241, 0.12);
-  color: rgba(30, 41, 59, 0.85);
+  background: rgba(154, 170, 145, 0.14);
+  color: rgba(53, 76, 63, 0.85);
   font-weight: 600;
 }
 
-:where(html.dark, body.dark, html.dark-mode, body.dark-mode) .fc .fc-list-day {
-  background: rgba(99, 102, 241, 0.18);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .fc .fc-list-day {
+  background: rgba(86, 126, 86, 0.18);
   color: rgba(226, 232, 240, 0.85);
 }
 
@@ -613,9 +1043,9 @@ body {
 
 .fc .fc-list-event .calendar-event-card {
   border-radius: 16px;
-  background: linear-gradient(135deg, rgba(248, 250, 255, 0.92), rgba(224, 231, 255, 0.85));
-  border: 1px solid rgba(148, 163, 255, 0.22);
-  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.15);
+  background: linear-gradient(135deg, rgba(248, 250, 247, 0.92), rgba(236, 242, 238, 0.86));
+  border: 1px solid rgba(147, 168, 137, 0.22);
+  box-shadow: 0 20px 45px rgba(42, 64, 48, 0.14);
 }
 
 .calendar-event--confirmed .fc-list-event .calendar-event-card,
@@ -649,22 +1079,31 @@ body {
 
   .calendar-toolbar {
     gap: 0.8rem;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    white-space: nowrap;
+    flex-wrap: wrap;
+    overflow: visible;
+    white-space: normal;
+    padding: 0.8rem;
   }
 
-  .calendar-toolbar__chunk { flex-wrap: nowrap; }
-  .fc .fc-button-group { gap: 0.35rem; flex-wrap: nowrap; }
+  .calendar-toolbar__chunk {
+    flex-wrap: wrap;
+    width: 100%;
+    justify-content: center;
+  }
+  .fc .fc-button-group {
+    gap: 0.35rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
 
   .calendar-toolbar__button {
-    padding: 0.5rem 1.1rem !important;
-    font-size: 0.95rem !important;
+    padding: 0.48rem 1rem !important;
+    font-size: 0.9rem !important;
   }
 
   .calendar-toolbar__title {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
+    text-align: center;
   }
 
   .calendar-event-card {
@@ -686,13 +1125,13 @@ body {
   .fc .fc-list-day-cushion { padding: 0.75rem 0.9rem; }
   .fc .fc-list-event .calendar-event-card { padding: 1rem; }
 
-  /* Allow horizontal slide like tables if grid is wider */
-  .calendar-shell {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+  .calendar-reservation-details .reservation-modal-overview {
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
-  .fc .fc-scrollgrid {
-    min-width: 640px;
+
+  .calendar-reservation-details .reservation-technicians-grid {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -728,4 +1167,42 @@ body {
 
 .calendar-reservation-details .reservation-modal-id {
   color: inherit;
+}
+
+.calendar-reservation-details .reservation-modal {
+  gap: 1.15rem;
+}
+
+.calendar-reservation-details .reservation-modal-header {
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid rgba(133, 150, 142, 0.16);
+}
+
+.calendar-reservation-details .reservation-modal-overview {
+  align-items: start;
+}
+
+.calendar-reservation-details .reservation-modal-section-card,
+.calendar-reservation-details .reservation-summary-card,
+.calendar-reservation-details .reservation-info-card {
+  background: rgba(20, 30, 24, 0.78);
+  border-color: rgba(133, 150, 142, 0.16);
+  box-shadow: none;
+}
+
+.calendar-reservation-details .reservation-modal-actions {
+  margin-top: 0;
+  background: transparent;
+  border-color: rgba(133, 150, 142, 0.16);
+}
+
+.calendar-reservation-details .reservation-items-table-wrapper,
+.calendar-reservation-details .reservation-payment-history-modal {
+  background: rgba(16, 25, 21, 0.9);
+  border-color: rgba(133, 150, 142, 0.16);
+}
+
+.calendar-reservation-details .reservation-technicians-section,
+.calendar-reservation-details .reservation-items-section {
+  margin-top: 0;
 }

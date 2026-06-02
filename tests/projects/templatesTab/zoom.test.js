@@ -6,6 +6,7 @@ import {
   normalizeTemplatesZoomMode,
   readTplZoomModePref,
   readTplZoomPref,
+  resolveTemplatesPreviewRenderZoom,
   writeTplZoomModePref,
   writeTplZoomPref,
 } from '../../../src/scripts/projects/templatesTab/zoom.ts';
@@ -41,5 +42,13 @@ describe('templatesTab/zoom', () => {
     expect(computeTemplatesFitZoom(0, 500)).toBe(1);
     expect(computeTemplatesFitZoom(800, 400)).toBe(0.5);
     expect(computeTemplatesFitZoom(200, 1000)).toBe(2.5);
+  });
+
+  it('calibrates desktop callsheet preview rendering so logical 100% renders at 90%', () => {
+    Object.defineProperty(window, 'innerWidth', { value: 1440, configurable: true });
+
+    expect(resolveTemplatesPreviewRenderZoom(1, 'callsheet')).toBe(0.9);
+    expect(resolveTemplatesPreviewRenderZoom(1, 'expenses')).toBe(1);
+    expect(resolveTemplatesPreviewRenderZoom(1, 'callsheet')).not.toBe(1);
   });
 });

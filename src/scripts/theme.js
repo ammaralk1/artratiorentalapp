@@ -6,6 +6,7 @@ const boundButtons = new WeakSet();
 const THEME_LOADING_CLASS = 'theme-loading';
 const THEME_SESSION_KEY = 'art-ratio:session-theme';
 let themeInitialized = false;
+let lastObservedPreferenceTheme = null;
 
 function getToggleElements() {
   return Array.from(document.querySelectorAll('[data-theme-toggle], .theme-toggle-btn'));
@@ -30,6 +31,18 @@ function readSessionTheme() {
   } catch (error) {
     return null;
   }
+}
+
+function readBootstrappedTheme() {
+  const root = document.documentElement;
+  const body = document.body;
+  const rootTheme = root?.getAttribute('data-theme');
+  const bodyTheme = body?.getAttribute('data-theme');
+
+  if (rootTheme === 'dark' || bodyTheme === 'dark') return 'dark';
+  if (rootTheme === 'light' || bodyTheme === 'light') return 'light';
+  if (root?.classList.contains(DARK_CLASS) || body?.classList.contains(DARK_CLASS)) return 'dark';
+  return null;
 }
 
 function markThemeReady() {
@@ -169,8 +182,9 @@ export function applyStoredTheme({ skipRemote = false } = {}) {
     : cached?.theme === 'light'
       ? 'light'
       : null;
-  const sessionTheme = cachedTheme || readSessionTheme();
-  const initialTheme = sessionTheme || getSystemPreferredTheme();
+  const sessionTheme = readSessionTheme();
+  const bootstrappedTheme = readBootstrappedTheme();
+  const initialTheme = cachedTheme || sessionTheme || bootstrappedTheme || getSystemPreferredTheme();
 
   applyThemeInternal(initialTheme, { persist: false });
   loadThemePreference({ skipRemote });
@@ -216,7 +230,14 @@ document.addEventListener('language:changed', () => {
 
 subscribePreferences((prefs) => {
   const prefTheme = prefs?.theme === 'dark' ? 'dark' : prefs?.theme === 'light' ? 'light' : null;
-  if (prefTheme && prefTheme !== getCurrentTheme()) {
+  if (!prefTheme) {
+    return;
+  }
+  if (prefTheme === lastObservedPreferenceTheme) {
+    return;
+  }
+  lastObservedPreferenceTheme = prefTheme;
+  if (prefTheme !== getCurrentTheme()) {
     applyThemeInternal(prefTheme, { persist: false });
   }
 });

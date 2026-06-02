@@ -1,10 +1,12 @@
 import '../styles/app.css';
+import '../styles/notifications.css';
 import { applyStoredTheme } from './theme.js';
 import { initDashboardShell } from './dashboardShell.js';
 import { apiRequest } from './apiClient.js';
 import { checkAuth, getCurrentUser } from './auth.js';
 import { showToast } from './utils.js';
 import { t } from './language.js';
+import { jumpPaginationSectionToStart, settlePaginationSectionToStart } from './ui/paginationViewport.js';
 
 applyStoredTheme();
 initDashboardShell();
@@ -19,13 +21,56 @@ let CHAT_LAST_ID = 0;
 let CHAT_POLLING = false;
 let CHAT_SSE = null;
 let CHAT_SSE_DISABLED = false; // set true to force polling fallback
+const RESULTS_PAGE_SIZE = 10;
+const TG_TECH_PAGE_SIZE = 10;
+const RESULTS_TABLE_COLSPAN = 5;
+const LOG_TABLE_COLSPAN = 8;
+const DIAGNOSTICS_TABLE_COLSPAN = 3;
+const TEMPLATES_TABLE_COLSPAN = 4;
+const TG_TECH_TABLE_COLSPAN = 4;
+const TG_ADMIN_TABLE_COLSPAN = 3;
+let RESULTS_PAGE = 1;
+let TG_TECH_PAGE = 1;
+let CURRENT_RESULTS = [];
+let CURRENT_RESULTS_TYPE = 'reservation';
+let CURRENT_TG_TECHS = [];
 
 function q(sel) { return document.querySelector(sel); }
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function renderTableStack(primary, secondary = '', { primaryDir = '', secondaryDir = '' } = {}) {
+  const primaryAttr = primaryDir ? ` dir="${primaryDir}"` : '';
+  const secondaryAttr = secondaryDir ? ` dir="${secondaryDir}"` : '';
+  return `
+    <div class="notifications-table-stack">
+      <div class="notifications-table-primary"${primaryAttr}>${escapeHtml(primary || '—')}</div>
+      ${secondary ? `<div class="notifications-table-secondary"${secondaryAttr}>${escapeHtml(secondary)}</div>` : ''}
+    </div>
+  `;
+}
+
+function renderStatusChip(label, variant = 'completed', extraClass = '') {
+  const extra = extraClass ? ` ${extraClass}` : '';
+  return `<span class="notifications-status-chip status-chip status-${variant}${extra}">${escapeHtml(label)}</span>`;
+}
+
+function renderTableStateRow(colspan, message, tone = 'muted') {
+  return `<tr><td colspan="${colspan}" class="text-center text-${tone}">${message}</td></tr>`;
+}
 
 function cacheElements() {
   els.entityType = q('#notif-entity-type');
   els.search = q('#notif-search');
   els.resultsBody = q('#notif-results-body');
+  els.resultsPagination = q('#notif-results-pagination');
   els.composeSection = q('#notif-compose-section');
   els.selectedSummary = q('#notif-selected-summary');
   els.chEmail = q('#notif-channel-email');
@@ -79,6 +124,7 @@ function cacheElements() {
   els.tgSearchBtn = q('#tg-tech-search-btn');
   els.tgRefreshBtn = q('#tg-tech-refresh-btn');
   els.tgBody = q('#tg-tech-body');
+  els.tgPagination = q('#tg-tech-pagination');
   // Admin Telegram helpers
   els.tgAdminGenBtn = q('#tg-admin-gen-btn');
   els.tgAdminCopyBtn = q('#tg-admin-copy-btn');
@@ -112,42 +158,121 @@ function formatWhen(item, type) {
   return start || end || '';
 }
 
-function renderResults(items, type) {
-  if (!Array.isArray(items) || items.length === 0) {
-    els.resultsBody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">${t('notifications.table.loading','لا نتائج')}</td></tr>`;
+function renderClientPagination(host, { total, page, pageSize, onPageAttr }) {
+  if (!host) return;
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+  if (total <= pageSize || pages <= 1) {
+    host.hidden = true;
+    host.innerHTML = '';
     return;
   }
+
+  const navLabel = t('notifications.pagination.navigation', 'التنقل بين الصفحات');
+  const prevLabel = t('notifications.pagination.prev', 'السابق');
+  const nextLabel = t('notifications.pagination.next', 'التالي');
+  const pageLabelTemplate = t('notifications.pagination.page', 'صفحة {page}');
+  const rangeTemplate = t('notifications.pagination.range', '{from}-{to} من {total}');
+  const rangeStart = ((page - 1) * pageSize) + 1;
+  const rangeEnd = Math.min(total, page * pageSize);
+  const rangeText = rangeTemplate
+    .replace('{from}', String(rangeStart))
+    .replace('{to}', String(rangeEnd))
+    .replace('{total}', String(total));
+
+  const maxButtons = 7;
+  const makeRange = (start, end) => Array.from({ length: end - start + 1 }, (_, i) => start + i);
+  let pagesList = [];
+  if (pages <= maxButtons) {
+    pagesList = makeRange(1, pages);
+  } else {
+    const left = Math.max(2, page - 1);
+    const right = Math.min(pages - 1, page + 1);
+    pagesList = [1, ...makeRange(left, right), pages];
+  }
+
+  const buttonsHtml = pagesList
+    .filter((pNum) => pNum >= 1 && pNum <= pages)
+    .map((pNum) => {
+      const active = pNum === page;
+      const pageLabel = pageLabelTemplate.replace('{page}', String(pNum));
+      return `<button type="button" class="btn btn-sm ${active ? 'btn-primary' : 'btn-outline-primary'}" ${onPageAttr}="${pNum}" aria-label="${escapeHtml(pageLabel)}" ${active ? 'aria-current="page"' : ''}>${pNum}</button>`;
+    })
+    .join('');
+
+  host.hidden = false;
+  host.innerHTML = `
+    <div class="list-pagination__summary text-muted small">${escapeHtml(rangeText)}</div>
+    <div class="list-pagination__controls btn-group" role="group" aria-label="${escapeHtml(navLabel)}">
+      <button type="button" class="btn btn-sm btn-outline-primary" ${onPageAttr}="${Math.max(1, page - 1)}" ${page <= 1 ? 'disabled' : ''} aria-label="${escapeHtml(prevLabel)}">‹</button>
+      ${buttonsHtml}
+      <button type="button" class="btn btn-sm btn-outline-primary" ${onPageAttr}="${Math.min(pages, page + 1)}" ${page >= pages ? 'disabled' : ''} aria-label="${escapeHtml(nextLabel)}">›</button>
+    </div>
+  `;
+}
+
+function renderResults(items, type) {
+  if (!Array.isArray(items) || items.length === 0) {
+    els.resultsBody.innerHTML = renderTableStateRow(RESULTS_TABLE_COLSPAN, t('notifications.table.loading','لا نتائج'));
+    return;
+  }
+
+  const typeLabel = type === 'reservation'
+    ? t('notifications.form.entity.reservation', 'حجز')
+    : t('notifications.form.entity.project', 'مشروع');
 
   els.resultsBody.innerHTML = items.map((row) => {
     const code = type === 'reservation' ? (row.reservation_code || '') : (row.project_code || '');
     const title = row.title || '';
     const when = formatWhen(row, type);
     const customer = type === 'reservation' ? (row.customer_name || '') : (row.client_name || '');
+    const location = row.location || '';
     return `
       <tr>
-        <td>${code || '—'}</td>
-        <td>${title || '—'}</td>
-        <td>${when || '—'}</td>
-        <td>${customer || '—'}</td>
-        <td><button type="button" class="btn btn-sm btn-primary" data-select-id="${row.id}" data-select-type="${type}">${t('notifications.table.select','اختيار')}</button></td>
+        <td>${renderTableStack(code || '—', typeLabel)}</td>
+        <td>${renderTableStack(title || '—', location)}</td>
+        <td>${renderTableStack(when || '—')}</td>
+        <td>${renderTableStack(customer || '—')}</td>
+        <td><button type="button" class="btn btn-sm btn-primary notifications-row-action" data-select-id="${row.id}" data-select-type="${type}">${t('notifications.table.select','اختيار')}</button></td>
       </tr>
     `;
   }).join('');
 }
 
+function renderResultsPage() {
+  if (!Array.isArray(CURRENT_RESULTS) || CURRENT_RESULTS.length === 0) {
+    els.resultsBody.innerHTML = renderTableStateRow(RESULTS_TABLE_COLSPAN, t('notifications.table.loading','لا نتائج'));
+    renderClientPagination(els.resultsPagination, { total: 0, page: 1, pageSize: RESULTS_PAGE_SIZE, onPageAttr: 'data-results-page' });
+    return;
+  }
+
+  const start = (RESULTS_PAGE - 1) * RESULTS_PAGE_SIZE;
+  const pageItems = CURRENT_RESULTS.slice(start, start + RESULTS_PAGE_SIZE);
+  renderResults(pageItems, CURRENT_RESULTS_TYPE);
+  renderClientPagination(els.resultsPagination, {
+    total: CURRENT_RESULTS.length,
+    page: RESULTS_PAGE,
+    pageSize: RESULTS_PAGE_SIZE,
+    onPageAttr: 'data-results-page',
+  });
+}
+
 async function doSearch() {
-  const type = els.entityType.value;
+  CURRENT_RESULTS_TYPE = els.entityType.value;
   const query = (els.search.value || '').trim();
   try {
-    const path = type === 'reservation' ? '/reservations/' : '/projects/';
+    const path = CURRENT_RESULTS_TYPE === 'reservation' ? '/reservations/' : '/projects/';
     const params = new URLSearchParams();
     if (query !== '') params.set('search', query);
-    params.set('limit', '20');
+    params.set('limit', '100');
     const res = await apiRequest(`${path}?${params.toString()}`);
-    renderResults(res?.data ?? [], type);
+    CURRENT_RESULTS = Array.isArray(res?.data) ? res.data : [];
+    RESULTS_PAGE = 1;
+    renderResultsPage();
   } catch (e) {
     console.error(e);
-    els.resultsBody.innerHTML = `<tr><td colspan=\"5\" class=\"text-center text-error\">فشل تحميل القائمة</td></tr>`;
+    CURRENT_RESULTS = [];
+    renderClientPagination(els.resultsPagination, { total: 0, page: 1, pageSize: RESULTS_PAGE_SIZE, onPageAttr: 'data-results-page' });
+    els.resultsBody.innerHTML = renderTableStateRow(RESULTS_TABLE_COLSPAN, 'فشل تحميل القائمة', 'error');
   }
 }
 
@@ -406,7 +531,8 @@ async function previewTargets() {
 function attachEvents() {
   els.search.addEventListener('input', debounceSearch);
   els.entityType.addEventListener('change', () => {
-    els.resultsBody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">${t('notifications.table.loading','اكتب للبحث…')}</td></tr>`;
+    RESULTS_PAGE = 1;
+    els.resultsBody.innerHTML = renderTableStateRow(RESULTS_TABLE_COLSPAN, t('notifications.table.loading','اكتب للبحث…'));
     doSearch();
   });
 
@@ -415,6 +541,19 @@ function attachEvents() {
     if (!btn) return;
     handleSelect(btn.getAttribute('data-select-id'), btn.getAttribute('data-select-type'));
   });
+
+  if (els.resultsPagination) {
+    els.resultsPagination.addEventListener('click', (ev) => {
+      const btn = ev.target.closest('[data-results-page]');
+      if (!btn) return;
+      const nextPage = Number(btn.getAttribute('data-results-page')) || 1;
+      if (nextPage === RESULTS_PAGE) return;
+      jumpPaginationSectionToStart(els.resultsPagination);
+      RESULTS_PAGE = nextPage;
+      renderResultsPage();
+      settlePaginationSectionToStart(els.resultsPagination);
+    });
+  }
 
   els.tReminder.addEventListener('click', () => {
     const base = 'تذكير بالحجز/المشروع:\nيرجى الاطلاع واتخاذ اللازم.';
@@ -427,9 +566,15 @@ function attachEvents() {
   els.sendBtn.addEventListener('click', sendManual);
 
   // Telegram linking handlers
-  if (els.tgSearchBtn) els.tgSearchBtn.addEventListener('click', fetchTechs);
-  if (els.tgRefreshBtn) els.tgRefreshBtn.addEventListener('click', fetchTechs);
-  if (els.tgSearch) els.tgSearch.addEventListener('keydown', (e)=>{ if (e.key === 'Enter') fetchTechs(); });
+  if (els.tgSearchBtn) els.tgSearchBtn.addEventListener('click', () => {
+    TG_TECH_PAGE = 1;
+    fetchTechs();
+  });
+  if (els.tgRefreshBtn) els.tgRefreshBtn.addEventListener('click', () => {
+    TG_TECH_PAGE = 1;
+    fetchTechs();
+  });
+  if (els.tgSearch) els.tgSearch.addEventListener('keydown', (e)=>{ if (e.key === 'Enter') { TG_TECH_PAGE = 1; fetchTechs(); } });
   if (els.tgBody) {
     els.tgBody.addEventListener('click', async (ev) => {
       const genBtn = ev.target.closest('[data-gen-id]');
@@ -453,6 +598,19 @@ function attachEvents() {
         await unlinkTechnician(id);
         return;
       }
+    });
+  }
+
+  if (els.tgPagination) {
+    els.tgPagination.addEventListener('click', (ev) => {
+      const btn = ev.target.closest('[data-tg-tech-page]');
+      if (!btn) return;
+      const nextPage = Number(btn.getAttribute('data-tg-tech-page')) || 1;
+      if (nextPage === TG_TECH_PAGE) return;
+      jumpPaginationSectionToStart(els.tgPagination);
+      TG_TECH_PAGE = nextPage;
+      renderTechsPage();
+      settlePaginationSectionToStart(els.tgPagination);
     });
   }
 
@@ -614,7 +772,9 @@ function attachEvents() {
       const p = Number(btn.getAttribute('data-page')) || 1;
       if (p === LOG_PAGE) return;
       LOG_PAGE = p;
-      fetchLogs();
+      fetchLogs({ keepExistingRows: true }).finally(() => {
+        settlePaginationSectionToStart(els.logPagination, { behavior: 'smooth' });
+      });
     });
   }
 }
@@ -646,18 +806,23 @@ function renderPagination(meta) {
   const pages = Number(meta?.pages || 1);
   const page = Number(meta?.page || 1);
   if (!els.logPagination) return;
-  if (total <= LOG_LIMIT) { els.logPagination.innerHTML = ''; return; }
+  if (total <= LOG_LIMIT || pages <= 1) {
+    els.logPagination.hidden = true;
+    els.logPagination.innerHTML = '';
+    return;
+  }
 
-  const btn = (label, p, disabled = false, active = false) => {
-    const cls = ['btn','btn-sm'];
-    if (active) cls.push('btn-primary');
-    else cls.push('btn-outline');
-    if (disabled) cls.push('btn-disabled');
-    return `<button type="button" class="${cls.join(' ')}" data-page="${p}" ${disabled ? 'disabled' : ''}>${label}</button>`;
-  };
-
-  let html = '';
-  html += btn(t('notifications.logs.prev','السابق'), Math.max(1, page - 1), page <= 1);
+  const navLabel = t('notifications.logs.pagination.navigation', 'التنقل بين صفحات السجل');
+  const prevLabel = t('notifications.logs.pagination.prev', 'السابق');
+  const nextLabel = t('notifications.logs.pagination.next', 'التالي');
+  const pageLabelTemplate = t('notifications.logs.pagination.page', 'صفحة {page}');
+  const rangeTemplate = t('notifications.logs.pagination.range', '{from}-{to} من {total}');
+  const rangeStart = ((page - 1) * LOG_LIMIT) + 1;
+  const rangeEnd = Math.min(total, page * LOG_LIMIT);
+  const rangeText = rangeTemplate
+    .replace('{from}', String(rangeStart))
+    .replace('{to}', String(rangeEnd))
+    .replace('{total}', String(total));
 
   const maxButtons = 7;
   const makeRange = (start,end) => Array.from({length: end-start+1}, (_,i)=>start+i);
@@ -669,14 +834,25 @@ function renderPagination(meta) {
     const right = Math.min(pages - 1, page + 1);
     pagesList = [1, ...makeRange(left, right), pages];
   }
-  for (const pNum of pagesList) {
-    if (pNum < 1 || pNum > pages) continue;
-    const active = pNum === page;
-    html += btn(String(pNum), pNum, false, active);
-  }
 
-  html += btn(t('notifications.logs.next','التالي'), Math.min(pages, page + 1), page >= pages);
-  els.logPagination.innerHTML = html;
+  const buttonsHtml = pagesList
+    .filter((pNum) => pNum >= 1 && pNum <= pages)
+    .map((pNum) => {
+      const active = pNum === page;
+      const pageLabel = pageLabelTemplate.replace('{page}', String(pNum));
+      return `<button type="button" class="btn btn-sm ${active ? 'btn-primary' : 'btn-outline-primary'}" data-page="${pNum}" aria-label="${escapeHtml(pageLabel)}" ${active ? 'aria-current="page"' : ''}>${pNum}</button>`;
+    })
+    .join('');
+
+  els.logPagination.hidden = false;
+  els.logPagination.innerHTML = `
+    <div class="list-pagination__summary text-muted small">${escapeHtml(rangeText)}</div>
+    <div class="list-pagination__controls btn-group" role="group" aria-label="${escapeHtml(navLabel)}">
+      <button type="button" class="btn btn-sm btn-outline-primary" data-page="${Math.max(1, page - 1)}" ${page <= 1 ? 'disabled' : ''} aria-label="${escapeHtml(prevLabel)}">‹</button>
+      ${buttonsHtml}
+      <button type="button" class="btn btn-sm btn-outline-primary" data-page="${Math.min(pages, page + 1)}" ${page >= pages ? 'disabled' : ''} aria-label="${escapeHtml(nextLabel)}">›</button>
+    </div>
+  `;
 }
 
 function formatEventLabel(ev) {
@@ -695,7 +871,7 @@ function formatEventLabel(ev) {
 
 function renderLogs(items) {
   if (!Array.isArray(items) || items.length === 0) {
-    els.logBody.innerHTML = `<tr><td colspan="8" class="text-center text-muted">${t('notifications.logs.empty','لا توجد سجلات حالياً.')}</td></tr>`;
+    els.logBody.innerHTML = renderTableStateRow(LOG_TABLE_COLSPAN, t('notifications.logs.empty','لا توجد سجلات حالياً.'));
     return;
   }
 
@@ -709,26 +885,29 @@ function renderLogs(items) {
     const status = row.status || '';
     const error = (row.error || '').toString().slice(0, 140);
     const statusBadge = status === 'sent'
-      ? '<span class="badge bg-primary-subtle">مرسلة</span>'
-      : '<span class="badge bg-danger-subtle">فاشلة</span>';
+      ? renderStatusChip(t('notifications.logs.filters.sent', 'مرسلة'), 'confirmed')
+      : renderStatusChip(t('notifications.logs.filters.failed', 'فاشلة'), 'cancelled');
     return `
       <tr>
-        <td>${time}</td>
-        <td>${event}</td>
-        <td>${entity}</td>
-        <td>${rname || '—'}</td>
-        <td>${recipient}</td>
-        <td>${channel}</td>
+        <td>${renderTableStack(time)}</td>
+        <td>${renderTableStack(event, entity)}</td>
+        <td>${renderTableStack(entity)}</td>
+        <td>${renderTableStack(rname || '—')}</td>
+        <td>${renderTableStack(recipient)}</td>
+        <td>${renderTableStack(channel)}</td>
         <td>${statusBadge}</td>
-        <td title="${error}">${error}</td>
+        <td title="${escapeHtml(error)}">${renderTableStack(error || '—')}</td>
       </tr>
     `;
   }).join('');
 }
 
-async function fetchLogs() {
+async function fetchLogs(options = {}) {
+  const keepExistingRows = !!options.keepExistingRows;
   try {
-    els.logBody.innerHTML = `<tr><td colspan="8" class="text-center text-muted">${t('notifications.logs.loading','⏳ جارٍ التحميل…')}</td></tr>`;
+    if (!keepExistingRows || !els.logBody?.children.length) {
+      els.logBody.innerHTML = renderTableStateRow(LOG_TABLE_COLSPAN, t('notifications.logs.loading','⏳ جارٍ التحميل…'));
+    }
     const params = buildLogParams();
     const res = await apiRequest(`/notifications/logs.php?${params.toString()}`);
     const items = Array.isArray(res?.data) ? res.data : [];
@@ -737,8 +916,7 @@ async function fetchLogs() {
     renderPagination(res?.meta || {});
   } catch (e) {
     console.error(e);
-    // Keep colspan in sync with the logs table (8 columns)
-    els.logBody.innerHTML = `<tr><td colspan="8" class="text-center text-error">فشل تحميل السجل</td></tr>`;
+    els.logBody.innerHTML = renderTableStateRow(LOG_TABLE_COLSPAN, 'فشل تحميل السجل', 'error');
   }
 }
 
@@ -831,19 +1009,19 @@ async function setWebhook() {
 async function fetchDiagnostics() {
   if (!els.diagBody) return;
   try {
-    els.diagBody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">جارٍ الفحص…</td></tr>';
+    els.diagBody.innerHTML = renderTableStateRow(DIAGNOSTICS_TABLE_COLSPAN, 'جارٍ الفحص…');
     const res = await apiRequest('/notifications/diagnostics.php');
     const items = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
-    if (!items.length) { els.diagBody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">—</td></tr>'; return; }
+    if (!items.length) { els.diagBody.innerHTML = renderTableStateRow(DIAGNOSTICS_TABLE_COLSPAN, '—'); return; }
     els.diagBody.innerHTML = items.map((c) => {
       const ok = !!c.ok;
-      const badge = ok ? '<span class="badge bg-primary-subtle">OK</span>' : '<span class="badge bg-danger-subtle">مفقود</span>';
+      const badge = ok ? renderStatusChip('OK', 'confirmed') : renderStatusChip('مفقود', 'cancelled');
       const hint = c.hint || '';
-      return `<tr><td>${c.name}</td><td>${badge}</td><td>${hint}</td></tr>`;
+      return `<tr><td>${renderTableStack(c.name || '—')}</td><td>${badge}</td><td>${renderTableStack(hint || '—')}</td></tr>`;
     }).join('');
   } catch (e) {
     console.error(e);
-    els.diagBody.innerHTML = '<tr><td colspan="3" class="text-center text-error">فشل الفحص</td></tr>';
+    els.diagBody.innerHTML = renderTableStateRow(DIAGNOSTICS_TABLE_COLSPAN, 'فشل الفحص', 'error');
   }
 }
 
@@ -872,11 +1050,11 @@ async function fetchDiagnostics() {
 async function loadTemplatesManager() {
   if (!els.tplBody) return;
   try {
-    els.tplBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">جارٍ التحميل…</td></tr>';
+    els.tplBody.innerHTML = renderTableStateRow(TEMPLATES_TABLE_COLSPAN, 'جارٍ التحميل…');
     const res = await apiRequest('/notifications/templates.php?limit=100');
     const items = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
     if (!items.length) {
-      els.tplBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">لا توجد قوالب</td></tr>';
+      els.tplBody.innerHTML = renderTableStateRow(TEMPLATES_TABLE_COLSPAN, 'لا توجد قوالب');
       return;
     }
     els.tplBody.innerHTML = items.map((t) => {
@@ -885,9 +1063,9 @@ async function loadTemplatesManager() {
       const chan = (t.channel || '').toString();
       const updated = (t.updated_at || '').toString() || '—';
       return `<tr>
-        <td>${name}</td>
-        <td>${chan}</td>
-        <td>${updated}</td>
+        <td>${renderTableStack(name)}</td>
+        <td>${renderTableStack(chan)}</td>
+        <td>${renderTableStack(updated)}</td>
         <td>
           <button type="button" class="btn btn-sm" data-edit-id="${id}">تعديل</button>
           <button type="button" class="btn btn-sm btn-outline btn-error" data-delete-id="${id}">حذف</button>
@@ -896,7 +1074,7 @@ async function loadTemplatesManager() {
     }).join('');
   } catch (e) {
     console.error(e);
-    els.tplBody.innerHTML = '<tr><td colspan="4" class="text-center text-error">فشل تحميل القوالب</td></tr>';
+    els.tplBody.innerHTML = renderTableStateRow(TEMPLATES_TABLE_COLSPAN, 'فشل تحميل القوالب', 'error');
   }
 }
 
@@ -1183,8 +1361,8 @@ async function fetchChatList() {
     els.tgChatList.innerHTML = items.map((c) => {
       const name = c.technician_name || c.chat_id || 'دردشة';
       const unread = Number(c.unread || 0);
-      const badge = unread ? `<span class="badge badge-primary badge-sm ms-2">${unread}</span>` : '';
-      return `<li class="px-3 py-2 cursor-pointer hover:bg-base-300" data-tech-id="${c.technician_id || ''}" data-tech-name="${name}">${name}${badge}<div class="text-xs opacity-70 truncate">${(c.last_text || '').toString()}</div></li>`;
+      const badge = unread ? renderStatusChip(String(unread), 'info', 'notifications-chat-unread') : '';
+      return `<li class="notifications-chat-list-item px-3 py-2 cursor-pointer" data-tech-id="${c.technician_id || ''}" data-tech-name="${escapeHtml(name)}"><div class="notifications-chat-list-item__title">${escapeHtml(name)}${badge}</div><div class="notifications-chat-list-item__meta text-xs opacity-70 truncate">${escapeHtml((c.last_text || '').toString())}</div></li>`;
     }).join('');
     updateLastSeenLabelFromListCache();
   } catch (e) {
@@ -1247,36 +1425,55 @@ async function chatSendPhotos() {
 async function fetchTechs() {
   if (!els.tgBody) return;
   try {
-    els.tgBody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">جارٍ التحميل…</td></tr>`;
+    els.tgBody.innerHTML = renderTableStateRow(TG_TECH_TABLE_COLSPAN, 'جارٍ التحميل…');
     const qstr = (els.tgSearch?.value || '').trim();
     const params = new URLSearchParams();
     if (qstr) params.set('search', qstr);
-    params.set('limit', '20');
+    params.set('limit', '100');
     const res = await apiRequest(`/technicians/?${params.toString()}`);
-    const items = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
-    if (!items.length) {
-      els.tgBody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">لا توجد نتائج</td></tr>`;
+    CURRENT_TG_TECHS = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+    TG_TECH_PAGE = 1;
+    renderTechsPage();
+  } catch (e) {
+    console.error(e);
+    CURRENT_TG_TECHS = [];
+    renderClientPagination(els.tgPagination, { total: 0, page: 1, pageSize: TG_TECH_PAGE_SIZE, onPageAttr: 'data-tg-tech-page' });
+    els.tgBody.innerHTML = renderTableStateRow(TG_TECH_TABLE_COLSPAN, 'فشل التحميل', 'error');
+  }
+}
+
+function renderTechsPage() {
+  const items = Array.isArray(CURRENT_TG_TECHS) ? CURRENT_TG_TECHS : [];
+  if (!items.length) {
+      els.tgBody.innerHTML = renderTableStateRow(TG_TECH_TABLE_COLSPAN, 'لا توجد نتائج');
+      renderClientPagination(els.tgPagination, { total: 0, page: 1, pageSize: TG_TECH_PAGE_SIZE, onPageAttr: 'data-tg-tech-page' });
       return;
-    }
-    els.tgBody.innerHTML = items.map((t) => {
+  }
+
+  const start = (TG_TECH_PAGE - 1) * TG_TECH_PAGE_SIZE;
+  const pageItems = items.slice(start, start + TG_TECH_PAGE_SIZE);
+  els.tgBody.innerHTML = pageItems.map((t) => {
       const name = t.full_name || t.name || '';
       const phone = t.phone || '';
       const linked = !!(t.telegram_chat_id || t.telegramChatId || t.has_tg_link);
-      const status = linked ? '<span class="badge bg-primary-subtle">مرتبط</span>' : '<span class="badge bg-warning-subtle">غير مرتبط</span>';
+      const status = linked ? renderStatusChip('مرتبط', 'confirmed') : renderStatusChip('غير مرتبط', 'pending');
       const actions = linked
         ? `<button type="button" class="btn btn-sm btn-outline btn-error" data-unlink-id="${t.id}">❌ إلغاء الربط</button>`
         : `<button type="button" class="btn btn-sm" data-gen-id="${t.id}">🔗 توليد رابط</button>`;
       return `<tr>
-        <td>${name}</td>
-        <td>${phone}</td>
+        <td>${renderTableStack(name)}</td>
+        <td>${renderTableStack(phone, '', { primaryDir: 'ltr' })}</td>
         <td>${status}</td>
         <td>${actions}</td>
       </tr>`;
-    }).join('');
-  } catch (e) {
-    console.error(e);
-    els.tgBody.innerHTML = `<tr><td colspan="4" class="text-center text-error">فشل التحميل</td></tr>`;
-  }
+  }).join('');
+
+  renderClientPagination(els.tgPagination, {
+    total: items.length,
+    page: TG_TECH_PAGE,
+    pageSize: TG_TECH_PAGE_SIZE,
+    onPageAttr: 'data-tg-tech-page',
+  });
 }
 
 async function generateTgLink(technicianId) {
@@ -1300,25 +1497,25 @@ async function generateTgLink(technicianId) {
 async function fetchAdminLinks() {
   if (!els.tgAdminBody) return;
   try {
-    els.tgAdminBody.innerHTML = `<tr><td colspan="3" class="text-center text-muted">جارٍ التحميل…</td></tr>`;
+    els.tgAdminBody.innerHTML = renderTableStateRow(TG_ADMIN_TABLE_COLSPAN, 'جارٍ التحميل…');
     const res = await apiRequest('/telegram/admins.php');
     const items = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
     if (!items.length) {
-      els.tgAdminBody.innerHTML = `<tr><td colspan="3" class="text-center text-muted">لا توجد روابط إدمن مرتبطة حالياً</td></tr>`;
+      els.tgAdminBody.innerHTML = renderTableStateRow(TG_ADMIN_TABLE_COLSPAN, 'لا توجد روابط إدمن مرتبطة حالياً');
       return;
     }
     els.tgAdminBody.innerHTML = items.map((row) => {
       const id = String(row.chat_id || '');
       const used = row.last_used_at || '—';
       return `<tr>
-        <td>${id}</td>
-        <td>${used}</td>
+        <td>${renderTableStack(id, '', { primaryDir: 'ltr' })}</td>
+        <td>${renderTableStack(used)}</td>
         <td><button type="button" class="btn btn-sm btn-outline btn-error" data-admin-unlink="${id}">❌ إلغاء الربط</button></td>
       </tr>`;
     }).join('');
   } catch (e) {
     console.error(e);
-    els.tgAdminBody.innerHTML = `<tr><td colspan="3" class="text-center text-error">فشل تحميل روابط الإدمن</td></tr>`;
+    els.tgAdminBody.innerHTML = renderTableStateRow(TG_ADMIN_TABLE_COLSPAN, 'فشل تحميل روابط الإدمن', 'error');
   }
 }
 

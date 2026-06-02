@@ -47,6 +47,21 @@ function getReservationSelect(): HTMLSelectElement | null {
   return select instanceof HTMLSelectElement ? select : null;
 }
 
+function getReservationIdentifier(reservation: ReservationLike | null | undefined): string {
+  const value = reservation?.id ?? reservation?.reservationId ?? '';
+  return String(value || '').trim();
+}
+
+function applyHydratedReservationOverrides<T extends ReservationLike>(reservations: T[]): T[] {
+  if (!Array.isArray(reservations) || !reservations.length) return [];
+
+  return reservations.map((reservation) => {
+    const identifier = getReservationIdentifier(reservation);
+    const override = identifier ? templatesTabState.hydratedReservations[identifier] : null;
+    return override && typeof override === 'object' ? (override as T) : reservation;
+  });
+}
+
 function normalizeTemplateType(value: string): '' | 'expenses' | 'callsheet' {
   if (value === 'expenses' || value === 'callsheet') {
     return value;
@@ -103,7 +118,9 @@ export function getReservationsForProject(projectId: unknown): ReservationLike[]
 
   const reservations = getReservationsState() as ReservationLike[];
   return Array.isArray(reservations)
-    ? reservations.filter((reservation) => String(reservation?.projectId ?? reservation?.project_id ?? '') === String(projectId))
+    ? applyHydratedReservationOverrides(
+        reservations.filter((reservation) => String(reservation?.projectId ?? reservation?.project_id ?? '') === String(projectId)),
+      )
     : [];
 }
 
@@ -121,7 +138,7 @@ export function getSelectedReservations<T extends ReservationLike = ReservationL
 
   if (!selectedId) return reservations;
 
-  const match = reservations.find((reservation) => String(reservation.id ?? reservation.reservationId ?? '') === String(selectedId));
+  const match = reservations.find((reservation) => getReservationIdentifier(reservation) === String(selectedId));
   return match ? [match] : [];
 }
 

@@ -1,4 +1,4 @@
-import { t, getCurrentLanguage } from '../language.js';
+import { t } from '../language.js';
 import { loadData } from '../storage.js';
 import {
   buildProjectPayload,
@@ -8,16 +8,22 @@ import {
   updateProjectApi,
   refreshProjectsFromApi,
 } from '../projectsService.js';
-import { getReservationsState, refreshReservationsFromApi, updateReservationApi } from '../reservationsService.js';
-import { DEFAULT_COMPANY_SHARE_PERCENT, calculatePaymentProgress, determinePaymentStatus } from '../reservationsSummary.js';
+import {
+  getReservationsState,
+  refreshReservationsFromApi,
+} from '../reservationsService.js';
+import {
+  DEFAULT_COMPANY_SHARE_PERCENT,
+  calculatePaymentProgress,
+  determinePaymentStatus
+} from '../reservationsSummary.js';
 import {
   generateProjectCode,
   normalizeNumbers,
   showToast
 } from '../utils.js';
-import { notifyPermissionDenied, userCanManageDestructiveActions } from '../auth.js';
+import { getCurrentUserRole, notifyPermissionDenied, userCanManageDestructiveActions } from '../auth.js';
 import { state, dom, resetSelections } from './state.js';
-import { PROJECT_TAX_RATE } from './constants.js';
 import {
   clearProjectCustomerSuggestions,
   resolveProjectCustomer,
@@ -30,21 +36,26 @@ import {
   getEmptyText,
   formatDateTime
 } from './formatting.js';
+import { refreshEnhancedSelect } from '../ui/enhancedSelect.js';
+import {
+  resetSelectedTechnicians,
+  setSelectedTechnicians
+} from '../reservationsTechnicians.js';
 import {
   renderProjects,
   renderFocusCards,
-  updateSummary,
-  resolveReservationNetTotal
+  updateSummary
 } from './view.js';
 import {
   handleProjectReservationSync,
   removeProject
 } from './actions.js';
 import { updatePreferences } from '../preferencesService.js';
+import { renderProjectEquipmentSelection } from './equipment.js';
+import { calculateProjectLineFinancials } from './financials.js';
 
 let isProjectSubmitInProgress = false;
 const PROJECT_FORM_DRAFT_STORAGE_KEY = 'projects:create:draft';
-const DEFAULT_LINKED_RESERVATION_RETURN_URL = 'projects.html#projects-section';
 
 let isProjectShareTaxSyncing = false;
 let createProjectPaymentHistory = [];
@@ -105,7 +116,7 @@ function syncProjectTaxAndShare(source) {
   isProjectShareTaxSyncing = true;
 
   const showShareWarning = () => {
-    showToast(t('projects.toast.companyShareRequiresTax', '⚠️ لا يمكن تفعيل نسبة الشركة بدون تفعيل الضريبة'));
+    showToast(t('projects.toast.companyShareRequiresTax', '⚠️ لا يمكن تفعيل المصاريف التشغيلية بدون تفعيل الضريبة'));
   };
 
   if (source === 'share') {
@@ -138,63 +149,188 @@ function syncProjectTaxAndShare(source) {
 
 export function calculateProjectFinancials({
   equipmentEstimate = 0,
-  expensesTotal = 0,
+  crewEstimate = 0,
   servicesClientPrice = 0,
+  equipmentCost = 0,
+  crewCost = 0,
+  servicesCost = 0,
   discountValue = 0,
   discountType = 'percent',
   applyTax = false,
   companyShareEnabled = false,
   companySharePercent = null,
 } = {}) {
-  // الإيرادات = تقدير المعدات + سعر العميل للخدمات الإنتاجية (وليس تكلفة الخدمات)
-  const baseSubtotal = Number(equipmentEstimate) + Number(servicesClientPrice);
-  const normalizedDiscountValue = Number.isFinite(Number(discountValue)) ? Number(discountValue) : 0;
-  let discountAmount = 0;
-  if (discountType === 'amount') {
-    discountAmount = normalizedDiscountValue;
-  } else {
-    discountAmount = baseSubtotal * (normalizedDiscountValue / 100);
-  }
-  if (!Number.isFinite(discountAmount) || discountAmount < 0) {
-    discountAmount = 0;
-  }
-  if (discountAmount > baseSubtotal) {
-    discountAmount = baseSubtotal;
-  }
+  return calculateProjectLineFinancials({
+    equipmentRevenue: equipmentEstimate,
+    crewRevenue: crewEstimate,
+    servicesRevenue: servicesClientPrice,
+    equipmentCost,
+    crewCost,
+    servicesCost,
+    discountValue,
+    discountType,
+    applyTax,
+    companyShareEnabled,
+    companySharePercent,
+  });
+}
 
-  const subtotalAfterDiscount = Math.max(0, baseSubtotal - discountAmount);
+function toProjectMoney(value) {
+  const parsed = Number.parseFloat(normalizeNumbers(String(value ?? '0')));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
 
-  const sharePercent = companyShareEnabled && applyTax && Number.isFinite(Number(companySharePercent)) && Number(companySharePercent) > 0
-    ? Number(companySharePercent)
-    : 0;
-  const companyShareAmount = sharePercent > 0
-    ? Number((subtotalAfterDiscount * (sharePercent / 100)).toFixed(2))
-    : 0;
+export function resolveProjectServiceDays(value) {
+  const normalized = normalizeNumbers(String(value ?? '')).trim();
+  if (normalized === '') return 1;
+  const parsed = Number.parseInt(normalized, 10);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : 1;
+}
 
-  const taxableAmount = subtotalAfterDiscount + companyShareAmount;
-  let taxAmount = applyTax ? taxableAmount * PROJECT_TAX_RATE : 0;
-  if (!Number.isFinite(taxAmount) || taxAmount < 0) {
-    taxAmount = 0;
-  }
-  taxAmount = Number(taxAmount.toFixed(2));
+export function calculateProjectServiceCost(expense = {}) {
+  const amount = toProjectMoney(expense?.amount);
+  return amount * resolveProjectServiceDays(expense?.days ?? expense?.service_days);
+}
 
-  const totalWithTax = Number((taxableAmount + taxAmount).toFixed(2));
+export function calculateProjectServiceSale(expense = {}) {
+  const sale = toProjectMoney(expense?.salePrice ?? expense?.sale_price);
+  return sale * resolveProjectServiceDays(expense?.days ?? expense?.service_days);
+}
+
+function calculateProjectDurationDays({ startDate = '', endDate = '' } = {}) {
+  if (!startDate) return 1;
+  const start = new Date(`${startDate}T00:00:00`);
+  const end = endDate ? new Date(`${endDate}T00:00:00`) : start;
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return 1;
+  return Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86400000) + 1);
+}
+
+export function calculateProjectCrewEstimate(assignments = [], days = 1) {
+  const duration = Math.max(1, Number.parseInt(String(days || 1), 10) || 1);
+  return (Array.isArray(assignments) ? assignments : []).reduce((sum, assignment) => {
+    const price = toProjectMoney(
+      assignment?.positionClientPrice
+      ?? assignment?.position_client_price
+      ?? assignment?.clientPrice
+      ?? assignment?.dailyTotal
+      ?? assignment?.daily_total
+      ?? 0
+    );
+    return sum + (price * duration);
+  }, 0);
+}
+
+export function calculateProjectCrewCost(assignments = [], days = 1) {
+  const duration = Math.max(1, Number.parseInt(String(days || 1), 10) || 1);
+  return (Array.isArray(assignments) ? assignments : []).reduce((sum, assignment) => {
+    const cost = toProjectMoney(
+      assignment?.positionCost
+      ?? assignment?.position_cost
+      ?? assignment?.cost
+      ?? assignment?.dailyWage
+      ?? assignment?.daily_wage
+      ?? 0
+    );
+    return sum + (cost * duration);
+  }, 0);
+}
+
+export function calculateSelectedEquipmentCost(items = [], equipmentList = []) {
+  return (Array.isArray(items) ? items : []).reduce((sum, item) => {
+    const equipment = Array.isArray(equipmentList)
+      ? equipmentList.find((eq) => String(eq.barcode || '') === String(item?.barcode || ''))
+      : null;
+    const cost = toProjectMoney(item?.cost ?? item?.unit_cost ?? equipment?.cost ?? equipment?.unit_cost ?? 0);
+    const qty = Math.max(1, Number.parseInt(String(item?.qty ?? item?.quantity ?? 1), 10) || 1);
+    return sum + (cost * qty);
+  }, 0);
+}
+
+export function calculateProjectCreateSummary({
+  equipment = [],
+  equipmentList = [],
+  crewAssignments = [],
+  expenses = [],
+  servicesClientPrice = 0,
+  startDate = '',
+  endDate = '',
+  discountValue = 0,
+  discountType = 'percent',
+  applyTax = false,
+  companyShareEnabled = false,
+  companySharePercent = null,
+} = {}) {
+  const days = calculateProjectDurationDays({ startDate, endDate });
+  const equipmentRevenue = (Array.isArray(equipment) ? equipment : []).reduce((sum, item) => {
+    const source = Array.isArray(equipmentList)
+      ? equipmentList.find((eq) => String(eq.barcode || '') === String(item?.barcode || ''))
+      : null;
+    const price = toProjectMoney(item?.price ?? item?.unit_price ?? source?.price ?? source?.daily_rate ?? source?.dailyRate ?? 0);
+    const qty = Math.max(1, Number.parseInt(String(item?.qty ?? item?.quantity ?? 1), 10) || 1);
+    return sum + (price * qty);
+  }, 0);
+  const equipmentCost = calculateSelectedEquipmentCost(equipment, equipmentList);
+  const equipmentQuantity = (Array.isArray(equipment) ? equipment : []).reduce((sum, item) => {
+    const qty = Math.max(1, Number.parseInt(String(item?.qty ?? item?.quantity ?? 1), 10) || 1);
+    return sum + qty;
+  }, 0);
+  const crewRevenue = calculateProjectCrewEstimate(crewAssignments, days);
+  const crewCost = calculateProjectCrewCost(crewAssignments, days);
+  const expensesTotal = (Array.isArray(expenses) ? expenses : []).reduce((sum, expense) => sum + calculateProjectServiceCost(expense), 0);
+  const servicesRevenue = (Array.isArray(expenses) && expenses.length)
+    ? expenses.reduce((sum, expense) => sum + calculateProjectServiceSale(expense), 0)
+    : toProjectMoney(servicesClientPrice);
+  const finance = calculateProjectFinancials({
+    equipmentEstimate: equipmentRevenue,
+    crewEstimate: crewRevenue,
+    servicesClientPrice: servicesRevenue,
+    equipmentCost,
+    crewCost,
+    servicesCost: expensesTotal,
+    discountValue,
+    discountType,
+    applyTax,
+    companyShareEnabled,
+    companySharePercent,
+  });
 
   return {
-    baseSubtotal,
-    discountAmount,
-    subtotalAfterDiscount,
-    companyShareAmount,
-    taxableAmount,
-    taxAmount,
-    totalWithTax,
+    days,
+    equipmentQuantity,
+    equipmentItems: Array.isArray(equipment) ? equipment.length : 0,
+    crewPositions: Array.isArray(crewAssignments) ? crewAssignments.length : 0,
+    assignedCrew: Array.isArray(crewAssignments) ? crewAssignments.filter((assignment) => assignment?.technicianId).length : 0,
+    equipmentRevenue,
+    equipmentCost,
+    crewRevenue,
+    crewCost,
+    servicesRevenue,
+    servicesCost: expensesTotal,
+    ...finance,
   };
+}
+
+export async function refreshProjectManagedReservationState() {
+  try {
+    await refreshReservationsFromApi();
+  } catch (error) {
+    console.warn('[projects] failed to refresh reservations after project managed reservation sync', error);
+  }
+  state.reservations = getReservationsState();
+  return state.reservations;
 }
 
 export function bindFormEvents() {
   if (dom.form && !dom.form.dataset.listenerAttached) {
     dom.form.addEventListener('submit', handleSubmitProject);
     dom.form.dataset.listenerAttached = 'true';
+  }
+
+  if (dom.form && !dom.form.dataset.summaryListenerAttached) {
+    const refreshCreateSummary = () => renderProjectCreateSummaryCard();
+    dom.form.addEventListener('input', refreshCreateSummary);
+    dom.form.addEventListener('change', refreshCreateSummary);
+    dom.form.dataset.summaryListenerAttached = 'true';
   }
 
   if (dom.form && !dom.form.dataset.resetListenerAttached) {
@@ -216,6 +352,11 @@ export function bindFormEvents() {
 
   bindBillingEvents();
   bindCreatePaymentEvents();
+
+  if (typeof document !== 'undefined' && !document.__projectCreateSummaryListenerAttached) {
+    document.addEventListener('projects:form-summary:update', renderProjectCreateSummaryCard);
+    document.__projectCreateSummaryListenerAttached = true;
+  }
 
   if (dom.search && !dom.search.dataset.listenerAttached) {
     dom.search.addEventListener('input', () => {
@@ -334,6 +475,7 @@ export function bindFormEvents() {
 
 export function resetProjectFormState() {
   resetSelections();
+  resetSelectedTechnicians();
   state.editingProjectId = null;
   if (dom.form) {
     delete dom.form.dataset.editingId;
@@ -362,50 +504,9 @@ export function resetProjectFormState() {
   createProjectPaymentHistory = [];
   if (dom.paymentHistory) dom.paymentHistory.innerHTML = '';
   refreshProjectSubmitButton();
-  renderLinkedReservationDraftSummary();
+  renderProjectOperationalSummary();
   syncProjectTaxAndShare('tax');
   updateServicesClientTotalIndicator();
-}
-
-export function bindSelectionEvents() {
-  if (dom.addTechnicianBtn && dom.addTechnicianBtn.dataset.listenerAttached !== 'true') {
-    dom.addTechnicianBtn.addEventListener('click', handleAddTechnician);
-    dom.addTechnicianBtn.dataset.listenerAttached = 'true';
-  }
-
-  if (dom.addEquipmentBtn && dom.addEquipmentBtn.dataset.listenerAttached !== 'true') {
-    dom.addEquipmentBtn.addEventListener('click', handleAddEquipment);
-    dom.addEquipmentBtn.dataset.listenerAttached = 'true';
-  }
-}
-
-export function bindSelectionRemovalEvents() {
-  attachRemovalListener(dom.technicianList, (target) => {
-    if (target.matches('[data-action="remove-technician"]')) {
-      const id = target.dataset.id;
-      state.selectedTechnicians = state.selectedTechnicians.filter((techId) => techId !== id);
-      renderTechnicianChips();
-    }
-  });
-
-  attachRemovalListener(dom.equipmentList, (target) => {
-    if (target.matches('[data-action="remove-equipment"]')) {
-      const barcode = target.dataset.id;
-      state.selectedEquipment = state.selectedEquipment.filter((item) => item.barcode !== barcode);
-      renderEquipmentChips();
-    }
-  });
-
-  attachRemovalListener(dom.expenseList, (target) => {
-    if (target.matches('[data-action="remove-expense"]')) {
-      const expenseId = target.dataset.id;
-      state.expenses = state.expenses.filter((item) => String(item.id) !== String(expenseId));
-      renderExpenseList();
-      updateSummary();
-      recalcServicesClientPriceTotal();
-      updateServicesClientTotalIndicator();
-    }
-  });
 }
 
 function bindBillingEvents() {
@@ -414,6 +515,7 @@ function bindBillingEvents() {
       const input = event.target;
       if (!(input instanceof HTMLInputElement)) return;
       input.value = normalizeNumbers(input.value || '');
+      renderProjectCreateSummaryCard();
     });
     dom.discountValue.dataset.listenerAttached = 'true';
   }
@@ -421,6 +523,7 @@ function bindBillingEvents() {
   if (dom.companyShare && dom.companyShare.dataset.listenerAttached !== 'true') {
     dom.companyShare.addEventListener('change', () => {
       syncProjectTaxAndShare('share');
+      renderProjectCreateSummaryCard();
     });
     dom.companyShare.dataset.listenerAttached = 'true';
   }
@@ -428,6 +531,7 @@ function bindBillingEvents() {
   if (dom.taxCheckbox && dom.taxCheckbox.dataset.projectListenerAttached !== 'true') {
     dom.taxCheckbox.addEventListener('change', () => {
       syncProjectTaxAndShare('tax');
+      renderProjectCreateSummaryCard();
     });
     dom.taxCheckbox.dataset.projectListenerAttached = 'true';
   }
@@ -444,6 +548,7 @@ function bindBillingEvents() {
       const input = event.target;
       if (!(input instanceof HTMLInputElement)) return;
       input.value = normalizeNumbers(input.value || '');
+      renderProjectCreateSummaryCard();
     });
     dom.paymentProgressValue.dataset.listenerAttached = 'true';
   }
@@ -460,12 +565,14 @@ function bindBillingEvents() {
         const newPos = Math.min(normalized.length, cursorPosition);
         input.setSelectionRange(newPos, newPos);
       }
+      renderProjectCreateSummaryCard();
     });
     dom.servicesClientPrice.dataset.normalizeAttached = 'true';
   }
 
   syncProjectTaxAndShare(dom.companyShare?.checked ? 'share' : 'tax');
   updateServicesClientTotalIndicator();
+  renderProjectCreateSummaryCard();
 }
 
 function renderCreateProjectPaymentHistory() {
@@ -499,20 +606,149 @@ function renderCreateProjectPaymentHistory() {
       </tr>`;
   }).join('');
   container.innerHTML = `
-    <div class="reservation-payment-history__table-wrapper">
-      <table class="table table-sm reservation-payment-history__table">
+    <div class="reservation-payment-history-table-shell">
+      <table class="table table-sm reservation-payment-history-table">
         <thead>
           <tr>
             <th>${escapeHtml(t('reservations.paymentHistory.headers.method', 'نوع الدفعة'))}</th>
             <th>${escapeHtml(t('reservations.paymentHistory.headers.amount', 'المبلغ'))}</th>
             <th>${escapeHtml(t('reservations.paymentHistory.headers.percent', 'النسبة'))}</th>
             <th>${escapeHtml(t('reservations.paymentHistory.headers.date', 'التاريخ'))}</th>
-            <th>${escapeHtml(t('reservations.paymentHistory.headers.note', 'ملاحظات'))}</th>
+            <th>${escapeHtml(t('projects.expenses.table.headers.actions', 'الإجراءات'))}</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
       </table>
     </div>`;
+}
+
+function getProjectCreateSummaryFromState() {
+  const servicesClientPriceRaw = normalizeNumbers(dom.servicesClientPrice?.value || '');
+  const manualServicesPrice = Number.parseFloat(servicesClientPriceRaw);
+  const servicesClientPrice = state.servicesClientPriceTotal || (Number.isFinite(manualServicesPrice) ? manualServicesPrice : 0);
+  const discountRaw = normalizeNumbers(dom.discountValue?.value || '0');
+  const discountValue = Number.parseFloat(discountRaw);
+  const companyShareEnabled = dom.companyShare?.checked === true;
+  const companySharePercent = companyShareEnabled
+    ? getProjectCompanySharePercent(dom.companyShare)
+    : null;
+
+  return calculateProjectCreateSummary({
+    equipment: state.selectedEquipment,
+    equipmentList: state.equipment,
+    crewAssignments: state.selectedTechnicians,
+    expenses: state.expenses,
+    servicesClientPrice,
+    startDate: dom.startDate?.value || '',
+    endDate: dom.endDate?.value || '',
+    discountValue: Number.isFinite(discountValue) ? discountValue : 0,
+    discountType: dom.discountType?.value === 'amount' ? 'amount' : 'percent',
+    applyTax: dom.taxCheckbox?.checked === true,
+    companyShareEnabled,
+    companySharePercent,
+  });
+}
+
+function renderProjectCreateSummaryCard() {
+  const card = dom.projectCreateSummaryCard || document.getElementById('project-create-summary-card');
+  if (!card) return;
+  const summary = getProjectCreateSummaryFromState();
+  const isAdmin = getCurrentUserRole() === 'admin';
+  const row = (label, value, extraClass = '') => `
+    <div class="project-create-summary__row ${extraClass}">
+      <span>${escapeHtml(label)}</span>
+      <strong>${escapeHtml(value)}</strong>
+    </div>`;
+  const normalRows = [
+    row(t('projects.form.summary.days', 'عدد الأيام'), normalizeNumbers(String(summary.days))),
+    row(t('projects.form.summary.equipmentQuantity', 'كمية المعدات'), normalizeNumbers(String(summary.equipmentQuantity))),
+    row(t('projects.form.summary.crewQuantity', 'عدد الطاقم'), normalizeNumbers(String(summary.crewPositions))),
+    row(t('projects.form.summary.equipmentTotal', 'إجمالي المعدات'), formatCurrency(summary.equipmentRevenue)),
+    row(t('projects.form.summary.crewTotal', 'إجمالي الفريق'), formatCurrency(summary.crewRevenue)),
+    row(t('projects.form.summary.servicesTotal', 'إجمالي الخدمات الإنتاجية'), formatCurrency(summary.servicesRevenue)),
+    row(t('projects.form.summary.discount', 'الخصم'), formatCurrency(summary.discountAmount)),
+    row(t('projects.form.summary.beforeVat', 'الإجمالي قبل الضريبة'), formatCurrency(summary.taxableAmount), 'project-create-summary__row--strong'),
+    row(t('projects.form.summary.vat', 'الضريبة'), formatCurrency(summary.taxAmount)),
+    row(t('projects.form.summary.finalTotal', 'الإجمالي النهائي'), formatCurrency(summary.totalWithTax), 'project-create-summary__row--total'),
+  ].join('');
+
+  const adminRows = [
+    row(t('projects.form.summary.days', 'عدد الأيام'), normalizeNumbers(String(summary.days))),
+    row(t('projects.form.summary.equipmentQuantity', 'كمية المعدات'), normalizeNumbers(String(summary.equipmentQuantity))),
+    row(t('projects.form.summary.crewQuantity', 'عدد الطاقم'), normalizeNumbers(String(summary.crewPositions))),
+    row(t('projects.form.summary.equipmentTotal', 'إجمالي المعدات'), formatCurrency(summary.equipmentRevenue)),
+    row(t('projects.form.summary.equipmentCost', 'تكلفة المعدات'), formatCurrency(summary.equipmentCost)),
+    row(t('projects.form.summary.crewTotal', 'إجمالي الفريق'), formatCurrency(summary.crewRevenue)),
+    row(t('projects.form.summary.crewCost', 'تكلفة الفريق'), formatCurrency(summary.crewCost)),
+    row(t('projects.form.summary.servicesTotal', 'إجمالي الخدمات الإنتاجية'), formatCurrency(summary.servicesRevenue)),
+    row(t('projects.form.summary.servicesCost', 'تكلفة الخدمات الإنتاجية'), formatCurrency(summary.servicesCost)),
+    row(t('projects.form.summary.discount', 'الخصم'), formatCurrency(summary.discountAmount)),
+    row(t('projects.form.summary.beforeVat', 'الإجمالي قبل الضريبة'), formatCurrency(summary.taxableAmount), 'project-create-summary__row--strong'),
+    row(t('projects.form.summary.overhead', 'المصاريف التشغيلية'), formatCurrency(summary.overheadAmount)),
+    row(t('projects.form.summary.directCosts', 'إجمالي التكاليف المباشرة'), formatCurrency(summary.directCostTotal)),
+    row(t('projects.form.summary.vat', 'الضريبة'), formatCurrency(summary.taxAmount)),
+    row(t('projects.form.summary.finalTotal', 'الإجمالي النهائي'), formatCurrency(summary.totalWithTax), 'project-create-summary__row--total'),
+    row(t('projects.form.summary.estimatedProfit', 'الربح التقديري'), formatCurrency(summary.marginBeforeTax), summary.marginBeforeTax < 0 ? 'project-create-summary__row--warning' : ''),
+  ].join('');
+
+  card.innerHTML = `
+    <div class="project-create-summary__header">
+      <span class="project-create-summary__eyebrow">${escapeHtml(t('projects.form.summary.eyebrow', 'ملخص مباشر'))}</span>
+      <h5>${escapeHtml(t('projects.form.summary.title', 'ملخص المشروع'))}</h5>
+    </div>
+    <div class="project-create-summary__metrics">
+      ${isAdmin ? adminRows : normalRows}
+    </div>`;
+}
+
+function getUnassignedProjectCrewAssignments() {
+  return Array.isArray(state.selectedTechnicians)
+    ? state.selectedTechnicians.filter((assignment) => (
+        assignment
+        && typeof assignment === 'object'
+        && !(
+          assignment.technicianId
+          ?? assignment.technician_id
+          ?? assignment.id
+        )
+      ))
+    : [];
+}
+
+export function syncCreateProjectSelectTranslations() {
+  const setOptionText = (select, value, key, fallback) => {
+    if (!select) return;
+    const option = Array.from(select.options || []).find((entry) => entry.value === value);
+    if (!option) return;
+    option.textContent = t(key, fallback);
+  };
+
+  setOptionText(dom.type, '', 'projects.form.placeholders.type', 'اختر نوع المشروع');
+  setOptionText(dom.type, 'commercial', 'projects.form.types.commercial', 'تصوير إعلان');
+  setOptionText(dom.type, 'coverage', 'projects.form.types.coverage', 'تصوير تغطية');
+  setOptionText(dom.type, 'photography', 'projects.form.types.photography', 'تصوير فوتوغرافي');
+  setOptionText(dom.type, 'social', 'projects.form.types.social', 'تصوير للتواصل الاجتماعي');
+
+  setOptionText(dom.discountType, 'percent', 'projects.form.discount.percent', '٪ نسبة');
+  setOptionText(dom.discountType, 'amount', 'projects.form.discount.amount', '💵 مبلغ');
+
+  setOptionText(dom.paymentStatus, 'unpaid', 'projects.form.paymentStatus.unpaid', 'غير مدفوع');
+  setOptionText(dom.paymentStatus, 'partial', 'projects.form.paymentStatus.partial', 'مدفوع جزئياً');
+  setOptionText(dom.paymentStatus, 'paid', 'projects.form.paymentStatus.paid', 'مدفوع');
+
+  setOptionText(dom.paymentProgressType, 'amount', 'projects.form.paymentProgress.amount', '💵 مبلغ');
+  setOptionText(dom.paymentProgressType, 'percent', 'projects.form.paymentProgress.percent', '٪ نسبة');
+
+  [
+    dom.type,
+    dom.discountType,
+    dom.paymentStatus,
+    dom.paymentProgressType,
+  ].forEach((select) => {
+    if (select?.dataset?.enhancedSelect === 'true') {
+      refreshEnhancedSelect(select);
+    }
+  });
 }
 
 function bindCreatePaymentEvents() {
@@ -526,9 +762,15 @@ function bindCreatePaymentEvents() {
         showToast(t('projects.toast.paymentInvalid', '⚠️ يرجى إدخال قيمة دفعة صحيحة'));
         return;
       }
-      createProjectPaymentHistory.push({ type, value, recordedAt: new Date().toISOString() });
+      createProjectPaymentHistory.push({
+        type,
+        amount: type === 'amount' ? value : 0,
+        percentage: type === 'percent' ? value : 0,
+        recordedAt: new Date().toISOString(),
+      });
       if (dom.paymentProgressValue) dom.paymentProgressValue.value = '';
       renderCreateProjectPaymentHistory();
+      renderProjectCreateSummaryCard();
     });
     dom.paymentAddButton.dataset.listenerAttached = 'true';
   }
@@ -541,6 +783,7 @@ function bindCreatePaymentEvents() {
       if (!Number.isInteger(index) || index < 0) return;
       createProjectPaymentHistory.splice(index, 1);
       renderCreateProjectPaymentHistory();
+      renderProjectCreateSummaryCard();
     });
     dom.paymentHistory.dataset.listenerAttached = 'true';
   }
@@ -551,6 +794,18 @@ export function bindExpenseEvents() {
     dom.addExpenseBtn.addEventListener('click', handleAddExpense);
     dom.addExpenseBtn.dataset.listenerAttached = 'true';
   }
+
+  attachRemovalListener(dom.expenseList, (target) => {
+    if (target.matches('[data-action="remove-expense"]')) {
+      const expenseId = target.dataset.id;
+      state.expenses = state.expenses.filter((item) => String(item.id) !== String(expenseId));
+      renderExpenseList();
+      updateSummary();
+      recalcServicesClientPriceTotal();
+      updateServicesClientTotalIndicator();
+      renderProjectCreateSummaryCard();
+    }
+  });
 
   if (dom.expenseAmount && dom.expenseAmount.dataset.normalizeAttached !== 'true') {
     dom.expenseAmount.addEventListener('input', (event) => {
@@ -565,6 +820,21 @@ export function bindExpenseEvents() {
       }
     });
     dom.expenseAmount.dataset.normalizeAttached = 'true';
+  }
+
+  if (dom.expenseDays && dom.expenseDays.dataset.normalizeAttached !== 'true') {
+    dom.expenseDays.addEventListener('input', (event) => {
+      const input = event.target;
+      if (!(input instanceof HTMLInputElement)) return;
+      const cursorPosition = input.selectionStart;
+      const normalized = normalizeNumbers(input.value || '').replace(/[^\d]/g, '');
+      input.value = normalized;
+      if (cursorPosition != null) {
+        const newPos = Math.min(normalized.length, cursorPosition);
+        input.setSelectionRange(newPos, newPos);
+      }
+    });
+    dom.expenseDays.dataset.normalizeAttached = 'true';
   }
 }
 
@@ -635,49 +905,14 @@ export function handleReservationsChanged(openProjectDetails) {
   }
 }
 
-function handleAddTechnician() {
-  const value = dom.technicianSelect?.value;
-  if (!value) {
-    showToast(t('projects.toast.selectTechnician', '⚠️ يرجى اختيار عضو الطاقم'));
-    return;
-  }
-
-  if (state.selectedTechnicians.includes(value)) {
-    showToast(t('projects.toast.technicianAlreadyAdded', '⚠️ العضو مضاف بالفعل'));
-    return;
-  }
-
-  state.selectedTechnicians.push(value);
-  renderSelections();
-  showToast(t('projects.toast.technicianAdded', '✅ تمت إضافة عضو الطاقم'));
-}
-
-function handleAddEquipment() {
-  const barcode = dom.equipmentSelect?.value;
-  if (!barcode) {
-    showToast(t('projects.toast.selectEquipment', '⚠️ يرجى اختيار المعدة'));
-    return;
-  }
-
-  const qty = Math.max(1, parseInt(dom.equipmentQty?.value || '1', 10) || 1);
-  const existing = state.selectedEquipment.find((item) => item.barcode === barcode);
-
-  if (existing) {
-    existing.qty += qty;
-  } else {
-    state.selectedEquipment.push({ barcode, qty });
-  }
-
-  renderSelections();
-  showToast(t('projects.toast.equipmentAdded', '✅ تمت إضافة المعدة للمشروع'));
-}
-
 function handleAddExpense() {
   const label = (dom.expenseLabel?.value || '').trim();
   const normalizedAmount = normalizeNumbers(dom.expenseAmount?.value || '0');
   const amount = Number(normalizedAmount);
   const saleRaw = normalizeNumbers(dom.servicesClientPrice?.value || '0');
   const salePrice = Number.parseFloat(saleRaw) || 0;
+  const daysRaw = normalizeNumbers(dom.expenseDays?.value || '');
+  const days = daysRaw.trim() === '' ? 1 : Number.parseInt(daysRaw, 10);
   const note = (dom.expenseNote?.value || '').trim();
 
   if (!label) {
@@ -690,11 +925,18 @@ function handleAddExpense() {
     return;
   }
 
+  if (!Number.isInteger(days) || days <= 0) {
+    showToast(t('projects.toast.invalidExpenseDays', '⚠️ يرجى إدخال عدد أيام صحيح أو تركه فارغاً'));
+    dom.expenseDays?.focus();
+    return;
+  }
+
   state.expenses.push({
     id: Date.now(),
     label,
     amount,
     salePrice,
+    days,
     note
   });
   // Recalculate cumulative services client price from items (keeps totals correct on remove)
@@ -703,6 +945,7 @@ function handleAddExpense() {
   if (dom.expenseLabel) dom.expenseLabel.value = '';
   if (dom.expenseAmount) dom.expenseAmount.value = normalizeNumbers(String(normalizedAmount));
   if (dom.servicesClientPrice) dom.servicesClientPrice.value = '';
+  if (dom.expenseDays) dom.expenseDays.value = '';
   if (dom.expenseNote) dom.expenseNote.value = '';
 
   renderSelections();
@@ -711,40 +954,13 @@ function handleAddExpense() {
 }
 
 export function renderSelections() {
-  renderTechnicianChips();
-  renderEquipmentChips();
   renderExpenseList();
+  renderCreateProjectPaymentHistory();
+  renderProjectEquipmentSelection();
+  renderProjectOperationalSummary();
   refreshProjectSubmitButton();
   updateServicesClientTotalIndicator();
-}
-
-function renderTechnicianChips() {
-  if (!dom.technicianList) return;
-  renderChipList(dom.technicianList, state.selectedTechnicians, (id) => {
-    const technician = state.technicians.find((tech) => String(tech.id) === String(id));
-    const name = technician?.name || t('projects.fallback.technicianName', 'عضو بدون اسم');
-    return `
-      <span class="chip">
-        ${escapeHtml(name)}
-        <button type="button" class="chip__remove" data-action="remove-technician" data-id="${escapeHtml(String(id))}" aria-label="${escapeHtml(t('actions.remove', 'إزالة'))}">✖</button>
-      </span>
-    `;
-  });
-}
-
-function renderEquipmentChips() {
-  if (!dom.equipmentList) return;
-  renderChipList(dom.equipmentList, state.selectedEquipment, (item) => {
-    const equipment = state.equipment.find((eq) => String(eq.barcode || '') === String(item.barcode));
-    const name = equipment?.desc || equipment?.description || equipment?.name || t('projects.fallback.unknownEquipment', 'معدة');
-    const qty = normalizeNumbers(String(item.qty || 1));
-    return `
-      <span class="chip">
-        ${escapeHtml(name)} (x${qty})
-        <button type="button" class="chip__remove" data-action="remove-equipment" data-id="${escapeHtml(String(item.barcode))}" aria-label="${escapeHtml(t('actions.remove', 'إزالة'))}">✖</button>
-      </span>
-    `;
-  });
+  renderProjectCreateSummaryCard();
 }
 
 function renderExpenseList() {
@@ -753,19 +969,20 @@ function renderExpenseList() {
   if (!items.length) {
     const emptyText = escapeHtml(getEmptyText(dom.expenseList));
     dom.expenseList.innerHTML = `
-      <div class="table-responsive">
-        <table class="table table-sm table-hover align-middle project-services-table">
+      <div class="users-table-wrapper overflow-x-auto project-services-table-wrapper">
+        <table class="ui-table users-table surface-table table table-sm table-hover align-middle project-services-table">
           <thead class="table-light">
             <tr>
               <th>${escapeHtml(t('projects.expenses.table.headers.service', 'الخدمة'))}</th>
               <th>${escapeHtml(t('projects.expenses.table.headers.cost', 'التكلفة (SR)'))}</th>
               <th>${escapeHtml(t('projects.expenses.table.headers.sale', 'سعر البيع (SR)'))}</th>
+              <th>${escapeHtml(t('projects.expenses.table.headers.days', 'الأيام'))}</th>
               <th>${escapeHtml(t('projects.expenses.table.headers.note', 'ملاحظات'))}</th>
               <th>${escapeHtml(t('projects.expenses.table.headers.actions', 'الإجراءات'))}</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td colspan="5" class="text-center text-muted">${emptyText}</td></tr>
+            <tr><td colspan="6" class="text-center text-muted">${emptyText}</td></tr>
           </tbody>
         </table>
       </div>`;
@@ -774,8 +991,9 @@ function renderExpenseList() {
 
   const rows = items.map((expense) => {
     const label = escapeHtml(expense.label || '');
-    const amount = formatCurrency(Number(expense.amount) || 0);
-    const sale = formatCurrency(Number(expense.salePrice) || 0);
+    const days = resolveProjectServiceDays(expense.days ?? expense.service_days);
+    const amount = formatCurrency(calculateProjectServiceCost(expense));
+    const sale = formatCurrency(calculateProjectServiceSale(expense));
     const note = escapeHtml(expense.note || '');
     const id = escapeHtml(String(expense.id));
     const removeLabel = escapeHtml(t('actions.remove', 'إزالة'));
@@ -784,6 +1002,7 @@ function renderExpenseList() {
         <td>${label}</td>
         <td>${escapeHtml(amount)}</td>
         <td>${escapeHtml(sale)}</td>
+        <td>${escapeHtml(normalizeNumbers(String(days)))}</td>
         <td>${note || escapeHtml(t('common.placeholder.empty', '—'))}</td>
         <td>
           <button type="button" class="btn btn-sm btn-link text-danger" data-action="remove-expense" data-id="${id}" aria-label="${removeLabel}">✖</button>
@@ -792,13 +1011,14 @@ function renderExpenseList() {
   }).join('');
 
   dom.expenseList.innerHTML = `
-    <div class="table-responsive">
-      <table class="table table-sm table-hover align-middle project-services-table">
+      <div class="users-table-wrapper overflow-x-auto project-services-table-wrapper">
+      <table class="ui-table users-table surface-table table table-sm table-hover align-middle project-services-table">
         <thead class="table-light">
             <tr>
               <th>${escapeHtml(t('projects.expenses.table.headers.service', 'الخدمة'))}</th>
               <th>${escapeHtml(t('projects.expenses.table.headers.cost', 'التكلفة (SR)'))}</th>
               <th>${escapeHtml(t('projects.expenses.table.headers.sale', 'سعر البيع (SR)'))}</th>
+              <th>${escapeHtml(t('projects.expenses.table.headers.days', 'الأيام'))}</th>
               <th>${escapeHtml(t('projects.expenses.table.headers.note', 'ملاحظات'))}</th>
               <th>${escapeHtml(t('projects.expenses.table.headers.actions', 'الإجراءات'))}</th>
             </tr>
@@ -806,17 +1026,6 @@ function renderExpenseList() {
         <tbody>${rows}</tbody>
       </table>
     </div>`;
-}
-
-function renderChipList(container, items, templateFn) {
-  if (!container) return;
-  if (!items || items.length === 0) {
-    const emptyText = escapeHtml(getEmptyText(container));
-    container.innerHTML = `<span class="text-muted">${emptyText}</span>`;
-    return;
-  }
-
-  container.innerHTML = items.map((item) => templateFn(item)).join('');
 }
 
 export function refreshProjectSubmitButton() {
@@ -828,7 +1037,7 @@ export function refreshProjectSubmitButton() {
 }
 
 function calculateExpensesTotal() {
-  return state.expenses.reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0);
+  return state.expenses.reduce((sum, expense) => sum + calculateProjectServiceCost(expense), 0);
 }
 
 function normalizeEquipmentKey(value) {
@@ -843,19 +1052,60 @@ export function resolveSelectedEquipmentForApi() {
   const equipmentIndex = new Map(
     (state.equipment || []).map((item) => [normalizeEquipmentKey(item?.barcode), item])
   );
+  const equipmentById = new Map(
+    (state.equipment || [])
+      .filter((item) => item?.id != null)
+      .map((item) => [String(item.id), item])
+  );
 
   const missing = [];
   const items = [];
 
   state.selectedEquipment.forEach((selection) => {
-    const key = normalizeEquipmentKey(selection?.barcode);
-    if (!key) {
+    if (selection?.type === 'package') {
+      const packageItems = Array.isArray(selection.packageItems) ? selection.packageItems : [];
+      const resolvedPackageItems = [];
+      packageItems.forEach((pkgItem, packageItemIndex) => {
+        const childId = pkgItem?.equipmentId ?? pkgItem?.equipment_id ?? null;
+        const childBarcodeKey = normalizeEquipmentKey(pkgItem?.barcode ?? pkgItem?.normalizedBarcode);
+        const equipmentItem = childId != null
+          ? equipmentById.get(String(childId))
+          : equipmentIndex.get(childBarcodeKey);
+        if (!equipmentItem || equipmentItem.id == null) {
+          missing.push(pkgItem?.barcode || pkgItem?.desc || selection?.desc || '');
+          return;
+        }
+        resolvedPackageItems.push({
+          ...pkgItem,
+          equipmentId: equipmentItem.id,
+          equipment_id: equipmentItem.id,
+          barcode: pkgItem?.barcode ?? equipmentItem?.barcode ?? '',
+          normalizedBarcode: normalizeEquipmentKey(pkgItem?.barcode ?? equipmentItem?.barcode ?? ''),
+          qty: 1,
+          quantity: 1,
+          qtyPerPackage: 1,
+        });
+      });
+      if (resolvedPackageItems.length) {
+        items.push({
+          ...selection,
+          type: 'package',
+          qty: 1,
+          quantity: 1,
+          packageItems: resolvedPackageItems,
+        });
+      }
+      return;
+    }
+
+    const barcodeKey = normalizeEquipmentKey(selection?.barcode);
+    if (!barcodeKey) {
       missing.push(selection?.barcode || '');
       return;
     }
-    const equipmentItem = equipmentIndex.get(key);
+    const equipmentItem = equipmentIndex.get(barcodeKey);
     if (!equipmentItem || equipmentItem.id == null) {
-      missing.push(selection?.barcode || key);
+      missing.push(selection?.barcode || barcodeKey);
       return;
     }
 
@@ -863,6 +1113,9 @@ export function resolveSelectedEquipmentForApi() {
     items.push({
       equipmentId: equipmentItem.id,
       qty: Number.isInteger(quantity) && quantity > 0 ? quantity : 1,
+      unit_price: Number.isFinite(Number(selection?.price ?? selection?.unit_price)) ? Number(selection?.price ?? selection?.unit_price) : 0,
+      unit_cost: Number.isFinite(Number(selection?.cost ?? selection?.unit_cost)) ? Number(selection?.cost ?? selection?.unit_cost) : 0,
+      notes: selection?.notes ?? null,
     });
   });
 
@@ -879,6 +1132,9 @@ export function mapProjectEquipmentToApi(project) {
       return {
         equipmentId,
         qty: Number.isInteger(qty) && qty > 0 ? qty : 1,
+        unit_price: Number.isFinite(Number(item?.price ?? item?.unit_price ?? item?.unitPrice)) ? Number(item?.price ?? item?.unit_price ?? item?.unitPrice) : 0,
+        unit_cost: Number.isFinite(Number(item?.cost ?? item?.unit_cost ?? item?.unitCost)) ? Number(item?.cost ?? item?.unit_cost ?? item?.unitCost) : 0,
+        notes: item?.notes ?? null,
       };
     })
     .filter(Boolean);
@@ -887,7 +1143,7 @@ export function mapProjectEquipmentToApi(project) {
 export function calculateEquipmentEstimate() {
   return state.selectedEquipment.reduce((sum, item) => {
     const equipment = state.equipment.find((eq) => String(eq.barcode || '') === String(item.barcode));
-    const price = Number(equipment?.price || equipment?.daily_rate || equipment?.dailyRate || 0);
+    const price = Number(item?.price ?? item?.unit_price ?? equipment?.price ?? equipment?.daily_rate ?? equipment?.dailyRate ?? 0);
     return sum + price * (item.qty || 1);
   }, 0);
 }
@@ -941,11 +1197,18 @@ async function handleSubmitProject(event) {
 
   const expensesTotal = calculateExpensesTotal();
   const equipmentEstimate = calculateEquipmentEstimate();
+  const createSummary = getProjectCreateSummaryFromState();
+  const crewEstimate = createSummary.crewRevenue;
   // Prefer the accumulated total when available; fallback to current input
   const servicesClientPriceRaw = normalizeNumbers(dom.servicesClientPrice?.value || '');
   let servicesClientPrice = state.servicesClientPriceTotal || Number.parseFloat(servicesClientPriceRaw);
   if (!Number.isFinite(servicesClientPrice) || servicesClientPrice < 0) {
     servicesClientPrice = 0;
+  }
+  if (servicesClientPrice > 0 && (!Array.isArray(state.expenses) || state.expenses.length === 0)) {
+    showToast(t('projects.toast.productionServicesRequireRows', '⚠️ أضف الخدمات الإنتاجية كصفوف مع التكلفة وسعر البيع وعدد الأيام قبل حفظ المشروع'));
+    dom.expenseLabel?.focus();
+    return;
   }
   const applyTax = dom.taxCheckbox?.checked === true;
   const discountType = dom.discountType?.value === 'amount' ? 'amount' : 'percent';
@@ -966,6 +1229,7 @@ async function handleSubmitProject(event) {
 
   const finance = calculateProjectFinancials({
     equipmentEstimate,
+    crewEstimate,
     expensesTotal,
     servicesClientPrice,
     discountValue,
@@ -1012,6 +1276,21 @@ async function handleSubmitProject(event) {
     return;
   }
 
+  const unassignedCrew = getUnassignedProjectCrewAssignments();
+  if (unassignedCrew.length) {
+    const labels = unassignedCrew
+      .slice(0, 3)
+      .map((assignment) => assignment.positionLabel || assignment.position_name || assignment.role || t('reservations.crew.positionFallback', 'منصب بدون اسم'))
+      .join(t('reservations.list.crew.separator', '، '));
+    showToast(
+      t('technicians.picker.toast.assignAllRequired', '⚠️ يجب تعيين عضو طاقم لكل منصب قبل متابعة الحجز')
+        + (labels ? `: ${normalizeNumbers(labels)}${unassignedCrew.length > 3 ? '…' : ''}` : ''),
+      'warning',
+      5000
+    );
+    return;
+  }
+
   const isEditing = Boolean(state.editingProjectId);
   const existingProject = isEditing
     ? state.projects.find((proj) => String(proj.id) === String(state.editingProjectId))
@@ -1043,6 +1322,7 @@ async function handleSubmitProject(event) {
       amount: expense.amount,
       // Persist per-item sale price so backend stores sale_price in project_expenses
       salePrice: expense.salePrice,
+      days: resolveProjectServiceDays(expense.days ?? expense.service_days),
       note: expense.note || undefined,
     })),
     servicesClientPrice,
@@ -1055,7 +1335,9 @@ async function handleSubmitProject(event) {
     totalWithTax: finance.totalWithTax,
     confirmed: existingProject?.confirmed ?? false,
     technicians: state.selectedTechnicians,
+    crewAssignments: state.selectedTechnicians,
     equipment: equipmentForApi,
+    syncManagedReservation: true,
     paidAmount: paymentProgress.paidAmount,
     paidPercentage: paymentProgress.paidPercent,
     paymentProgressType: paymentProgress.paymentProgressType,
@@ -1094,10 +1376,7 @@ async function handleSubmitProject(event) {
       } catch (_) { /* تجاهل أي أخطاء غير متوقعة */ }
     }
 
-    const pendingLinkedReservations = await linkDraftReservationsToProject(projectIdentifier);
-    if (!pendingLinkedReservations) {
-      clearProjectFormDraft();
-    }
+    clearProjectFormDraft();
 
     state.editingProjectId = null;
     dom.form.reset();
@@ -1116,10 +1395,15 @@ async function handleSubmitProject(event) {
       await refreshProjectsFromApi();
     } catch (_) { /* ignore network errors here */ }
     state.projects = getProjectsState();
-    state.reservations = getReservationsState();
+    await refreshProjectManagedReservationState();
     renderProjects();
     updateSummary();
     document.dispatchEvent(new CustomEvent('projects:changed'));
+    if (!isEditing) {
+      document.dispatchEvent(new CustomEvent('projects:create:completed', {
+        detail: { projectId: projectIdentifier }
+      }));
+    }
   } catch (error) {
     console.error('❌ [projects] handleSubmitProject failed', error);
     const isAbort = error?.name === 'AbortError';
@@ -1168,7 +1452,7 @@ function saveProjectFormDraft(draft) {
 function clearProjectFormDraft() {
   if (typeof window === 'undefined' || !window.sessionStorage) return;
   window.sessionStorage.removeItem(PROJECT_FORM_DRAFT_STORAGE_KEY);
-  renderLinkedReservationDraftSummary();
+  renderProjectOperationalSummary();
 }
 
 function captureProjectFormDraft() {
@@ -1199,9 +1483,6 @@ function captureProjectFormDraft() {
     equipment: Array.isArray(state.selectedEquipment)
       ? state.selectedEquipment.map((item) => ({ ...item }))
       : [],
-    linkedReservationIds: Array.isArray(existingDraft.linkedReservationIds)
-      ? [...existingDraft.linkedReservationIds]
-      : [],
     savedAt: Date.now()
   };
 }
@@ -1209,7 +1490,7 @@ function captureProjectFormDraft() {
 export function restoreProjectFormDraft() {
   const draft = loadProjectFormDraft();
   if (!draft) {
-    renderLinkedReservationDraftSummary();
+    renderProjectOperationalSummary();
     return false;
   }
 
@@ -1247,301 +1528,55 @@ export function restoreProjectFormDraft() {
 
   state.expenses = Array.isArray(draft.expenses) ? draft.expenses.map((expense) => ({ ...expense })) : [];
   state.selectedTechnicians = Array.isArray(draft.technicians) ? [...draft.technicians] : [];
+  setSelectedTechnicians(state.selectedTechnicians);
   state.selectedEquipment = Array.isArray(draft.equipment)
     ? draft.equipment.map((item) => ({ ...item }))
     : [];
 
   syncProjectTaxAndShare('tax');
-  renderLinkedReservationDraftSummary();
+  renderProjectOperationalSummary();
   updateServicesClientTotalIndicator();
+  renderProjectCreateSummaryCard();
   return true;
 }
 
-export function bindLinkedReservationButton() {
-  if (!dom.linkedReservationBtn || dom.linkedReservationBtn.dataset.listenerAttached === 'true') return;
-  dom.linkedReservationBtn.addEventListener('click', handleLinkedReservationButtonClick);
-  dom.linkedReservationBtn.dataset.listenerAttached = 'true';
-}
+function renderProjectOperationalSummary() {
+  const equipmentSummary = dom.operationalEquipmentSummary || document.getElementById('project-operational-equipment-summary');
+  const crewSummary = dom.operationalCrewSummary || document.getElementById('project-operational-crew-summary');
 
-function handleLinkedReservationButtonClick(event) {
-  event.preventDefault();
-  const button = event.currentTarget;
-  // If visually disabled (linked exists), show a toast and exit
-  const isVisuallyDisabled = button?.classList?.contains('btn-disabled') || button?.getAttribute('aria-disabled') === 'true';
-  if (isVisuallyDisabled) {
-    showToast(t('projects.form.linkedReservation.buttonDisabledToast', '⚠️ المشروع مربوط بحجز مسبقاً'));
-    return;
-  }
-
-  const draft = captureProjectFormDraft();
-
-  const hasClient = (draft.customerId && draft.customerId !== '') || (draft.client && draft.client.trim());
-  if (!hasClient) {
-    showToast(t('projects.form.linkedReservation.missingClient', '⚠️ يرجى اختيار العميل قبل إنشاء الحجز'));
-    return;
-  }
-
-  const hasStart = draft.startDate && draft.startTime;
-  const hasEnd = draft.endDate && draft.endTime;
-  if (!hasStart || !hasEnd) {
-    showToast(t('projects.form.linkedReservation.missingSchedule', '⚠️ يرجى تحديد تاريخ ووقت البداية والنهاية قبل إنشاء الحجز'));
-    return;
-  }
-
-  saveProjectFormDraft(draft);
-
-  const context = buildLinkedReservationContext(draft);
-  let encodedContext = '';
-  try {
-    encodedContext = encodeURIComponent(JSON.stringify(context));
-  } catch (error) {
-    console.warn('⚠️ [projects] Unable to encode reservation context', error);
-  }
-
-  updatePreferences({
-    dashboardTab: 'reservations-tab',
-    dashboardSubTab: 'create-tab'
-  }).catch((error) => {
-    console.warn('⚠️ [projects] Failed to persist dashboard preference before redirect', error);
-  });
-
-  const search = encodedContext ? `?reservationProjectContext=${encodedContext}` : '';
-  window.location.href = `dashboard.html${search}#reservations`;
-}
-
-function buildLinkedReservationContext(draft) {
-  const start = combineDateTime(draft.startDate, draft.startTime) || null;
-  const end = combineDateTime(draft.endDate, draft.endTime) || null;
-  return {
-    fromProjectForm: true,
-    draftStorageKey: PROJECT_FORM_DRAFT_STORAGE_KEY,
-    returnUrl: DEFAULT_LINKED_RESERVATION_RETURN_URL,
-    start,
-    end,
-    customerId: draft.customerId || null,
-    customerName: draft.client || '',
-    clientCompany: draft.clientCompany || '',
-    projectTitle: draft.title || '',
-    projectType: draft.type || '',
-    description: draft.description || ''
-  };
-}
-
-async function linkDraftReservationsToProject(projectId) {
-  if (!projectId) return;
-  const draft = loadProjectFormDraft();
-  const reservationIds = Array.isArray(draft?.linkedReservationIds) ? draft.linkedReservationIds : [];
-  if (!reservationIds.length) return;
-
-  const pending = [];
-  let linkedAny = false;
-
-  for (const rawId of reservationIds) {
-    const reservationId = rawId != null ? String(rawId) : '';
-    if (!reservationId) continue;
-    try {
-      await updateReservationApi(reservationId, { project_id: projectId });
-      linkedAny = true;
-    } catch (error) {
-      console.error('❌ [projects] Failed to link reservation to project', reservationId, error);
-      pending.push(reservationId);
+  if (equipmentSummary) {
+    const items = Array.isArray(state.selectedEquipment) ? state.selectedEquipment : [];
+    if (!items.length) {
+      equipmentSummary.dataset.state = 'empty';
+      equipmentSummary.hidden = false;
+      equipmentSummary.textContent = t('projects.form.operationalBooking.equipmentEmpty', 'لم تتم إضافة معدات بعد.');
+    } else {
+      const totalQty = items.reduce((sum, item) => sum + (Number(item?.qty) || 1), 0);
+      equipmentSummary.dataset.state = 'filled';
+      equipmentSummary.hidden = true;
+      equipmentSummary.textContent = t('projects.form.operationalBooking.equipmentCount', 'معدات محددة: {count}')
+        .replace('{count}', normalizeNumbers(String(totalQty)));
     }
   }
 
-  if (linkedAny) {
-    try {
-      await refreshReservationsFromApi();
-      state.reservations = getReservationsState();
-      document.dispatchEvent(new CustomEvent('reservations:changed'));
-    } catch (error) {
-      console.warn('⚠️ [projects] Failed to refresh reservations after linking', error);
+  if (crewSummary) {
+    const assignments = Array.isArray(state.selectedTechnicians) ? state.selectedTechnicians : [];
+    if (!assignments.length) {
+      crewSummary.dataset.state = 'empty';
+      crewSummary.textContent = t('projects.form.operationalBooking.crewEmpty', 'لم تتم إضافة مناصب أو أعضاء فريق بعد.');
+    } else {
+      crewSummary.dataset.state = 'filled';
+      crewSummary.textContent = t('projects.form.operationalBooking.crewCount', 'مناصب/أعضاء فريق: {count}')
+        .replace('{count}', normalizeNumbers(String(assignments.length)));
     }
   }
 
-  const draftData = { linkedReservationIds: pending, savedAt: Date.now() };
-  saveProjectFormDraft(draftData);
-  if (pending.length) {
-    showToast(t('projects.toast.linkReservationFailed', '⚠️ تعذر ربط بعض الحجوزات بالمشروع، يرجى التحقق يدويًا'), 'error');
-  }
-
-  renderLinkedReservationDraftSummary();
-  return pending.length;
-}
-
-function buildReservationLookup() {
-  const index = new Map();
-
-  const register = (reservation) => {
-    if (!reservation) return;
-    const keys = [reservation.id, reservation.reservationId, reservation.reservation_id, reservation.reservation_code]
-      .map((key) => (key != null ? String(key) : ''))
-      .filter(Boolean);
-    keys.forEach((key) => {
-      if (!index.has(key)) {
-        index.set(key, reservation);
-      }
-    });
-  };
-
-  if (Array.isArray(state.reservations)) {
-    state.reservations.forEach(register);
-  }
-
-  const snapshot = loadData();
-  if (Array.isArray(snapshot?.reservations)) {
-    snapshot.reservations.forEach(register);
-  }
-
-  return index;
-}
-
-function resolveTechnicianDisplayName(entry) {
-  if (!entry || typeof entry !== 'object') return '';
-  const candidates = [
-    entry.name,
-    entry.full_name,
-    entry.fullName,
-    entry.technician_name,
-    entry.technicianName,
-    entry.label,
-    entry.displayName
-  ];
-
-  for (const candidate of candidates) {
-    if (typeof candidate === 'string' && candidate.trim()) {
-      return candidate.trim();
-    }
-  }
-
-  return '';
-}
-
-function getCrewNamesFromReservation(reservation) {
-  if (!reservation) return [];
-
-  const names = new Set();
-  const technicianDetails = Array.isArray(reservation.techniciansDetails) ? reservation.techniciansDetails : [];
-  technicianDetails.forEach((entry) => {
-    const name = resolveTechnicianDisplayName(entry);
-    if (name) {
-      names.add(name);
-    }
-  });
-
-  const technicianIds = Array.isArray(reservation.technicians) ? reservation.technicians : [];
-  if (technicianIds.length) {
-    const technicians = Array.isArray(state.technicians) ? state.technicians : [];
-    technicianIds.forEach((id) => {
-      const technician = technicians.find((tech) => String(tech?.id) === String(id));
-      const name = technician?.name || technician?.full_name || '';
-      if (name) {
-        names.add(String(name).trim());
-      }
-    });
-  }
-
-  return Array.from(names);
-}
-
-function renderLinkedReservationDraftSummary() {
-  const summaryEl = document.getElementById('project-linked-reservation-summary');
-  if (!summaryEl) return;
-
-  const draft = loadProjectFormDraft();
-  const button = dom.linkedReservationBtn;
-  let ids = Array.isArray(draft?.linkedReservationIds)
-    ? Array.from(new Set(draft.linkedReservationIds.map((value) => String(value)).filter(Boolean)))
-    : [];
-
-  // Cleanup: drop stale/deleted reservation IDs so the button can be re-enabled
-  const lookup = buildReservationLookup();
-  const filtered = ids.filter((id) => lookup.has(id));
-  if (filtered.length !== ids.length) {
-    ids = filtered;
-    const nextDraft = { ...(draft || {}), linkedReservationIds: ids, savedAt: Date.now() };
-    saveProjectFormDraft(nextDraft);
-  }
-
-  if (!ids.length) {
-    summaryEl.dataset.state = 'empty';
-    summaryEl.innerHTML = `<p class="project-linked-reservation__summary-empty">${escapeHtml(t('projects.form.linkedReservation.empty', 'لم يتم إنشاء حجوزات مرتبطة بعد.'))}</p>`;
-    if (button) {
-      button.disabled = false;
-      button.classList.remove('btn-disabled');
-      button.removeAttribute('aria-disabled');
-      button.title = '';
-    }
-    return;
-  }
-
-  const listItems = ids.map((id) => {
-    const reservation = lookup.get(id);
-    if (!reservation) {
-      return `
-        <li class="project-linked-reservation__summary-item">
-          <div class="project-linked-reservation__summary-item-title">#${escapeHtml(normalizeNumbers(id))}</div>
-          <div class="project-linked-reservation__summary-item-meta">
-            <span>${escapeHtml(t('projects.form.linkedReservation.pendingItem', 'تم إنشاء حجز جديد وسيتم ربطه بعد حفظ المشروع.'))}</span>
-          </div>
-        </li>`;
-    }
-
-    const code = reservation.reservation_code || reservation.reservationId || reservation.id || id;
-    const codeText = `#${normalizeNumbers(String(code))}`;
-    const items = Array.isArray(reservation.items) ? reservation.items : [];
-    const equipmentCount = items.reduce((sum, item) => sum + (Number(item?.qty) || 0), 0) || items.length || 0;
-    const crewNames = getCrewNamesFromReservation(reservation);
-    const technicianIds = Array.isArray(reservation.technicians) ? reservation.technicians : [];
-    const crewCount = technicianIds.length || crewNames.length || 0;
-    const totalValue = resolveReservationNetTotal(reservation);
-    const metaParts = [];
-
-    const equipmentLabel = t('projects.form.linkedReservation.meta.equipment', 'عدد المعدات: {count}')
-      .replace('{count}', normalizeNumbers(String(equipmentCount)));
-    metaParts.push(equipmentLabel);
-
-    const crewLabel = t('projects.form.linkedReservation.meta.crew', 'عدد الفريق: {count}')
-      .replace('{count}', normalizeNumbers(String(crewCount)));
-    metaParts.push(crewLabel);
-
-    if (crewNames.length) {
-      const separator = typeof getCurrentLanguage === 'function' && getCurrentLanguage() === 'en' ? ', ' : '، ';
-      const namesLabel = t('projects.form.linkedReservation.meta.crewNames', 'أسماء الفريق: {names}')
-        .replace('{names}', crewNames.join(separator));
-      metaParts.push(namesLabel);
-    }
-
-    if (Number.isFinite(totalValue)) {
-      const totalLabel = t('projects.form.linkedReservation.meta.total', 'إجمالي الحجز: {amount}')
-        .replace('{amount}', formatCurrency(totalValue));
-      metaParts.push(totalLabel);
-    }
-
-    return `
-      <li class="project-linked-reservation__summary-item">
-        <div class="project-linked-reservation__summary-item-title">${escapeHtml(codeText)}</div>
-        <div class="project-linked-reservation__summary-item-meta">
-          ${metaParts.map((part) => `<span>${escapeHtml(part)}</span>`).join('')}
-        </div>
-      </li>`;
-  }).join('');
-
-  summaryEl.dataset.state = 'has-linked';
-  summaryEl.innerHTML = `<ul class="project-linked-reservation__summary-list">${listItems}</ul>`;
-
-  if (button) {
-    // Keep button clickable to show toast, but style as disabled
-    button.disabled = false;
-    button.classList.add('btn-disabled');
-    button.setAttribute('aria-disabled', 'true');
-    button.setAttribute('data-allow-click', 'true');
-    button.title = t('projects.form.linkedReservation.buttonDisabled', '⚠️ المشروع مربوط بحجز مسبقاً');
-  }
+  renderProjectCreateSummaryCard();
 }
 
 function recalcServicesClientPriceTotal() {
   const total = Array.isArray(state.expenses)
-    ? state.expenses.reduce((sum, exp) => sum + (Number(exp?.salePrice) || 0), 0)
+    ? state.expenses.reduce((sum, exp) => sum + calculateProjectServiceSale(exp), 0)
     : 0;
   state.servicesClientPriceTotal = Math.round(total * 100) / 100;
 }

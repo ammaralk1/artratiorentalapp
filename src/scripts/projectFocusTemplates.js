@@ -7,8 +7,17 @@ import {
   escapeHtml,
   formatCurrencyLocalized
 } from './projectsCommon.js';
-import { calculateReservationTotal, DEFAULT_COMPANY_SHARE_PERCENT, calculateDraftFinancialBreakdown, calculatePaymentProgress, determinePaymentStatus } from './reservationsSummary.js';
+import {
+  calculateReservationTotal,
+  DEFAULT_COMPANY_SHARE_PERCENT,
+  calculateDraftFinancialBreakdown,
+  calculatePaymentProgress,
+  determinePaymentStatus
+} from './reservationsSummary.js';
 import { formatDateTime } from './projects/formatting.js';
+import { FOCUS_CARDS_PER_PAGE } from './projects/constants.js';
+import { buildProjectsPageWindow, resolveProjectOverheadSettings } from './projects/helpers.js';
+import { calculateProjectLineFinancials } from './projects/financials.js';
 import { isReservationCompleted, resolveReservationProjectState } from './reservationsShared.js';
 import { getReservationsState, updateReservationApi } from './reservationsService.js';
 
@@ -140,9 +149,18 @@ export function buildProjectFocusCard(project, {
   const reservationsCount = reservationList.length;
   const projectId = getProjectIdentifier(project);
   const projectIdAttr = projectId ? escapeHtml(projectId) : '';
-  const status = determineProjectStatus(project);
-  const statusLabel = t(`projects.status.${status}`, statusLabelsFallback[status]);
-  const statusClass = statusBadgeClass[status] || 'bg-secondary';
+  const lifecycle = resolveProjectFocusLifecycle(project);
+  const status = lifecycle.status;
+  const statusKey = lifecycle.statusKey;
+  const statusClass = statusKey === 'upcoming'
+    ? 'timeline-status-badge timeline-status-badge--upcoming'
+    : statusKey === 'ongoing'
+      ? 'timeline-status-badge timeline-status-badge--ongoing'
+      : statusKey === 'completed'
+        ? 'timeline-status-badge timeline-status-badge--completed'
+        : statusKey === 'cancelled'
+          ? 'timeline-status-badge timeline-status-badge--cancelled'
+          : 'timeline-status-badge timeline-status-badge--conflict';
   // Derive payment status exactly like Projects page cards
   const baseTotals = resolveProjectTotals(project) || {};
   const projectTaxableBase = Number(baseTotals.subtotal || 0);
@@ -166,22 +184,31 @@ export function buildProjectFocusCard(project, {
     paidPercent: projProgress.paidPercent,
     totalAmount: combinedTotalWithTax,
   });
-  const paymentStatusLabel = t(
-    `projects.paymentStatus.${paymentStatus}`,
-    paymentStatus === 'paid' ? 'Paid' : paymentStatus === 'partial' ? 'Partially Paid' : 'Unpaid'
-  );
+  const paymentStatusLabel = paymentStatus === 'paid'
+    ? t('reservations.list.payment.paid', '💳 مدفوع')
+    : paymentStatus === 'partial'
+      ? t('reservations.list.payment.partial', '💳 مدفوع جزئياً')
+      : t('reservations.list.payment.unpaid', '💳 غير مدفوع');
   const paymentChipBaseClass = paymentStatus === 'paid'
     ? 'status-paid'
     : paymentStatus === 'partial'
       ? 'status-partial'
       : 'status-unpaid';
-  const isCompleted = status === 'completed';
-  const shouldHighlightUnpaid = isCompleted && paymentStatus !== 'paid';
-  const paymentChipClass = `${paymentChipBaseClass}${shouldHighlightUnpaid ? ' project-payment-chip--alert' : ''}`;
-  const cardStateClasses = [paymentStatus === 'paid' ? 'project-focus-card--paid' : 'project-focus-card--unpaid'];
+  const isCompleted = statusKey === 'completed';
+  const paymentChipClass = paymentChipBaseClass;
+  const lifecycleCardClass = statusKey === 'cancelled'
+    ? 'project-focus-card--cancelled'
+    : statusKey === 'completed'
+      ? 'project-focus-card--completed'
+      : statusKey === 'ongoing'
+        ? 'project-focus-card--ongoing'
+        : statusKey === 'conflict'
+          ? 'project-focus-card--conflict'
+          : 'project-focus-card--upcoming';
+  const cardStateClasses = [lifecycleCardClass];
 
   const confirmed = project?.confirmed === true || project?.confirmed === 'true';
-  if (confirmed) {
+  if (confirmed && statusKey !== 'cancelled' && statusKey !== 'completed') {
     cardStateClasses.push('project-focus-card--confirmed');
   }
 
@@ -194,7 +221,14 @@ export function buildProjectFocusCard(project, {
   const typeLabel = getProjectTypeLabel(project?.type);
   // Hide category/type badge on top to match Projects page; type will be shown in rows
   const categoryBadge = '';
-  const statusChip = `<span class="${statusClass}">${escapeHtml(statusLabel)}</span>`;
+  const statusText = statusKey === 'upcoming'
+    ? t('projects.focus.status.active', 'نشط')
+    : statusKey === 'ongoing'
+      ? t('projects.focus.status.running', 'جاري')
+      : statusKey === 'completed'
+        ? t('projects.focus.status.closed', 'مغلق')
+        : t(`projects.status.${statusKey}`, statusLabelsFallback[statusKey] || statusKey);
+  const statusChip = `<span class="${statusClass}">${escapeHtml(statusText)}</span>`;
   const paymentChip = `<span class="reservation-chip ${paymentChipClass} project-focus-card__payment-chip">${escapeHtml(paymentStatusLabel)}</span>`;
 
   const title = (project?.title || '').trim() || t('projects.fallback.untitled', 'Untitled project');
@@ -251,38 +285,30 @@ export function buildProjectFocusCard(project, {
   const projectTotals = resolveProjectTotals(project);
   // Compute final total (same logic as details):
   const servicesClientPrice = Number(project?.servicesClientPrice ?? 0);
-  const grossBeforeDiscount = Number((totals.equipment + totals.crew + servicesClientPrice).toFixed(2));
   const discountValueRaw = Number.parseFloat(project?.discount ?? project?.discountValue ?? 0) || 0;
   const discountType = project?.discountType === 'amount' ? 'amount' : 'percent';
-  let discountAmount = discountType === 'amount' ? discountValueRaw : (grossBeforeDiscount * (discountValueRaw / 100));
-  if (!Number.isFinite(discountAmount) || discountAmount < 0) discountAmount = 0;
-  if (discountAmount > grossBeforeDiscount) discountAmount = grossBeforeDiscount;
-  const baseAfterDiscount = Math.max(0, grossBeforeDiscount - discountAmount);
-
-  const shareEnabled = project?.companyShareEnabled === true
-    || project?.companyShareEnabled === 'true'
-    || project?.company_share_enabled === true
-    || project?.company_share_enabled === 'true';
-  const rawShare = Number.parseFloat(
-    project?.companySharePercent
-    ?? project?.company_share_percent
-    ?? project?.companyShare
-    ?? project?.company_share
-    ?? 0
-  ) || 0;
-  const sharePercent = (shareEnabled && rawShare > 0) ? rawShare : 0;
-  const companyShareAmount = Number(((baseAfterDiscount) * (sharePercent / 100)).toFixed(2));
-  const taxAmountAfterShare = projectTotals.applyTax
-    ? Number(((baseAfterDiscount + companyShareAmount) * PROJECT_TAX_RATE).toFixed(2))
-    : 0;
-  const finalTotal = Number((baseAfterDiscount + companyShareAmount + taxAmountAfterShare).toFixed(2));
+  const { sharePercent, enabled: companyShareEnabled } = resolveProjectOverheadSettings(project, { applyTaxRaw: projectTotals.applyTax });
+  const clientAmounts = calculateProjectLineFinancials({
+    equipmentRevenue: totals.equipment,
+    crewRevenue: totals.crew,
+    servicesRevenue: servicesClientPrice,
+    discountValue: discountValueRaw,
+    discountType,
+    applyTax: projectTotals.applyTax,
+    companyShareEnabled,
+    companySharePercent: sharePercent,
+  });
+  const discountAmount = clientAmounts.discountAmount;
+  const baseAfterDiscount = clientAmounts.subtotalAfterDiscount;
+  const companyShareAmount = clientAmounts.companyShareAmount;
+  const taxAmountAfterShare = clientAmounts.taxAmount;
+  const finalTotal = clientAmounts.totalWithTax;
 
   const { dateHtml: projectDateHtml, timeText: projectTimeText } = buildProjectDateTimeRows(project?.start, project?.end);
   const metaRows = [
-    projectCodeDisplay ? { icon: '🆔', label: t('projectCards.meta.code', 'رقم المشروع'), value: `#${projectCodeDisplay}` } : null,
-    customerName ? { icon: '👤', label: t('projectCards.meta.client', 'العميل'), value: customerName } : null,
+    customerName ? { icon: '👤', label: t('projects.details.client', 'العميل'), value: customerName } : null,
     // Company row hidden to match Projects page card
-    typeLabel ? { icon: '🏷️', label: t('projects.details.type', 'نوع المشروع'), value: `<span class=\"project-type-chip project-type-chip--${(project.type || 'default')}\">${escapeHtml(typeLabel)}</span>` } : null,
+    typeLabel ? { icon: '🏷️', label: t('projects.details.type', 'نوع المشروع'), value: `<span class=\"project-type-chip project-type-chip--${getProjectTypeClass(project.type)}\">${escapeHtml(typeLabel)}</span>` } : null,
     { icon: '📅', label: t('projects.focus.summary.range', 'الفترة الزمنية'), value: projectDateHtml },
     projectTimeText ? { icon: '⏰', label: t('projects.focus.summary.time', 'الوقت'), value: projectTimeText } : null
   ].filter(Boolean);
@@ -318,11 +344,17 @@ export function buildProjectFocusCard(project, {
     buildFocusSectionHtml('projects.focus.summary.payment', 'الملخص المالي', financialRowsHtml)
   ].filter(Boolean).join('');
 
-  const confirmedLabel = t('projects.focus.confirmed', '✅ مشروع مؤكد');
-  const pendingLabel = t('projects.focus.pending', '⌛ بانتظار التأكيد');
-  const confirmChipClass = confirmed ? 'status-confirmed' : 'status-pending';
-  const confirmText = confirmed ? confirmedLabel : pendingLabel;
-  const actionsHtml = `<div class="project-focus-card__actions"><span class="reservation-chip ${confirmChipClass} project-focus-card__confirm-indicator">${escapeHtml(confirmText)}</span></div>`;
+  let confirmationControl = '';
+  if (statusKey === 'cancelled') {
+    confirmationControl = `<span class="reservation-chip status-cancelled project-focus-card__confirm-indicator">${escapeHtml(t('projects.focus.cancelled', 'مشروع ملغي', 'Cancelled project'))}</span>`;
+  } else if (!confirmed) {
+    confirmationControl = `<button class=\"btn btn-sm btn-success project-focus-card__confirm-btn\" data-action=\"confirm-project\" data-id=\"${projectIdAttr}\">${escapeHtml(t('projects.focus.actions.confirm', '✔️ تأكيد المشروع'))}</button>`;
+  } else if (statusKey !== 'completed') {
+    confirmationControl = `<button class=\"btn btn-sm btn-warning project-focus-card__confirm-btn\" data-action=\"close-project\" data-id=\"${projectIdAttr}\">${escapeHtml(t('projects.actions.close', '🔒 إغلاق المشروع'))}</button>`;
+  } else {
+    confirmationControl = `<span class=\"reservation-chip status-completed project-focus-card__confirm-indicator\">${escapeHtml(t('projects.tag.closed', 'مغلق'))}</span>`;
+  }
+  const actionsHtml = `<div class="project-focus-card__actions project-focus-card__actions--single">${confirmationControl}</div>`;
 
   const topBadges = [projectCodeBadge, categoryBadge, statusChip, paymentChip]
     .filter(Boolean)
@@ -345,6 +377,192 @@ export function buildProjectFocusCard(project, {
       </article>
     </div>
   `;
+}
+
+function getProjectOrderValue(project) {
+  const candidates = [project?.start, project?.end, project?.createdAt, project?.created_at, project?.updatedAt, project?.updated_at];
+  for (const value of candidates) {
+    if (!value) continue;
+    const timestamp = new Date(value).getTime();
+    if (Number.isFinite(timestamp)) return timestamp;
+  }
+  const numericId = Number(project?.id ?? project?.projectId ?? project?.project_id ?? 0);
+  return Number.isFinite(numericId) ? numericId : 0;
+}
+
+function stripReservationTagDecorators(value) {
+  return String(value || '')
+    .replace(/^[\p{Emoji_Presentation}\p{Extended_Pictographic}\uFE0F\u200D#*0-9]+\s*/gu, '')
+    .trim();
+}
+
+function resolveProjectFocusLifecycle(project) {
+  const statusBase = determineProjectStatus(project);
+  const status = (project?.cancelled === true || project?.status === 'cancelled' || project?.status === 'canceled')
+    ? 'cancelled'
+    : statusBase;
+  const statusKey = status;
+  const group = (statusKey === 'completed' || statusKey === 'cancelled') ? 'archive' : 'live';
+  return { status, statusKey, group };
+}
+
+function sortProjectsForFocusGroup(projects, groupKey) {
+  const priorityMap = groupKey === 'archive'
+    ? { completed: 0, cancelled: 1 }
+    : { ongoing: 0, conflict: 1, upcoming: 2 };
+
+  return [...projects].sort((left, right) => {
+    const leftLifecycle = resolveProjectFocusLifecycle(left);
+    const rightLifecycle = resolveProjectFocusLifecycle(right);
+    const leftPriority = priorityMap[leftLifecycle.statusKey] ?? 99;
+    const rightPriority = priorityMap[rightLifecycle.statusKey] ?? 99;
+    if (leftPriority !== rightPriority) return leftPriority - rightPriority;
+    return getProjectOrderValue(right) - getProjectOrderValue(left);
+  });
+}
+
+function getProjectTypeClass(type) {
+  const normalizedType = String(type || '').trim().toLowerCase();
+  return ['commercial', 'coverage', 'photography', 'social', 'event', 'conference'].includes(normalizedType)
+    ? normalizedType
+    : 'default';
+}
+
+function ensureProjectFocusGroupPagination(paginationState, sectionKey) {
+  if (!paginationState[sectionKey]) {
+    paginationState[sectionKey] = {
+      page: 1,
+      pageSize: FOCUS_CARDS_PER_PAGE,
+      totalPages: 1,
+    };
+  }
+  if (!paginationState[sectionKey].pageSize || paginationState[sectionKey].pageSize <= 0) {
+    paginationState[sectionKey].pageSize = FOCUS_CARDS_PER_PAGE;
+  }
+  return paginationState[sectionKey];
+}
+
+function buildProjectFocusGroupSections(projects) {
+  const groups = {
+    live: [],
+    archive: [],
+  };
+
+  projects.forEach((project) => {
+    const lifecycle = resolveProjectFocusLifecycle(project);
+    groups[lifecycle.group].push(project);
+  });
+
+  return [
+    {
+      key: 'live',
+      title: t('projects.focus.sections.liveTitle', '⚡ مراجعة سريعة للمشاريع الحية'),
+      hint: t('projects.focus.sections.liveHint', 'يعرض المشاريع الجارية والنشطة لتبدأ بالمهم أولاً.'),
+      empty: t('projects.focus.sections.emptyLive', 'لا توجد مشاريع جارية أو نشطة ضمن النتائج الحالية.'),
+      projects: sortProjectsForFocusGroup(groups.live, 'live'),
+    },
+    {
+      key: 'archive',
+      title: t('projects.focus.sections.archiveTitle', '🗂️ الأرشيف'),
+      hint: t('projects.focus.sections.archiveHint', 'يعرض المشاريع المغلقة والملغاة بشكل منفصل للمراجعة الهادئة.'),
+      empty: t('projects.focus.sections.emptyArchive', 'لا توجد مشاريع مغلقة أو ملغاة ضمن النتائج الحالية.'),
+      projects: sortProjectsForFocusGroup(groups.archive, 'archive'),
+    }
+  ];
+}
+
+function renderProjectFocusGroupPagination({ sectionKey, totalItems, totalPages, currentPage, pageSize }) {
+  if (totalPages <= 1) return '';
+
+  const navLabel = t('projects.pagination.navigation', 'Projects pagination');
+  const prevLabel = t('projects.pagination.prev', 'Previous page');
+  const nextLabel = t('projects.pagination.next', 'Next page');
+  const pageLabelTemplate = t('projects.pagination.page', 'Page {page}');
+  const rangeTemplate = t('projects.pagination.range', 'Showing {from}-{to} of {total}');
+  const rangeStart = totalItems === 0 ? 0 : ((currentPage - 1) * pageSize) + 1;
+  const rangeEnd = totalItems === 0 ? 0 : Math.min(totalItems, currentPage * pageSize);
+  const rangeText = rangeTemplate
+    .replace('{from}', normalizeNumbers(String(rangeStart)))
+    .replace('{to}', normalizeNumbers(String(rangeEnd)))
+    .replace('{total}', normalizeNumbers(String(totalItems)));
+
+  const buttonsHtml = buildProjectsPageWindow(currentPage, totalPages)
+    .filter((page) => page >= 1 && page <= totalPages)
+    .map((page) => {
+      const active = page === currentPage;
+      const pageLabel = pageLabelTemplate.replace('{page}', normalizeNumbers(String(page)));
+      return `<button type="button" class="btn btn-sm ${active ? 'btn-primary' : 'btn-outline-primary'}" data-focus-section="${escapeHtml(sectionKey)}" data-focus-section-page="${page}" aria-label="${escapeHtml(pageLabel)}" ${active ? 'aria-current="page"' : ''}>${normalizeNumbers(String(page))}</button>`;
+    })
+    .join('');
+
+  return `
+    <div class="list-pagination project-focus-group__pagination" data-focus-section-pagination="${escapeHtml(sectionKey)}">
+      <div class="list-pagination__summary text-muted small">${escapeHtml(rangeText)}</div>
+      <div class="list-pagination__controls btn-group" role="group" aria-label="${escapeHtml(navLabel)}">
+        <button type="button" class="btn btn-sm btn-outline-primary" data-focus-section="${escapeHtml(sectionKey)}" data-focus-section-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''} aria-label="${escapeHtml(prevLabel)}">‹</button>
+        ${buttonsHtml}
+        <button type="button" class="btn btn-sm btn-outline-primary" data-focus-section="${escapeHtml(sectionKey)}" data-focus-section-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''} aria-label="${escapeHtml(nextLabel)}">›</button>
+      </div>
+    </div>
+  `;
+}
+
+export function buildProjectFocusGroups(projects, { paginationState = {}, renderCard } = {}) {
+  const cardRenderer = typeof renderCard === 'function' ? renderCard : (project) => buildProjectFocusCard(project);
+  return buildProjectFocusGroupSections(projects).map((section) => {
+    const pagination = ensureProjectFocusGroupPagination(paginationState, section.key);
+    const pageSize = Number.isFinite(pagination.pageSize) ? pagination.pageSize : FOCUS_CARDS_PER_PAGE;
+    const totalItems = section.projects.length;
+    const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+    const currentPage = Math.min(Math.max(1, pagination.page || 1), totalPages);
+    pagination.page = currentPage;
+    pagination.totalPages = totalPages;
+    const pagedProjects = section.projects.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+    return `
+      <section class="project-focus-group project-focus-group--${escapeHtml(section.key)}">
+        <header class="project-focus-group__header">
+          <div class="project-focus-group__title-wrap">
+            <h6 class="project-focus-group__title">${escapeHtml(section.title)}</h6>
+            <p class="project-focus-group__hint">${escapeHtml(section.hint)}</p>
+          </div>
+          <span class="ui-badge ui-badge--soft badge-soft project-focus-group__count">${normalizeNumbers(String(totalItems))}</span>
+        </header>
+        ${
+          pagedProjects.length
+            ? `<div class="project-card-grid project-focus-group__grid">${pagedProjects.map((project) => cardRenderer(project)).join('')}</div>`
+            : `<p class="linked-records-empty-copy project-card-grid__item project-card-grid__item--full project-card-grid__empty-line project-focus-group__empty">${escapeHtml(section.empty)}</p>`
+        }
+        ${renderProjectFocusGroupPagination({
+          sectionKey: section.key,
+          totalItems,
+          totalPages,
+          currentPage,
+          pageSize
+        })}
+      </section>
+    `;
+  }).join('');
+}
+
+export function handleProjectFocusGroupPaginationClick(event, { paginationState = {}, onChange } = {}) {
+  const target = event?.target instanceof HTMLElement
+    ? event.target.closest('button[data-focus-section-page]')
+    : null;
+  if (!target || target.disabled) return false;
+
+  const sectionKey = target.dataset.focusSection;
+  const page = Number.parseInt(target.dataset.focusSectionPage || '0', 10);
+  if (!sectionKey || !Number.isInteger(page) || page < 1) return false;
+
+  const sectionPagination = ensureProjectFocusGroupPagination(paginationState, sectionKey);
+  if (page > sectionPagination.totalPages || page === sectionPagination.page) return true;
+
+  sectionPagination.page = page;
+  if (typeof onChange === 'function') {
+    onChange({ sectionKey, page, target });
+  }
+  return true;
 }
 
 function buildProjectRow(icon, label, value) {
@@ -492,41 +710,34 @@ export function buildProjectDetailsMarkup(project, { customer = null, reservatio
     }, { equipment: 0, crew: 0, crewCost: 0 });
 
     const expensesTotal = Number(projectTotals.expensesTotal || 0);
-    const gross = Number((agg.equipment + agg.crew).toFixed(2));
-
     // Project discount on gross
     const discountVal = Number.parseFloat(project?.discount ?? project?.discountValue ?? 0) || 0;
     const discountType = project?.discountType === 'amount' ? 'amount' : 'percent';
-    let discountAmount = discountType === 'amount' ? discountVal : (gross * (discountVal / 100));
-    if (!Number.isFinite(discountAmount) || discountAmount < 0) discountAmount = 0;
-    if (discountAmount > gross) discountAmount = gross;
 
-    // Company share after discount (coupled with VAT)
     const applyTaxRaw = project?.applyTax === true || project?.applyTax === 'true';
-    const shareEnabled = project?.companyShareEnabled === true
-      || project?.companyShareEnabled === 'true'
-      || project?.company_share_enabled === true
-      || project?.company_share_enabled === 'true';
-    const rawShare = Number.parseFloat(
-      project?.companySharePercent
-      ?? project?.company_share_percent
-      ?? project?.companyShare
-      ?? project?.company_share
-      ?? 0
-    ) || 0;
-    const applyTax = applyTaxRaw || (shareEnabled && rawShare > 0);
-    const sharePercent = (shareEnabled && applyTax && rawShare > 0) ? rawShare : 0;
-    const baseAfterDiscount = Math.max(0, gross - discountAmount);
-    const companyShareAmount = Number(((baseAfterDiscount) * (sharePercent / 100)).toFixed(2));
+    const { applyTax, sharePercent, enabled: companyShareEnabled } = resolveProjectOverheadSettings(project, { applyTaxRaw });
+    const clientAmounts = calculateProjectLineFinancials({
+      equipmentRevenue: agg.equipment,
+      crewRevenue: agg.crew,
+      discountValue: discountVal,
+      discountType,
+      applyTax,
+      companyShareEnabled,
+      companySharePercent: sharePercent,
+      crewCost: agg.crewCost,
+      servicesCost: expensesTotal,
+    });
+    const discountAmount = clientAmounts.discountAmount;
+    const baseAfterDiscount = clientAmounts.subtotalAfterDiscount;
+    const companyShareAmount = clientAmounts.companyShareAmount;
 
-    // VAT after company share
-    const taxAmount = applyTax ? Number(((baseAfterDiscount + companyShareAmount) * PROJECT_TAX_RATE).toFixed(2)) : 0;
+    // VAT after operating overhead
+    const taxAmount = clientAmounts.taxAmount;
 
-    // Net profit = gross - discount - share - VAT - expenses - crew cost
-    const netProfit = Number((baseAfterDiscount - companyShareAmount - taxAmount - expensesTotal - agg.crewCost).toFixed(2));
+    // Net profit excludes VAT and treats operating overhead as an internal expense.
+    const netProfit = clientAmounts.marginBeforeTax;
 
-    // Final total = gross - discount + share + VAT
-    const finalTotal = Number((baseAfterDiscount + companyShareAmount + taxAmount).toFixed(2));
+    const finalTotal = clientAmounts.totalWithTax;
 
     if (agg.equipment > 0) summaryDetails.push({ icon: '🎛️', label: t('projects.details.summary.equipmentTotal', 'إجمالي المعدات'), value: formatCurrencyLocalized(agg.equipment) });
     if (agg.crew > 0) summaryDetails.push({ icon: '😎', label: t('projects.details.summary.crewTotal', 'إجمالي الفريق'), value: formatCurrencyLocalized(agg.crew) });
@@ -534,7 +745,7 @@ export function buildProjectDetailsMarkup(project, { customer = null, reservatio
     if (expensesTotal > 0) summaryDetails.push({ icon: '🧾', label: t('projects.details.summary.expensesTotal', 'تكلفة الخدمات الإنتاجية'), value: formatCurrencyLocalized(expensesTotal) });
     summaryDetails.push({ icon: '🧮', label: t('projects.details.summary.gross', 'الإجمالي'), value: formatCurrencyLocalized(gross) });
     if (discountAmount > 0) summaryDetails.push({ icon: '🏷️', label: t('projects.details.summary.discount', 'الخصم'), value: `−${formatCurrencyLocalized(discountAmount)}` });
-    if (companyShareAmount > 0) summaryDetails.push({ icon: '🏦', label: t('projects.details.summary.companyShare', 'نسبة الشركة'), value: `−${formatCurrencyLocalized(companyShareAmount)}` });
+    if (companyShareAmount > 0) summaryDetails.push({ icon: '🏦', label: t('projects.details.summary.companyShare', 'المصاريف التشغيلية'), value: `−${formatCurrencyLocalized(companyShareAmount)}` });
     if (taxAmount > 0) summaryDetails.push({ icon: '💸', label: t('projects.details.summary.tax', 'الضريبة (15٪)'), value: `−${formatCurrencyLocalized(taxAmount)}` });
     summaryDetails.push({ icon: '💵', label: t('projects.details.summary.netProfit', 'صافي الربح'), value: formatCurrencyLocalized(netProfit) });
     summaryDetails.push({ icon: '💰', label: t('projects.details.summary.finalTotal', 'المجموع النهائي'), value: formatCurrencyLocalized(finalTotal) });
@@ -632,26 +843,38 @@ export function buildProjectReservationCard(reservation, index = -1, project = n
   const itemsLabel = t('projects.details.reservations.itemsCount', '{count} معدة').replace('{count}', itemsCount);
   const crewLabel = t('projects.details.reservations.crewCount', '{count} من الطاقم').replace('{count}', crewCountValue);
 
+  const rawStatus = String(reservation?.status || reservation?.reservationStatus || reservation?.state || '').trim().toLowerCase();
+  const cancelled = reservation?.cancelled === true
+    || reservation?.cancelled === 'true'
+    || rawStatus === 'cancelled'
+    || rawStatus === 'canceled'
+    || rawStatus === 'ملغي'
+    || rawStatus === 'ملغى';
+  const completed = !cancelled && isReservationCompleted(reservation);
   const { effectiveConfirmed: statusConfirmed } = resolveReservationProjectState(reservation, project);
-  const statusLabel = statusConfirmed
-    ? t('reservations.list.status.confirmed', '✅ مؤكد')
-    : t('reservations.list.status.pending', '⏳ غير مؤكد');
-  const statusClass = statusConfirmed
-    ? 'project-reservation-card__badge--confirmed'
-    : 'project-reservation-card__badge--pending';
+  const statusKey = cancelled
+    ? 'cancelled'
+    : completed
+      ? 'completed'
+      : statusConfirmed
+        ? 'confirmed'
+        : 'pending';
+  const statusLabel = statusKey === 'cancelled'
+    ? stripReservationTagDecorators(t('reservations.list.lifecycle.cancelled', 'ملغي'))
+    : statusKey === 'completed'
+      ? stripReservationTagDecorators(t('reservations.list.lifecycle.closed', 'مغلق'))
+      : statusKey === 'confirmed'
+        ? t('reservations.list.status.confirmed', '✅ مؤكد')
+        : t('reservations.list.status.pending', '⏳ غير مؤكد');
+  const statusClass = `reservation-chip status-${statusKey} project-reservation-card__badge--${statusKey}`;
 
   const paid = reservation?.paid === true || reservation?.paid === 'paid';
   const paidLabel = paid
     ? t('reservations.list.payment.paid', '💳 مدفوع')
     : t('reservations.list.payment.unpaid', '💳 غير مدفوع');
   const paidClass = paid
-    ? 'project-reservation-card__badge--paid'
-    : 'project-reservation-card__badge--unpaid';
-
-  const completed = isReservationCompleted(reservation);
-  const completedBadge = completed
-    ? `<span class="project-reservation-card__badge project-reservation-card__badge--completed">${escapeHtml(t('reservations.list.status.completed', '📁 مغلق'))}</span>`
-    : '';
+    ? 'reservation-chip status-paid project-reservation-card__badge--paid'
+    : 'reservation-chip status-unpaid project-reservation-card__badge--unpaid';
 
   const indexAttr = Number.isInteger(index) && index >= 0 ? ` data-index="${index}"` : '';
   const viewButton = `<button type="button" class="btn btn-sm btn-outline-primary" data-action="view-reservation" data-ignore-project-modal="true" data-reservation-id="${escapeHtml(String(reservationIdentifier ?? ''))}"${indexAttr}>${escapeHtml(t('projects.details.reservations.view', 'عرض الحجز'))}</button>`;
@@ -663,7 +886,6 @@ export function buildProjectReservationCard(reservation, index = -1, project = n
         <div class="project-reservation-card__badges">
           <span class="project-reservation-card__badge ${statusClass}">${escapeHtml(statusLabel)}</span>
           <span class="project-reservation-card__badge ${paidClass}">${escapeHtml(paidLabel)}</span>
-          ${completedBadge}
         </div>
       </div>
       <div class="project-reservation-card__range">${escapeHtml(rangeLabel)}</div>
@@ -693,69 +915,40 @@ export function renderProjectInfoRow(icon, label, value) {
 export function resolveProjectTotals(project) {
   const equipmentEstimate = Number(project?.equipmentEstimate) || 0;
   const expensesTotal = calculateProjectExpenses(project);
-  const baseSubtotal = equipmentEstimate + expensesTotal;
+  const servicesClientPrice = Number(project?.servicesClientPrice ?? project?.services_client_price ?? 0) || 0;
   const applyTaxRaw = project?.applyTax === true || project?.applyTax === 'true';
 
   const discountValue = Number.parseFloat(project?.discount ?? project?.discountValue ?? 0) || 0;
   const discountType = project?.discountType === 'amount' ? 'amount' : 'percent';
-  let discountAmount = discountType === 'amount'
-    ? discountValue
-    : baseSubtotal * (discountValue / 100);
-  if (!Number.isFinite(discountAmount) || discountAmount < 0) {
-    discountAmount = 0;
-  }
-  if (discountAmount > baseSubtotal) {
-    discountAmount = baseSubtotal;
-  }
+  const { applyTax, sharePercent, enabled: companyShareEnabled } = resolveProjectOverheadSettings(project, { applyTaxRaw });
+  const clientAmounts = calculateProjectLineFinancials({
+    equipmentRevenue: equipmentEstimate,
+    servicesRevenue: servicesClientPrice,
+    servicesCost: expensesTotal,
+    discountValue,
+    discountType,
+    applyTax,
+    companyShareEnabled,
+    companySharePercent: sharePercent,
+  });
+  const discountAmount = clientAmounts.discountAmount;
+  const subtotalAfterDiscount = clientAmounts.subtotalAfterDiscount;
+  const companyShareAmount = clientAmounts.companyShareAmount;
 
-  const subtotalAfterDiscount = Math.max(0, baseSubtotal - discountAmount);
-
-  const companyShareEnabled = project?.companyShareEnabled === true
-    || project?.companyShareEnabled === 'true'
-    || project?.company_share_enabled === true
-    || project?.company_share_enabled === 'true';
-  const rawSharePercent = Number.parseFloat(
-    project?.companySharePercent
-      ?? project?.company_share_percent
-      ?? project?.companyShare
-      ?? project?.company_share
-      ?? 0
-  ) || 0;
-  // Couple VAT/share: if share is set, VAT is effectively ON
-  const applyTax = applyTaxRaw || (companyShareEnabled && rawSharePercent > 0);
-  const sharePercent = companyShareEnabled && applyTax && rawSharePercent > 0 ? rawSharePercent : 0;
-  const companyShareAmount = sharePercent > 0
-    ? Number((subtotalAfterDiscount * (sharePercent / 100)).toFixed(2))
-    : 0;
-
-  const subtotal = subtotalAfterDiscount + companyShareAmount;
-
-  let taxAmount = applyTax ? subtotal * PROJECT_TAX_RATE : 0;
-  if (!Number.isFinite(taxAmount) || taxAmount < 0) {
-    taxAmount = 0;
-  }
-  taxAmount = Number(taxAmount.toFixed(2));
-
-  let totalWithTax = applyTax ? Number(project?.totalWithTax) : subtotal;
-  if (applyTax) {
-    if (!Number.isFinite(totalWithTax) || totalWithTax <= 0) {
-      totalWithTax = Number((subtotal + taxAmount).toFixed(2));
-    }
-  } else {
-    totalWithTax = subtotal;
-  }
+  const subtotal = clientAmounts.taxableAmount;
 
   return {
     equipmentEstimate,
     expensesTotal,
-    baseSubtotal,
+    baseSubtotal: clientAmounts.baseSubtotal,
     discountAmount,
     subtotalAfterDiscount,
     companyShareAmount,
     subtotal,
     applyTax,
-    taxAmount,
-    totalWithTax
+    taxAmount: clientAmounts.taxAmount,
+    totalWithTax: clientAmounts.totalWithTax,
+    marginBeforeTax: clientAmounts.marginBeforeTax,
   };
 }
 
@@ -771,7 +964,7 @@ export function resolveReservationNetTotal(reservation) {
     ? crewAssignments
     : (Array.isArray(reservation?.technicians) ? reservation.technicians : []);
 
-  // Net total for project-linked display should exclude VAT and company share
+  // Net total for project-linked display should exclude VAT and operating overhead
   const breakdown = calculateDraftFinancialBreakdown({
     items,
     technicianIds: Array.isArray(technicians) && !technicians.length ? technicians : [],
@@ -833,7 +1026,9 @@ export function getProjectTypeLabel(type) {
     commercial: 'projects.form.types.commercial',
     coverage: 'projects.form.types.coverage',
     photography: 'projects.form.types.photography',
-    social: 'projects.form.types.social'
+    social: 'projects.form.types.social',
+    event: 'projects.form.types.event',
+    conference: 'projects.form.types.conference'
   };
   const key = keyMap[type] || 'projects.form.types.unknown';
   return t(key, type);
@@ -859,10 +1054,7 @@ export function buildProjectEditMarkup(project, { clientName = '', clientCompany
     ?? project?.company_share
     ?? DEFAULT_COMPANY_SHARE_PERCENT;
   const sharePercentParsed = Number.parseFloat(normalizeNumbers(String(rawSharePercent)));
-  const companyShareEnabled = project?.companyShareEnabled === true
-    || project?.companyShareEnabled === 'true'
-    || project?.company_share_enabled === true
-    || project?.company_share_enabled === 'true'
+  const companyShareEnabled = resolveProjectOverheadSettings(project, { applyTaxRaw: applyTax }).enabled
     || (applyTax && Number.isFinite(sharePercentParsed) && sharePercentParsed > 0);
   const companySharePercent = Number.isFinite(sharePercentParsed) && sharePercentParsed > 0
     ? sharePercentParsed
@@ -993,11 +1185,11 @@ export function buildProjectEditMarkup(project, { clientName = '', clientCompany
           </div>
         </div>
         <div class="col-md-4">
-          <label class="form-label d-block" for="project-edit-company-share">${escapeHtml(t('projects.form.labels.companyShare', 'نسبة الشركة والضريبة'))}</label>
+          <label class="form-label d-block" for="project-edit-company-share">${escapeHtml(t('projects.form.labels.companyShare', 'المصاريف التشغيلية والضريبة'))}</label>
           <div class="d-flex flex-column gap-2">
             <div class="form-check form-switch m-0">
               <input class="form-check-input" type="checkbox" role="switch" id="project-edit-company-share" name="project-company-share" data-company-share="${escapeHtml(String(companySharePercent))}" ${companyShareEnabled ? 'checked' : ''}>
-              <label class="form-check-label" for="project-edit-company-share">${escapeHtml(t('projects.form.companyShareToggle', 'إضافة نسبة الشركة (10٪)'))}</label>
+              <label class="form-check-label" for="project-edit-company-share">${escapeHtml(t('projects.form.companyShareToggle', 'إضافة مصاريف تشغيلية (10٪)'))}</label>
             </div>
             <div class="form-check form-switch m-0">
               <input class="form-check-input" type="checkbox" role="switch" id="project-edit-tax" name="project-apply-tax" ${applyTax ? 'checked' : ''}>

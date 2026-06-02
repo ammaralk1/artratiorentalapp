@@ -1,4 +1,5 @@
 import { state } from './state.js';
+import { callQuotePdfCallback } from './callbacks.js';
 import { loadData } from '../../storage.js';
 import { normalizeNumbers } from '../../utils.js';
 import { t } from '../../language.js';
@@ -146,10 +147,7 @@ export function refreshChecklistLessorOptions() {
   });
   state.activeQuoteState.checklistLessorOptions = options;
   state.activeQuoteState.checklistLessorFilter = filter;
-  // renderChecklistLessorFilters is in modal.js — import lazily to avoid circular init
-  import('./modal.js').then(({ renderChecklistLessorFilters }) => {
-    renderChecklistLessorFilters();
-  }).catch(() => {});
+  callQuotePdfCallback('renderChecklistLessorFilters');
 }
 
 export function getChecklistPreviewReservation() {

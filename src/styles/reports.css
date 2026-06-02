@@ -3,7 +3,7 @@
 :root {
   --reports-radius-lg: var(--radius-lg, 18px);
   --reports-radius-md: var(--radius-md, 14px);
-  --reports-shadow: var(--shadow-sm, 0 10px 24px rgba(15, 23, 42, 0.08));
+  --reports-shadow: var(--shadow-sm, 0 10px 24px rgba(42, 64, 48, 0.08));
   --reports-transition: var(--transition, all 0.25s ease);
   --reports-surface: var(--bo-color-content-bg);
   --reports-surface-soft: rgba(244, 246, 251, 0.78);
@@ -12,33 +12,32 @@
   --reports-border-strong: var(--bo-color-content-muted-border);
   --reports-text: var(--clr-text, #1f2d3d);
   --reports-muted: var(--clr-muted, #667892);
-  --reports-accent: var(--bo-color-accent);
-  --reports-accent-rgb: 154, 170, 145;
-  --reports-success: var(--clr-success, #2f9e44);
-  --reports-success-rgb: 47, 158, 68;
-  --reports-warning: var(--clr-warning, #f08c00);
-  --reports-warning-rgb: 240, 140, 0;
-  --reports-error: var(--clr-danger, #e03131);
-  --reports-error-rgb: 224, 49, 49;
+  --reports-accent: #567E56;
+  --reports-accent-rgb: 86, 126, 86;
+  --reports-success: var(--color-success, #22c55e);
+  --reports-success-rgb: 34, 197, 94;
+  --reports-warning: var(--color-warning, #fbbf24);
+  --reports-warning-rgb: 251, 191, 36;
+  --reports-error: var(--color-error, #f87171);
+  --reports-error-rgb: 248, 113, 113;
 }
 
-html.dark-mode,
-body.dark-mode {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) {
   --reports-surface: var(--bo-color-content-muted-bg);
-  --reports-surface-soft: rgba(30, 41, 59, 0.78);
-  --reports-surface-contrast: rgba(37, 51, 82, 0.88);
+  --reports-surface-soft: rgba(20, 30, 24, 0.78);
+  --reports-surface-contrast: rgba(24, 36, 29, 0.88);
   --reports-border: var(--bo-color-content-border);
   --reports-border-strong: var(--bo-color-content-muted-border);
-  --reports-shadow: 0 16px 36px rgba(3, 8, 26, 0.55);
-  --reports-text: var(--clr-text, #e2e8f0);
-  --reports-muted: rgba(148, 163, 184, 0.78);
-  --reports-accent: #93c5fd;
-  --reports-accent-rgb: 147, 197, 253;
-  --reports-success: #4ade80;
-  --reports-success-rgb: 74, 222, 128;
+  --reports-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
+  --reports-text: var(--clr-text, #e8efe5);
+  --reports-muted: rgba(147, 168, 137, 0.78);
+  --reports-accent: #9AAA91;
+  --reports-accent-rgb: 154, 170, 145;
+  --reports-success: var(--color-success, #34d399);
+  --reports-success-rgb: 52, 211, 153;
   --reports-warning: #fbbf24;
   --reports-warning-rgb: 251, 191, 36;
-  --reports-error: #f87171;
+  --reports-error: var(--color-error, #f87171);
   --reports-error-rgb: 248, 113, 113;
 }
 
@@ -63,6 +62,11 @@ body.dark-mode {
   padding-inline: clamp(0.75rem, 3vw, 1.75rem);
 }
 
+.reports-wrapper--flush-top,
+.reports-surface-card--flush-top {
+  margin-top: 0;
+}
+
 .reports-wrapper--reservations {
   gap: 20px;
   align-items: center;
@@ -80,12 +84,14 @@ body.dark-mode {
 .reports-chart-card,
 .reports-table-card {
   background: var(--reports-surface);
+  background-image: none;
   border: 1px solid var(--reports-border);
   border-radius: var(--reports-radius-lg);
   box-shadow: var(--reports-shadow);
   color: var(--reports-text);
   transition: var(--reports-transition);
-  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
 /* Sorting indicators for reports tables */
@@ -112,10 +118,10 @@ body.dark-mode {
   opacity: 0.85;
 }
 
-:is(html.dark-mode, body.dark-mode) .reports-surface-card,
-:is(html.dark-mode, body.dark-mode) .reports-kpi-card,
-:is(html.dark-mode, body.dark-mode) .reports-chart-card,
-:is(html.dark-mode, body.dark-mode) .reports-table-card {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-surface-card,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-kpi-card,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-chart-card,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-table-card {
   background: var(--reports-surface);
   border-color: var(--reports-border);
   box-shadow: var(--reports-shadow);
@@ -147,27 +153,6 @@ body.dark-mode {
   z-index: 0;
 }
 
-/* Raise the header card when templates actions dropdown is open so its menu
-   can float above the preview card that follows in DOM order. */
-.reports-surface-card.--raise-on-top { z-index: 12 !important; }
-
-/* Templates actions dropdown menu: keep above surrounding cards and adapt to dark mode */
-#templates-actions-dd { position: relative; }
-#templates-actions-menu {
-  z-index: 2000 !important;
-  background: var(--reports-surface) !important;
-  color: var(--reports-text) !important;
-  border-color: var(--reports-border) !important;
-  box-shadow: var(--reports-shadow) !important;
-}
-:is(html.dark-mode, body.dark-mode) #templates-actions-menu,
-:where(html.dark, body.dark) #templates-actions-menu {
-  background: var(--reports-surface) !important;
-  color: var(--reports-text) !important;
-  border-color: var(--reports-border) !important;
-  box-shadow: var(--reports-shadow) !important;
-}
-
 #reservations-report-printable .reports-header-card,
 .reports-header-card {
   display: flex;
@@ -180,7 +165,6 @@ body.dark-mode {
   z-index: auto !important;
   backdrop-filter: none !important;
   filter: none !important;
-  box-shadow: none !important;
   flex-wrap: wrap;
 }
 
@@ -213,72 +197,16 @@ body.dark-mode {
   color: var(--clr-text);
 }
 
-/* Templates tab controls layout */
-#templates-controls {
-  width: 100%;
-  gap: 12px !important;
-  align-items: flex-end;
+.reports-table-col-status {
+  min-width: 132px;
 }
 
-#templates-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
-  justify-content: flex-end;
-  flex: 1 1 320px;
+.reports-table-col-value {
+  min-width: 120px;
 }
 
-#templates-actions > * {
-  flex: 0 1 auto;
-}
-
-#templates-actions input,
-#templates-actions select,
-#templates-actions-dd {
-  min-width: 180px;
-}
-
-@media (max-width: 992px) {
-  #templates-controls {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  #templates-actions {
-    width: 100%;
-    justify-content: flex-start;
-    margin-inline-start: 0 !important;
-  }
-
-  #templates-actions > * {
-    flex: 1 1 100%;
-  }
-
-  #templates-actions input,
-  #templates-actions select,
-  #templates-actions-dd,
-  #tpl-zoom-controls {
-    width: 100%;
-  }
-
-  #templates-actions .btn,
-  #templates-actions select,
-  #templates-actions input {
-    width: 100%;
-  }
-
-  #templates-actions-dd {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  #templates-actions-menu {
-    left: 0 !important;
-    right: 0 !important;
-    width: 100% !important;
-  }
+.reports-table-col-payment {
+  min-width: 150px;
 }
 
 .reports-wrapper--reservations :where(h1, h2, h3, h4, h5, h6) {
@@ -314,13 +242,13 @@ body.dark-mode {
 }
 
 .reports-wrapper--reservations .reports-kpi-value {
-  color: var(--clr-text);
+  color: var(--reports-kpi-value-color);
   font-weight: 700;
 }
 
 .reports-wrapper--reservations .reports-card-icon,
 .reports-wrapper--reservations .reports-kpi-icon {
-  background: linear-gradient(135deg, rgba(var(--reports-accent-rgb, 76, 110, 245), 0.18), rgba(var(--reports-accent-rgb, 76, 110, 245), 0.08));
+  background: linear-gradient(135deg, rgba(var(--reports-accent-rgb, 86, 126, 86), 0.18), rgba(var(--reports-accent-rgb, 86, 126, 86), 0.08));
   color: var(--reports-accent);
 }
 
@@ -418,28 +346,21 @@ body[dir="rtl"] .reports-filters {
 .reports-status-filter { flex: 1 1 320px; min-width: 0; overflow: hidden; }
 .reports-status-chips { overflow-x: auto; white-space: nowrap; }
 
-.reports-filters .form-control,
-.reports-filters .form-select {
+.reports-filters-body .reports-filter-control {
   min-width: 190px;
-  border-radius: 14px;
-  border: 1px solid var(--reports-border);
-  box-shadow: none;
-  padding: 12px 16px;
-  min-height: 48px;
   position: relative; /* create stacking context for opened dropdowns */
   z-index: 1;
 }
 
-.reports-filters .filters-search {
+.reports-filters-body .filters-search,
+.reports-filters-body .reports-filter-field--search .reports-filter-control {
   min-width: min(220px, 100%);
 }
 
 /* when focused, ensure the control sits above nearby content */
 /* keep focus elements below header */
-#reservations-report-printable .reports-filters .form-control:focus,
-#reservations-report-printable .reports-filters .form-select:focus,
-.reports-filters .form-control:focus,
-.reports-filters .form-select:focus { z-index: 6 !important; }
+#reservations-report-printable .reports-filters-body .reports-filter-control:focus,
+.reports-filters-body .reports-filter-control:focus { z-index: 6 !important; }
 
 .reports-status-filter {
   display: flex;
@@ -488,7 +409,7 @@ body[dir="rtl"] .reports-filters {
   display: flex;
 }
 
-.reports-custom-range .form-control {
+.reports-custom-range .reports-filter-control {
   min-width: 180px;
 }
 
@@ -573,15 +494,15 @@ body[dir="rtl"] .reports-filters {
   color: var(--bo-color-tab-active-fg);
 }
 
-:is(html.dark-mode, body.dark-mode) .reports-presets-actions .reports-preset-btn {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-presets-actions .reports-preset-btn {
   border-color: var(--bo-color-tab-shell-border);
   color: var(--bo-color-tab-text);
   background: var(--bo-color-tab-shell-bg);
   box-shadow: var(--bo-color-tab-shell-shadow);
 }
 
-:is(html.dark-mode, body.dark-mode) .reports-presets-actions .reports-preset-btn:hover,
-:is(html.dark-mode, body.dark-mode) .reports-presets-actions .reports-preset-btn:focus-visible {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-presets-actions .reports-preset-btn:hover,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-presets-actions .reports-preset-btn:focus-visible {
   border-color: var(--bo-color-tab-hover-border);
   background: var(--bo-color-tab-hover-bg);
   box-shadow: var(--bo-color-tab-hover-shadow);
@@ -638,7 +559,7 @@ body[dir="rtl"] .reports-filters {
   width: 100%;
   margin-inline: auto;
   column-gap: 12px !important;
-  row-gap: 12px;
+  row-gap: 10px;
   justify-items: stretch;
 }
 
@@ -659,20 +580,14 @@ body[dir="rtl"] .reports-filters {
 }
 
 .reports-wrapper--reservations .reports-filters-grid--primary {
-  grid-template-columns: repeat(4, minmax(0, 1fr)); /* four equal columns */
-}
-
-/* Keep all 4 filters in a single row from >=1024px with equal widths */
-@media (min-width: 1024px) {
-  .reports-wrapper--reservations .reports-filters-grid--primary {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  justify-content: stretch;
 }
 
 .reports-wrapper--reservations .reports-filter-control {
   min-width: 0; /* allow shrink to balance columns */
-  min-height: 46px;
-  padding: 10px 14px;
+  min-height: 44px;
+  padding: 9px 13px;
   width: 100%;
   background: var(--bo-color-control-bg);
   border-color: var(--bo-color-control-border);
@@ -705,6 +620,171 @@ body[dir="rtl"] .reports-filters {
 /* Remove any per-field max-width; each cell stretches equally */
 .reports-wrapper--reservations .reports-filters-grid--primary .reports-filter-field { max-width: none; }
 
+.reports-header-card--reservations {
+  padding: 22px 24px !important;
+}
+
+.reports-header-card--reservations .reports-header-leading {
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.reports-filters-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.reports-filter-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.reports-filters-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 10px;
+  border: 1px solid var(--bo-color-content-border);
+  background: transparent;
+  color: var(--clr-muted, #6b7280) !important;
+  transition: color 0.16s ease, background 0.16s ease, border-color 0.16s ease;
+  padding: 0;
+  line-height: 1;
+}
+
+.reports-filters-toggle:hover {
+  background: var(--bo-color-content-muted-bg);
+  color: var(--clr-text);
+  border-color: var(--bo-color-content-muted-border);
+}
+
+.reports-filters-toggle__icon {
+  transition: transform 0.22s ease;
+}
+
+.reports-filters-card--collapsible.is-collapsed .reports-filters-toggle__icon {
+  transform: rotate(-90deg);
+}
+
+.reports-filters-body {
+  overflow: hidden;
+  max-height: 720px;
+  transition: max-height 0.28s ease, opacity 0.22s ease, margin-top 0.22s ease;
+  opacity: 1;
+  margin-top: 0;
+}
+
+.reports-filters-card--collapsible.is-collapsed .reports-filters-body {
+  max-height: 0;
+  opacity: 0;
+  margin-top: 0;
+}
+
+.reports-filters-card--reservations {
+  padding: 16px 18px !important;
+}
+
+.reports-filters-card--reservations .reports-filters {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  display: grid;
+  gap: 12px;
+}
+
+.reports-filters-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.reports-filters-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  width: 100%;
+}
+
+.reports-wrapper--reservations .reports-filters-row--top {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.reports-wrapper--reservations .reports-filter-field--search {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+}
+
+.reports-wrapper--reservations .reports-filter-field--status-chips {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+}
+
+.reports-wrapper--reservations .reports-filter-field--status-chips .reports-quick-chips {
+  margin-top: 0 !important;
+  min-height: 0;
+}
+
+.reports-wrapper--reservations .reports-filters-row--controls {
+  align-items: stretch;
+}
+
+.reports-wrapper--reservations .reports-filters-row--dates-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+}
+
+.reports-wrapper--reservations .reports-filters-row--dates-actions .reports-custom-range {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.reports-wrapper--reservations .reports-filter-inline-actions {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  flex: 0 0 auto;
+  gap: 8px;
+  min-width: fit-content;
+}
+
+.reports-wrapper--reservations .reports-filter-inline-actions .reports-action-btn {
+  min-width: 168px;
+  min-height: 46px;
+}
+
+.reports-wrapper--reservations .reports-filters-row--presets {
+  display: grid;
+  grid-template-columns: minmax(0, 18rem) minmax(0, 1fr);
+  align-items: end;
+}
+
+.reports-wrapper--reservations .reports-presets-select {
+  flex: none;
+  min-width: 0;
+  max-width: 18rem;
+}
+
+.reports-wrapper--reservations .reports-presets-actions {
+  flex: none;
+  justify-content: flex-start;
+}
+
 .reports-filter-label {
   font-size: 0.95rem;
   font-weight: 700;
@@ -714,11 +794,11 @@ body[dir="rtl"] .reports-filters {
 .reports-filter-control {
   border-radius: 14px;
   border: 1px solid var(--bo-color-control-border);
-  padding: 10px 14px;
+  padding: 12px 16px;
   background: rgba(255, 255, 255, 0.92);
   color: var(--clr-text);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  min-height: 42px;
+  min-height: 48px;
 }
 
 .reports-filter-control:focus {
@@ -727,7 +807,7 @@ body[dir="rtl"] .reports-filters {
   box-shadow: 0 0 0 3px var(--bo-color-control-focus-ring);
 }
 
-:is(html.dark-mode, body.dark-mode) .reports-filter-control {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-filter-control {
   background: var(--bo-color-control-bg);
   border-color: var(--bo-color-control-border);
   color: var(--clr-text);
@@ -756,13 +836,13 @@ body[dir="rtl"] .reports-filters {
   flex-direction: column;
   min-width: min(320px, 100%);
   border-radius: 14px;
-  border: 1px solid rgba(148, 163, 184, 0.25);
+  border: 1px solid rgba(147, 168, 137, 0.25);
   background: rgba(248, 250, 255, 0.75);
   padding: 0;
 }
 
 .reports-column-toggles[open] {
-  box-shadow: 0 14px 28px rgba(59, 91, 220, 0.12);
+  box-shadow: 0 14px 28px rgba(42, 64, 48, 0.12);
 }
 
 .reports-column-summary {
@@ -805,7 +885,7 @@ body[dir="rtl"] .reports-filters {
   gap: 10px;
   padding: 10px 12px;
   border-radius: 12px;
-  border: 1px solid rgba(148, 163, 184, 0.28);
+  border: 1px solid rgba(147, 168, 137, 0.28);
   background: rgba(248, 250, 255, 0.92);
   font-size: 0.85rem;
   font-weight: 600;
@@ -814,26 +894,26 @@ body[dir="rtl"] .reports-filters {
 }
 
 .reports-column-toggle:hover {
-  border-color: rgba(59, 91, 220, 0.45);
-  box-shadow: 0 8px 18px rgba(59, 91, 220, 0.16);
+  border-color: rgba(86, 126, 86, 0.4);
+  box-shadow: 0 8px 18px rgba(42, 64, 48, 0.12);
 }
 
-:is(html.dark-mode, body.dark-mode) .reports-column-toggles {
-  border-color: rgba(93, 133, 255, 0.25);
-  background: rgba(20, 31, 58, 0.7);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-column-toggles {
+  border-color: rgba(147, 168, 137, 0.2);
+  background: rgba(20, 30, 24, 0.7);
 }
 
-:is(html.dark-mode, body.dark-mode) .reports-column-summary {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-column-summary {
   color: rgba(226, 232, 240, 0.9);
 }
 
-:is(html.dark-mode, body.dark-mode) .reports-column-caret {
-  border-color: rgba(148, 191, 255, 0.85);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-column-caret {
+  border-color: rgba(201, 214, 196, 0.85);
 }
 
-:is(html.dark-mode, body.dark-mode) .reports-column-toggle {
-  background: rgba(30, 41, 59, 0.92);
-  border-color: rgba(93, 133, 255, 0.32);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-column-toggle {
+  background: rgba(24, 36, 29, 0.92);
+  border-color: rgba(147, 168, 137, 0.24);
   color: rgba(226, 232, 240, 0.92);
 }
 
@@ -850,26 +930,42 @@ body[dir="rtl"] .reports-filters {
 }
 
 .reports-wrapper--reservations .reports-quick-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   width: 100%;
-  margin-top: 0 !important;
-  padding: 10px 12px;
+  margin-top: 6px !important;
+  padding: 8px 10px;
   border: 1px solid var(--bo-color-content-border);
   border-radius: 14px;
   background: var(--bo-color-content-bg);
+  align-items: center;
+}
+
+.reports-quick-chips-separator {
+  padding-inline: 6px;
+  opacity: 0.6;
 }
 
 /* Quick filter chips */
 .reports-quick-chips .chip {
-  border: 1px solid var(--reports-border);
-  background: var(--bo-color-tab-shell-bg);
-  color: var(--bo-color-tab-text);
+  --chip-bg: var(--bo-color-tab-shell-bg);
+  --chip-color: var(--bo-color-tab-text);
+  --chip-border: var(--reports-border);
+  border: 1px solid var(--chip-border);
+  background: var(--chip-bg);
+  color: var(--chip-color);
   border-radius: 999px;
-  padding: 8px 12px;
+  padding: 7px 11px;
   font-size: .85rem;
   line-height: 1;
   display: inline-flex;
   gap: 6px;
-  box-shadow: var(--bo-color-tab-shell-shadow);
+  box-shadow: none;
+  align-items: center;
+  min-height: 36px;
+  font-weight: 700;
+  transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
 }
 .reports-quick-chips .chip .chip-count { opacity: .8; font-weight: 700; }
 .reports-quick-chips .chip:hover {
@@ -879,10 +975,45 @@ body[dir="rtl"] .reports-filters {
   color: var(--bo-color-tab-active-fg);
 }
 .reports-quick-chips .chip.chip-active {
-  background: var(--bo-color-tab-active-bg);
-  border-color: var(--bo-color-tab-active-border);
-  box-shadow: var(--bo-color-tab-active-shadow);
-  color: var(--bo-color-tab-active-fg);
+  box-shadow: 0 0 0 1px color-mix(in srgb, currentColor 26%, transparent);
+}
+
+.reports-quick-chips .chip.status-confirmed {
+  --chip-bg: rgba(70, 104, 70, 0.14);
+  --chip-color: #466846;
+  --chip-border: rgba(70, 104, 70, 0.26);
+}
+
+.reports-quick-chips .chip.status-completed {
+  --chip-bg: rgba(100, 116, 139, 0.12);
+  --chip-color: rgba(71, 85, 105, 0.92);
+  --chip-border: rgba(100, 116, 139, 0.24);
+}
+
+.reports-quick-chips .chip.status-paid {
+  --chip-bg: rgba(59, 91, 220, 0.1);
+  --chip-color: rgba(37, 99, 235, 0.92);
+  --chip-border: rgba(59, 91, 220, 0.24);
+}
+
+.reports-quick-chips .chip.status-partial {
+  --chip-bg: rgba(199, 144, 32, 0.12);
+  --chip-color: #8f6424;
+  --chip-border: rgba(199, 144, 32, 0.28);
+}
+
+.reports-quick-chips .chip.status-unpaid {
+  --chip-bg: rgba(140, 64, 64, 0.12);
+  --chip-color: #8c4040;
+  --chip-border: rgba(140, 64, 64, 0.28);
+}
+
+.reports-quick-chips .chip.chip-active.status-confirmed,
+.reports-quick-chips .chip.chip-active.status-completed,
+.reports-quick-chips .chip.chip-active.status-paid,
+.reports-quick-chips .chip.chip-active.status-partial,
+.reports-quick-chips .chip.chip-active.status-unpaid {
+  box-shadow: 0 0 0 1px color-mix(in srgb, currentColor 30%, transparent), 0 8px 18px rgba(2, 6, 23, 0.14);
 }
 
 .reports-actions .btn,
@@ -954,42 +1085,27 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
   justify-items: stretch;
 }
 
-/* Reservations: center KPI grid and keep medium width */
-.reports-kpi-carousel {
-  position: relative;
-  width: 100%;
-  margin-inline: auto;
-  padding: 6px 4px;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  scrollbar-width: thin;
-}
-
-.reports-kpi-carousel::-webkit-scrollbar {
-  height: 8px;
-}
-
-.reports-kpi-carousel::-webkit-scrollbar-thumb {
-  background-color: rgba(0, 0, 0, 0.16);
-  border-radius: 999px;
-}
-
-.reports-kpi-carousel .reports-kpi-grid {
-  width: max-content;
-  min-width: 100%;
-}
-
-.reports-wrapper--reservations .reports-kpi-grid {
-  /* Put KPI cards in a single centered horizontal line */
+.reports-kpi-stack--reservations {
   display: flex;
-  flex-wrap: nowrap;
-  gap: 10px;
-  width: max-content;
-  min-width: 100%;
+  flex-direction: column;
+  gap: 14px;
+  width: min(100%, 1140px);
   margin-inline: auto;
-  justify-content: flex-start;
+}
+
+.reports-wrapper--reservations .reports-kpi-band {
+  display: grid;
   align-items: stretch;
-  scroll-snap-type: x proximity;
+  gap: 14px;
+  width: 100%;
+}
+
+.reports-wrapper--reservations .reports-kpi-band--primary {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.reports-wrapper--reservations .reports-kpi-band--secondary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 @media (max-width: 1280px) {
@@ -999,6 +1115,7 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
 }
 
 .reports-kpi-card {
+  --reports-kpi-value-color: var(--reports-text);
   display: flex;
   align-items: center;
   gap: 12px;
@@ -1008,34 +1125,17 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
 
 /* Reservations: make each KPI card compact and vertically centered */
 .reports-wrapper--reservations .reports-kpi-card {
-  flex: 0 0 172px;
-  padding: 14px;
-  gap: 8px;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  min-height: 110px; /* keep visual heights consistent across KPI row */
-  scroll-snap-align: start;
+  padding: 16px 18px;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: flex-start;
+  flex-direction: row;
+  min-height: 132px;
 }
 
 @media (min-width: 1200px) {
-  .reports-kpi-carousel {
-    overflow-x: visible;
-    padding-inline: 0;
-  }
-  .reports-kpi-carousel .reports-kpi-grid {
-    width: 100%;
-    min-width: auto;
-  }
-  .reports-wrapper--reservations .reports-kpi-grid {
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 12px;
-    align-content: center;
-  }
   .reports-wrapper--reservations .reports-kpi-card {
-    flex: 0 0 clamp(190px, 20vw, 220px);
-    max-width: clamp(190px, 20vw, 220px);
+    min-height: 136px;
   }
 }
 
@@ -1059,8 +1159,9 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
 
 /* Center KPI content in reservations */
 .reports-wrapper--reservations .reports-kpi-content {
-  align-items: center;
-  text-align: center;
+  align-items: flex-start;
+  text-align: start;
+  width: 100%;
 }
 
 .reports-kpi-label {
@@ -1075,7 +1176,7 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
   margin: 0;
   font-size: 1.45rem; /* smaller numbers inside KPIs */
   font-weight: 700;
-  color: var(--clr-text);
+  color: var(--reports-kpi-value-color) !important;
   white-space: nowrap;
   line-height: 1.1;
   font-variant-numeric: tabular-nums; /* align digits height */
@@ -1088,19 +1189,57 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
 /* Emphasise total revenue card and make it visually tighter */
 .reports-kpi-card[data-kpi="totalValue"] {
   padding: 14px;
+  --reports-kpi-value-color: var(--reports-accent);
 }
 .reports-kpi-card[data-kpi="totalValue"] .reports-kpi-icon { width: 36px; height: 36px; font-size: 1.1rem; }
-.reports-kpi-card[data-kpi="totalValue"] .reports-kpi-value { color: var(--bo-color-action) !important; }
+
+.reports-wrapper--reservations .reports-kpi-card--featured,
+.reports-wrapper--reservations .reports-kpi-card[data-featured="true"] {
+  min-height: 144px;
+  padding: 18px 20px;
+  gap: 14px;
+}
+
+.reports-wrapper--reservations .reports-kpi-card--featured .reports-kpi-value,
+.reports-wrapper--reservations .reports-kpi-card[data-featured="true"] .reports-kpi-value {
+  font-size: 1.72rem;
+}
+
+.reports-wrapper--reservations .reports-kpi-card--featured .reports-kpi-icon,
+.reports-wrapper--reservations .reports-kpi-card[data-featured="true"] .reports-kpi-icon {
+  width: 44px;
+  height: 44px;
+  font-size: 1.22rem;
+}
 
 /* Color-code KPI numbers */
-.reports-kpi-card[data-kpi="outstanding"] .reports-kpi-value { color: #ef4444 !important; }
-.reports-kpi-card[data-kpi="expenses"] .reports-kpi-value { color: #f59e0b !important; }
-.reports-kpi-card[data-kpi="equipmentCost"] .reports-kpi-value { color: #f59e0b !important; }
-.reports-kpi-card[data-kpi="netProfit"] .reports-kpi-value { color: #16a34a !important; }
+.reports-kpi-card[data-kpi="outstanding"] { --reports-kpi-value-color: #ef4444; }
+.reports-kpi-card[data-kpi="expenses"] { --reports-kpi-value-color: #f59e0b; }
+.reports-kpi-card[data-kpi="equipmentCost"] { --reports-kpi-value-color: #f59e0b; }
+.reports-kpi-card[data-kpi="netProfit"] { --reports-kpi-value-color: #16a34a; }
 /* Make profit margin percentage green too (to match net profit visual cue) */
-.reports-kpi-card[data-kpi="margin"] .reports-kpi-value { color: #16a34a !important; }
+.reports-kpi-card[data-kpi="margin"] { --reports-kpi-value-color: #16a34a; }
 /* Color for total projects to match other KPI accents */
-.reports-kpi-card[data-kpi="projects"] .reports-kpi-value { color: var(--bo-color-action) !important; }
+.reports-kpi-card[data-kpi="projects"] { --reports-kpi-value-color: var(--reports-accent); }
+
+#reports-kpi-total,
+#reports-kpi-revenue {
+  color: var(--reports-accent) !important;
+}
+
+#reports-kpi-outstanding {
+  color: #ef4444 !important;
+}
+
+#reports-kpi-crew-cost,
+#reports-kpi-equipment-cost {
+  color: #f59e0b !important;
+}
+
+#reports-kpi-margin,
+#reports-kpi-net {
+  color: #16a34a !important;
+}
 .reports-kpi-card[data-kpi="expenses"] .reports-kpi-label {
   font-size: 0.86rem; /* shrink a bit more to stay inside card */
   line-height: 1;
@@ -1175,13 +1314,37 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
   white-space: nowrap; /* avoid splitting numbers across lines */
 }
 
-:is(html.dark-mode, body.dark-mode) .reports-kpi-details {
-  border-color: rgba(93, 133, 255, 0.26);
+.reports-kpi-detail-row--primary .reports-kpi-detail-value,
+.reports-kpi-detail-row--strong .reports-kpi-detail-value {
+  color: var(--reports-accent);
+}
+
+.reports-kpi-detail-row--success .reports-kpi-detail-value {
+  color: var(--reports-success);
+}
+
+.reports-kpi-detail-row--warning .reports-kpi-detail-value,
+.reports-kpi-detail-row--strong-warning .reports-kpi-detail-value {
+  color: var(--reports-warning);
+}
+
+.reports-kpi-detail-row--error .reports-kpi-detail-value {
+  color: var(--reports-error);
+}
+
+.reports-kpi-detail-row--strong,
+.reports-kpi-detail-row--strong-warning {
+  padding-top: 10px;
+  border-top: 1px dashed var(--bo-color-content-muted-border);
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-kpi-details {
+  border-color: rgba(147, 168, 137, 0.2);
 }
 
 /* Debug row for projects reports (toggled by ?reportsDebug=1) */
 .reports-debug-row td {
-  background: var(--bo-color-accent-soft);
+  background: rgba(var(--reports-accent-rgb, 79, 70, 229), 0.1);
   color: #334155;
   padding: 6px 10px;
   border-top: 1px dashed var(--bo-color-content-muted-border);
@@ -1191,17 +1354,17 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
   font-size: 12px;
   white-space: break-spaces;
 }
-:where(html.dark-mode, body.dark-mode) .reports-debug-row td {
-  background: rgba(93, 133, 255, 0.08);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-debug-row td {
+  background: rgba(86, 126, 86, 0.12);
   color: rgba(226, 232, 240, 0.92);
-  border-top-color: rgba(93, 133, 255, 0.35);
+  border-top-color: rgba(147, 168, 137, 0.24);
 }
 
-:is(html.dark-mode, body.dark-mode) .reports-kpi-detail-row {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-kpi-detail-row {
   color: var(--clr-muted);
 }
 
-:is(html.dark-mode, body.dark-mode) .reports-kpi-detail-value {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-kpi-detail-value {
   color: var(--clr-text);
 }
 
@@ -1234,12 +1397,43 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
   max-width: none;
 }
 
+.reports-analytics-grid--reservations-primary {
+  grid-template-columns: minmax(0, 1.5fr) minmax(320px, 0.9fr);
+  align-items: stretch;
+}
+
+.reports-analytics-grid--reservations-primary .reports-chart-card--volume {
+  grid-column: auto;
+  max-width: none;
+}
+
+.reports-analytics-grid--reservations-primary .reports-chart-card--centered {
+  grid-column: auto;
+  max-width: none;
+}
+
+.reports-analytics-grid--reservations-secondary {
+  grid-template-columns: repeat(2, minmax(320px, 1fr));
+  align-items: stretch;
+}
+
+.reports-analytics-grid--reservations-secondary .reports-chart-card--centered {
+  grid-column: auto;
+  max-width: none;
+}
+
 .reports-chart-card {
   padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 16px;
   position: relative;
+}
+
+.reports-wrapper--reservations .reports-chart-card,
+.reports-wrapper--reservations .reports-table-card {
+  padding: 20px;
+  gap: 14px;
 }
 
 .reports-chart-card--wide {
@@ -1267,8 +1461,7 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
 
 /* Revenue details card: keep a compact width and center */
 #reservations-revenue-card {
-  /* make it half of the previous width and keep centered */
-  width: min(100%, 340px);
+  width: min(100%, 1140px);
   margin-inline: auto;
 }
 
@@ -1287,10 +1480,37 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
   height: 100%;
 }
 
+.reports-wrapper--reservations .reports-analytics-grid .reports-chart-card:not(.reports-chart-card--wide),
+.reports-wrapper--reservations .reports-analytics-grid .reports-chart-card--centered:not(.reports-chart-card--wide) {
+  max-width: none;
+}
+
 /* Ensure two columns on large screens so status + payment sit side-by-side */
 @media (min-width: 1024px) {
   .reports-analytics-grid {
     grid-template-columns: repeat(2, minmax(320px, 1fr));
+  }
+}
+
+@media (max-width: 1024px) {
+  .reports-analytics-grid--reservations-primary,
+  .reports-analytics-grid--reservations-secondary {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    overflow: visible;
+    margin-inline: 0;
+    padding-inline: 0;
+    padding-bottom: 0;
+    scroll-snap-type: none;
+  }
+
+  .reports-analytics-grid--reservations-primary .reports-chart-card,
+  .reports-analytics-grid--reservations-secondary .reports-chart-card {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    margin-inline: 0;
   }
 }
 
@@ -1305,6 +1525,104 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
   .reports-chart-card {
     padding: 16px;
   }
+
+  .reports-kpi-stack--reservations {
+    gap: 12px;
+  }
+
+  .reports-wrapper--reservations .reports-kpi-band--primary,
+  .reports-wrapper--reservations .reports-kpi-band--secondary {
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 12px;
+    padding-bottom: 6px;
+    margin-inline: -12px;
+    padding-inline: 12px;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 12px;
+    -webkit-overflow-scrolling: touch;
+    grid-template-columns: none;
+    scrollbar-width: none;
+  }
+
+  .reports-wrapper--reservations .reports-kpi-band--primary::-webkit-scrollbar,
+  .reports-wrapper--reservations .reports-kpi-band--secondary::-webkit-scrollbar {
+    display: none;
+  }
+
+  .reports-wrapper--reservations .reports-kpi-card,
+  .reports-wrapper--reservations .reports-kpi-card--featured,
+  .reports-wrapper--reservations .reports-kpi-card[data-featured="true"] {
+    flex: 0 0 min(264px, 82vw);
+    scroll-snap-align: start;
+    min-height: 128px;
+    padding: 16px;
+  }
+
+  .reports-analytics-grid--reservations-primary,
+  .reports-analytics-grid--reservations-secondary {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    overflow: visible;
+    margin-inline: 0;
+    padding-inline: 0;
+    padding-bottom: 0;
+    scroll-snap-type: none;
+  }
+
+  .reports-analytics-grid--reservations-primary .reports-chart-card,
+  .reports-analytics-grid--reservations-secondary .reports-chart-card {
+    flex: none;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+  }
+
+  #reservations-revenue-breakdown {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .reports-wrapper--reservations .reports-table-card--summary .reports-table,
+  .reports-wrapper--reservations .reports-table-card--operations-primary .reports-table,
+  .reports-wrapper--reservations .reports-table-card--operations-secondary .reports-table {
+    min-width: 640px;
+  }
+
+  .reports-wrapper--reservations .reports-table-card--results .reports-table {
+    min-width: 980px;
+  }
+
+  .reports-filters-card--reservations .reports-filter-header-actions {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    align-self: flex-start;
+    width: auto;
+    gap: 8px;
+  }
+
+  .reports-filters-card--reservations .reports-filter-header-actions .ui-button {
+    width: auto;
+    min-width: 0;
+    padding-inline: 12px;
+    min-height: 40px;
+  }
+
+  .reports-wrapper--reservations .reports-filters-toggle {
+    width: 2.25rem;
+    height: 2.25rem;
+    flex: 0 0 auto;
+  }
+
+}
+
+@media (max-width: 460px) {
+  #reservations-revenue-breakdown {
+    grid-template-columns: 1fr;
+  }
 }
 
 .reports-chart-area .apexcharts-title-text,
@@ -1312,42 +1630,132 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
 .reports-chart-area .apexcharts-data-labels text,
 .reports-chart-area .apexcharts-text,
 .reports-chart-area .apexcharts-tooltip,
-.reports-chart-area .apexcharts-tooltip-title {
+.reports-chart-area .apexcharts-tooltip-title,
+.reports-chart-area .apexcharts-xaxistooltip,
+.reports-chart-area .apexcharts-yaxistooltip {
   font-family: "Tajawal", sans-serif;
 }
 
-:where(html.dark-mode, body.dark-mode) .reports-chart-area .apexcharts-title-text,
-:where(html.dark-mode, body.dark-mode) .reports-chart-area .apexcharts-legend-text,
-:where(html.dark-mode, body.dark-mode) .reports-chart-area .apexcharts-data-labels text,
-:where(html.dark-mode, body.dark-mode) .reports-chart-area .apexcharts-text {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-chart-area .apexcharts-title-text,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-chart-area .apexcharts-legend-text,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-chart-area .apexcharts-data-labels text,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-chart-area .apexcharts-text {
   fill: rgba(226, 232, 240, 0.92) !important;
   color: rgba(226, 232, 240, 0.92) !important;
 }
 
-:where(html.dark-mode, body.dark-mode) .reports-chart-area .apexcharts-legend-text {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-chart-area .apexcharts-legend-text {
   opacity: 0.9;
 }
 
-:where(html.dark-mode, body.dark-mode) .reports-chart-area .apexcharts-tooltip {
-  background: rgba(17, 24, 39, 0.92) !important;
-  border: 1px solid rgba(148, 163, 184, 0.35) !important;
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-chart-area .apexcharts-tooltip {
+  background: rgba(19, 29, 23, 0.96) !important;
+  border: 1px solid rgba(147, 168, 137, 0.35) !important;
+  color: rgba(226, 232, 240, 0.95) !important;
+  box-shadow: 0 18px 36px rgba(7, 12, 9, 0.34) !important;
+  border-radius: 14px !important;
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-chart-area .apexcharts-tooltip-title {
+  background: rgba(24, 38, 28, 0.94) !important;
+  border-bottom-color: rgba(147, 168, 137, 0.35) !important;
   color: rgba(226, 232, 240, 0.95) !important;
 }
 
-:where(html.dark-mode, body.dark-mode) .reports-chart-area .apexcharts-tooltip-title {
-  background: rgba(30, 41, 59, 0.85) !important;
-  border-bottom-color: rgba(148, 163, 184, 0.35) !important;
-  color: rgba(226, 232, 240, 0.95) !important;
-}
-
-:where(html.dark-mode, body.dark-mode) .reports-chart-area .apexcharts-tooltip * {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-chart-area .apexcharts-tooltip * {
   color: inherit !important;
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-chart-area .apexcharts-tooltip-series-group {
+  background: transparent !important;
+  border-color: rgba(147, 168, 137, 0.2) !important;
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-chart-area .apexcharts-tooltip-marker {
+  box-shadow: none !important;
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-chart-area .apexcharts-xaxistooltip,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-chart-area .apexcharts-yaxistooltip {
+  background: rgba(19, 29, 23, 0.96) !important;
+  border: 1px solid rgba(147, 168, 137, 0.35) !important;
+  color: rgba(226, 232, 240, 0.95) !important;
+  box-shadow: 0 18px 36px rgba(7, 12, 9, 0.34) !important;
+  border-radius: 12px !important;
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-chart-area .apexcharts-xaxistooltip::before,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-chart-area .apexcharts-xaxistooltip::after,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-chart-area .apexcharts-yaxistooltip::before,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-chart-area .apexcharts-yaxistooltip::after {
+  border-bottom-color: rgba(19, 29, 23, 0.96) !important;
+  border-top-color: rgba(19, 29, 23, 0.96) !important;
 }
 
 .reports-breakdown-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+#reservations-revenue-breakdown {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+}
+
+#reservations-revenue-breakdown.hidden {
+  display: none;
+}
+
+#reservations-revenue-breakdown .reports-kpi-detail-card {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+  min-height: 112px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid var(--bo-color-content-border);
+  background: var(--bo-color-content-muted-bg);
+  box-shadow: var(--bo-color-content-shadow);
+}
+
+#reservations-revenue-breakdown .reports-kpi-detail-card .reports-kpi-detail-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--clr-muted);
+  line-height: 1.45;
+}
+
+#reservations-revenue-breakdown .reports-kpi-detail-card .reports-kpi-detail-value {
+  font-size: 1.28rem;
+  font-weight: 800;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+#reservations-revenue-breakdown .reports-kpi-detail-card--gross .reports-kpi-detail-value,
+#reservations-revenue-breakdown .reports-kpi-detail-card--crewGross .reports-kpi-detail-value,
+#reservations-revenue-breakdown .reports-kpi-detail-card--equipmentGross .reports-kpi-detail-value {
+  color: var(--reports-accent);
+}
+
+#reservations-revenue-breakdown .reports-kpi-detail-card--discount .reports-kpi-detail-value,
+#reservations-revenue-breakdown .reports-kpi-detail-card--maintenance .reports-kpi-detail-value {
+  color: var(--reports-error);
+}
+
+#reservations-revenue-breakdown .reports-kpi-detail-card--share .reports-kpi-detail-value,
+#reservations-revenue-breakdown .reports-kpi-detail-card--tax .reports-kpi-detail-value,
+#reservations-revenue-breakdown .reports-kpi-detail-card--crew .reports-kpi-detail-value,
+#reservations-revenue-breakdown .reports-kpi-detail-card--equipment .reports-kpi-detail-value {
+  color: var(--reports-warning);
+}
+
+#reservations-revenue-breakdown .reports-kpi-detail-card--net .reports-kpi-detail-value {
+  color: var(--reports-success);
 }
 
 .reports-card-header {
@@ -1453,6 +1861,11 @@ body[dir="ltr"] .reports-card-text {
   min-height: 260px;
 }
 
+.reports-wrapper--reservations .reports-card-body {
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
 .reports-card-body canvas {
   width: 100%;
   max-width: 100%;
@@ -1512,7 +1925,7 @@ body[dir="ltr"] .reports-card-text {
 .reports-chart-bar .bar {
   width: 100%;
   border-radius: 12px 12px 6px 6px;
-  background: linear-gradient(180deg, rgba(var(--reports-accent-rgb, 76, 110, 245), 0.92), rgba(var(--reports-accent-rgb, 76, 110, 245), 0.65));
+  background: linear-gradient(180deg, rgba(var(--reports-accent-rgb, 86, 126, 86), 0.92), rgba(var(--reports-accent-rgb, 86, 126, 86), 0.65));
   transition: height 0.3s ease;
 }
 
@@ -1561,14 +1974,14 @@ body[dir="ltr"] .reports-card-text {
 .reports-progress-bar {
   height: 10px;
   border-radius: 999px;
-  background: rgba(var(--reports-accent-rgb, 76, 110, 245), 0.08);
+  background: rgba(var(--reports-accent-rgb, 86, 126, 86), 0.08);
   overflow: hidden;
 }
 
 .reports-progress-fill {
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, rgba(var(--reports-accent-rgb, 76, 110, 245), 0.95), rgba(var(--reports-accent-rgb, 76, 110, 245), 0.65));
+  background: linear-gradient(90deg, rgba(var(--reports-accent-rgb, 86, 126, 86), 0.95), rgba(var(--reports-accent-rgb, 86, 126, 86), 0.65));
   transition: width 0.3s ease;
 }
 
@@ -1593,10 +2006,71 @@ body[dir="ltr"] .reports-card-text {
   background: linear-gradient(90deg, rgba(0, 0, 0, 0.98), rgba(0, 0, 0, 0.7));
 }
 
+.reports-section-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.reports-section-intro__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  min-height: 2rem;
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--reports-accent-rgb, 86, 126, 86), 0.18);
+  background: rgba(var(--reports-accent-rgb, 86, 126, 86), 0.08);
+  color: var(--reports-accent, #48654a);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.reports-section-intro__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.reports-section-intro__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.reports-section-intro__title {
+  margin: 0;
+  font-size: 1.06rem;
+  font-weight: 800;
+  color: var(--clr-text);
+}
+
+.reports-section-intro__hint {
+  margin: 0;
+  max-width: 62rem;
+  color: var(--clr-muted);
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
 .reports-detail-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
+}
+
+.reports-detail-grid--summary {
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  align-items: stretch;
+}
+
+.reports-detail-grid--operations {
+  grid-template-columns: 1fr;
+  align-items: stretch;
 }
 
 .reports-table-card {
@@ -1605,16 +2079,58 @@ body[dir="ltr"] .reports-card-text {
   border-radius: var(--reports-radius-lg);
 }
 
+.reports-table-card--summary {
+  min-height: 100%;
+}
+
+.reports-table-card--wide {
+  grid-column: 1 / -1;
+}
+
+.reports-table-card--results {
+  margin-top: 4px;
+}
+
+.reports-table-card--customers {
+  grid-column: span 7;
+}
+
+.reports-table-card--outstanding {
+  grid-column: span 5;
+}
+
+.reports-table-card--equipment-usage {
+  grid-column: span 5;
+}
+
+.reports-table-card--forecast {
+  grid-column: span 7;
+}
+
+.reports-table-card--operations-primary.reports-table-card--crew,
+.reports-table-card--operations-primary.reports-table-card--equipment-costs,
+.reports-table-card--operations-secondary.reports-table-card--maintenance {
+  grid-column: 1 / -1;
+}
+
 .reports-table-card .reports-card-header {
   padding: 22px 26px 12px;
-  background: linear-gradient(135deg, rgba(248, 250, 255, 0.96), rgba(233, 240, 255, 0.88));
+  background: linear-gradient(135deg, rgba(248, 250, 247, 0.96), rgba(236, 242, 238, 0.9));
   border-bottom: 1px solid var(--bo-color-table-head-border);
 }
 
-:where(html.dark-mode, body.dark-mode) .reports-table-card .reports-card-header {
-  background: linear-gradient(140deg, rgba(18, 28, 54, 0.92), rgba(10, 18, 40, 0.9));
-  border-bottom: 1px solid rgba(93, 133, 255, 0.32);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-table-card .reports-card-header {
+  background: linear-gradient(140deg, rgba(24, 36, 29, 0.92), rgba(16, 25, 21, 0.9));
+  border-bottom: 1px solid rgba(147, 168, 137, 0.22);
   box-shadow: inset 0 -1px 0 var(--bo-color-table-head-border);
+}
+
+.reports-table-card--featured .reports-card-header {
+  background: linear-gradient(135deg, rgba(244, 248, 244, 0.98), rgba(232, 239, 234, 0.92));
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-table-card--featured .reports-card-header {
+  background: linear-gradient(135deg, rgba(27, 41, 33, 0.96), rgba(18, 29, 23, 0.94));
 }
 
 .reports-table-card .reports-card-title {
@@ -1649,16 +2165,236 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
   backdrop-filter: blur(10px);
 }
 
+.reports-results-table-wrapper {
+  width: 100%;
+}
+
+.reports-table-card--summary .reports-table-wrapper,
+.reports-table-card--results .reports-results-table-wrapper {
+  background: var(--bo-color-content-bg);
+}
+
+.reports-table-card--summary-compact .reports-table-wrapper {
+  min-height: 100%;
+}
+
 .reports-table-card .reports-table-wrapper::before {
   display: none;
 }
 
 .reports-table-card .reports-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 0.95rem;
   color: var(--clr-text);
   background: transparent;
+}
+
+.reports-results-table {
+  width: 100%;
+}
+
+.reports-table-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
+.reports-summary-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--reports-accent-rgb, 86, 126, 86), 0.16);
+  background: rgba(var(--reports-accent-rgb, 86, 126, 86), 0.08);
+  color: var(--clr-text);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.reports-summary-chip--muted {
+  background: var(--bo-color-content-muted-bg);
+  border-color: var(--bo-color-content-border);
+  color: var(--clr-muted);
+}
+
+.reports-wrapper--reservations #reservations-revenue-card {
+  background: var(--bo-color-content-bg);
+  border: 1px solid var(--bo-color-content-border);
+}
+
+.reports-wrapper--reservations #reservations-revenue-card .reports-card-body {
+  padding-top: 0;
+}
+
+.reports-breakdown-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.reports-kpi-detail-row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-height: 100%;
+  padding: 0.9rem 1rem;
+  border-radius: 16px;
+  border: 1px solid var(--bo-color-content-border);
+  background: var(--bo-color-content-muted-bg);
+}
+
+.reports-kpi-detail-label {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--clr-muted);
+}
+
+.reports-kpi-detail-value {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--clr-text);
+}
+
+.reports-table--crew th:nth-child(1),
+.reports-table--crew td:nth-child(1),
+.reports-table--equipment-costs th:nth-child(1),
+.reports-table--equipment-costs td:nth-child(1) {
+  text-align: start;
+}
+
+.reports-table--crew th:not(:first-child),
+.reports-table--crew td:not(:first-child),
+.reports-table--equipment-costs th:not(:first-child),
+.reports-table--equipment-costs td:not(:first-child) {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.reports-table-card:not(.reports-table-card--results) .reports-table thead th,
+.reports-table-card:not(.reports-table-card--results) .reports-table tbody td {
+  white-space: nowrap;
+}
+
+.reports-table-card:not(.reports-table-card--results) .reports-table tbody td:first-child {
+  white-space: normal;
+}
+
+.reports-table-card--results #reports-reservations-table th,
+.reports-table-card--results #reports-reservations-table td {
+  white-space: nowrap;
+}
+
+.reports-table-card--results #reports-reservations-table td[data-report-column="code"],
+.reports-table-card--results #reports-reservations-table td[data-report-column="customer"],
+.reports-table-card--results #reports-reservations-table td[data-report-column="date"] {
+  white-space: normal;
+}
+
+.reports-table-card--results #reports-reservations-table th[data-report-column="customer"],
+.reports-table-card--results #reports-reservations-table td[data-report-column="customer"] {
+  text-align: start;
+  min-width: 190px;
+}
+
+.reports-table-card--results #reports-reservations-table th[data-report-column="date"],
+.reports-table-card--results #reports-reservations-table td[data-report-column="date"] {
+  min-width: 172px;
+}
+
+.reports-table-card--results #reports-reservations-table th[data-report-column="status"],
+.reports-table-card--results #reports-reservations-table td[data-report-column="status"],
+.reports-table-card--results #reports-reservations-table th[data-report-column="payment"],
+.reports-table-card--results #reports-reservations-table td[data-report-column="payment"] {
+  min-width: 130px;
+}
+
+.reports-table-card--results #reports-reservations-table th[data-report-column="total"],
+.reports-table-card--results #reports-reservations-table td[data-report-column="total"],
+.reports-table-card--results #reports-reservations-table th[data-report-column="share"],
+.reports-table-card--results #reports-reservations-table td[data-report-column="share"],
+.reports-table-card--results #reports-reservations-table th[data-report-column="equipmentCost"],
+.reports-table-card--results #reports-reservations-table td[data-report-column="equipmentCost"],
+.reports-table-card--results #reports-reservations-table th[data-report-column="net"],
+.reports-table-card--results #reports-reservations-table td[data-report-column="net"] {
+  min-width: 138px;
+  text-align: center;
+}
+
+.reports-row-title {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.reports-row-title__main {
+  font-weight: 700;
+  color: var(--clr-text);
+  line-height: 1.25;
+}
+
+.reports-row-title__sub {
+  font-size: 0.84rem;
+  color: var(--clr-muted);
+  line-height: 1.2;
+}
+
+.reports-date-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.reports-date-stack__main {
+  font-weight: 700;
+  color: var(--clr-text);
+  line-height: 1.2;
+}
+
+.reports-date-stack__sub {
+  font-size: 0.84rem;
+  color: var(--clr-muted);
+  line-height: 1.2;
+}
+
+.reports-cell-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.25rem;
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid var(--bo-color-content-border);
+  background: var(--bo-color-content-bg);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.reports-cell-pill--danger {
+  color: #c2410c;
+  border-color: rgba(194, 65, 12, 0.28);
+  background: rgba(194, 65, 12, 0.08);
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-row-title__main {
+  color: var(--clr-text);
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-cell-pill {
+  background: rgba(24, 36, 29, 0.92);
+  border-color: rgba(147, 168, 137, 0.22);
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-cell-pill--danger {
+  color: #fdba74;
+  border-color: rgba(251, 146, 60, 0.28);
+  background: rgba(234, 88, 12, 0.12);
 }
 
 /* Give booking code column more breathing room and keep numerals aligned */
@@ -1672,7 +2408,8 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
   color: rgba(29, 41, 72, 0.98);
   font-weight: 700;
   padding: 1rem 1.25rem;
-  border: 1px solid var(--bo-color-table-head-border);
+  border: 0;
+  border-bottom: 1px solid var(--bo-color-table-head-border);
   text-align: center;
   letter-spacing: 0.01em;
   text-transform: none;
@@ -1680,7 +2417,8 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
 
 .reports-table-card .reports-table tbody td {
   padding: 0.9rem 1.25rem;
-  border: 1px solid var(--bo-color-table-row-border);
+  border: 0;
+  border-bottom: 1px solid var(--bo-color-table-row-border);
   background: transparent;
   color: var(--clr-text);
   font-weight: 500;
@@ -1715,40 +2453,42 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
   border-bottom-right-radius: 1.25rem;
 }
 
-.reports-table-card .reports-table tbody tr:hover {
+.reports-table-card .reports-table tbody tr:hover > * {
   background: var(--bo-color-table-row-edit-bg);
 }
 
-:is(html.dark-mode, body.dark-mode) .reports-table-card .reports-table-wrapper {
-  border-color: rgba(93, 133, 255, 0.24);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-table-card:not(.reports-table-card--results) .reports-table-wrapper,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-table-card--results .reports-results-table-wrapper {
+  border-color: rgba(147, 168, 137, 0.18);
   background: var(--bo-color-content-muted-bg);
-  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.25);
+  box-shadow: 0 12px 24px rgba(18, 45, 24, 0.18);
 }
 
-:is(html.dark-mode, body.dark-mode) .reports-table-card .reports-table-wrapper::before {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-table-card:not(.reports-table-card--results) .reports-table-wrapper::before,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-table-card--results .reports-results-table-wrapper::before {
   display: none;
 }
 
-:is(html.dark-mode, body.dark-mode) .reports-table-card .reports-table {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-table-card .reports-table {
   background: transparent;
   color: var(--clr-text);
 }
 
-:is(html.dark-mode, body.dark-mode) .reports-table-card .reports-table thead th {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-table-card .reports-table thead th {
   background: var(--bo-color-table-head-bg);
   border-color: var(--bo-color-table-head-border);
   color: var(--bo-color-table-head-fg);
-  box-shadow: inset 0 -1px 0 rgba(21, 32, 27, 0.38);
+  box-shadow: none;
 }
 
-:is(html.dark-mode, body.dark-mode) .reports-table-card .reports-table tbody td {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-table-card .reports-table tbody td {
   background: transparent;
-  border-color: rgba(93, 133, 255, 0.22);
+  border-color: rgba(147, 168, 137, 0.18);
   color: var(--clr-text);
 }
 
-:is(html.dark-mode, body.dark-mode) .reports-table-card .reports-table tbody tr:hover {
-  background: rgba(93, 133, 255, 0.16);
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-table-card .reports-table tbody tr:hover > * {
+  background: rgba(86, 126, 86, 0.14);
 }
 
 .reports-empty-state {
@@ -1777,7 +2517,7 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
   font-size: 0.95rem;
 }
 
-:is(html.dark-mode, body.dark-mode) .reports-empty-state {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-empty-state {
   border-color: var(--reports-border-strong);
   background: rgba(var(--reports-accent-rgb, 76, 110, 245), 0.12);
   color: var(--reports-text);
@@ -1815,6 +2555,78 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
   }
 }
 
+/* ── Split KPI card (netProfit: paper profit vs collected profit) ─────────── */
+/* Ensure featured card spans 2 columns at all viewport sizes (overrides the
+   mobile-only span inside @media max-width:768px). */
+.reports-wrapper--projects .reports-kpi-card--featured,
+.reports-wrapper--projects .reports-kpi-card[data-featured="true"] {
+  grid-column: unset;
+}
+
+.reports-wrapper--projects .reports-kpi-content--split {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.reports-wrapper--projects .reports-kpi-split-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  flex: 1;
+  min-height: 0;
+}
+
+.reports-wrapper--projects .reports-kpi-split-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 6px 16px;
+}
+
+.reports-wrapper--projects .reports-kpi-split-col--primary {
+  padding-inline-start: 0;
+}
+
+.reports-wrapper--projects .reports-kpi-split-col--secondary {
+  padding-inline-end: 0;
+}
+
+.reports-wrapper--projects .reports-kpi-split-col__eyebrow {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--clr-muted);
+  line-height: 1.3;
+}
+
+.reports-wrapper--projects .reports-kpi-split-divider {
+  width: 1px;
+  flex-shrink: 0;
+  background: var(--bo-color-content-border);
+  margin-block: 2px;
+  opacity: 0.6;
+}
+
+.reports-wrapper--projects .reports-kpi-split-col--secondary .reports-metric-badge--collected {
+  color: var(--clr-muted);
+  opacity: 0.9;
+}
+
+.reports-wrapper--projects .reports-kpi-split-col--secondary[data-collection-low="true"] .reports-metric-badge--collected {
+  color: var(--reports-warning, #f08c00);
+  opacity: 1;
+}
+
+.reports-wrapper--projects .reports-kpi-split-col--secondary[data-collection-low="true"] .reports-kpi-split-col__eyebrow {
+  color: var(--reports-warning, #f08c00);
+}
+/* ─────────────────────────────────────────────────────────────────────────── */
+
 @media (max-width: 768px) {
   .reports-wrapper {
     padding: 16px 12px;
@@ -1830,8 +2642,8 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
     padding: 16px 12px;
   }
 
-  .reports-kpi-grid,
-  .reports-analytics-grid {
+  .reports-wrapper--projects .reports-kpi-grid,
+  .reports-wrapper--projects .reports-analytics-grid {
     display: flex;
     overflow-x: auto;
     overflow-y: hidden;
@@ -1844,21 +2656,21 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
     -webkit-overflow-scrolling: touch;
   }
 
-  .reports-kpi-card,
-  .reports-chart-card {
+  .reports-wrapper--projects .reports-kpi-card,
+  .reports-wrapper--projects .reports-chart-card {
     flex: 0 0 min(280px, 85vw);
     scroll-snap-align: start;
   }
 
-  .reports-chart-card--wide {
+  .reports-wrapper--projects .reports-chart-card--wide {
     flex-basis: min(320px, 90vw);
   }
 
   /* Mobile: make the monthly volume chart breathe a bit more */
-  .reports-chart-card--volume {
+  .reports-wrapper--projects .reports-chart-card--volume {
     flex: 0 0 min(420px, 96vw);
   }
-  .reports-chart-card--volume #reports-volume-chart {
+  .reports-wrapper--projects .reports-chart-card--volume #reports-volume-chart {
     min-height: 460px;
   }
 
@@ -1868,10 +2680,39 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
     column-gap: 8px; /* re-introduce a small horizontal gap on wrap */
     row-gap: 10px;
   }
+  .reports-filters-card--reservations .reports-filters-card__header,
+  .reports-wrapper--reservations .reports-filters-row,
+  .reports-wrapper--reservations .reports-filters-row--top,
+  .reports-wrapper--reservations .reports-filters-row--dates-actions,
+  .reports-wrapper--reservations .reports-filters-row--presets {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .reports-wrapper--reservations .reports-filter-field--status-chips,
+  .reports-wrapper--reservations .reports-presets-select,
+  .reports-wrapper--reservations .reports-filter-inline-actions {
+    min-width: 0;
+    width: 100%;
+    flex: 1 1 auto;
+  }
+  .reports-wrapper--reservations .reports-filter-inline-actions .reports-action-btn,
+  .reports-filters-card--reservations .reports-filter-header-actions .ui-button {
+    width: 100%;
+    justify-content: center;
+  }
+  .reports-breakdown-list {
+    grid-template-columns: 1fr;
+  }
+  .reports-wrapper--reservations .reports-custom-range {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .reports-wrapper--reservations .reports-presets-select {
+    max-width: none;
+  }
   /* Avoid cramped/overflowing inputs on small screens */
-  .reports-wrapper--reservations .reports-filters .form-control,
-  .reports-wrapper--reservations .reports-filters .form-select,
-  .reports-wrapper--reservations .reports-filters-grid .reports-filter-control {
+  .reports-wrapper--reservations .reports-filters .reports-filter-control {
     min-width: 0;
     width: 100%;
   }
@@ -1890,11 +2731,30 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
     grid-template-columns: 1fr;
     gap: 14px;
   }
-  /* Enforce explicit order inside the top sections grid on mobile */
-  #reports-top-sections > .reports-table-card:nth-child(1) { order: 1; }
-  #reports-top-sections > .reports-table-card:nth-child(2) { order: 2; }
+  .reports-detail-grid--summary,
+  .reports-detail-grid--operations {
+    grid-template-columns: 1fr;
+  }
+  .reports-table-card--customers,
+  .reports-table-card--outstanding,
+  .reports-table-card--equipment-usage,
+  .reports-table-card--forecast,
+  .reports-table-card--operations-primary.reports-table-card--crew,
+  .reports-table-card--operations-primary.reports-table-card--equipment-costs,
+  .reports-table-card--operations-secondary.reports-table-card--maintenance {
+    grid-column: auto;
+  }
+  .reports-section-intro__header {
+    flex-direction: column;
+  }
+  .reports-table-toolbar {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
 
-.reports-table-card .reports-table-wrapper {
+.reports-table-card:not(.reports-table-card--results) .reports-table-wrapper,
+.reports-table-card--results .reports-results-table-wrapper {
   overflow: auto;
   margin-inline: -12px;
   padding-inline: 12px;
@@ -1906,9 +2766,58 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
   min-width: 960px;
 }
 
+.reports-wrapper--reservations .reports-table-card .reports-table-wrapper {
+  margin-inline: 0;
+  padding-inline: 0;
+  border: 1px solid var(--bo-color-content-border);
+  background: var(--bo-color-content-bg);
+}
+
+.reports-wrapper--reservations .reports-table-card--summary .reports-table,
+.reports-wrapper--reservations .reports-table-card--operations-primary .reports-table,
+.reports-wrapper--reservations .reports-table-card--operations-secondary .reports-table {
+  min-width: 720px;
+}
+
+.reports-wrapper--reservations .reports-table--crew {
+  min-width: 980px;
+}
+
+.reports-wrapper--reservations .reports-table--equipment-costs {
+  min-width: 1040px;
+}
+
+.reports-wrapper--reservations .reports-table-card--results .reports-table {
+  min-width: 1100px;
+}
+
+.reports-wrapper--reservations .reports-table-card .reports-table thead th {
+  padding: 0.9rem 1rem;
+}
+
+.reports-wrapper--reservations .reports-table-card .reports-table tbody td {
+  padding: 0.82rem 1rem;
+}
+
+.reports-wrapper--reservations .reports-table-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.reports-wrapper--reservations .reports-summary-chip {
+  border-radius: 999px;
+  border: 1px solid var(--bo-color-content-border);
+  background: var(--bo-color-content-muted-bg);
+  padding: 0.5rem 0.85rem;
+}
+
 /* Desktop sticky header + scrollable body */
 @media (min-width: 1024px) {
-  .reports-table-card .reports-table-wrapper {
+  .reports-table-card:not(.reports-table-card--results) .reports-table-wrapper,
+  .reports-table-card--results .reports-results-table-wrapper {
     max-height: 60vh;
   }
   .reports-table thead th {
@@ -1918,7 +2827,7 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
     background: var(--reports-surface-contrast, rgba(248, 250, 255, 0.85));
     backdrop-filter: blur(6px);
   }
-  :is(html.dark-mode, body.dark-mode) .reports-table thead th {
+  :where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-table thead th {
     background: var(--bo-color-table-head-bg);
     color: var(--bo-color-table-head-fg);
     border-color: var(--bo-color-table-head-border);
@@ -1950,7 +2859,7 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
   background: var(--bo-color-tab-shell-bg);
   font-weight: 600;
 }
-:is(html.dark, body.dark) .reports-active-filters .filter-chip {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-active-filters .filter-chip {
   background: var(--bo-color-tab-shell-bg);
   border-color: var(--bo-color-tab-shell-border);
 }
@@ -1962,26 +2871,1341 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
   color: inherit;
 }
 
-.reports-table-pagination {
+/* Project Reports */
+.reports-wrapper--projects {
+  gap: 24px;
+  --reports-surface: var(--bo-color-content-bg);
+  --reports-surface-soft: var(--bo-color-content-muted-bg);
+  --reports-surface-contrast: var(--bo-color-shell-bg);
+  --reports-border: var(--bo-color-content-border);
+  --reports-border-strong: var(--bo-color-content-muted-border);
+  --reports-shadow: var(--bo-color-content-shadow);
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-wrapper--projects {
+  --reports-shadow: var(--bo-color-content-shadow-elevated);
+}
+
+.reports-wrapper--projects {
+  --reports-metric-neutral-fg: var(--clr-text);
+  --reports-metric-neutral-bg: color-mix(in srgb, var(--bo-color-content-muted-bg) 92%, transparent);
+  --reports-metric-neutral-border: color-mix(in srgb, var(--bo-color-content-muted-border) 80%, transparent);
+  --reports-metric-count-fg: var(--reports-accent);
+  --reports-metric-count-bg: color-mix(in srgb, var(--reports-accent) 10%, transparent);
+  --reports-metric-count-border: color-mix(in srgb, var(--reports-accent) 22%, var(--bo-color-content-border));
+  --reports-metric-revenue-fg: #34d399;
+  --reports-metric-revenue-bg: color-mix(in srgb, #34d399 12%, transparent);
+  --reports-metric-revenue-border: color-mix(in srgb, #34d399 26%, var(--bo-color-content-border));
+  --reports-metric-profit-fg: var(--reports-success);
+  --reports-metric-profit-bg: color-mix(in srgb, var(--reports-success) 12%, transparent);
+  --reports-metric-profit-border: color-mix(in srgb, var(--reports-success) 26%, var(--bo-color-content-border));
+  --reports-metric-cost-fg: var(--reports-warning);
+  --reports-metric-cost-bg: color-mix(in srgb, var(--reports-warning) 12%, transparent);
+  --reports-metric-cost-border: color-mix(in srgb, var(--reports-warning) 26%, var(--bo-color-content-border));
+  --reports-metric-risk-fg: var(--reports-error);
+  --reports-metric-risk-bg: color-mix(in srgb, var(--reports-error) 12%, transparent);
+  --reports-metric-risk-border: color-mix(in srgb, var(--reports-error) 24%, var(--bo-color-content-border));
+}
+
+.reports-wrapper--projects .reports-header-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  padding: clamp(1.25rem, 2vw, 1.75rem);
+  align-items: stretch;
+  gap: 20px;
+  background: var(--bo-color-content-bg);
+  border-color: var(--bo-color-content-border);
+  box-shadow: var(--bo-color-content-shadow);
+}
+
+#projects-reports-tab .reports-header-card {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+.reports-wrapper--projects .reports-header-leading {
+  width: 100%;
+  flex: 0 0 auto;
+  align-items: flex-start;
+}
+
+.reports-wrapper--projects .reports-card-text {
+  gap: 6px;
+}
+
+.reports-wrapper--projects .reports-card-note {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: var(--clr-muted);
+}
+
+.reports-wrapper--projects .reports-subtitle {
+  max-width: 62ch;
+  line-height: 1.7;
+}
+
+.reports-wrapper--projects .reports-header-summary {
+  display: block;
+  width: 100%;
+}
+
+#projects-reports-tab .reports-header-summary {
+  display: block !important;
+  width: 100% !important;
+}
+
+/* ── Legacy overview grid (kept for backward compat if rendered elsewhere) ── */
+.reports-wrapper--projects .reports-overview-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 0.95fr);
+  gap: 14px;
+  width: 100%;
+}
+
+.reports-wrapper--projects .reports-overview-panel {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--bo-color-content-muted-border);
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--bo-color-content-muted-bg) 82%, var(--bo-color-content-bg)), var(--bo-color-content-bg));
+  box-shadow: var(--bo-color-content-shadow);
+}
+
+.reports-wrapper--projects .reports-overview-panel--status {
+  align-content: start;
+}
+
+.reports-wrapper--projects .reports-overview-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.reports-wrapper--projects .reports-overview-panel__copy {
+  display: grid;
+  gap: 4px;
+}
+
+.reports-wrapper--projects .reports-overview-panel__eyebrow {
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--clr-muted);
+}
+
+.reports-wrapper--projects .reports-overview-panel__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.4;
+  color: var(--clr-text);
+}
+
+.reports-wrapper--projects .reports-overview-panel__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.25rem;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--bo-color-content-border);
+  border-radius: 999px;
+  background: var(--bo-color-content-bg);
+  color: var(--clr-text);
+  font-size: 0.84rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.reports-wrapper--projects .reports-status-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.reports-wrapper--projects .reports-status-summary__item,
+.reports-wrapper--projects .reports-overview-context__item {
+  display: grid;
+  gap: 8px;
+  padding: 16px 18px;
+  min-height: 132px;
+  align-content: start;
+  border: 1px solid var(--reports-metric-border);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--reports-metric-fg) 7%, var(--bo-color-content-bg)), var(--bo-color-content-bg));
+  box-shadow: var(--bo-color-content-shadow);
+  --reports-metric-fg: var(--reports-metric-neutral-fg);
+  --reports-metric-bg: var(--reports-metric-neutral-bg);
+  --reports-metric-border: var(--reports-metric-neutral-border);
+}
+
+.reports-wrapper--projects .reports-status-summary__label,
+.reports-wrapper--projects .reports-overview-context__label {
+  font-size: 0.79rem;
+  font-weight: 700;
+  color: var(--clr-muted);
+}
+
+.reports-wrapper--projects .reports-status-summary__value {
+  margin: 0;
+  font-size: clamp(1.6rem, 2vw, 2rem);
+  line-height: 1;
+  font-weight: 900;
+  color: var(--reports-metric-fg);
+  font-variant-numeric: tabular-nums;
+  -webkit-font-feature-settings: "tnum" 1;
+          font-feature-settings: "tnum" 1;
+}
+
+.reports-wrapper--projects .reports-status-summary__meta,
+.reports-wrapper--projects .reports-overview-context__meta {
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--clr-muted);
+}
+
+.reports-wrapper--projects .reports-overview-context {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  height: 100%;
+}
+
+.reports-wrapper--projects .reports-comparison-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.reports-wrapper--projects .reports-comparison-pill {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--bo-color-content-border);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--reports-accent) 8%, var(--bo-color-content-bg));
+}
+
+.reports-wrapper--projects .reports-comparison-pill__label,
+.reports-wrapper--projects .reports-comparison-pill__previous {
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--clr-muted);
+}
+
+.reports-wrapper--projects .reports-comparison-pill__current {
+  font-size: 1.12rem;
+  line-height: 1.2;
+  font-weight: 900;
+  color: var(--clr-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.reports-wrapper--projects .reports-overview-context__item {
+  justify-content: space-between;
+}
+
+.reports-wrapper--projects .reports-overview-context__value {
+  display: flex;
+  align-items: flex-start;
+  margin: 0;
+}
+
+.reports-wrapper--projects [data-tone="neutral"] {
+  --reports-metric-fg: var(--reports-metric-neutral-fg);
+  --reports-metric-bg: var(--reports-metric-neutral-bg);
+  --reports-metric-border: var(--reports-metric-neutral-border);
+}
+
+.reports-wrapper--projects [data-tone="count"] {
+  --reports-metric-fg: var(--reports-metric-count-fg);
+  --reports-metric-bg: var(--reports-metric-count-bg);
+  --reports-metric-border: var(--reports-metric-count-border);
+}
+
+.reports-wrapper--projects [data-tone="revenue"] {
+  --reports-metric-fg: var(--reports-metric-revenue-fg);
+  --reports-metric-bg: var(--reports-metric-revenue-bg);
+  --reports-metric-border: var(--reports-metric-revenue-border);
+}
+
+.reports-wrapper--projects [data-tone="profit"] {
+  --reports-metric-fg: var(--reports-metric-profit-fg);
+  --reports-metric-bg: var(--reports-metric-profit-bg);
+  --reports-metric-border: var(--reports-metric-profit-border);
+}
+
+.reports-wrapper--projects [data-tone="cost"] {
+  --reports-metric-fg: var(--reports-metric-cost-fg);
+  --reports-metric-bg: var(--reports-metric-cost-bg);
+  --reports-metric-border: var(--reports-metric-cost-border);
+}
+
+.reports-wrapper--projects [data-tone="risk"] {
+  --reports-metric-fg: var(--reports-metric-risk-fg);
+  --reports-metric-bg: var(--reports-metric-risk-bg);
+  --reports-metric-border: var(--reports-metric-risk-border);
+}
+
+.reports-wrapper--projects .reports-metric-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.2rem;
+  max-width: 100%;
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid var(--reports-metric-border);
+  background: color-mix(in srgb, var(--reports-metric-fg) 14%, var(--bo-color-content-bg));
+  color: var(--reports-metric-fg);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 1px 2px rgba(15, 23, 42, 0.04);
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.reports-wrapper--projects .reports-metric-badge--summary {
+  font-size: 1.02rem;
+}
+
+.reports-wrapper--projects .reports-metric-badge--kpi {
+  font-size: 1.12rem;
+}
+
+.reports-wrapper--projects .project-filters-compact--reports {
+  padding: 24px;
+  background: var(--bo-color-content-bg);
+  border: 1px solid var(--bo-color-content-border);
+  border-radius: var(--radius-lg);
+  box-shadow: none;
+}
+
+.reports-wrapper--projects .project-filters-compact--reports .project-filters-compact__header {
+  margin-bottom: 14px;
+}
+
+.reports-wrapper--projects .project-reports-filters {
+  display: block;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  position: relative;
+  z-index: 1;
+}
+
+.reports-wrapper--projects .project-reports-filters__grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(12rem, 1fr));
+  gap: 12px;
+  align-items: stretch;
+  justify-content: stretch;
+}
+
+.reports-wrapper--projects .project-reports-filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.reports-wrapper--projects .project-reports-filters__grid .project-filters-grid__search {
+  grid-column: 1 / -1;
+  width: min(100%, 36rem);
+  max-width: 36rem;
+  justify-self: end;
+}
+
+.reports-wrapper--projects .project-reports-filters__grid .project-reports-filter-field--full,
+.reports-wrapper--projects .project-reports-filters__grid .project-reports-custom-range {
+  grid-column: 1 / -1;
+}
+
+.reports-wrapper--projects .project-reports-filters__grid .project-reports-filter-field--statuses {
+  width: min(100%, 28rem);
+  max-width: 28rem;
+  justify-self: end;
+}
+
+.reports-wrapper--projects .reports-filter-label {
+  margin: 0;
+  color: var(--clr-muted);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.reports-wrapper--projects .reports-filter-control,
+.reports-wrapper--projects .project-reports-filters .enhanced-select,
+.reports-wrapper--projects .project-reports-filters .enhanced-select__trigger {
+  width: 100%;
+  min-width: 0;
+  min-height: 52px;
+}
+
+.reports-wrapper--projects .project-reports-filter-field--search .filters-search {
+  min-width: 0;
+}
+
+.reports-wrapper--projects .project-reports-filter-field--statuses {
+  align-self: stretch;
+}
+
+.reports-wrapper--projects .project-reports-status-chips {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 10px;
+  min-height: 52px;
+  width: 100%;
+  padding: 8px 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  border: 1px solid var(--bo-color-content-border);
+  border-radius: var(--radius-lg);
+  background: var(--bo-color-content-bg);
+  scrollbar-width: thin;
+}
+
+.reports-wrapper--projects .project-reports-status-chips .reports-status-chip {
+  flex: 0 0 auto;
+  cursor: pointer;
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 999px;
+  box-shadow: none;
+}
+
+.reports-wrapper--projects .project-reports-status-chips .reports-status-chip.is-active {
+  outline: 1px solid currentColor;
+  outline-offset: 1px;
+  box-shadow: none;
+}
+
+.reports-wrapper--projects .project-reports-filter-field--dates {
+  min-width: 0;
+}
+
+.reports-wrapper--projects .project-reports-custom-range {
+  display: none;
+  align-items: stretch;
+  width: min(100%, 28rem);
+  max-width: 28rem;
+  justify-self: end;
+  border: 1px solid var(--bo-color-content-border);
+  border-radius: var(--radius-lg);
+  background: var(--bo-color-content-bg);
+  box-shadow: none;
+  padding: 10px;
+}
+
+.reports-wrapper--projects .project-reports-custom-range.active {
+  display: flex;
+}
+
+.reports-wrapper--projects .project-reports-custom-range.is-disabled {
+  opacity: 0.58;
+  pointer-events: none;
+}
+
+.reports-wrapper--projects .reports-date-range-inputs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.reports-wrapper--projects .project-reports-filter-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  justify-content: stretch;
+  gap: 10px;
+  min-width: 0;
+}
+
+.reports-wrapper--projects .reports-refresh-btn,
+.reports-wrapper--projects #projects-export-excel {
+  width: 100%;
+  min-width: 0;
+}
+
+.reports-wrapper--projects .reports-kpi-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.reports-wrapper--projects .reports-kpi-card {
+  position: relative;
+  display: grid;
+  align-content: start;
+  min-height: 148px;
+  padding: 18px 20px;
+  gap: 14px;
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--reports-metric-fg) 5%, var(--bo-color-content-bg)), var(--bo-color-content-bg));
+  border: 1px solid var(--reports-metric-border);
+  box-shadow: var(--bo-color-content-shadow);
+  --reports-metric-fg: var(--reports-metric-neutral-fg);
+  --reports-metric-bg: var(--reports-metric-neutral-bg);
+  --reports-metric-border: var(--reports-metric-neutral-border);
+}
+
+.reports-wrapper--projects .reports-kpi-card::after {
+  content: "";
+  position: absolute;
+  inset-inline: 18px;
+  top: 0;
+  height: 3px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--reports-metric-fg) 78%, transparent);
+  opacity: 0.82;
+}
+
+.reports-wrapper--projects .reports-kpi-card--featured {
+  border-width: 1.5px;
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.12);
+  grid-column: unset;
+  min-height: 0;
+}
+
+.reports-wrapper--projects .reports-kpi-card[data-featured="true"] {
+  grid-column: unset;
+  min-height: 0;
+}
+
+/* ── KPI two-band layout ─────────────────────────────────────────────── */
+/* Primary band: top 3 financial headliners — wider cards, taller, bolder */
+.reports-kpi-band {
+  display: grid;
+  gap: 14px;
+}
+
+.reports-kpi-band--primary {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* Secondary band: 4-5 supporting metrics — compact cards */
+.reports-kpi-band--secondary {
+  grid-template-columns: repeat(var(--kpi-cols, 5), 1fr);
+}
+
+/* Row 2 cards: slightly more compact since all 8 cards now have equal width */
+.reports-kpi-band--row2 .reports-kpi-card {
+  min-height: 0;
+}
+
+/* Meta text: allow up to 2 lines then clip */
+.reports-wrapper--projects .reports-kpi-meta {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.reports-wrapper--projects .reports-kpi-card__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 8px 0 0;
+  gap: 12px;
 }
-.reports-table-pagination .pager {
+
+.reports-wrapper--projects .reports-kpi-card__header-tags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.reports-wrapper--projects .reports-kpi-card .reports-kpi-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: var(--reports-metric-bg);
+  background-image: none;
+  color: var(--reports-metric-fg);
+  border: 1px solid var(--reports-metric-border);
+}
+
+.reports-wrapper--projects .reports-kpi-card__tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.95rem;
+  padding: 0.28rem 0.72rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--reports-metric-fg) 16%, var(--bo-color-content-border));
+  background: color-mix(in srgb, var(--reports-metric-fg) 9%, var(--bo-color-content-bg));
+  color: var(--reports-metric-fg);
+  font-size: 0.73rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.reports-wrapper--projects .reports-kpi-delta {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.95rem;
+  padding: 0.28rem 0.72rem;
+  border-radius: 999px;
+  border: 1px solid var(--bo-color-content-border);
+  background: var(--bo-color-content-bg);
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.reports-wrapper--projects .reports-kpi-delta--positive {
+  color: var(--reports-success);
+  border-color: color-mix(in srgb, var(--reports-success) 24%, var(--bo-color-content-border));
+  background: color-mix(in srgb, var(--reports-success) 10%, var(--bo-color-content-bg));
+}
+
+.reports-wrapper--projects .reports-kpi-delta--negative {
+  color: var(--reports-error);
+  border-color: color-mix(in srgb, var(--reports-error) 24%, var(--bo-color-content-border));
+  background: color-mix(in srgb, var(--reports-error) 10%, var(--bo-color-content-bg));
+}
+
+.reports-wrapper--projects .reports-kpi-delta--neutral {
+  color: var(--clr-muted);
+}
+
+.reports-wrapper--projects .reports-card-icon,
+.reports-wrapper--projects .reports-kpi-icon {
+  filter: none;
+}
+
+.reports-wrapper--projects .reports-card-icon {
+  background-color: color-mix(in srgb, var(--reports-accent) 14%, transparent);
+}
+
+.reports-wrapper--projects .reports-kpi-content {
+  width: 100%;
+  display: grid;
+  align-content: space-between;
+  gap: 8px;
+  min-height: 100%;
+}
+
+.reports-wrapper--projects .reports-kpi-card .reports-kpi-label,
+.reports-wrapper--projects .reports-kpi-meta {
+  overflow: visible;
+  text-overflow: initial;
+}
+
+.reports-wrapper--projects .reports-kpi-card .reports-kpi-label {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  white-space: normal;
+  letter-spacing: 0;
+}
+
+.reports-wrapper--projects .reports-kpi-value {
+  margin: 0;
+  text-align: start;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  color: var(--clr-text) !important;
+  font-size: 1.35rem;
+}
+
+.reports-wrapper--projects .reports-kpi-card--featured .reports-metric-badge--kpi {
+  font-size: clamp(1.2rem, 1.45vw, 1.35rem);
+}
+
+.reports-wrapper--projects .reports-kpi-card--featured .reports-kpi-label {
+  font-size: 0.96rem;
+}
+
+.reports-wrapper--projects .reports-kpi-meta {
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--clr-muted);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+.reports-wrapper--projects #projects-revenue-breakdown {
+  display: block;
+  inline-size: 100% !important;
+  width: 100% !important;
+  max-width: none !important;
+  max-inline-size: none !important;
+  margin-inline: 0;
+  justify-self: stretch;
+  align-self: stretch;
+  padding: 20px;
+  border: 1px solid var(--bo-color-content-muted-border);
+  border-radius: 20px;
+  background: var(--bo-color-content-muted-bg);
+  box-shadow: var(--bo-color-content-shadow);
+}
+
+#projects-reports-tab #projects-revenue-breakdown {
+  display: block !important;
+  inline-size: 100% !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  max-inline-size: 100% !important;
+}
+
+.reports-wrapper--projects .reports-financial-bridge {
+  display: grid;
+  width: 100%;
+  gap: 14px;
+}
+
+.reports-wrapper--projects .reports-financial-bridge__header {
   display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.reports-wrapper--projects .reports-financial-bridge__intro {
+  display: flex;
+  flex-direction: column;
   gap: 6px;
+  min-width: 0;
+  flex: 1 1 420px;
+}
+
+.reports-wrapper--projects .reports-financial-bridge__title {
+  margin: 0;
+  font-size: 1.08rem;
+  font-weight: 800;
+  color: var(--clr-text);
+}
+
+.reports-wrapper--projects .reports-financial-bridge__subtitle {
+  margin: 0;
+  max-width: 72ch;
+  color: var(--clr-muted);
+  line-height: 1.7;
+}
+
+.reports-wrapper--projects .reports-financial-bridge__highlights {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  flex: 1 1 340px;
+  min-width: 0;
+}
+
+.reports-wrapper--projects .reports-financial-highlight {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid var(--reports-metric-border);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--reports-metric-fg) 8%, var(--bo-color-content-bg));
+  --reports-metric-fg: var(--reports-metric-neutral-fg);
+  --reports-metric-bg: var(--reports-metric-neutral-bg);
+  --reports-metric-border: var(--reports-metric-neutral-border);
+}
+
+.reports-wrapper--projects .reports-financial-highlight__label,
+.reports-wrapper--projects .reports-financial-highlight__meta {
+  color: var(--clr-muted);
+  font-size: 0.82rem;
+}
+
+.reports-wrapper--projects .reports-financial-highlight .reports-kpi-delta {
+  justify-self: start;
+}
+
+.reports-wrapper--projects .reports-financial-highlight__value {
+  color: var(--reports-metric-fg);
+  font-size: clamp(1.25rem, 1.6vw, 1.55rem);
+  line-height: 1.15;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-feature-settings: "tnum" 1;
+          font-feature-settings: "tnum" 1;
+}
+
+.reports-wrapper--projects .reports-financial-bridge__sections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.reports-wrapper--projects .reports-financial-section {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--bo-color-content-muted-border);
+  border-radius: 18px;
+  background: var(--bo-color-content-bg);
+}
+
+.reports-wrapper--projects .reports-financial-section__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.reports-wrapper--projects .reports-financial-section__step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 2rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--reports-accent) 18%, var(--bo-color-content-border));
+  background: color-mix(in srgb, var(--reports-accent) 10%, var(--bo-color-content-bg));
+  color: var(--reports-accent);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.reports-wrapper--projects .reports-financial-section__copy {
+  display: grid;
+  gap: 4px;
+}
+
+.reports-wrapper--projects .reports-financial-section__title {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: var(--clr-text);
+}
+
+.reports-wrapper--projects .reports-financial-section__meta {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: var(--clr-muted);
+}
+
+.reports-wrapper--projects .reports-financial-section__rows {
+  display: grid;
+  gap: 5px;
+}
+
+.reports-wrapper--projects #projects-revenue-breakdown .reports-kpi-detail-row {
+  align-items: center;
+  padding: 8px 10px;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 0.92rem;
+  border: 1px solid var(--bo-color-content-border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--bo-color-content-muted-bg) 72%, var(--bo-color-content-bg));
+  border-top: 0;
+}
+
+.reports-wrapper--projects #projects-revenue-breakdown .reports-kpi-detail-row--strong,
+.reports-wrapper--projects #projects-revenue-breakdown .reports-kpi-detail-row--strong-warning {
+  border-color: color-mix(in srgb, var(--reports-accent) 18%, var(--bo-color-content-border));
+}
+
+.reports-wrapper--projects #projects-revenue-breakdown .reports-kpi-detail-label {
+  min-width: 0;
+  line-height: 1.45;
+}
+
+.reports-wrapper--projects #projects-revenue-breakdown .reports-kpi-detail-value {
+  color: inherit;
+}
+
+.reports-wrapper--projects .reports-financial-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2rem;
+  max-width: 100%;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.reports-wrapper--projects .reports-financial-chip--primary,
+.reports-wrapper--projects .reports-financial-chip--strong {
+  color: var(--reports-accent);
+  border-color: color-mix(in srgb, var(--reports-accent) 18%, var(--bo-color-content-border));
+  background: color-mix(in srgb, var(--reports-accent) 10%, var(--bo-color-content-bg));
+}
+
+.reports-wrapper--projects .reports-financial-chip--success {
+  color: var(--reports-success);
+  border-color: color-mix(in srgb, var(--reports-success) 18%, var(--bo-color-content-border));
+  background: color-mix(in srgb, var(--reports-success) 10%, var(--bo-color-content-bg));
+}
+
+.reports-wrapper--projects .reports-financial-chip--warning,
+.reports-wrapper--projects .reports-financial-chip--strong-warning {
+  color: var(--reports-warning);
+  border-color: color-mix(in srgb, var(--reports-warning) 18%, var(--bo-color-content-border));
+  background: color-mix(in srgb, var(--reports-warning) 10%, var(--bo-color-content-bg));
+}
+
+.reports-wrapper--projects .reports-financial-chip--error {
+  color: var(--reports-error);
+  border-color: color-mix(in srgb, var(--reports-error) 18%, var(--bo-color-content-border));
+  background: color-mix(in srgb, var(--reports-error) 10%, var(--bo-color-content-bg));
+}
+
+.reports-wrapper--projects .reports-analytics-grid {
+  gap: 16px;
+}
+
+.reports-wrapper--projects .reports-chart-card {
+  padding: 22px;
+  border-radius: 20px;
+  box-shadow: var(--bo-color-content-shadow);
+}
+
+.reports-wrapper--projects .reports-card-body,
+.reports-wrapper--projects .reports-chart-card .reports-card-header {
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.reports-wrapper--projects .reports-chart-loading {
+  background: color-mix(in srgb, var(--reports-accent) 8%, transparent);
+  box-shadow: none;
+}
+
+.reports-wrapper--projects .projects-reports-table-card {
+  --reports-table-critical-bg: rgba(224, 49, 49, 0.06);
+  --reports-table-critical-hover-bg: rgba(224, 49, 49, 0.1);
+  --reports-table-warning-bg: rgba(240, 140, 0, 0.06);
+  --reports-table-warning-hover-bg: rgba(240, 140, 0, 0.1);
+  --reports-table-healthy-bg: rgba(47, 158, 68, 0.035);
+  --reports-table-healthy-hover-bg: rgba(47, 158, 68, 0.08);
+  padding: 24px;
+  border-radius: 24px;
+  background-image: none;
+}
+
+.reports-wrapper--projects .projects-reports-table-card .reports-card-header {
+  padding: 0 0 16px;
+  background: transparent;
+  border-bottom: 0;
+  box-shadow: none;
+}
+
+.reports-wrapper--projects .reports-table-insights {
+  margin-bottom: 18px;
+}
+
+.reports-wrapper--projects .reports-table-overview {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.reports-wrapper--projects .reports-table-insight {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+  padding: 14px 16px;
+  min-height: 124px;
+  border-radius: 18px;
+  border: 1px solid var(--reports-table-insight-border, var(--bo-color-content-border));
+  background: var(--reports-table-insight-bg, var(--bo-color-content-muted-bg));
+}
+
+.reports-wrapper--projects .reports-table-insight--critical {
+  --reports-table-insight-border: rgba(224, 49, 49, 0.18);
+  --reports-table-insight-bg: rgba(224, 49, 49, 0.05);
+  --reports-table-insight-fg: #a61e1e;
+}
+
+.reports-wrapper--projects .reports-table-insight--warning {
+  --reports-table-insight-border: rgba(240, 140, 0, 0.2);
+  --reports-table-insight-bg: rgba(240, 140, 0, 0.05);
+  --reports-table-insight-fg: #9a5d00;
+}
+
+.reports-wrapper--projects .reports-table-insight--risk {
+  --reports-table-insight-border: rgba(224, 49, 49, 0.18);
+  --reports-table-insight-bg: rgba(224, 49, 49, 0.05);
+  --reports-table-insight-fg: #a61e1e;
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-wrapper--projects .reports-table-insight--critical {
+  --reports-table-insight-border: rgba(255, 153, 153, 0.24);
+  --reports-table-insight-bg: rgba(224, 49, 49, 0.12);
+  --reports-table-insight-fg: #ffd0d0;
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-wrapper--projects .reports-table-insight--warning {
+  --reports-table-insight-border: rgba(255, 197, 104, 0.24);
+  --reports-table-insight-bg: rgba(240, 140, 0, 0.12);
+  --reports-table-insight-fg: #ffd692;
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-wrapper--projects .reports-table-insight--risk {
+  --reports-table-insight-border: rgba(255, 153, 153, 0.24);
+  --reports-table-insight-bg: rgba(224, 49, 49, 0.12);
+  --reports-table-insight-fg: #ffd0d0;
+}
+
+.reports-wrapper--projects .reports-table-insight__label {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--clr-muted);
+  line-height: 1.35;
+}
+
+.reports-wrapper--projects .reports-table-insight__value {
+  font-size: 1.18rem;
+  font-weight: 900;
+  color: var(--reports-table-insight-fg, var(--clr-text));
+  line-height: 1.2;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.reports-wrapper--projects .reports-table-insight__meta {
+  margin: 0;
+  font-size: 0.81rem;
+  line-height: 1.55;
+  color: var(--clr-muted);
+}
+
+.reports-wrapper--projects .projects-reports-table-card .reports-results-table-wrapper {
+  margin-top: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.reports-wrapper--projects .projects-reports-table-card .reports-table {
+  box-shadow: none;
+  min-width: 960px;
+  table-layout: auto;
+}
+
+.reports-wrapper--projects .reports-empty-state {
+  border-style: dashed;
+  background: var(--bo-color-empty-bg);
+  color: var(--clr-muted);
+}
+
+.reports-wrapper--projects .skeleton-line,
+.reports-wrapper--projects .skeleton-amount,
+.reports-wrapper--projects .skeleton-row {
+  background: rgba(82, 102, 89, 0.14);
+  animation: none;
+}
+
+.reports-wrapper--projects .projects-reports-table-card .reports-table thead th {
+  white-space: nowrap;
+}
+
+.reports-wrapper--projects .projects-reports-table-card .reports-table th[data-sort-key="project"],
+.reports-wrapper--projects .projects-reports-table-card .reports-table td:first-child {
+  min-width: 220px;
+}
+
+.reports-wrapper--projects .projects-reports-table-card .reports-table th[data-sort-key="client"],
+.reports-wrapper--projects .projects-reports-table-card .reports-table td:nth-child(2) {
+  min-width: 180px;
+}
+
+.reports-wrapper--projects .projects-reports-table-card .reports-table th[data-sort-key="period"],
+.reports-wrapper--projects .projects-reports-table-card .reports-table td:nth-child(4) {
+  min-width: 170px;
+}
+
+.reports-wrapper--projects .projects-reports-table-card .reports-table td:first-child .d-flex {
+  min-width: 0;
+}
+
+.reports-wrapper--projects .projects-reports-table-card .reports-table td:first-child span,
+.reports-wrapper--projects .projects-reports-table-card .reports-table td:nth-child(2) {
+  overflow-wrap: anywhere;
+}
+
+.reports-wrapper--projects .projects-reports-table-card .reports-table small {
+  color: var(--clr-muted) !important;
+}
+
+.reports-wrapper--projects .projects-reports-table-card .reports-table__meta-line,
+.reports-wrapper--projects .projects-reports-table-card .reports-table__metric,
+.reports-wrapper--projects .projects-reports-table-card .reports-table__payment-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+
+.reports-wrapper--projects .projects-reports-table-card .reports-table__meta-line {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.reports-wrapper--projects .projects-reports-table-card .reports-table__subvalue {
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--clr-muted);
+}
+
+.reports-wrapper--projects .projects-reports-table-card .reports-table__amount--margin {
+  font-variant-numeric: tabular-nums;
+}
+
+.reports-wrapper--projects .projects-reports-table-card .reports-table-attention {
+  padding-inline: 0.68rem;
+  font-size: 0.72rem;
+}
+
+.reports-wrapper--projects .projects-reports-table-card .reports-table-attention--critical {
+  color: #a61e1e;
+  background: rgba(224, 49, 49, 0.1);
+}
+
+.reports-wrapper--projects .projects-reports-table-card .reports-table-attention--warning {
+  color: #9a5d00;
+  background: rgba(240, 140, 0, 0.11);
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-wrapper--projects .projects-reports-table-card .reports-table-attention--critical {
+  color: #ffd0d0;
+  background: rgba(224, 49, 49, 0.18);
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-wrapper--projects .projects-reports-table-card .reports-table-attention--warning {
+  color: #ffd692;
+  background: rgba(240, 140, 0, 0.18);
+}
+
+.reports-wrapper--projects .projects-reports-table-card .reports-table tbody td {
+  vertical-align: top;
+}
+
+.reports-wrapper--projects .projects-reports-table-card .reports-table tbody tr.reports-table-row--critical > * {
+  background: var(--reports-table-critical-bg);
+}
+
+.reports-wrapper--projects .projects-reports-table-card .reports-table tbody tr.reports-table-row--warning > * {
+  background: var(--reports-table-warning-bg);
+}
+
+.reports-wrapper--projects .projects-reports-table-card .reports-table tbody tr.reports-table-row--healthy > * {
+  background: var(--reports-table-healthy-bg);
+}
+
+.reports-wrapper--projects .projects-reports-table-card .reports-table tbody tr:hover > * {
+  background: var(--bo-color-table-row-edit-bg) !important;
+}
+
+.reports-wrapper--projects .projects-reports-table-card .reports-table tbody tr.reports-table-row--critical:hover > * {
+  background: var(--reports-table-critical-hover-bg) !important;
+}
+
+.reports-wrapper--projects .projects-reports-table-card .reports-table tbody tr.reports-table-row--warning:hover > * {
+  background: var(--reports-table-warning-hover-bg) !important;
+}
+
+.reports-wrapper--projects .projects-reports-table-card .reports-table tbody tr.reports-table-row--healthy:hover > * {
+  background: var(--reports-table-healthy-hover-bg) !important;
+}
+
+.reports-wrapper--projects .projects-reports-table-card .projects-table__count {
+  max-width: 100%;
+  white-space: normal;
+  text-wrap: balance;
+}
+
+.reports-wrapper--projects .reports-empty-state {
+  margin-top: 18px;
+}
+
+.reports-wrapper--projects #reports-table-pagination {
+  margin-top: 18px;
+}
+
+@media (max-width: 1180px) {
+  .reports-wrapper--projects .reports-overview-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .reports-wrapper--projects .reports-comparison-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .reports-wrapper--projects .reports-overview-context {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: none;
+  }
+
+  .reports-wrapper--projects .project-reports-filters__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .reports-wrapper--projects .project-reports-filters__grid .project-reports-filter-actions {
+    grid-column: 1 / -1;
+  }
+
+  .reports-wrapper--projects .reports-table-insights {
+    margin-bottom: 16px;
+  }
+
+  .reports-wrapper--projects .reports-table-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .reports-wrapper--projects .reports-kpi-band--primary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .reports-wrapper--projects .reports-kpi-band--secondary {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .reports-wrapper--projects .reports-financial-bridge__highlights {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .reports-wrapper--projects .reports-financial-bridge__sections {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .reports-wrapper--projects .reports-header-card,
+  .reports-wrapper--projects .reports-table-card,
+  .reports-wrapper--projects .reports-chart-card {
+    padding: 18px;
+  }
+
+  .reports-wrapper--projects .project-filters-compact--reports,
+  .reports-wrapper--projects #projects-revenue-breakdown {
+    padding: 14px;
+  }
+
+  .reports-wrapper--projects .reports-status-summary,
+  .reports-wrapper--projects .reports-overview-context {
+    grid-template-columns: 1fr;
+  }
+
+  .reports-wrapper--projects .reports-comparison-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .reports-wrapper--projects .project-reports-filters__grid,
+  .reports-wrapper--projects .reports-date-range-inputs,
+  .reports-wrapper--projects .reports-analytics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .reports-wrapper--projects .reports-analytics-grid {
+    display: grid;
+    overflow: visible;
+    margin-inline: 0;
+    padding-inline: 0;
+    padding-bottom: 0;
+    scroll-snap-type: none;
+  }
+
+  /* Mobile: each band becomes a horizontal snap-scroll carousel */
+  .reports-wrapper--projects .reports-kpi-band {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    padding-bottom: 6px;
+    gap: 12px;
+  }
+
+  .reports-wrapper--projects .reports-kpi-band::-webkit-scrollbar {
+    display: none;
+  }
+
+  .reports-wrapper--projects .reports-kpi-band .reports-kpi-card {
+    flex: 0 0 min(260px, 80vw);
+    scroll-snap-align: start;
+    min-height: 0;
+  }
+
+  .reports-wrapper--projects .reports-chart-card {
+    flex: initial;
+    min-height: 0;
+  }
+
+  .reports-wrapper--projects .reports-kpi-card--featured,
+  .reports-wrapper--projects .reports-kpi-card[data-featured="true"] {
+    grid-column: unset;
+  }
+
+  .reports-wrapper--projects .reports-financial-bridge__header {
+    flex-direction: column;
+  }
+
+  .reports-wrapper--projects .reports-financial-bridge__highlights {
+    width: 100%;
+    grid-template-columns: 1fr;
+  }
+
+  .reports-wrapper--projects .project-reports-filter-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .reports-wrapper--projects .project-reports-custom-range,
+  .reports-wrapper--projects .project-reports-filters__grid .project-filters-grid__search,
+  .reports-wrapper--projects .project-reports-filters__grid .project-reports-filter-field--statuses {
+    width: 100%;
+    max-width: none;
+    justify-self: stretch;
+  }
+
+  .reports-wrapper--projects .reports-refresh-btn,
+  .reports-wrapper--projects #projects-export-excel {
+    width: 100%;
+  }
+}
+
+@media (min-width: 1024px) {
+  .reports-wrapper--projects .reports-table thead th {
+    background: var(--bo-color-table-head-bg);
+  }
+}
+
+.reports-wrapper--reservations .reports-table-pagination {
+  width: 100%;
+  margin-top: 14px;
 }
 
 /* Skeleton loading */
 .skeleton-card {
-  border: 1px solid var(--reports-border, rgba(148, 163, 184, 0.32));
+  border: 1px solid var(--reports-border, rgba(147, 168, 137, 0.32));
   border-radius: 16px;
   padding: 16px;
   background: rgba(248, 250, 255, 0.6);
 }
-:is(html.dark-mode, body.dark-mode) .skeleton-card {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .skeleton-card {
   background: var(--bo-color-content-muted-bg);
 }
 .skeleton-line { height: 14px; border-radius: 10px; background: linear-gradient(90deg, rgba(0,0,0,0.06), rgba(0,0,0,0.12), rgba(0,0,0,0.06)); animation: skeleton 1.2s infinite; }
@@ -2004,9 +4228,13 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
     /* استخدم هامش آمن لتجنب القص في بعض الطابعات */
     margin: 10mm;
   }
-  /* تحسين دقة الألوان أثناء الطباعة */
-  *, *::before, *::after { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  body { color: #000; }
+  /* تحسين دقة الألوان — مقيّد بعناصر المحتوى فقط، لا يشمل خلفيات السمة الداكنة */
+  img, svg, canvas, .reports-status-chip, .reports-kpi-badge,
+  .reports-kpi-value, .reports-chart-card canvas {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  body { color: #1e293b; background: #fff; }
   .tab, .filters-bar, .reports-filters, .reports-active-filters, .reports-filters-footer, .reports-actions, .calendar-panel, .sidebar, .navbar { display: none !important; }
   #reservations-report-printable {
     padding: 0 !important;
@@ -2028,19 +4256,492 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
   }
   .reports-kpi-grid { gap: 10px; }
   .reports-chart-card, .reports-detail-grid { page-break-inside: avoid; break-inside: avoid; }
-  .reports-table-card .reports-table-wrapper { max-height: none; overflow: visible; }
+  .reports-table-card:not(.reports-table-card--results) .reports-table-wrapper,
+  .reports-table-card--results .reports-results-table-wrapper { max-height: none; overflow: visible; }
   .reports-table thead th { position: static; backdrop-filter: none; }
 }
-.reports-table-pagination .pager button {
-  border: 1px solid var(--reports-border, rgba(148, 163, 184, 0.32));
-  background: rgba(248, 250, 255, 0.8);
-  padding: 6px 10px;
+.reports-wrapper--reservations .reports-table-pagination .list-pagination__summary {
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .reports-wrapper--reservations .reports-table-pagination {
+    justify-content: center;
+  }
+
+  .reports-wrapper--reservations .reports-table-pagination .list-pagination__controls {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+.reports-wrapper--projects .reports-kpi-split-row {
+  flex-direction: column;
+  gap: 12px;
+}
+
+.reports-wrapper--projects .reports-kpi-split-divider {
+  width: auto;
+  height: 1px;
+  margin-block: 0;
+  margin-inline: 0;
+}
+
+.reports-wrapper--projects .reports-kpi-split-col--primary,
+.reports-wrapper--projects .reports-kpi-split-col--secondary {
+  padding-inline: 0;
+}
+
+/* ── Project reports filter bar (global — overrides mobile-only scope) ──────── */
+.reports-wrapper--projects .project-filters-compact--reports {
+  padding: 24px;
+  background: var(--bo-color-content-bg);
+  border: 1px solid var(--bo-color-content-border);
+  border-radius: var(--radius-lg);
+  box-shadow: none;
+}
+
+.reports-wrapper--projects .project-filters-compact--reports .project-filters-compact__header {
+  margin-bottom: 14px;
+}
+
+/* Filters container: vertical stack of rows */
+.reports-wrapper--projects .project-reports-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Row 1: Search + Status chips side-by-side ────────────────────────────── */
+.reports-wrapper--projects .project-reports-filters__row--top {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+/* Search takes all remaining space */
+.reports-wrapper--projects .project-reports-filters__row--top .project-reports-filter-field--search {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* Status chips field: shrinks to fit its content */
+.reports-wrapper--projects .project-reports-filters__row--top .project-reports-filter-field--statuses {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Status chips container: tight border around the 3 badges only */
+.reports-wrapper--projects .project-reports-status-chips {
+  display: inline-flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  width: fit-content;
+  min-height: 52px;
+  white-space: nowrap;
+  border: 1px solid var(--bo-color-content-border);
+  border-radius: var(--radius-lg);
+  background: var(--bo-color-content-bg);
+}
+
+.reports-wrapper--projects .project-reports-status-chips .reports-status-chip {
+  flex: 0 0 auto;
+  cursor: pointer;
+  padding: 6px 16px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  border-radius: 999px;
+  box-shadow: none;
+  white-space: nowrap;
+}
+
+.reports-wrapper--projects .project-reports-status-chips .reports-status-chip.is-active {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+/* ── Row 2: Four dropdown filters (equal columns) ────────────────────────── */
+.reports-wrapper--projects .project-reports-filters__row--controls {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  align-items: stretch;
+}
+
+/* ── Row 3: Date pickers + compact action buttons ────────────────────────── */
+.reports-wrapper--projects .project-reports-filters__row--dates-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+/* ── Shared field styles ─────────────────────────────────────────────────── */
+.reports-wrapper--projects .project-reports-filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.reports-wrapper--projects .reports-filter-label {
+  margin: 0;
+  color: var(--clr-muted);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.reports-wrapper--projects .reports-filter-control,
+.reports-wrapper--projects .project-reports-filters .enhanced-select,
+.reports-wrapper--projects .project-reports-filters .enhanced-select__trigger {
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+}
+
+/* ── Date pickers: always visible, dimmed until "custom" is selected ─────── */
+.reports-wrapper--projects .project-reports-custom-range {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  flex: 1 1 0;
+  min-width: 0;
+  opacity: 0.38;
+  pointer-events: none;
+  transition: opacity 0.18s ease;
+}
+
+.reports-wrapper--projects .project-reports-custom-range.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.reports-wrapper--projects .project-reports-custom-range.is-disabled {
+  opacity: 0.2;
+  pointer-events: none;
+}
+
+.reports-wrapper--projects .project-reports-custom-range .project-reports-filter-field {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* ── Compact action buttons ──────────────────────────────────────────────── */
+.reports-wrapper--projects .project-reports-filter-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.reports-wrapper--projects .reports-filter-action-btn,
+.reports-wrapper--projects .project-reports-filter-actions .ui-button {
+  padding: 7px 14px;
+  font-size: 0.8rem;
+  min-height: 38px;
+  height: 38px;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+/* ── Stat bar (redesigned header summary) ──────────────────────────────────── */
+.reports-wrapper--projects .reports-stat-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.reports-wrapper--projects .reports-stat-bar__inner {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  flex-wrap: wrap;
+  border: 1px solid var(--bo-color-content-muted-border);
+  border-radius: 16px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--bo-color-content-muted-bg) 60%, transparent);
+}
+
+.reports-wrapper--projects .reports-stat-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 18px;
+  flex: 1;
+  min-width: 0;
+}
+
+.reports-wrapper--projects .reports-stat-group__eyebrow {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--clr-muted);
+  white-space: nowrap;
+}
+
+/* Status group: 3 equal chips in one row */
+.reports-wrapper--projects .reports-stat-group--status .reports-stat-group__items {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: 1fr;
+  gap: 6px;
+}
+
+/* Context group: 2×2 equal grid */
+.reports-wrapper--projects .reports-stat-group--context .reports-stat-group__items {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-auto-rows: 1fr;
+  gap: 6px;
+}
+
+.reports-wrapper--projects .reports-stat-bar__divider {
+  width: 1px;
+  background: var(--bo-color-content-muted-border);
+  flex-shrink: 0;
+  align-self: stretch;
+  margin-block: 10px;
+}
+
+.reports-wrapper--projects .reports-stat-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px 10px;
   border-radius: 10px;
+  border: 1px solid var(--reports-metric-border);
+  border-top: 4px solid var(--reports-metric-accent);
+  background: color-mix(in srgb, var(--reports-metric-accent) 11%, var(--bo-color-content-bg));
+  /* always equal height within grid row */
+  height: 100%;
+  min-height: 92px;
+  box-sizing: border-box;
+  /* default color vars (overridden per tone) */
+  --reports-metric-fg: var(--reports-metric-neutral-fg);
+  --reports-metric-border: var(--reports-metric-neutral-border);
+  --reports-metric-accent: #6b7280;   /* visible gray for neutral tone */
+  cursor: default;
+  transition: background 0.15s;
 }
-:is(html.dark-mode, body.dark-mode) .reports-table-pagination .pager button {
-  background: var(--bo-color-content-muted-bg);
-  border-color: rgba(93, 133, 255, 0.26);
+
+.reports-wrapper--projects .reports-stat-chip:hover {
+  background: color-mix(in srgb, var(--reports-metric-accent) 18%, var(--bo-color-content-bg));
 }
+
+.reports-wrapper--projects .reports-stat-chip__value {
+  display: block;
+  font-size: clamp(1.5rem, 2.2vw, 2rem);
+  font-weight: 900;
+  line-height: 1;
+  color: var(--reports-metric-accent);
+  font-variant-numeric: tabular-nums;
+  -webkit-font-feature-settings: "tnum" 1;
+          font-feature-settings: "tnum" 1;
+  letter-spacing: -0.02em;
+}
+
+.reports-wrapper--projects .reports-stat-chip__label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--clr-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reports-wrapper--projects .reports-stat-chip__meta {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 0.69rem;
+  line-height: 1.4;
+  color: var(--clr-muted);
+  margin-top: auto;
+}
+
+/* ── Tone accent colors — each uses a vivid, visible color ──────────────────── */
+.reports-wrapper--projects .reports-stat-chip[data-tone="neutral"] {
+  --reports-metric-fg: var(--reports-metric-neutral-fg);
+  --reports-metric-border: var(--reports-metric-neutral-border);
+  --reports-metric-accent: #6b7280;
+}
+.reports-wrapper--projects .reports-stat-chip[data-tone="count"] {
+  --reports-metric-fg: var(--reports-metric-count-fg);
+  --reports-metric-border: var(--reports-metric-count-border);
+  --reports-metric-accent: #60a5fa;   /* vivid blue */
+}
+.reports-wrapper--projects .reports-stat-chip[data-tone="profit"] {
+  --reports-metric-fg: var(--reports-metric-profit-fg);
+  --reports-metric-border: var(--reports-metric-profit-border);
+  --reports-metric-accent: #34d399;   /* emerald green */
+}
+.reports-wrapper--projects .reports-stat-chip[data-tone="cost"] {
+  --reports-metric-fg: var(--reports-metric-cost-fg);
+  --reports-metric-border: var(--reports-metric-cost-border);
+  --reports-metric-accent: #fbbf24;   /* amber yellow */
+}
+.reports-wrapper--projects .reports-stat-chip[data-tone="risk"] {
+  --reports-metric-fg: var(--reports-metric-risk-fg);
+  --reports-metric-border: var(--reports-metric-risk-border);
+  --reports-metric-accent: #f87171;   /* coral red */
+}
+
+/* ── Severity badges — prominent solid fills (overrides muted mobile rules) ─ */
+.reports-wrapper--projects .projects-reports-table-card .reports-table-attention {
+  padding-inline: 0.75rem;
+  padding-block: 0.3rem;
+  font-size: 0.73rem;
+  font-weight: 600;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1.3;
+}
+
+.reports-wrapper--projects .projects-reports-table-card .reports-table-attention--critical {
+  color: #fff;
+  background: #c92a2a;
+}
+
+.reports-wrapper--projects .projects-reports-table-card .reports-table-attention--warning {
+  color: #fff;
+  background: #e67700;
+}
+
+.reports-wrapper--projects .projects-reports-table-card .reports-table-attention--healthy {
+  color: #fff;
+  background: #2f9e44;
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-wrapper--projects .projects-reports-table-card .reports-table-attention--critical {
+  color: #fff;
+  background: #e03131;
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-wrapper--projects .projects-reports-table-card .reports-table-attention--warning {
+  color: #1a1a1a;
+  background: #ffa94d;
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-wrapper--projects .projects-reports-table-card .reports-table-attention--healthy {
+  color: #fff;
+  background: #37b24d;
+}
+
+/* ── Insights cards — global-scope (overrides mobile-only block) ──────────── */
+.reports-wrapper--projects .reports-table-insights {
+  margin-bottom: 18px;
+}
+
+.reports-wrapper--projects .reports-table-overview {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.reports-wrapper--projects .reports-table-insight {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  min-width: 0;
+  padding: 16px 18px;
+  min-height: 120px;
+  border-radius: 18px;
+  border: 1px solid var(--bo-color-content-border);
+  background: var(--bo-color-content-muted-bg, rgba(255,255,255,0.03));
+  border-inline-end: 4px solid transparent;
+}
+
+.reports-wrapper--projects .reports-table-insight__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--reports-table-insight-label-fg, var(--clr-muted));
+  line-height: 1.35;
+}
+
+.reports-wrapper--projects .reports-table-insight__value {
+  font-size: 1.9rem;
+  font-weight: 900;
+  color: var(--reports-table-insight-fg, var(--clr-text));
+  line-height: 1.1;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.reports-wrapper--projects .reports-table-insight__meta {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: var(--clr-muted);
+}
+
+.reports-wrapper--projects .reports-table-insight--critical {
+  background: rgba(224, 49, 49, 0.08);
+  border-color: rgba(224, 49, 49, 0.22);
+  border-inline-end-color: #c92a2a;
+  --reports-table-insight-fg: #c92a2a;
+  --reports-table-insight-label-fg: #c92a2a;
+}
+
+.reports-wrapper--projects .reports-table-insight--warning {
+  background: rgba(240, 140, 0, 0.08);
+  border-color: rgba(240, 140, 0, 0.22);
+  border-inline-end-color: #e67700;
+  --reports-table-insight-fg: #e67700;
+  --reports-table-insight-label-fg: #e67700;
+}
+
+.reports-wrapper--projects .reports-table-insight--risk {
+  background: rgba(224, 49, 49, 0.08);
+  border-color: rgba(224, 49, 49, 0.22);
+  border-inline-end-color: #c92a2a;
+  --reports-table-insight-fg: #c92a2a;
+  --reports-table-insight-label-fg: #c92a2a;
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-wrapper--projects .reports-table-insight--critical {
+  background: rgba(224, 49, 49, 0.13);
+  border-color: rgba(255, 153, 153, 0.28);
+  border-inline-end-color: #e03131;
+  --reports-table-insight-fg: #ffa8a8;
+  --reports-table-insight-label-fg: #ff8787;
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-wrapper--projects .reports-table-insight--warning {
+  background: rgba(240, 140, 0, 0.13);
+  border-color: rgba(255, 197, 104, 0.28);
+  border-inline-end-color: #ffa94d;
+  --reports-table-insight-fg: #ffd692;
+  --reports-table-insight-label-fg: #ffa94d;
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-wrapper--projects .reports-table-insight--risk {
+  background: rgba(224, 49, 49, 0.13);
+  border-color: rgba(255, 153, 153, 0.28);
+  border-inline-end-color: #e03131;
+  --reports-table-insight-fg: #ffa8a8;
+  --reports-table-insight-label-fg: #ff8787;
 }
 
 @media (max-width: 600px) {
@@ -2056,7 +4757,7 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
 
 @media (max-width: 1200px) {
   .reports-wrapper--reservations .reports-filters-grid--primary {
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .reports-wrapper--reservations .reports-filter-control {
@@ -2076,10 +4777,10 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
 
 .reports-payment-subtext {
   font-size: 0.75rem;
-  color: rgba(71, 85, 105, 0.75);
+  color: rgba(82, 102, 89, 0.75);
 }
 
-:is(html.dark-mode, body.dark-mode) .reports-payment-subtext {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-payment-subtext {
   color: rgba(203, 213, 225, 0.7);
 }
 
@@ -2110,7 +4811,7 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
   gap: 0.75rem;
   text-align: center;
   min-height: 220px;
-  color: rgba(71, 85, 105, 0.85);
+  color: rgba(82, 102, 89, 0.85);
 }
 
 .reports-panel-empty .reports-empty-icon {
@@ -2124,7 +4825,7 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
   margin: 0;
 }
 
-:is(html.dark-mode, body.dark-mode) .reports-panel-empty {
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .reports-panel-empty {
   color: rgba(203, 213, 225, 0.75);
 }
 
@@ -2138,4 +4839,32 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
 html[dir="rtl"] .reports-table-card .reports-card-header .reports-card-title,
 body[dir="rtl"] .reports-table-card .reports-card-header .reports-card-title {
   flex-direction: row !important;
+}
+
+/* Print for projects reports is handled entirely in an isolated popup window
+   (openReportsPrintWindow in projectsReports.js). No @media print rules are
+   needed here — the popup has no dark class, so all cards render in light mode
+   naturally, and a small inline override block in the popup fixes SVG colours. */
+
+/* ── Financial bridge compaction — global-scope desktop overrides ─────────── */
+.reports-wrapper--projects .reports-financial-bridge {
+  gap: 14px !important;
+}
+.reports-wrapper--projects .reports-financial-bridge__highlights {
+  min-width: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.reports-wrapper--projects .reports-financial-bridge__sections {
+  gap: 10px !important;
+}
+.reports-wrapper--projects .reports-financial-section {
+  gap: 8px !important;
+  padding: 12px !important;
+}
+.reports-wrapper--projects .reports-financial-section__rows {
+  gap: 5px !important;
+}
+.reports-wrapper--projects #projects-revenue-breakdown .reports-kpi-detail-row {
+  padding: 8px 10px !important;
 }

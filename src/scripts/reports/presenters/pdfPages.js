@@ -192,7 +192,7 @@ function buildHeader(metrics) {
   kpis.appendChild(card(translate('reservations.reports.kpi.total.label', 'الحجوزات', 'Reservations'), formatNumber(metrics.total || 0)));
   kpis.appendChild(card(translate('reservations.reports.kpi.revenue.label', 'الإيرادات', 'Revenue'), formatCurrency(metrics.revenue || 0)));
   kpis.appendChild(card(translate('reservations.reports.kpi.net.label', 'صافي الربح', 'Net profit'), formatCurrency(metrics.netProfit || 0)));
-  kpis.appendChild(card(translate('reservations.reports.kpi.share.label', 'نسبة الشركة', 'Company share'), formatCurrency(metrics.companyShareTotal || 0)));
+  kpis.appendChild(card(translate('reservations.reports.kpi.share.label', 'المصاريف التشغيلية', 'Company overhead'), formatCurrency(metrics.companyShareTotal || 0)));
   kpis.appendChild(card(translate('reservations.reports.kpi.tax.label', 'الضريبة', 'Tax'), formatCurrency(metrics.taxTotal || 0)));
   kpis.appendChild(card(translate('reservations.reports.kpi.maintenance.label', 'مصاريف الصيانة', 'Maintenance'), formatCurrency(metrics.maintenanceExpense || 0)));
 
@@ -214,7 +214,7 @@ function buildExportRowsFromState() {
       status: translate('reservations.reports.results.headers.status', 'الحالة', 'Status'),
       payment: translate('reservations.reports.results.headers.payment', 'الدفع', 'Payment'),
       total: translate('reservations.reports.results.headers.total', 'الإجمالي', 'Total'),
-      share: translate('reservations.reports.results.headers.share', 'نسبة الشركة', 'Company share'),
+      share: translate('reservations.reports.results.headers.share', 'المصاريف التشغيلية', 'Company overhead'),
       net: translate('reservations.reports.results.headers.net', 'صافي الربح', 'Net profit'),
     };
     const headers = [
@@ -251,7 +251,7 @@ function buildExportRowsFromState() {
       const totalLabel = formatCurrency(fin.finalTotal);
       const shareLabel = fin.companySharePercent > 0
         ? `${formatNumber(fin.companySharePercent)}% (${formatCurrency(fin.companyShareAmount)})`
-        : translate('reservations.reports.results.share.none', 'بدون نسبة الشركة', 'No company share');
+        : translate('reservations.reports.results.share.none', 'بدون المصاريف التشغيلية', 'No operating overhead');
       const netLabel = formatCurrency(fin.netProfit);
       return {
         [exportHeaders.code]: codeText,

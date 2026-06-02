@@ -1,75 +1,37 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <link rel="icon" type="image/x-icon" href="/favicon.ico">
-  <title data-i18n data-i18n-key="projects.pageTitle">إدارة المشاريع - نظام التأجير</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="robots" content="noindex,nofollow,noarchive">
-  <meta name="color-scheme" content="light dark">
-
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' https://cdn.jsdelivr.net https://img1.wsimg.com https://static.cloudflareinsights.com; connect-src 'self' http://127.0.0.1:8000 http://localhost:8000 http://127.0.0.1:8080 http://localhost:8080 https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://csp.secureserver.net https://cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://assets.art-ratio.com; font-src 'self' https://fonts.gstatic.com data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'self' https://assets.art-ratio.com; worker-src 'self' blob:; upgrade-insecure-requests;">
-
-  <script src="/js/godaddy-monitor.js" defer></script>
-  <script src="/js/page-boot.js"></script>
-
+  <!-- @include "./_partials/manager-page-head.html" {"titleKey":"projects.pageTitle","titleText":"إدارة المشاريع - نظام التأجير"} -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/src/styles/app.css">
-  <link rel="stylesheet" href="/dist/css/sidebar.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 </head>
-<body class="page-shell theme-loading projects-page" data-theme="light">
-  <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
-
-  <aside id="dashboard-sidebar" class="sidebar-shell sidebar-drawer" aria-label="التنقل الجانبي" data-i18n data-i18n-aria-label-key="dashboard.nav.sidebar">
-    <div class="flex items-center justify-between gap-3 border-b border-base-200/70 pb-4 sidebar-brand">
-      <div class="flex items-center gap-3">
-        <div class="sidebar-brand-logo">
-          <img src="https://assets.art-ratio.com/AR-Logo-v3.5-curved.png" alt="Art Ratio" class="sidebar-logo-img" loading="lazy" decoding="async">
-        </div>
-        <div class="text-start sidebar-brand-text">
-          <p class="text-xs text-base-content/60">Art Ratio</p>
-          <p class="text-lg font-semibold text-base-content" data-i18n data-i18n-key="dashboard.sidebar.title">مركز التحكم</p>
-        </div>
-      </div>
-      <button type="button" id="sidebar-close" class="btn btn-circle btn-ghost lg:hidden" aria-label="إغلاق القائمة" data-i18n data-i18n-aria-label-key="dashboard.nav.closeMenu">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-          <path d="M18 6l-12 12"></path>
-          <path d="M6 6l12 12"></path>
-        </svg>
-      </button>
-    </div>
-
-    <div class="sidebar-panel sidebar-panel--stats mt-6">
-      <h3 class="sidebar-heading" data-i18n data-i18n-key="dashboard.sidebar.statsHeading">ملخص اليوم</h3>
+<!-- @include "./_partials/full-manager-shell.html" {"bodyClass":"projects-page","greetingLabelKey":"projects.hero.title","greetingLabelText":"إدارة المشاريع","pageScript":"/src/scripts/projects.js"} -->
+<template data-slot="sidebarStats">
+<h3 class="sidebar-heading" data-i18n data-i18n-key="dashboard.sidebar.statsHeading">ملخص اليوم</h3>
       <div class="sidebar-stats" role="list">
         <div class="sidebar-stats-row" role="listitem">
           <span data-i18n data-i18n-key="dashboard.metrics.projects.label">المشاريع</span>
-          <span id="sidebar-stat-projects" class="badge-soft">0</span>
+          <span id="sidebar-stat-projects" class="ui-badge ui-badge--soft badge-soft">0</span>
         </div>
         <div class="sidebar-stats-row" role="listitem">
           <span data-i18n data-i18n-key="dashboard.metrics.reservations.label">الحجوزات</span>
-          <span id="sidebar-stat-reservations" class="badge-soft">0</span>
+          <span id="sidebar-stat-reservations" class="ui-badge ui-badge--soft badge-soft">0</span>
         </div>
         <div class="sidebar-stats-row" role="listitem">
           <span data-i18n data-i18n-key="dashboard.metrics.equipment.label">المعدات</span>
-          <span id="sidebar-stat-equipment" class="badge-soft">0</span>
+          <span id="sidebar-stat-equipment" class="ui-badge ui-badge--soft badge-soft">0</span>
         </div>
         <div class="sidebar-stats-row" role="listitem">
           <span data-i18n data-i18n-key="dashboard.metrics.technicians.label">طاقم العمل</span>
-          <span id="sidebar-stat-technicians" class="badge-soft">0</span>
+          <span id="sidebar-stat-technicians" class="ui-badge ui-badge--soft badge-soft">0</span>
         </div>
       </div>
-    </div>
-
-    <nav class="sidebar-menu mt-6 space-y-6" aria-label="التنقل بين أقسام لوحة التحكم" data-i18n data-i18n-aria-label-key="dashboard.nav.sections">
-      <div class="sidebar-panel sidebar-panel--tabs">
-        <p class="sidebar-heading mb-2" data-i18n data-i18n-key="dashboard.sidebar.tabsHeading">أقسام المشاريع</p>
-        <div class="tab-buttons tab-buttons-vertical" role="tablist">
-          <a class="tab-button active" href="projects.html" data-close-sidebar data-i18n data-i18n-key="projects.nav.projects">
+</template>
+<template data-slot="sidebarTabs">
+<p class="sidebar-heading mb-2" data-i18n data-i18n-key="dashboard.sidebar.tabsHeading">أقسام المشاريع</p>
+        <div class="ui-tabs ui-tabs--vertical tab-buttons tab-buttons-vertical" role="tablist">
+          <a class="ui-tab tab-button active" href="projects.html" data-close-sidebar data-i18n data-i18n-key="projects.nav.projects">
             <span class="flex items-center gap-3">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
@@ -81,21 +43,7 @@
               <span data-i18n data-i18n-key="projects.nav.projects">إدارة المشاريع</span>
             </span>
           </a>
-          <a class="tab-button" href="projects.html?subTab=reports" data-close-sidebar data-i18n data-i18n-key="projects.subtabs.reports">
-            <span class="flex items-center gap-3">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                <path d="M9 5h-2a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-12a2 2 0 0 0 -2 -2h-2"></path>
-                <path d="M9 3a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v0a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z"></path>
-                <path d="M9 17v-5"></path>
-                <path d="M12 17v-1"></path>
-                <path d="M15 17v-3"></path>
-              </svg>
-              <span data-i18n data-i18n-key="projects.subtabs.reports">تقارير المشاريع</span>
-            </span>
-          </a>
-          
-          <a class="tab-button" href="dashboard.html#reservations-tab" data-close-sidebar data-i18n data-i18n-key="tabs.reservations">
+          <a class="ui-tab tab-button" href="operations.html#reservations-tab" data-close-sidebar>
             <span class="flex items-center gap-3">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
@@ -105,13 +53,13 @@
                 <path d="M4 11h16"></path>
                 <path d="M8 15h2v2h-2z"></path>
               </svg>
-              <span data-i18n data-i18n-key="tabs.reservations">📅 الحجوزات</span>
+              <span data-i18n data-i18n-key="tabs.reservations">الحجوزات</span>
             </span>
           </a>
         </div>
-      </div>
-      <div class="sidebar-panel sidebar-panel--links flex flex-col gap-2">
-        <p class="sidebar-heading mb-2" data-i18n data-i18n-key="dashboard.sidebar.quickLinksHeading">روابط سريعة</p>
+</template>
+<template data-slot="sidebarLinks">
+<p class="sidebar-heading mb-2" data-i18n data-i18n-key="dashboard.sidebar.quickLinksHeading">روابط سريعة</p>
         <a class="sidebar-link" href="home.html" data-close-sidebar>
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
@@ -121,7 +69,7 @@
           </svg>
           <span data-i18n data-i18n-key="dashboard.quickLinks.home">الصفحة الرئيسية</span>
         </a>
-        <a class="sidebar-link" href="dashboard.html" data-close-sidebar>
+        <a class="sidebar-link" href="operations.html" data-close-sidebar>
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
             <path d="M3 3h18v18h-18z"></path>
@@ -144,54 +92,34 @@
           </svg>
           <span data-i18n data-i18n-key="dashboard.quickLinks.users">إدارة المستخدمين</span>
         </a>
-      </div>
-    </nav>
-  </aside>
-
-  <div class="page-grid">
-    <header class="dashboard-header">
-      <div class="dashboard-header-nav">
-        <div class="dashboard-header-start">
-          <button type="button" id="sidebar-open" class="mobile-sidebar-toggle" aria-label="فتح القائمة" data-i18n data-i18n-aria-label-key="dashboard.nav.openMenu">
-            <span class="mobile-sidebar-toggle__icon" aria-hidden="true">
-              <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--top"></span>
-              <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--middle"></span>
-              <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--bottom"></span>
-            </span>
-          </button>
-          <a href="home.html" class="flex items-center gap-3 dashboard-hero-brand" data-close-sidebar>
-            <div class="dashboard-hero-logo flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary sm:h-12 sm:w-12">
-              <img src="https://assets.art-ratio.com/AR-Logo-v3.5-curved.png" alt="Art Ratio" class="dashboard-logo-img" loading="lazy" decoding="async">
-            </div>
-            <div class="dashboard-hero-brand-text">
-              <h1 class="dashboard-hero-title text-xl font-bold text-base-content" data-i18n data-i18n-key="dashboard.hero.title">Art Ratio</h1>
-            </div>
-          </a>
-        </div>
-        <div class="dashboard-header-center">
-          <section class="dashboard-greeting" data-dashboard-greeting data-state="closed">
-            <button type="button" class="dashboard-greeting-toggle" data-greeting-toggle aria-controls="dashboard-greeting-panel" aria-expanded="false">
-              <span class="dashboard-greeting-toggle-label" data-i18n data-i18n-key="projects.hero.title">إدارة المشاريع</span>
-              <svg xmlns="http://www.w3.org/2000/svg" class="dashboard-greeting-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                <path d="M6 9l6 6l6 -6"></path>
-              </svg>
-            </button>
-            <div class="glass-card dashboard-greeting-panel" id="dashboard-greeting-panel" data-greeting-panel hidden>
-              <div class="dashboard-metrics-card">
+</template>
+<template data-slot="greetingPanel">
+<div class="dashboard-metrics-card dashboard-metrics-card--projects">
                 <div class="stats w-full bg-transparent">
                   <div class="stat">
-                    <div class="stat-figure text-primary" aria-hidden="true">
+                    <div class="stat-figure text-success" aria-hidden="true">
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                        <path d="M3 7m0 2a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z"></path>
-                        <path d="M8 7v-2a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v2"></path>
-                        <path d="M12 12l0 .01"></path>
-                        <path d="M3 13a20 20 0 0 0 18 0"></path>
+                        <path d="M12 3a6 6 0 0 1 6 6v1a6 6 0 0 1 -12 0v-1a6 6 0 0 1 6 -6z"></path>
+                        <path d="M8 15v2a4 4 0 0 0 8 0v-2"></path>
+                        <path d="M12 11v-3"></path>
+                        <path d="M10 13h4"></path>
                       </svg>
                     </div>
-                    <div class="stat-title" data-i18n data-i18n-key="projects.summary.totalProjects">إجمالي المشاريع</div>
-                    <div class="stat-value" id="projects-count">0</div>
+                    <div class="stat-title" data-i18n data-i18n-key="projects.summary.income">إجمالي الدخل</div>
+                    <div class="stat-value" id="projects-budget">0</div>
+                  </div>
+                  <div class="stat">
+                    <div class="stat-figure text-warning" aria-hidden="true">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                        <path d="M12 7a4 4 0 1 0 -4 4"></path>
+                        <path d="M12 7v9a4 4 0 1 0 4 -4"></path>
+                        <path d="M6 21h12"></path>
+                      </svg>
+                    </div>
+                    <div class="stat-title" data-i18n data-i18n-key="projects.summary.expenses">إجمالي المصروفات</div>
+                    <div class="stat-value" id="projects-expenses">0</div>
                   </div>
                   <div class="stat">
                     <div class="stat-figure text-secondary" aria-hidden="true">
@@ -208,110 +136,38 @@
                     <div class="stat-value" id="projects-upcoming">0</div>
                   </div>
                   <div class="stat">
-                    <div class="stat-figure text-warning" aria-hidden="true">
+                    <div class="stat-figure text-primary" aria-hidden="true">
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                        <path d="M12 7a4 4 0 1 0 -4 4"></path>
-                        <path d="M12 7v9a4 4 0 1 0 4 -4"></path>
-                        <path d="M6 21h12"></path>
+                        <path d="M3 7m0 2a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z"></path>
+                        <path d="M8 7v-2a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v2"></path>
+                        <path d="M12 12l0 .01"></path>
+                        <path d="M3 13a20 20 0 0 0 18 0"></path>
                       </svg>
                     </div>
-                    <div class="stat-title" data-i18n data-i18n-key="projects.summary.expenses">إجمالي المصروفات</div>
-                    <div class="stat-value" id="projects-expenses">0</div>
-                  </div>
-                  <div class="stat">
-                    <div class="stat-figure text-success" aria-hidden="true">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                        <path d="M12 3a6 6 0 0 1 6 6v1a6 6 0 0 1 -12 0v-1a6 6 0 0 1 6 -6z"></path>
-                        <path d="M8 15v2a4 4 0 0 0 8 0v-2"></path>
-                        <path d="M12 11v-3"></path>
-                        <path d="M10 13h4"></path>
-                      </svg>
-                    </div>
-                    <div class="stat-title" data-i18n data-i18n-key="projects.summary.budget">قيمة المشاريع التقديرية</div>
-                    <div class="stat-value" id="projects-budget">0</div>
+                    <div class="stat-title" data-i18n data-i18n-key="projects.summary.totalProjects">إجمالي المشاريع</div>
+                    <div class="stat-value" id="projects-count">0</div>
                   </div>
                 </div>
               </div>
-            </div>
-          </section>
-        </div>
-        <div class="dashboard-header-end">
-          <button class="language-toggle-btn" id="language-toggle" data-label-ar="🇸🇦 العربية" data-label-en="🇬🇧 English" aria-pressed="false"></button>
-          <label class="theme-toggle-btn swap swap-rotate" data-theme-toggle role="button">
-            <input id="theme-toggle" type="checkbox" class="sr-only" aria-hidden="true">
-            <svg class="swap-off fill-current text-warning w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-              <path d="M12 4v-1"></path>
-              <path d="M12 21v-1"></path>
-              <path d="M4 12h-1"></path>
-              <path d="M21 12h-1"></path>
-              <path d="M5.6 5.6l-.7 -.7"></path>
-              <path d="M18.4 18.4l-.7 -.7"></path>
-              <path d="M5.6 18.4l-.7 .7"></path>
-              <path d="M18.4 5.6l-.7 .7"></path>
-              <path d="M16 12a4 4 0 1 0 -4 4"></path>
-            </svg>
-            <svg class="swap-on fill-current text-primary w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-              <path d="M12 3c.132 0 .263 0 .393 .007a7.5 7.5 0 0 0 7.098 12.675a9 9 0 1 1 -7.491 -12.682z"></path>
-            </svg>
-            <span class="sr-only" data-theme-label data-i18n data-i18n-key="actions.toggleTheme">🌙 الوضع الليلي</span>
-          </label>
-          <button class="btn btn-error btn-sm rounded-full text-error-content" id="logout-btn" data-i18n data-i18n-key="actions.logout">🚪 تسجيل الخروج</button>
-        </div>
-      </div>
-    </header>
-
-    <div class="flex flex-1 flex-col">
-      <main class="dashboard-main w-full">
-        <div class="dashboard-main-inner space-y-8">
-          <div class="tab-section-header">
+</template>
+<template data-slot="mainContent">
+<div class="tab-section-header">
             <h2 class="tab-section-title" data-i18n data-i18n-key="projects.hero.title">إدارة المشاريع</h2>
-            <p class="section-support-text" data-i18n data-i18n-key="projects.workflow.tabsHint">استخدم تبويب المشاريع لإنشاء ومتابعة العمل، وتبويبي العملاء وطاقم العمل لتحديث السجلات التي تُستخدم داخل المشاريع والحجوزات.</p>
-          </div>
-
-          <div class="glass-card dashboard-tabbar hidden lg:block">
-            <div class="tab-buttons tab-buttons-horizontal" role="tablist">
-              <button type="button" class="tab-button tab-active active" data-tab-target="projects-section" data-i18n data-i18n-key="projects.nav.projects">المشاريع</button>
-              <button type="button" class="tab-button" data-tab-target="customers-section" data-i18n data-i18n-key="projects.nav.customers">العملاء</button>
-              <button type="button" class="tab-button" data-tab-target="technicians-section" data-i18n data-i18n-key="projects.nav.technicians">طاقم العمل</button>
-            </div>
-          </div>
-
-          <div class="glass-card dashboard-tabbar p-3 lg:hidden">
-            <div class="tab-scroll" data-tab-scroll>
-              <button type="button" class="tab-scroll-btn tab-scroll-btn--prev" data-tab-scroll-prev aria-label="انتقال إلى اليسار" data-i18n data-i18n-aria-label-key="dashboard.tabScroll.prev" hidden>
-                <span aria-hidden="true">‹</span>
-              </button>
-              <div class="tab-scroll-track" data-tab-scroll-track>
-                <div class="tab-buttons tab-buttons-horizontal" role="tablist">
-                  <button type="button" class="tab-button tab-active active" data-tab-target="projects-section" data-i18n data-i18n-key="projects.nav.projects">المشاريع</button>
-                  <button type="button" class="tab-button" data-tab-target="customers-section" data-i18n data-i18n-key="projects.nav.customers">العملاء</button>
-                  <button type="button" class="tab-button" data-tab-target="technicians-section" data-i18n data-i18n-key="projects.nav.technicians">طاقم العمل</button>
-                </div>
-              </div>
-              <button type="button" class="tab-scroll-btn tab-scroll-btn--next" data-tab-scroll-next aria-label="انتقال إلى اليمين" data-i18n data-i18n-aria-label-key="dashboard.tabScroll.next" hidden>
-                <span aria-hidden="true">›</span>
-              </button>
-            </div>
+            <p class="section-support-text" data-i18n data-i18n-key="projects.workflow.tabsHint">استخدم هذه الصفحة لإنشاء مشاريع التصوير والإنتاج ومتابعتها. إدارة العملاء وطاقم العمل تبقى في أقسام الإدارة المشتركة حتى لا يتكرر مسار العمل.</p>
           </div>
 
           <div class="tab-content-wrapper space-y-8">
             <section id="projects-section" class="tab-pane active space-y-6" data-tab-pane="projects-section">
-              <div class="glass-card subtab-scroll-card dashboard-subtabbar">
+              <div class="ui-card ui-card--content glass-card subtab-scroll-card dashboard-subtabbar">
                 <div class="tab-scroll tab-scroll--subtabs" data-tab-scroll>
               <button type="button" class="tab-scroll-btn tab-scroll-btn--prev" data-tab-scroll-prev aria-label="انتقال إلى اليسار" data-i18n data-i18n-aria-label-key="dashboard.tabScroll.prev" hidden>
                     <span aria-hidden="true">‹</span>
                   </button>
                   <div class="tab-scroll-track" data-tab-scroll-track>
-                    <div class="sub-tab-buttons tabs tabs-boxed" role="tablist">
-                      <button type="button" class="sub-tab-button tab tab-active active" data-project-subtab-target="create-project-tab" role="tab" aria-selected="true" aria-controls="create-project-tab" data-i18n data-i18n-key="projects.subtabs.create">إنشاء مشروع</button>
-                      <button type="button" class="sub-tab-button tab" data-project-subtab-target="projects-list-tab" role="tab" aria-selected="false" aria-controls="projects-list-tab" data-i18n data-i18n-key="projects.subtabs.list">مشاريعي</button>
-                      <button type="button" class="sub-tab-button tab" data-project-subtab-target="projects-reports-tab" role="tab" aria-selected="false" aria-controls="projects-reports-tab" data-i18n data-i18n-key="projects.subtabs.reports">تقارير المشاريع</button>
-                      
-                      <button type="button" class="sub-tab-button tab" data-project-subtab-target="projects-templates-tab" role="tab" aria-selected="false" aria-controls="projects-templates-tab" data-i18n data-i18n-key="projects.subtabs.templates">القوالب</button>
+                    <div class="ui-tabs sub-tab-buttons tabs tabs-boxed" role="tablist">
+                      <button type="button" class="ui-tab sub-tab-button tab tab-active active" data-project-subtab-target="projects-list-tab" role="tab" aria-selected="true" aria-controls="projects-list-tab" data-i18n data-i18n-key="projects.subtabs.list">مشاريعي</button>
+                      <button type="button" class="ui-tab sub-tab-button tab" data-project-subtab-target="projects-templates-tab" role="tab" aria-selected="false" aria-controls="projects-templates-tab" data-i18n data-i18n-key="projects.subtabs.templates">القوالب</button>
                     </div>
                   </div>
               <button type="button" class="tab-scroll-btn tab-scroll-btn--next" data-tab-scroll-next aria-label="انتقال إلى اليمين" data-i18n data-i18n-aria-label-key="dashboard.tabScroll.next" hidden>
@@ -320,253 +176,432 @@
                 </div>
               </div>
 
-              <div class="glass-card">
-                <p class="surface-support-text" data-i18n data-i18n-key="projects.workflow.subtabsHint">استخدم "إنشاء مشروع" للأعمال الجديدة، و"مشاريعي" للمراجعة والتعديل، و"تقارير المشاريع" للمتابعة والتحليل، و"القوالب" للطباعة والتصدير.</p>
-              </div>
-
-              <div class="tab-pane active project-creation-pane space-y-6" id="create-project-tab" data-project-subtab="create-project-tab">
-                <div class="glass-card">
-                  <p class="surface-support-text projects-hero-text" data-i18n data-i18n-key="projects.hero.subtitle">أنشئ ونسّق المشاريع، ووزّع المهام على الطاقم والمعدات، وتتبع المصاريف.</p>
-                </div>
-
-                <div class="box project-form-card">
-                  <h4 class="mb-3" data-i18n data-i18n-key="projects.form.title">إنشاء مشروع جديد</h4>
+              <div class="project-creation-pane space-y-6" id="create-project-tab" hidden aria-hidden="true">
+                <div class="ui-card ui-card--content glass-card project-form-card">
+                  <header class="surface-heading-stack project-form-header">
+                    <h4 data-i18n data-i18n-key="projects.form.title">إنشاء مشروع جديد</h4>
+                    <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="projects.form.subtitle">ابدأ ببيانات المشروع الأساسية، ثم أنشئ الحجز المرتبط لاستكمال المعدات والطاقم والتفاصيل التشغيلية.</p>
+                  </header>
                   <form id="project-form" class="project-form">
-                    <div class="row g-3 project-form-primary-row project-row--type-title">
-                      <div class="col-12 col-sm-4 col-lg-2 project-field-narrow project-type-field">
-                        <label class="form-label" for="project-type" data-i18n data-i18n-key="projects.form.labels.type">نوع المشروع</label>
-                        <select id="project-type" class="form-select select select-bordered w-full" required>
-                          <option value="" data-i18n data-i18n-key="projects.form.placeholders.type">اختر نوع المشروع</option>
-                          <option value="commercial" data-i18n data-i18n-key="projects.form.types.commercial">تصوير إعلان</option>
-                          <option value="coverage" data-i18n data-i18n-key="projects.form.types.coverage">تصوير تغطية</option>
-                          <option value="photography" data-i18n data-i18n-key="projects.form.types.photography">تصوير فوتوغرافي</option>
-                          <option value="social" data-i18n data-i18n-key="projects.form.types.social">تصوير للتواصل الاجتماعي</option>
-                        </select>
-                      </div>
-                      <div class="col-12 col-sm-8 col-lg-10 project-title-field">
-                        <label class="form-label" for="project-title" data-i18n data-i18n-key="projects.form.labels.title">اسم المشروع</label>
-                        <input type="text" id="project-title" class="form-control input input-bordered w-full" required placeholder="مثال: تصوير منتج جديد" data-i18n data-i18n-placeholder-key="projects.form.placeholders.title">
-                      </div>
-                    </div>
-
-                    <div class="row g-3 project-form-primary-row project-row--client mt-0">
-                      <div class="col-12 col-sm-6 col-lg-4 col-xl-3 project-client-field">
-                        <label class="form-label" for="project-client" data-i18n data-i18n-key="projects.form.labels.client">اسم العميل</label>
-                        <div class="form-control-dropdown">
-                          <input type="text" id="project-client" class="form-control input input-bordered w-full" placeholder="ابحث عن عميل مسجل أو أضف جديدًا" autocomplete="off" data-i18n data-i18n-placeholder-key="projects.form.placeholders.client">
-                          <div class="project-customer-suggestions list-group" id="project-customer-suggestions" role="listbox" hidden></div>
-                        </div>
-                      </div>
-                      <div class="col-12 col-sm-6 col-lg-8 col-xl-9 project-company-field">
-                        <label class="form-label" for="project-client-company" data-i18n data-i18n-key="projects.form.labels.clientCompany">الشركة</label>
-                        <input type="text" id="project-client-company" class="form-control input input-bordered w-full" placeholder="مثال: شركة الإنتاج العربية" data-i18n data-i18n-placeholder-key="projects.form.placeholders.clientCompany">
-                      </div>
-                    </div>
-                    <div class="row g-3 mt-0">
-                      <div class="col-12 col-sm-6 col-lg-3 col-xl-2 project-field-compact project-field-date">
-                        <label class="form-label" for="project-start-date" data-i18n data-i18n-key="projects.form.labels.startDate">📅 تاريخ البداية</label>
-                        <input type="text" id="project-start-date" class="form-control input input-bordered w-full" placeholder="اختر تاريخ البداية" data-i18n data-i18n-placeholder-key="projects.form.placeholders.startDate" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
-                      </div>
-                      <div class="col-12 col-sm-6 col-lg-3 col-xl-2 project-field-compact project-field-date">
-                        <label class="form-label" for="project-end-date" data-i18n data-i18n-key="projects.form.labels.endDate">📅 تاريخ النهاية</label>
-                        <input type="text" id="project-end-date" class="form-control input input-bordered w-full" placeholder="اختر تاريخ النهاية" data-i18n data-i18n-placeholder-key="projects.form.placeholders.endDate" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
-                      </div>
-                    </div>
-
-                    <div class="row g-3 mt-0">
-                      <div class="col-12 col-sm-6 col-lg-3 col-xl-2 project-field-compact project-field-time">
-                        <label class="form-label" for="project-start-time" data-i18n data-i18n-key="projects.form.labels.startTime">⏰ وقت البداية</label>
-                        <input type="text" id="project-start-time" class="form-control input input-bordered w-full" placeholder="اختر وقت البداية" data-i18n data-i18n-placeholder-key="projects.form.placeholders.startTime" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
-                      </div>
-                      <div class="col-12 col-sm-6 col-lg-3 col-xl-2 project-field-compact project-field-time">
-                        <label class="form-label" for="project-end-time" data-i18n data-i18n-key="projects.form.labels.endTime">⏰ وقت النهاية</label>
-                        <input type="text" id="project-end-time" class="form-control input input-bordered w-full" placeholder="اختر وقت النهاية" data-i18n data-i18n-placeholder-key="projects.form.placeholders.endTime" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
-                      </div>
-                    </div>
-
-                    <div class="row g-3 mt-0">
-                      <div class="col-12 project-description-field">
-                        <label class="form-label" for="project-description" data-i18n data-i18n-key="projects.form.labels.description">تفاصيل المشروع</label>
-                        <textarea id="project-description" class="form-control textarea textarea-bordered w-full project-description" rows="4" placeholder="ملخص عن المشروع والمتطلبات" data-i18n data-i18n-placeholder-key="projects.form.placeholders.description"></textarea>
-                      </div>
-                    </div>
-
-                    <div class="box project-linked-reservation" id="project-linked-reservation">
-                      <div class="project-linked-reservation__content">
-                        <h5 class="mb-1" data-i18n data-i18n-key="projects.form.linkedReservation.title">إنشاء حجز مرتبط</h5>
-                        <p class="mb-2 text-sm text-muted" data-i18n data-i18n-key="projects.form.linkedReservation.description">أنشئ حجزًا مرتبطًا بالمشروع الحالي وسيتم تعبئة تفاصيله تلقائيًا.</p>
-                        <div class="project-linked-reservation__summary" id="project-linked-reservation-summary" data-state="empty"></div>
-                      </div>
-                      <button type="button" id="project-linked-reservation-btn" class="btn btn-primary project-linked-reservation__action" data-i18n data-i18n-key="projects.form.linkedReservation.button">➕ إنشاء حجز مرتبط</button>
-                    </div>
-
-                    <div class="row g-3 align-items-end project-expense-row">
-                      <div class="col-12 col-lg-4">
-                        <label class="form-label" for="project-expense-label" data-i18n data-i18n-key="projects.form.labels.expenseLabel">خدمات إنتاجية</label>
-                        <input type="text" id="project-expense-label" class="form-control input input-bordered w-full" placeholder="مثال: رسوم موقع التصوير" data-i18n data-i18n-placeholder-key="projects.form.placeholders.expenseLabel">
-                      </div>
-                      <div class="col-12 col-lg-3">
-                        <label class="form-label" for="project-expense-amount" data-i18n data-i18n-key="projects.form.labels.expenseAmount">التكلفة (SR)</label>
-                        <input type="text" id="project-expense-amount" class="form-control input input-bordered w-full" inputmode="decimal" placeholder="0">
-                      </div>
-                      <div class="col-12 col-lg-3">
-                        <label class="form-label" for="project-services-client-price" data-i18n data-i18n-key="projects.form.labels.salePrice">سعر البيع</label>
-                        <input type="text" id="project-services-client-price" class="form-control" inputmode="decimal" placeholder="0">
-                      </div>
-                      <div class="col-12 col-lg-8">
-                        <label class="form-label" for="project-expense-note" data-i18n data-i18n-key="projects.form.labels.expenseNote">ملاحظات</label>
-                        <input type="text" id="project-expense-note" class="form-control" placeholder="تفاصيل إضافية لهذه الخدمة/المصروف" data-i18n data-i18n-placeholder-key="projects.form.placeholders.expenseNote">
-                      </div>
-                      <div class="col-12 col-lg-2 project-expense-action-col">
-                        <button type="button" id="add-expense-btn" class="btn btn-primary project-expense-add-btn" data-i18n data-i18n-key="projects.form.buttons.addExpense">➕ إضافة خدمة</button>
-                        <div class="selected-list" id="project-expense-list" data-empty="لم يتم تسجيل أي مصروف" data-empty-key="projects.selected.emptyExpenses"></div>
-                      </div>
-                      <!-- Indicator for cumulative services sale price total -->
-                      <div class="col-12">
-                        <div id="project-services-client-total-indicator" class="alert alert-secondary py-2 services-client-total-indicator" role="status">
-                          <span class="me-2" data-i18n data-i18n-key="projects.form.labels.servicesClientTotal">إجمالي سعر البيع</span>
-                          <strong id="project-services-client-total-value">0</strong>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="row g-3 align-items-start project-billing-row mt-3">
-                      <div class="col-12 col-lg-4">
-                        <label class="form-label" for="project-discount" data-i18n data-i18n-key="projects.form.labels.discount">الخصم</label>
-                        <div class="input-group project-discount-group">
-                          <select id="project-discount-type" name="project-discount-type" class="form-select">
-                            <option value="percent" data-i18n data-i18n-key="projects.form.discount.percent">٪ نسبة</option>
-                            <option value="amount" data-i18n data-i18n-key="projects.form.discount.amount">💵 مبلغ</option>
+                    <aside class="project-create-summary-card" id="project-create-summary-card" aria-live="polite"></aside>
+                    <section class="project-create-section">
+                      <header class="surface-heading-stack project-create-section__header">
+                        <h5 data-i18n data-i18n-key="projects.form.sections.basics">بيانات المشروع الأساسية</h5>
+                        <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="projects.form.sections.basicsHint">حدّد نوع المشروع والعميل والجدول الزمني. سيتم تعبئة الشركة تلقائيًا من سجل العميل عند اختياره.</p>
+                      </header>
+                      <div class="row g-3 project-form-primary-row project-row--type-title">
+                        <div class="col-12 col-sm-4 col-lg-2 project-field-narrow project-type-field">
+                          <label class="form-label" for="project-type" data-i18n data-i18n-key="projects.form.labels.type">نوع المشروع</label>
+                          <select id="project-type" class="ui-select form-select select select-bordered w-full" required>
+                            <option value="" data-i18n data-i18n-key="projects.form.placeholders.type">اختر نوع المشروع</option>
+                            <option value="commercial" data-i18n data-i18n-key="projects.form.types.commercial">تصوير إعلان</option>
+                            <option value="coverage" data-i18n data-i18n-key="projects.form.types.coverage">تصوير تغطية</option>
+                            <option value="photography" data-i18n data-i18n-key="projects.form.types.photography">تصوير فوتوغرافي</option>
+                            <option value="social" data-i18n data-i18n-key="projects.form.types.social">تصوير للتواصل الاجتماعي</option>
                           </select>
-                          <input type="text" id="project-discount" name="project-discount" class="form-control" placeholder="0" inputmode="decimal">
+                        </div>
+                        <div class="col-12 col-sm-8 col-lg-10 project-title-field">
+                          <label class="form-label" for="project-title" data-i18n data-i18n-key="projects.form.labels.title">اسم المشروع</label>
+                          <input type="text" id="project-title" class="ui-input form-control input input-bordered w-full" required placeholder="مثال: تصوير منتج جديد" data-i18n data-i18n-placeholder-key="projects.form.placeholders.title">
                         </div>
                       </div>
-                      <div class="col-12 col-lg-4">
-                        <label class="form-label d-block" for="project-company-share" data-i18n data-i18n-key="projects.form.labels.companyShare">نسبة الشركة والضريبة</label>
-                        <div class="d-flex flex-column gap-2 project-share-tax">
-                          <div class="form-check form-switch m-0">
-                            <input class="form-check-input" type="checkbox" role="switch" id="project-company-share" name="project-company-share" data-company-share="10">
-                            <label class="form-check-label" for="project-company-share" data-i18n data-i18n-key="projects.form.companyShareToggle">إضافة نسبة الشركة (10٪)</label>
-                          </div>
-                          <div class="form-check form-switch m-0">
-                            <input class="form-check-input" type="checkbox" role="switch" id="project-tax" name="project-apply-tax">
-                            <label class="form-check-label" for="project-tax" data-i18n data-i18n-key="projects.form.taxLabel">شامل الضريبة (15٪)</label>
+                      <div class="row g-3 project-form-primary-row project-row--client mt-0">
+                        <div class="col-12 col-sm-6 col-lg-5 col-xl-4 project-client-field">
+                          <label class="form-label" for="project-client" data-i18n data-i18n-key="projects.form.labels.client">اسم العميل</label>
+                          <div class="reservation-autocomplete reservation-autocomplete--with-action project-client-autocomplete">
+                            <div class="reservation-autocomplete__control-row">
+                              <div class="form-control-dropdown project-client-autocomplete__field">
+                                <input type="text" id="project-client" class="ui-input form-control input input-bordered w-full reservation-autocomplete-input" placeholder="ابحث عن عميل مسجل أو أضف جديدًا" autocomplete="off" data-i18n data-i18n-placeholder-key="projects.form.placeholders.client">
+                                <div class="project-customer-suggestions list-group" id="project-customer-suggestions" role="listbox" hidden></div>
+                              </div>
+                              <button
+                                type="button"
+                                class="reservation-quick-create-btn"
+                                id="open-project-customer-create"
+                                data-i18n
+                                data-i18n-title-key="projects.quickCustomer.actions.open"
+                                data-i18n-aria-label-key="projects.quickCustomer.actions.open"
+                                title="إضافة عميل سريع"
+                                aria-label="إضافة عميل سريع"
+                              >+</button>
+                            </div>
                           </div>
                         </div>
+                        <div class="col-12 col-sm-6 col-lg-7 col-xl-8 project-company-field">
+                          <label class="form-label" for="project-client-company" data-i18n data-i18n-key="projects.form.labels.clientCompany">الشركة</label>
+                          <input type="text" id="project-client-company" class="ui-input form-control input input-bordered w-full" placeholder="مثال: شركة الإنتاج العربية" data-i18n data-i18n-placeholder-key="projects.form.placeholders.clientCompany">
+                        </div>
                       </div>
-                      <div class="col-12 col-lg-4" data-hide-on-create>
-                        <label class="form-label d-none" for="project-payment-status" data-i18n data-i18n-key="projects.form.labels.paymentStatus">حالة الدفع</label>
-                        <select id="project-payment-status" name="project-payment-status" class="form-select select select-bordered payment-status-select d-none">
-                          <option value="unpaid" selected data-i18n data-i18n-key="projects.form.paymentStatus.unpaid">غير مدفوع</option>
-                          <option value="partial" data-i18n data-i18n-key="projects.form.paymentStatus.partial">مدفوع جزئياً</option>
-                          <option value="paid" data-i18n data-i18n-key="projects.form.paymentStatus.paid">مدفوع</option>
-                        </select>
-                        <div class="project-payment-progress mt-2">
-                          <label class="form-label" for="project-payment-progress-value" data-i18n data-i18n-key="projects.form.paymentProgress.label">💰 الدفعة المستلمة</label>
-                          <div class="input-group project-payment-progress-group">
-                            <select id="project-payment-progress-type" name="project-payment-progress-type" class="form-select">
-                              <option value="amount" data-i18n data-i18n-key="projects.form.paymentProgress.amount">💵 مبلغ</option>
-                              <option value="percent" selected data-i18n data-i18n-key="projects.form.paymentProgress.percent">٪ نسبة</option>
+                      <div class="row g-3 mt-0 project-schedule-grid">
+                        <div class="col-12 col-sm-6 col-lg-3 project-field-compact project-field-date">
+                          <label class="form-label" for="project-start-date" data-i18n data-i18n-key="projects.form.labels.startDate">📅 تاريخ البداية</label>
+                          <input type="text" id="project-start-date" class="ui-input form-control input input-bordered w-full" placeholder="اختر تاريخ البداية" data-i18n data-i18n-placeholder-key="projects.form.placeholders.startDate" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+                        </div>
+                        <div class="col-12 col-sm-6 col-lg-3 project-field-compact project-field-date">
+                          <label class="form-label" for="project-end-date" data-i18n data-i18n-key="projects.form.labels.endDate">📅 تاريخ النهاية</label>
+                          <input type="text" id="project-end-date" class="ui-input form-control input input-bordered w-full" placeholder="اختر تاريخ النهاية" data-i18n data-i18n-placeholder-key="projects.form.placeholders.endDate" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+                        </div>
+                        <div class="col-12 col-sm-6 col-lg-3 project-field-compact project-field-time">
+                          <label class="form-label" for="project-start-time" data-i18n data-i18n-key="projects.form.labels.startTime">⏰ وقت البداية</label>
+                          <input type="text" id="project-start-time" class="ui-input form-control input input-bordered w-full" placeholder="اختر وقت البداية" data-i18n data-i18n-placeholder-key="projects.form.placeholders.startTime" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+                        </div>
+                        <div class="col-12 col-sm-6 col-lg-3 project-field-compact project-field-time">
+                          <label class="form-label" for="project-end-time" data-i18n data-i18n-key="projects.form.labels.endTime">⏰ وقت النهاية</label>
+                          <input type="text" id="project-end-time" class="ui-input form-control input input-bordered w-full" placeholder="اختر وقت النهاية" data-i18n data-i18n-placeholder-key="projects.form.placeholders.endTime" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+                        </div>
+                      </div>
+
+                      <div class="row g-3 mt-0">
+                        <div class="col-12 project-description-field">
+                          <label class="form-label" for="project-description" data-i18n data-i18n-key="projects.form.labels.description">تفاصيل المشروع</label>
+                          <textarea id="project-description" class="ui-textarea form-control textarea textarea-bordered w-full project-description" rows="4" placeholder="ملخص عن المشروع والمتطلبات" data-i18n data-i18n-placeholder-key="projects.form.placeholders.description"></textarea>
+                        </div>
+                      </div>
+                    </section>
+
+                    <section class="project-create-section project-operational-booking" id="project-operational-booking">
+                      <header class="surface-heading-stack project-create-section__header">
+                        <h5 data-i18n data-i18n-key="projects.form.operationalBooking.title">التجهيز التشغيلي للمشروع</h5>
+                        <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="projects.form.operationalBooking.description">أضف المعدات والفريق من داخل المشروع نفسه. سيتم إنشاء الحجز التشغيلي المرتبط تلقائيًا عند حفظ المشروع بدون الانتقال إلى شاشة الحجوزات.</p>
+                      </header>
+                      <div class="project-operational-booking__grid">
+                        <article class="project-operational-booking__panel">
+                          <div class="project-operational-booking__panel-heading">
+                            <span class="project-operational-booking__icon" aria-hidden="true">▣</span>
+                            <div>
+                              <h6 data-i18n data-i18n-key="projects.form.operationalBooking.equipmentTitle">المعدات</h6>
+                              <p data-i18n data-i18n-key="projects.form.operationalBooking.equipmentHint">سيتم اختيار المعدات هنا بنفس قواعد التوفر والتعارضات المعتمدة في الحجوزات.</p>
+                            </div>
+                          </div>
+                          <div class="project-operational-booking__summary" id="project-operational-equipment-summary" data-state="empty">
+                            <span id="project-operational-equipment-count" data-i18n data-i18n-key="projects.form.operationalBooking.equipmentEmpty">لم تتم إضافة معدات بعد.</span>
+                          </div>
+                          <div class="project-equipment-entry">
+                            <label class="project-equipment-entry__label" for="project-equipment-package-select" data-i18n data-i18n-key="projects.form.operationalBooking.packageTitle">إضافة حزمة معدات</label>
+                            <select class="ui-select form-select" id="project-equipment-package-select">
+                              <option value="" selected data-i18n data-i18n-key="reservations.create.packages.placeholder">اختر الحزمة</option>
                             </select>
-                            <input type="text" id="project-payment-progress-value" name="project-payment-progress-value" class="form-control" placeholder="0" inputmode="decimal" data-i18n data-i18n-placeholder-key="projects.form.paymentProgress.placeholder">
-                            <button type="button" class="btn btn-primary payment-add-btn" id="project-payment-add" data-i18n data-i18n-key="reservations.paymentHistory.actions.add">➕ إضافة دفعة</button>
+                            <p class="project-equipment-entry__hint" id="project-equipment-package-hint" data-i18n data-i18n-key="projects.form.operationalBooking.packageHint">اختيار الحزمة يضيفها مباشرة بنفس قواعد التوفر والتعارضات.</p>
+
+                            <label class="project-equipment-entry__label" for="project-equipment-method-select" data-i18n data-i18n-key="projects.form.operationalBooking.equipmentMethodTitle">طريقة اختيار المعدة</label>
+                            <select class="ui-select form-select project-equipment-method-select" id="project-equipment-method-select" data-project-equipment-method-select>
+                              <option value="barcode" selected data-i18n data-i18n-key="reservations.create.equipment.method.barcode">🔍 بالباركود</option>
+                              <option value="autocomplete" data-i18n data-i18n-key="reservations.create.equipment.method.autocomplete">🎥 بالاسم</option>
+                              <option value="list" data-i18n data-i18n-key="reservations.create.equipment.method.list">📦 من القائمة</option>
+                            </select>
+
+                            <div class="project-equipment-method-panel" data-project-equipment-method="barcode">
+                              <input type="text" class="ui-input form-control" id="project-equipment-barcode" placeholder="امسح أو أدخل الباركود ثم اضغط Enter" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="text" data-i18n data-i18n-placeholder-key="projects.form.operationalBooking.equipmentBarcodePlaceholder">
+                            </div>
+
+                            <div class="project-equipment-method-panel" data-project-equipment-method="autocomplete" hidden aria-hidden="true">
+                              <div class="project-equipment-autocomplete">
+                                <input type="text" class="ui-input form-control" id="project-equipment-description" placeholder="اكتب اسم المعدة ثم اضغط Enter" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="search" data-i18n data-i18n-placeholder-key="projects.form.operationalBooking.equipmentSearchPlaceholder">
+                                <div id="project-equipment-description-suggestions" class="reservation-equipment-suggestions project-equipment-suggestions" hidden></div>
+                              </div>
+                            </div>
+
+                            <div class="project-equipment-method-panel" data-project-equipment-method="list" hidden aria-hidden="true">
+                              <select class="ui-select form-select" id="project-equipment-list-select" data-i18n data-i18n-placeholder-key="projects.form.operationalBooking.equipmentListPlaceholder">
+                                <option value="" selected data-i18n data-i18n-key="projects.form.operationalBooking.equipmentListPlaceholder">اختر من قائمة المعدات</option>
+                              </select>
+                            </div>
+
+                            <div class="users-table-wrapper overflow-x-auto project-equipment-selection-table-shell">
+                              <table class="ui-table users-table surface-table table table-sm table-hover align-middle project-equipment-selection-table">
+                                <thead class="table-light">
+                                  <tr>
+                                    <th data-i18n data-i18n-key="projects.form.operationalBooking.equipmentTable.photo">الصورة</th>
+                                    <th data-i18n data-i18n-key="projects.form.operationalBooking.equipmentTable.item">المعدة</th>
+                                    <th data-i18n data-i18n-key="projects.form.operationalBooking.equipmentTable.qty">الكمية</th>
+                                    <th data-i18n data-i18n-key="projects.form.operationalBooking.equipmentTable.price">سعر الوحدة</th>
+                                    <th data-i18n data-i18n-key="projects.form.operationalBooking.equipmentTable.cost">تكلفة الوحدة</th>
+                                    <th data-i18n data-i18n-key="projects.form.operationalBooking.equipmentTable.total">الإجمالي</th>
+                                    <th data-i18n data-i18n-key="projects.form.operationalBooking.equipmentTable.actions">الإجراءات</th>
+                                  </tr>
+                                </thead>
+                                <tbody id="project-equipment-selected-body">
+                                  <tr>
+                                    <td colspan="7" class="text-center" data-i18n data-i18n-key="projects.form.operationalBooking.equipmentEmpty">لم تتم إضافة معدات بعد.</td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>
                           </div>
-                          <small class="text-muted" data-i18n data-i18n-key="projects.form.paymentProgress.hint">أدخل المبلغ أو النسبة التي تم استلامها من قيمة المشروع</small>
-                          <div class="reservation-payment-history-block mt-2">
+                        </article>
+                        <article class="project-operational-booking__panel">
+                          <div class="project-operational-booking__panel-heading">
+                            <span class="project-operational-booking__icon" aria-hidden="true">◎</span>
+                            <div>
+                              <h6 data-i18n data-i18n-key="projects.form.operationalBooking.crewTitle">الفريق والمناصب</h6>
+                              <p data-i18n data-i18n-key="projects.form.operationalBooking.crewHint">سيتم تحديد المناصب أولًا ثم تعيين أعضاء الفريق عليها داخل المشروع مباشرة.</p>
+                            </div>
+                          </div>
+                          <div class="project-operational-booking__summary" id="project-operational-crew-summary" data-state="empty" data-i18n data-i18n-key="projects.form.operationalBooking.crewEmpty">لم تتم إضافة مناصب أو أعضاء فريق بعد.</div>
+                          <div class="project-crew-entry">
+                            <div id="project-selected-technicians-list" class="selected-technicians-list project-selected-technicians-list"></div>
+                            <div class="project-crew-entry__actions">
+                              <button type="button" class="ui-button ui-button--primary btn btn-primary reservation-tech-button project-crew-picker-button" id="open-project-technician-picker" data-i18n data-i18n-key="projects.form.operationalBooking.crewButton">اختيار الفريق</button>
+                              <button type="button" class="reservation-quick-create-btn project-crew-quick-btn" id="open-project-position-create" title="إضافة منصب سريع" aria-label="إضافة منصب سريع" data-i18n data-i18n-title-key="projects.quickCrew.position.open" data-i18n-aria-label-key="projects.quickCrew.position.open">
+                                <span aria-hidden="true">+</span>
+                                <span data-i18n data-i18n-key="projects.quickCrew.position.shortLabel">منصب</span>
+                              </button>
+                              <button type="button" class="reservation-quick-create-btn project-crew-quick-btn" id="open-project-technician-create" title="إضافة عضو فريق سريع" aria-label="إضافة عضو فريق سريع" data-i18n data-i18n-title-key="projects.quickCrew.technician.open" data-i18n-aria-label-key="projects.quickCrew.technician.open">
+                                <span aria-hidden="true">+</span>
+                                <span data-i18n data-i18n-key="projects.quickCrew.technician.shortLabel">عضو فريق</span>
+                              </button>
+                            </div>
+                          </div>
+                        </article>
+                      </div>
+                    </section>
+
+                    <section class="project-create-section">
+                      <header class="surface-heading-stack project-create-section__header">
+                        <h5 data-i18n data-i18n-key="projects.form.sections.services">الخدمات الإنتاجية</h5>
+                        <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="projects.form.sections.servicesHint">أضف بنود الخدمات الداخلية وسعر بيعها للعميل ليظهر الإجمالي بشكل واضح داخل المشروع.</p>
+                      </header>
+                      <div class="row g-3 align-items-end project-expense-row">
+                        <div class="col-12 col-lg-4">
+                          <label class="form-label" for="project-expense-label" data-i18n data-i18n-key="projects.form.labels.expenseLabel">خدمات إنتاجية</label>
+                          <input type="text" id="project-expense-label" class="ui-input form-control input input-bordered w-full" placeholder="مثال: رسوم موقع التصوير" data-i18n data-i18n-placeholder-key="projects.form.placeholders.expenseLabel">
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-3">
+                          <label class="form-label" for="project-expense-amount" data-i18n data-i18n-key="projects.form.labels.expenseAmount">التكلفة (SR)</label>
+                          <input type="text" id="project-expense-amount" class="ui-input form-control input input-bordered w-full" inputmode="decimal" placeholder="0">
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-3">
+                          <label class="form-label" for="project-services-client-price" data-i18n data-i18n-key="projects.form.labels.salePrice">سعر البيع</label>
+                          <input type="text" id="project-services-client-price" class="ui-input form-control" inputmode="decimal" placeholder="0">
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
+                          <label class="form-label" for="project-expense-days" data-i18n data-i18n-key="projects.form.labels.expenseDays">الأيام</label>
+                          <input type="text" id="project-expense-days" class="ui-input form-control" inputmode="numeric" placeholder="اختياري" data-i18n data-i18n-placeholder-key="projects.form.placeholders.expenseDays">
+                        </div>
+                        <div class="col-12 col-lg-8">
+                          <label class="form-label" for="project-expense-note" data-i18n data-i18n-key="projects.form.labels.expenseNote">ملاحظات</label>
+                          <input type="text" id="project-expense-note" class="ui-input form-control" placeholder="تفاصيل إضافية لهذه الخدمة/المصروف" data-i18n data-i18n-placeholder-key="projects.form.placeholders.expenseNote">
+                        </div>
+                        <div class="col-12 col-lg-2 project-expense-action-col">
+                          <button type="button" id="add-expense-btn" class="ui-button ui-button--primary btn btn-primary project-expense-add-btn" data-i18n data-i18n-key="projects.form.buttons.addExpense">➕ إضافة خدمة</button>
+                        </div>
+                        <div class="col-12 project-expense-list-shell">
+                          <div class="project-expense-list-surface" id="project-expense-list" data-empty="لم يتم تسجيل أي مصروف" data-empty-key="projects.selected.emptyExpenses"></div>
+                        </div>
+                        <div class="col-12">
+                          <div id="project-services-client-total-indicator" class="services-client-total-indicator" role="status">
+                            <span class="me-2" data-i18n data-i18n-key="projects.form.labels.servicesClientTotal">إجمالي سعر البيع</span>
+                            <strong id="project-services-client-total-value">0</strong>
+                          </div>
+                        </div>
+                      </div>
+                    </section>
+
+                    <section class="project-create-section project-create-section--billing">
+                      <header class="surface-heading-stack project-create-section__header">
+                        <h5 data-i18n data-i18n-key="projects.form.sections.billing">التسعير والدفعات</h5>
+                        <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="projects.form.sections.billingHint">نظّم الخصم والمصاريف التشغيلية والضريبة وسجّل الدفعات المستلمة ضمن نفس لغة الواجهة المعتمدة.</p>
+                      </header>
+                      <div class="row g-3 align-items-stretch project-billing-row">
+                        <div class="col-12 col-lg-4">
+                          <section class="project-billing-panel project-billing-panel--discount">
+                            <header class="surface-heading-stack project-billing-panel__header">
+                              <h6 data-i18n data-i18n-key="projects.form.labels.discount">الخصم</h6>
+                              <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="projects.form.billing.discountHint">حدّد نوع الخصم والقيمة المطلوب تطبيقها على المشروع.</p>
+                            </header>
+                            <div class="project-discount-group">
+                              <select id="project-discount-type" name="project-discount-type" class="ui-select form-select">
+                                <option value="percent" data-i18n data-i18n-key="projects.form.discount.percent">٪ نسبة</option>
+                                <option value="amount" data-i18n data-i18n-key="projects.form.discount.amount">💵 مبلغ</option>
+                              </select>
+                              <input type="text" id="project-discount" name="project-discount" class="ui-input form-control" placeholder="0" inputmode="decimal">
+                            </div>
+                          </section>
+                        </div>
+                        <div class="col-12 col-lg-4">
+                          <section class="project-billing-panel project-billing-panel--share">
+                            <header class="surface-heading-stack project-billing-panel__header">
+                              <h6 data-i18n data-i18n-key="projects.form.labels.companyShare">المصاريف التشغيلية والضريبة</h6>
+                              <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="projects.form.billing.shareHint">فعّل المصاريف التشغيلية والضريبة من نفس البلوك لتبقى التسعيرة النهائية واضحة.</p>
+                            </header>
+                            <div class="d-flex flex-column gap-2 project-share-tax">
+                              <div class="form-check form-switch m-0 project-switch-row">
+                                <input class="form-check-input" type="checkbox" role="switch" id="project-company-share" name="project-company-share" data-company-share="10">
+                                <label class="form-check-label" for="project-company-share" data-i18n data-i18n-key="projects.form.companyShareToggle">إضافة مصاريف تشغيلية (10٪)</label>
+                              </div>
+                              <div class="form-check form-switch m-0 project-switch-row">
+                                <input class="form-check-input" type="checkbox" role="switch" id="project-tax" name="project-apply-tax">
+                                <label class="form-check-label" for="project-tax" data-i18n data-i18n-key="projects.form.taxLabel">شامل الضريبة (15٪)</label>
+                              </div>
+                            </div>
+                          </section>
+                        </div>
+                        <div class="col-12 col-lg-4" data-hide-on-create>
+                          <section class="project-billing-panel project-billing-panel--payment">
+                            <label class="form-label d-none" for="project-payment-status" data-i18n data-i18n-key="projects.form.labels.paymentStatus">حالة الدفع</label>
+                            <select id="project-payment-status" name="project-payment-status" class="ui-select form-select select select-bordered payment-status-select d-none" data-no-enhance>
+                              <option value="unpaid" selected data-i18n data-i18n-key="projects.form.paymentStatus.unpaid">غير مدفوع</option>
+                              <option value="partial" data-i18n data-i18n-key="projects.form.paymentStatus.partial">مدفوع جزئياً</option>
+                              <option value="paid" data-i18n data-i18n-key="projects.form.paymentStatus.paid">مدفوع</option>
+                            </select>
+                            <header class="surface-heading-stack project-billing-panel__header">
+                              <h6 data-i18n data-i18n-key="projects.form.paymentProgress.label">💰 الدفعة المستلمة</h6>
+                              <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="projects.form.paymentProgress.hint">أدخل المبلغ أو النسبة التي تم استلامها من قيمة المشروع.</p>
+                            </header>
+                            <div class="project-payment-progress">
+                              <div class="project-payment-progress-group">
+                                <select id="project-payment-progress-type" name="project-payment-progress-type" class="ui-select form-select">
+                                  <option value="amount" data-i18n data-i18n-key="projects.form.paymentProgress.amount">💵 مبلغ</option>
+                                  <option value="percent" selected data-i18n data-i18n-key="projects.form.paymentProgress.percent">٪ نسبة</option>
+                                </select>
+                                <input type="text" id="project-payment-progress-value" name="project-payment-progress-value" class="ui-input form-control" placeholder="0" inputmode="decimal" data-i18n data-i18n-placeholder-key="projects.form.paymentProgress.placeholder">
+                                <button type="button" class="ui-button ui-button--primary btn btn-primary project-payment-progress-action" id="project-payment-add" data-i18n data-i18n-key="reservations.paymentHistory.actions.add">➕ إضافة دفعة</button>
+                              </div>
+                            </div>
+                          </section>
+                        </div>
+                        <div class="col-12 project-payment-history-shell">
+                          <div class="reservation-payment-history-block project-payment-history-block">
                             <h6 class="reservation-payment-history__title" data-i18n data-i18n-key="reservations.paymentHistory.title">سجل الدفعات</h6>
                             <div id="project-payment-history" class="reservation-payment-history"></div>
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </section>
 
-                    <div class="project-form-footer d-flex justify-content-lg-end justify-content-start mt-4 mt-lg-3">
-                      <button type="submit" class="btn btn-primary btn-md" data-i18n data-i18n-key="projects.form.buttons.save">🆕 إنشاء المشروع</button>
+                    <div class="project-form-footer d-flex justify-content-lg-end justify-content-start">
+                      <button type="submit" class="ui-button ui-button--primary btn btn-primary btn-md" data-i18n data-i18n-key="projects.form.buttons.save">🆕 إنشاء المشروع</button>
                     </div>
                   </form>
                 </div>
               </div>
 
-              <div class="tab-pane d-none space-y-6" id="projects-list-tab" data-project-subtab="projects-list-tab">
-                <div class="box p-4 project-filters-compact">
-                  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-                    <h5 class="mb-0" data-i18n data-i18n-key="projects.search.title">بحث سريع</h5>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" id="project-filter-reset">♻️ إعادة الضبط</button>
+              <div class="tab-pane active space-y-6" id="projects-list-tab" data-project-subtab="projects-list-tab">
+                <div class="ui-card ui-card--content glass-card projects-list-command-card">
+                  <div class="projects-list-command-card__header">
+                    <div class="projects-list-command-card__heading surface-heading-stack">
+                      <h4 class="mb-0" data-i18n data-i18n-key="projects.list.surfaceTitle">إدارة المشاريع</h4>
+                      <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="projects.list.surfaceHint">قائمة المشاريع النشطة والأرشيف، مع إنشاء مشروع جديد من نفس الصفحة بدون الانتقال بين تبويبات.</p>
+                    </div>
                   </div>
-                  <div class="filters-bar d-flex flex-wrap align-items-center gap-2 filters-bar--inline">
-                    <input type="search" id="project-search" class="form-control filters-search" placeholder="ابحث عن مشروع بالاسم أو العميل" data-i18n data-i18n-placeholder-key="projects.search.placeholder">
-                    <select id="project-filter-status" class="form-select">
-                      <option value="" data-i18n data-i18n-key="reservations.list.filters.status.all">⚙️ كل الحالات</option>
+                  <div class="projects-list-command-card__primary-action">
+                    <button type="button" class="ui-button ui-button--primary btn btn-primary projects-list-command-card__create" data-project-create-scroll-target="#create-project-tab" data-i18n data-i18n-key="projects.list.actions.create">➕ مشروع جديد</button>
+                  </div>
+                </div>
+
+                <div class="ui-card ui-card--content glass-card project-filters-compact">
+                  <header class="project-filters-compact__header">
+                    <div class="surface-heading-stack">
+                      <h5 data-i18n data-i18n-key="projects.search.title">بحث سريع</h5>
+                      <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="projects.search.subtitle">ابحث وفلتر المشاريع بسرعة من نفس السطح قبل فتح التفاصيل أو التعديل.</p>
+                    </div>
+                    <button type="button" class="ui-button ui-button--outline btn btn-sm btn-outline-secondary" id="project-filter-reset" data-i18n data-i18n-key="projects.search.reset">♻️ إعادة الضبط</button>
+                  </header>
+                  <div class="project-filters-grid">
+                    <div class="project-filters-grid__search">
+                      <input type="search" id="project-search" class="ui-input form-control filters-search" placeholder="ابحث عن مشروع بالاسم أو العميل" data-i18n data-i18n-placeholder-key="projects.search.placeholder">
+                    </div>
+                    <select id="project-filter-status" class="ui-select form-select">
+                      <option value="" data-i18n data-i18n-key="projects.search.filters.statusAll">⚙️ حالة المشروع: الكل</option>
                       <option value="upcoming" data-i18n data-i18n-key="projects.status.upcoming">📅 قادم</option>
                       <option value="ongoing" data-i18n data-i18n-key="projects.status.ongoing">⚙️ قيد التنفيذ</option>
                       <option value="completed" data-i18n data-i18n-key="projects.status.completed">✅ مكتمل</option>
                       <option value="cancelled" data-i18n data-i18n-key="projects.status.cancelled">❌ ملغي</option>
                     </select>
-                    <select id="project-filter-payment" class="form-select">
-                      <option value="" data-i18n data-i18n-key="projects.reports.filters.paymentAll">💰 كل المدفوعات</option>
+                    <select id="project-filter-payment" class="ui-select form-select">
+                      <option value="" data-i18n data-i18n-key="projects.search.filters.paymentAll">💰 حالة الدفع: الكل</option>
                       <option value="paid" data-i18n data-i18n-key="projects.form.paymentStatus.paid">مدفوع</option>
                       <option value="partial" data-i18n data-i18n-key="projects.form.paymentStatus.partial">مدفوع جزئياً</option>
                       <option value="unpaid" data-i18n data-i18n-key="projects.form.paymentStatus.unpaid">غير مدفوع</option>
                     </select>
-                    <select id="project-filter-type" class="form-select">
-                      <option value="">🏷️ كل الأنواع</option>
+                    <select id="project-filter-type" class="ui-select form-select">
+                      <option value="" data-i18n data-i18n-key="projects.search.filters.typeAll">🏷️ نوع المشروع: الكل</option>
                       <option value="commercial" data-i18n data-i18n-key="projects.form.types.commercial">تجاري</option>
                       <option value="coverage" data-i18n data-i18n-key="projects.form.types.coverage">تغطية</option>
                       <option value="photography" data-i18n data-i18n-key="projects.form.types.photography">تصوير</option>
                       <option value="social" data-i18n data-i18n-key="projects.form.types.social">سوشال</option>
+                      <option value="event" data-i18n data-i18n-key="projects.form.types.event">فعاليات</option>
+                      <option value="conference" data-i18n data-i18n-key="projects.form.types.conference">مؤتمر</option>
                     </select>
-                    <select id="project-filter-confirmed" class="form-select">
-                      <option value="">🪪 كل حالات التأكيد</option>
+                    <select id="project-filter-confirmed" class="ui-select form-select">
+                      <option value="" data-i18n data-i18n-key="projects.search.filters.confirmedAll">🪪 التأكيد: الكل</option>
                       <option value="yes" data-i18n data-i18n-key="projects.focus.confirmed">مؤكد</option>
-                      <option value="no" data-i18n data-i18n-key="projects.focus.pending">غير مؤكد</option>
+                      <option value="no" data-i18n data-i18n-key="projects.search.filters.confirmedNo">غير مؤكد</option>
                       <option value="closed" data-i18n data-i18n-key="projects.tag.closed">مغلق</option>
                     </select>
-                    <select id="project-filter-range" class="form-select">
-                      <option value="" data-i18n data-i18n-key="reservations.list.filters.range.all">⏱️ كل التواريخ</option>
+                    <select id="project-filter-range" class="ui-select form-select project-filters-grid__range">
+                      <option value="" data-i18n data-i18n-key="projects.search.filters.rangeAll">⏱️ النطاق الزمني: الكل</option>
                       <option value="today" data-i18n data-i18n-key="reservations.list.filters.range.today">📅 اليوم</option>
                       <option value="week" data-i18n data-i18n-key="reservations.list.filters.range.week">📆 هذا الأسبوع</option>
                       <option value="month" data-i18n data-i18n-key="reservations.list.filters.range.month">🗓️ هذا الشهر</option>
                       <option value="custom" data-i18n data-i18n-key="projects.reports.filters.range.custom">📅 تاريخ مخصص</option>
                     </select>
-                    <input type="date" id="project-filter-start-date" class="form-control w-auto" placeholder="📅 من تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.start">
-                    <input type="date" id="project-filter-end-date" class="form-control w-auto" placeholder="📅 إلى تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.end">
+                    <div class="project-filters-date-range">
+                      <input type="date" id="project-filter-start-date" class="ui-input form-control" placeholder="📅 من تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.start">
+                      <input type="date" id="project-filter-end-date" class="ui-input form-control" placeholder="📅 إلى تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.end">
+                    </div>
                   </div>
                 </div>
 
-              <div class="box project-focus-wrapper">
-                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-                  <h5 class="mb-0" data-i18n data-i18n-key="projects.focus.title">📌 نظرة سريعة على المشاريع</h5>
-                  <div class="project-focus-legend text-muted small">
-                    <span data-i18n data-i18n-key="projects.focus.legend">اختر بطاقة للاطلاع على التفاصيل أو التعديل السريع.</span>
+                <div class="ui-card ui-card--content glass-card project-focus-wrapper">
+                  <div class="project-list-section-header mb-3">
+                    <div class="project-focus-heading">
+                      <h5 class="mb-0" data-i18n data-i18n-key="projects.focus.title">📌 نظرة سريعة على المشاريع</h5>
+                      <div class="project-focus-legend text-muted small">
+                        <span data-i18n data-i18n-key="projects.focus.legend">اختر بطاقة للاطلاع على التفاصيل أو التعديل السريع.</span>
+                      </div>
+                      <div class="project-focus-note text-muted small">
+                        <span data-i18n data-i18n-key="projects.focus.filterHint">للتصفية حسب حالة الدفع أو التأكيد، استخدم الفلاتر بالأعلى.</span>
+                      </div>
+                    </div>
                   </div>
+                  <div class="project-focus-groups" id="project-focus-cards" data-empty="لا توجد مشاريع جارية أو نشطة ضمن النتائج الحالية." data-empty-key="projects.focus.sections.emptyLive"></div>
                 </div>
-                <div class="project-card-grid" id="project-focus-cards" data-empty="لا توجد مشاريع لليوم أو هذا الأسبوع." data-empty-key="projects.focus.empty"></div>
-                <div class="project-focus-pagination" id="project-focus-pagination"></div>
-              </div>
 
-                <div class="box p-4 project-timeline-box">
-                  <div class="d-flex flex-column flex-lg-row justify-content-lg-between align-items-lg-center gap-2 mb-3">
+                <details class="projects-create-panel" id="projects-create-panel">
+                  <summary class="projects-create-panel__summary">
+                    <span class="projects-create-panel__label">
+                      <span class="projects-create-panel__title" data-i18n data-i18n-key="projects.list.actions.create">➕ مشروع جديد</span>
+                    </span>
+                    <span class="projects-create-panel__chevron" aria-hidden="true">⌄</span>
+                  </summary>
+                  <div id="project-create-inline-mount" class="project-create-inline-mount"></div>
+                </details>
+
+                <details class="projects-archive-panel" id="projects-archive-panel">
+                  <summary class="projects-archive-panel__summary">
+                    <span class="projects-archive-panel__label">
+                      <span class="projects-archive-panel__title" data-i18n data-i18n-key="projects.focus.sections.archiveTitle">🗂️ الأرشيف</span>
+                      <span class="ui-badge ui-badge--soft badge-soft projects-archive-panel__count" id="projects-archive-count">0</span>
+                    </span>
+                    <span class="projects-archive-panel__chevron" aria-hidden="true">⌄</span>
+                  </summary>
+                  <div class="project-focus-groups project-focus-groups--archive" id="project-archive-cards" data-empty="لا توجد مشاريع مغلقة أو ملغاة ضمن النتائج الحالية." data-empty-key="projects.focus.sections.emptyArchive"></div>
+                </details>
+
+                <div class="ui-card ui-card--content glass-card p-4 project-timeline-box">
+                  <div class="project-list-section-header project-list-section-header--timeline mb-3">
                     <h5 class="mb-0" data-i18n data-i18n-key="projects.timeline.title">الجدول الزمني للمشاريع</h5>
                     <div class="project-timeline-legend text-muted small">
                       <span data-i18n data-i18n-key="projects.timeline.legend">يُظهر الشريط مواعيد البداية والنهاية، والألوان تُمثّل حالة المشروع.</span>
                       <div class="project-timeline-legend__statuses d-flex flex-wrap gap-2 mt-2">
-                        <span class="badge timeline-status-badge timeline-status-badge--upcoming" data-i18n data-i18n-key="projects.timeline.legend.upcoming">قادم</span>
-                        <span class="badge timeline-status-badge timeline-status-badge--ongoing" data-i18n data-i18n-key="projects.timeline.legend.ongoing">قيد التنفيذ</span>
-                        <span class="badge timeline-status-badge timeline-status-badge--completed" data-i18n data-i18n-key="projects.timeline.legend.completed">مكتمل</span>
-                        <span class="badge timeline-status-badge timeline-status-badge--conflict" data-i18n data-i18n-key="projects.timeline.legend.conflict">تعارض</span>
+                        <span class="ui-badge badge timeline-status-badge timeline-status-badge--upcoming" data-i18n data-i18n-key="projects.timeline.legend.upcoming">قادم</span>
+                        <span class="ui-badge badge timeline-status-badge timeline-status-badge--ongoing" data-i18n data-i18n-key="projects.timeline.legend.ongoing">قيد التنفيذ</span>
+                        <span class="ui-badge badge timeline-status-badge timeline-status-badge--completed" data-i18n data-i18n-key="projects.timeline.legend.completed">مكتمل</span>
+                        <span class="ui-badge badge timeline-status-badge timeline-status-badge--conflict" data-i18n data-i18n-key="projects.timeline.legend.conflict">تعارض</span>
                       </div>
                     </div>
                   </div>
                   <div class="project-timeline" id="project-timeline" data-empty="لا توجد مشاريع ببيانات زمنية صالحة." data-empty-key="projects.timeline.empty"></div>
                 </div>
 
-                <div class="box p-4 projects-table">
-                  <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="ui-card ui-card--content glass-card p-4 projects-table">
+                  <div class="projects-table__header project-list-section-header mb-3">
                     <h4 class="mb-0" data-i18n data-i18n-key="projects.table.title">قائمة المشاريع</h4>
-                    <span class="text-muted" id="project-table-count" data-count="0">0 مشروع</span>
+                    <span class="projects-table__count ui-badge ui-badge--soft badge-soft" id="project-table-count" data-count="0">0 مشروع</span>
                   </div>
-                  <div class="table-responsive">
-                    <table class="table table-hover align-middle">
+                  <div class="users-table-wrapper overflow-x-auto">
+                    <table class="ui-table users-table surface-table table table-hover align-middle">
                       <thead class="table-light">
                         <tr>
                           <th data-i18n data-i18n-key="projects.table.headers.project">المشروع</th>
@@ -584,280 +619,170 @@
                       </tbody>
                     </table>
                   </div>
-                  <div class="projects-table-pagination" id="project-table-pagination"></div>
+                  <div class="list-pagination projects-table-pagination" id="project-table-pagination" hidden></div>
                 </div>
               </div>
-
-              <div class="tab-pane d-none space-y-6" id="projects-reports-tab" data-project-subtab="projects-reports-tab">
-                <div class="reports-wrapper reports-wrapper--projects">
-                  <div class="reports-surface-card reports-header-card glass-card">
-                    <div class="reports-card-title reports-header-leading">
-                      <span class="reports-card-icon" aria-hidden="true">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                          <path d="M9 3h1a1 1 0 0 1 1 1v16a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1v-16a1 1 0 0 1 1 -1"></path>
-                          <path d="M14 8h1a1 1 0 0 1 1 1v11a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1v-11a1 1 0 0 1 1 -1"></path>
-                          <path d="M19 13h1a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1v-6a1 1 0 0 1 1 -1"></path>
-                          <path d="M4 4v17"></path>
-                        </svg>
-                      </span>
-                      <div class="reports-card-text">
-                        <h2 class="fw-bold mb-2" data-i18n data-i18n-key="projects.reports.title">لوحة تقارير المشاريع</h2>
-                        <p class="reports-subtitle" data-i18n data-i18n-key="projects.reports.subtitle">تحليلات تفصيلية لأداء المشاريع، المواعيد النهائية، ونسب التنفيذ.</p>
-                      </div>
-                    </div>
-                    <div class="reports-filters filters-bar d-flex flex-wrap align-items-center gap-2" id="reports-filters">
-                      <input type="search" id="reports-search" class="form-control filters-search" placeholder="بحث باسم المشروع أو العميل" data-i18n data-i18n-placeholder-key="projects.reports.filters.searchPlaceholder">
-                      <div class="reports-status-filter d-flex flex-wrap align-items-center gap-2">
-                        <span class="reports-status-label text-muted fw-semibold" data-i18n data-i18n-key="projects.reports.filters.status">حالة المشروع</span>
-                        <div class="reports-status-chips d-flex flex-wrap gap-2" id="reports-status-chips"></div>
-                      </div>
-                      <select id="reports-payment" class="form-select">
-                        <option value="all" selected data-i18n data-i18n-key="projects.reports.filters.paymentAll">كل الحالات</option>
-                        <option value="paid" data-i18n data-i18n-key="projects.reports.filters.paymentPaid">مدفوع</option>
-                        <option value="partial" data-i18n data-i18n-key="projects.reports.filters.paymentPartial">مدفوع جزئياً</option>
-                        <option value="unpaid" data-i18n data-i18n-key="projects.reports.filters.paymentUnpaid">غير مدفوع</option>
-                      </select>
-                      <select id="reports-confirmed" class="form-select">
-                        <option value="all" selected data-i18n data-i18n-key="projects.reports.filters.confirmed.all">حالة التأكيد: الكل</option>
-                        <option value="yes" data-i18n data-i18n-key="projects.reports.filters.confirmed.yes">مؤكد</option>
-                        <option value="closed" data-i18n data-i18n-key="projects.reports.filters.confirmed.closed">مغلق</option>
-                      </select>
-                      <select id="reports-date-range" class="form-select">
-                        <option value="all" selected data-i18n data-i18n-key="projects.reports.filters.range.all">كل الوقت</option>
-                        <option value="30" data-i18n data-i18n-key="projects.reports.filters.range.30">آخر 30 يوم</option>
-                        <option value="90" data-i18n data-i18n-key="projects.reports.filters.range.90">آخر 90 يوم</option>
-                        <option value="365" data-i18n data-i18n-key="projects.reports.filters.range.365">آخر سنة</option>
-                        <option value="custom" data-i18n data-i18n-key="projects.reports.filters.range.custom">تاريخ مخصص</option>
-                      </select>
-                      <div class="reports-custom-range d-flex flex-wrap align-items-center gap-2" id="reports-custom-range">
-                        <input type="text" id="reports-start-date" class="form-control" placeholder="📅 من تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.start" autocomplete="off">
-                        <input type="text" id="reports-end-date" class="form-control" placeholder="📅 إلى تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.end" autocomplete="off">
-                      </div>
-                      <button type="button" class="btn btn-outline-primary reports-refresh-btn" id="reports-refresh" data-i18n data-i18n-key="projects.reports.filters.refresh">تحديث</button>
-                      <button type="button" class="btn btn-primary" id="projects-export-excel" data-i18n data-i18n-key="projects.reports.actions.exportExcel">⬇️ تصدير Excel</button>
-                    </div>
-                  </div>
-
-                  <div class="reports-kpi-grid" id="reports-kpi-grid"></div>
-
-                  <div class="reports-analytics-grid">
-                    <div class="reports-chart-card glass-card is-loading" data-chart-card="status">
-                      <div class="reports-card-header">
-                        <div class="reports-card-title">
-                          <span class="reports-card-icon" aria-hidden="true">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                              <path d="M13 19v-2"></path>
-                              <path d="M9 19v-4"></path>
-                              <path d="M15 13v-2"></path>
-                              <path d="M9 13v-4"></path>
-                              <path d="M17 10v-3"></path>
-                              <path d="M13 13v-6"></path>
-                              <path d="M5 19h14"></path>
-                            </svg>
-                          </span>
-                          <div class="reports-card-text">
-                            <h4 data-i18n data-i18n-key="projects.reports.charts.status">توزيع الحالات</h4>
-                            <span class="reports-card-hint" data-i18n data-i18n-key="projects.reports.charts.statusHint">نسبة المشاريع في كل حالة</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="reports-card-body">
-                        <div class="reports-chart-loading" data-chart-loading="status" role="status" aria-live="polite">
-                          <span class="spinner-border text-primary" role="presentation"></span>
-                          <span class="reports-loading-text" data-i18n data-i18n-key="projects.reports.loading.chart">جارٍ تحديث الرسم...</span>
-                        </div>
-                        <div id="reports-status-chart" class="reports-chart-area"></div>
-                      </div>
-                    </div>
-
-                    <div class="reports-chart-card glass-card is-loading" data-chart-card="timeline">
-                      <div class="reports-card-header">
-                        <div class="reports-card-title">
-                          <span class="reports-card-icon" aria-hidden="true">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                              <path d="M4 19l16 0"></path>
-                              <path d="M4 15l4 -6l4 2l4 -5l4 4"></path>
-                            </svg>
-                          </span>
-                          <div class="reports-card-text">
-                            <h4 data-i18n data-i18n-key="projects.reports.charts.timeline">الإيرادات عبر الزمن</h4>
-                            <span class="reports-card-hint" data-i18n data-i18n-key="projects.reports.charts.timelineHint">إجمالي قيمة المشاريع شهريًا</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="reports-card-body">
-                        <div class="reports-chart-loading" data-chart-loading="timeline" role="status" aria-live="polite">
-                          <span class="spinner-border text-primary" role="presentation"></span>
-                          <span class="reports-loading-text" data-i18n data-i18n-key="projects.reports.loading.chart">جارٍ تحديث الرسم...</span>
-                        </div>
-                        <div id="reports-timeline-chart" class="reports-chart-area"></div>
-                      </div>
-                    </div>
-
-                    <div class="reports-chart-card glass-card is-loading" data-chart-card="expenses">
-                      <div class="reports-card-header">
-                        <div class="reports-card-title">
-                          <span class="reports-card-icon" aria-hidden="true">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                              <path d="M9 12h6"></path>
-                              <path d="M12 9v6"></path>
-                              <path d="M17.657 16.657a8 8 0 1 0 -11.314 0"></path>
-                              <path d="M16.121 19.121a9.5 9.5 0 1 1 2.829 -2.83"></path>
-                            </svg>
-                          </span>
-                          <div class="reports-card-text">
-                            <h4 data-i18n data-i18n-key="projects.reports.charts.expenses">المصاريف مقابل القيمة</h4>
-                            <span class="reports-card-hint" data-i18n data-i18n-key="projects.reports.charts.expensesHint">مقارنة المصاريف مع إجمالي قيمة المشروع</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="reports-card-body">
-                        <div class="reports-chart-loading" data-chart-loading="expenses" role="status" aria-live="polite">
-                          <span class="spinner-border text-primary" role="presentation"></span>
-                          <span class="reports-loading-text" data-i18n data-i18n-key="projects.reports.loading.chart">جارٍ تحديث الرسم...</span>
-                        </div>
-                        <div id="reports-expense-chart" class="reports-chart-area"></div>
-                      </div>
-                    </div>
-                    <div class="reports-chart-card glass-card is-loading" data-chart-card="clients">
-                      <div class="reports-card-header">
-                        <div class="reports-card-title">
-                          <span class="reports-card-icon" aria-hidden="true">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                              <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
-                              <path d="M16 21v-2a4 4 0 0 0 -4 -4h-0.5"></path>
-                              <path d="M4 21v-2a4 4 0 0 1 4 -4"></path>
-                              <path d="M20 21v-2a4 4 0 0 0 -3 -3.85"></path>
-                              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                            </svg>
-                          </span>
-                          <div class="reports-card-text">
-                            <h4 data-i18n data-i18n-key="projects.reports.charts.clients">أفضل العملاء</h4>
-                            <span class="reports-card-hint" data-i18n data-i18n-key="projects.reports.charts.clientsHint">أعلى العملاء حسب قيمة المشاريع</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="reports-card-body">
-                        <div class="reports-chart-loading" data-chart-loading="clients" role="status" aria-live="polite">
-                          <span class="spinner-border text-primary" role="presentation"></span>
-                          <span class="reports-loading-text" data-i18n data-i18n-key="projects.reports.loading.chart">جارٍ تحديث الرسم...</span>
-                        </div>
-                        <div id="reports-clients-chart" class="reports-chart-area"></div>
-                      </div>
-                    </div>
-                  </div>
-                <div class="reports-table-card glass-card reports-rtl-card">
-                  <div class="reports-card-header">
-                    <div class="reports-card-title">
-                      <span class="reports-card-icon" aria-hidden="true">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                          <path d="M4 5h16"></path>
-                          <path d="M4 10h16"></path>
-                          <path d="M4 15h16"></path>
-                          <path d="M4 20h16"></path>
-                        </svg>
-                      </span>
-                      <div class="reports-card-text">
-                        <h4 data-i18n data-i18n-key="projects.reports.table.title">قائمة المشاريع</h4>
-                      </div>
-                    </div>
-                    <span class="reports-card-hint" id="reports-table-meta"></span>
-                  </div>
-                  <div class="table-responsive reports-table-wrapper">
-                    <table class="reports-table" id="reports-table">
-                      <thead>
-                        <tr>
-                          <th class="sortable" data-sort-key="project" data-i18n data-i18n-key="projects.reports.table.columns.project">المشروع</th>
-                          <th class="sortable" data-sort-key="client" data-i18n data-i18n-key="projects.reports.table.columns.client">العميل</th>
-                          <th class="sortable" data-sort-key="status" style="min-width: 132px;" data-i18n data-i18n-key="projects.reports.table.columns.status">الحالة</th>
-                          <th class="sortable" data-sort-key="period" data-i18n data-i18n-key="projects.reports.table.columns.period">الفترة</th>
-                          <th class="sortable" data-sort-key="value" style="min-width: 120px;" data-i18n data-i18n-key="projects.reports.table.columns.value">القيمة</th>
-                          <th class="sortable" data-sort-key="margin" data-i18n data-i18n-key="projects.reports.table.columns.margin">هامش الربح</th>
-                          <th class="sortable" data-sort-key="payment" style="min-width: 150px;" data-i18n data-i18n-key="projects.reports.table.columns.payment">الدفع</th>
-                        </tr>
-                      </thead>
-                      <tbody></tbody>
-                    </table>
-                  </div>
-                  <div class="reports-empty-state" id="reports-empty">
-                    <span class="reports-empty-icon">📭</span>
-                    <p data-i18n data-i18n-key="projects.reports.table.empty">لا توجد مشاريع مطابقة للبحث الحالي.</p>
-                  </div>
-                </div>
-                </div>
-              </div>
-
-  
 
               <!-- Templates Tab (moved inside projects-section) -->
               <div class="tab-pane d-none space-y-6" id="projects-templates-tab" data-project-subtab="projects-templates-tab">
-                <div class="reports-wrapper reports-wrapper--projects" style="margin-top:0;">
-                  <div class="reports-surface-card glass-card" style="margin-top:0;">
-                    <div class="reports-card-title reports-header-leading">
-                      <span class="reports-card-icon" aria-hidden="true">🧩</span>
-                      <div class="reports-card-text">
-                        <h2 class="fw-bold mb-2" data-i18n data-i18n-key="projects.templates.title">القوالب الجاهزة (A4)</h2>
-                        <p class="reports-subtitle" data-i18n data-i18n-key="projects.templates.subtitle">اربط مشروعاً وحجزاً بالقالب، عدِّل الخانات ثم اطبع PDF.</p>
+                <div class="projects-templates-workspace">
+                  <section class="ui-card ui-card--content glass-card compact-surface-panel templates-toolbar-card templates-ribbon-shell" id="templates-controls">
+                    <header class="templates-ribbon-shell__header">
+                      <div class="templates-ribbon-shell__header-copy surface-heading-stack">
+                        <span class="templates-ribbon-shell__eyebrow" data-i18n data-i18n-key="projects.templates.ribbon.eyebrow">شريط أوامر القوالب</span>
+                        <h2 class="text-2xl font-bold text-base-content" data-i18n data-i18n-key="projects.templates.title">القوالب الجاهزة (A4)</h2>
+                        <p class="surface-support-text" data-i18n data-i18n-key="projects.templates.subtitle">اربط مشروعاً وحجزاً بالقالب، عدِّل الخانات ثم اطبع PDF.</p>
                       </div>
+                      <div class="templates-ribbon-shell__header-side">
+                        <div class="templates-ribbon-shell__badges" aria-hidden="true">
+                          <span class="ui-badge ui-badge--soft badge-soft">A4</span>
+                          <span class="ui-badge ui-badge--outline badge badge-outline">PDF</span>
+                        </div>
+                        <p
+                          id="templates-workspace-status"
+                          class="surface-support-text surface-support-text--compact templates-workspace-status"
+                          role="status"
+                          aria-live="polite"
+                          data-status-tone="neutral"
+                          data-i18n
+                          data-i18n-key="projects.templates.status.idle"
+                        >اختر مشروعاً لتجهيز المعاينة والمحفوظات.</p>
+                      </div>
+                    </header>
+
+                    <div class="templates-ribbon-shell__nav" role="tablist" data-i18n-aria-label-key="projects.templates.ribbon.ariaLabel" aria-label="أقسام شريط أوامر القوالب">
+                      <button type="button" class="templates-ribbon-tab is-active" id="templates-ribbon-tab-context" role="tab" aria-selected="true" aria-controls="templates-ribbon-panel-context" data-templates-ribbon-tab="context" data-i18n data-i18n-key="projects.templates.ribbon.tabs.context">السياق</button>
+                      <button type="button" class="templates-ribbon-tab" id="templates-ribbon-tab-templates" role="tab" aria-selected="false" aria-controls="templates-ribbon-panel-templates" tabindex="-1" data-templates-ribbon-tab="templates" data-i18n data-i18n-key="projects.templates.ribbon.tabs.templates">القوالب</button>
+                      <button type="button" class="templates-ribbon-tab" id="templates-ribbon-tab-review" role="tab" aria-selected="false" aria-controls="templates-ribbon-panel-review" tabindex="-1" data-templates-ribbon-tab="review" data-i18n data-i18n-key="projects.templates.ribbon.tabs.review">المحاذاة والإخراج</button>
+                      <button type="button" class="templates-ribbon-tab" id="templates-ribbon-tab-tools" role="tab" aria-selected="false" aria-controls="templates-ribbon-panel-tools" tabindex="-1" data-templates-ribbon-tab="tools" data-i18n data-i18n-key="projects.templates.ribbon.tabs.tools">الأدوات والبيانات</button>
                     </div>
-                    <div class="d-flex flex-wrap align-items-end gap-3 templates-controls" id="templates-controls">
-                      <div>
-                        <label class="form-label" for="templates-project" data-i18n data-i18n-key="projects.templates.labels.project">📁 المشروع</label>
-                        <select id="templates-project" class="form-select"></select>
-                      </div>
-                      <div>
-                        <label class="form-label" for="templates-reservation" data-i18n data-i18n-key="projects.templates.labels.reservation">🔗 الحجز (اختياري)</label>
-                        <select id="templates-reservation" class="form-select">
-                          <option value="" selected data-i18n data-i18n-key="projects.templates.noReservation">— بدون ربط —</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label class="form-label" for="templates-type" data-i18n data-i18n-key="projects.templates.labels.type">📄 نوع القالب</label>
-                        <select id="templates-type" class="form-select">
-                          <option value="expenses" selected data-i18n data-i18n-key="projects.templates.types.expenses">ورقة مصاريف (A4 عمودي)</option>
-                          <option value="callsheet" data-i18n data-i18n-key="projects.templates.types.callsheet">كول شيت (A4 أفقي)</option>
-                          
-                        </select>
-                      </div>
-                      
-                      <div class="ms-auto d-flex gap-2 templates-actions" id="templates-actions">
-                        <input type="text" id="templates-save-title" class="form-control" placeholder="اسم النسخة" style="min-width:160px;" data-i18n data-i18n-placeholder-key="projects.templates.placeholders.saveTitle">
-                        <select id="templates-saved" class="form-select"></select>
-                        <div id="templates-actions-dd" class="position-relative" style="position:relative;">
-                          <button type="button" class="btn btn-outline" id="templates-actions-toggle" data-i18n data-i18n-key="projects.templates.actions.toggle">⋯ الإجراءات</button>
-                          <div id="templates-actions-menu" class="shadow-sm" style="position:absolute; right:0; top:100%; min-width:240px; display:none; background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:8px; z-index:50;">
-                            <button type="button" class="btn btn-outline" id="templates-save" data-i18n data-i18n-key="projects.templates.actions.save" style="display:block;width:100%;text-align:right;margin:4px 0;">💾 حفظ</button>
-                            <button type="button" class="btn btn-outline" id="templates-save-copy" data-i18n data-i18n-key="projects.templates.actions.saveCopy" style="display:block;width:100%;text-align:right;margin:4px 0;">📎 حفظ كنسخة</button>
-                            <button type="button" class="btn btn-outline" id="templates-from-res" data-i18n data-i18n-key="projects.templates.actions.fromReservation" style="display:block;width:100%;text-align:right;margin:4px 0;">📅 من الحجز</button>
-                            <button type="button" class="btn btn-outline" id="templates-rename" data-i18n data-i18n-key="projects.templates.actions.rename" title="إعادة تسمية المحفوظ المحدد" style="display:block;width:100%;text-align:right;margin:4px 0;">✏️ إعادة تسمية</button>
-                            <button type="button" class="btn btn-outline btn-danger" id="templates-delete" data-i18n data-i18n-key="projects.templates.actions.delete" title="حذف المحفوظ المحدد" style="display:block;width:100%;text-align:right;margin:4px 0;">🗑️ حذف</button>
-                            <hr class="dropdown-divider" style="margin:6px 0;">
-                            <button type="button" class="btn btn-outline" id="templates-export" data-i18n data-i18n-key="projects.templates.actions.export" title="تصدير JSON" style="display:block;width:100%;text-align:right;margin:4px 0;">⬇️ تصدير</button>
-                            <button type="button" class="btn btn-outline" id="templates-export-excel" data-i18n data-i18n-key="projects.templates.actions.exportExcel" title="تصدير إلى Excel" style="display:block;width:100%;text-align:right;margin:4px 0;">⬇️ تصدير Excel</button>
-                            <button type="button" class="btn btn-outline" id="templates-import" data-i18n data-i18n-key="projects.templates.actions.import" title="استيراد JSON" style="display:block;width:100%;text-align:right;margin:4px 0;">⬆️ استيراد</button>
-                            <input type="file" id="templates-import-file" accept="application/json" class="d-none" />
-                            <hr class="dropdown-divider" style="margin:6px 0;">
-                            <button type="button" class="btn btn-outline" id="templates-lang-toggle" title="Language: EN" style="display:block;width:100%;text-align:right;margin:4px 0;">🌐 EN</button>
-                            <button type="button" class="btn btn-outline" id="templates-refresh" data-i18n data-i18n-key="projects.templates.actions.refresh" style="display:block;width:100%;text-align:right;margin:4px 0;">تحديث</button>
-                            <button type="button" class="btn btn-primary" id="templates-print" data-i18n data-i18n-key="projects.templates.actions.print" style="display:block;width:100%;text-align:right;margin:4px 0;">🖨️ طباعة PDF</button>
+
+                    <div class="templates-ribbon-shell__body">
+                      <section class="templates-ribbon-panel is-active" id="templates-ribbon-panel-context" role="tabpanel" aria-labelledby="templates-ribbon-tab-context" data-templates-ribbon-panel="context">
+                        <div class="templates-ribbon-group templates-ribbon-group--context">
+                          <div class="templates-ribbon-group__content">
+                            <div class="templates-toolbar-field templates-toolbar-field--project">
+                              <label class="form-label" for="templates-project" data-i18n data-i18n-key="projects.templates.labels.project">📁 المشروع</label>
+                              <select id="templates-project" class="ui-select form-select"></select>
+                            </div>
+                            <div class="templates-toolbar-field templates-toolbar-field--reservation">
+                              <label class="form-label" for="templates-reservation" data-i18n data-i18n-key="projects.templates.labels.reservation">🔗 الحجز (اختياري)</label>
+                              <select id="templates-reservation" class="ui-select form-select">
+                                <option value="" selected data-i18n data-i18n-key="projects.templates.noReservation">— بدون ربط —</option>
+                              </select>
+                            </div>
+                            <div class="templates-toolbar-field templates-toolbar-field--type">
+                              <label class="form-label" for="templates-type" data-i18n data-i18n-key="projects.templates.labels.type">📄 نوع القالب</label>
+                              <select id="templates-type" class="ui-select form-select">
+                                <option value="expenses" selected data-i18n data-i18n-key="projects.templates.types.expenses">ورقة مصاريف (A4 عمودي)</option>
+                                <option value="callsheet" data-i18n data-i18n-key="projects.templates.types.callsheet">كول شيت (A4 أفقي)</option>
+                              </select>
+                            </div>
+                          </div>
+                          <span class="templates-ribbon-group__label" data-i18n data-i18n-key="projects.templates.ribbon.groups.context">سياق القالب</span>
+                        </div>
+                      </section>
+
+                      <section class="templates-ribbon-panel" id="templates-ribbon-panel-templates" role="tabpanel" aria-labelledby="templates-ribbon-tab-templates" data-templates-ribbon-panel="templates" hidden>
+                        <div class="templates-ribbon-group templates-ribbon-group--library">
+                          <div class="templates-ribbon-group__content">
+                            <div class="templates-toolbar-field templates-toolbar-field--save-title">
+                              <label class="form-label" for="templates-save-title" data-i18n data-i18n-key="projects.templates.labels.saveTitle">💾 اسم النسخة</label>
+                              <input type="text" id="templates-save-title" class="ui-input form-control templates-save-title" placeholder="اسم النسخة" data-i18n data-i18n-placeholder-key="projects.templates.placeholders.saveTitle">
+                              <p id="templates-save-title-meta" class="templates-toolbar-field__meta surface-support-text surface-support-text--compact" data-i18n data-i18n-key="projects.templates.naming.autoHint">اترك الحقل فارغًا لاستخدام اسم واضح تلقائيًا بحسب المشروع ونوع القالب.</p>
+                            </div>
+                            <div class="templates-toolbar-field templates-toolbar-field--saved">
+                              <label class="form-label" for="templates-saved" data-i18n data-i18n-key="projects.templates.labels.saved">📚 المحفوظات</label>
+                              <select id="templates-saved" class="ui-select form-select"></select>
+                              <p id="templates-saved-meta" class="templates-toolbar-field__meta surface-support-text surface-support-text--compact" data-i18n data-i18n-key="projects.templates.naming.savedHint">اختر محفوظًا لتحميله، واستخدم الإجراءات الإضافية لإعادة التسمية أو التصدير أو الحذف.</p>
+                            </div>
+                          </div>
+                          <span class="templates-ribbon-group__label" data-i18n data-i18n-key="projects.templates.ribbon.groups.templates">إدارة النسخ والحفظ</span>
+                        </div>
+                        <div class="templates-ribbon-group templates-ribbon-group--version-actions">
+                          <div class="templates-ribbon-group__content">
+                            <div class="templates-command-grid templates-toolbar-primary-actions templates-toolbar-primary-actions--versions">
+                              <button type="button" class="ui-button ui-button--secondary btn btn-secondary" id="templates-save" data-i18n data-i18n-key="projects.templates.actions.save">💾 حفظ</button>
+                              <button type="button" class="ui-button ui-button--outline btn btn-outline" id="templates-save-copy" data-i18n data-i18n-key="projects.templates.actions.saveCopy">📎 حفظ كنسخة</button>
+                              <button type="button" class="ui-button ui-button--outline btn btn-outline" id="templates-load-last" data-i18n data-i18n-key="projects.templates.actions.loadLast">📥 تحميل آخر مسودة</button>
+                              <button type="button" class="ui-button ui-button--outline btn btn-outline" id="templates-new" data-i18n data-i18n-key="projects.templates.actions.newBlank">🆕 قالب فارغ</button>
+                              <button type="button" class="ui-button ui-button--outline btn btn-outline" id="templates-rename" data-i18n data-i18n-key="projects.templates.actions.rename">✏️ إعادة تسمية</button>
+                              <button type="button" class="ui-button ui-button--danger btn btn-outline btn-danger" id="templates-delete" data-i18n data-i18n-key="projects.templates.actions.delete">🗑️ حذف</button>
+                            </div>
+                          </div>
+                          <span class="templates-ribbon-group__label" data-i18n data-i18n-key="projects.templates.ribbon.groups.versionActions">الحفظ والتحميل والإدارة</span>
+                        </div>
+                      </section>
+
+                      <section class="templates-ribbon-panel" id="templates-ribbon-panel-review" role="tabpanel" aria-labelledby="templates-ribbon-tab-review" data-templates-ribbon-panel="review" hidden>
+                        <div class="templates-toolbar-actions" id="templates-actions">
+                          <div class="templates-ribbon-group templates-ribbon-group--review-actions">
+                            <div class="templates-ribbon-group__content">
+                              <div class="templates-command-grid templates-toolbar-primary-actions templates-toolbar-primary-actions--review" id="templates-review-actions">
+                                <button type="button" class="ui-button ui-button--outline btn btn-outline" id="templates-print-preview" data-i18n data-i18n-key="projects.templates.actions.printPreview">👁️ معاينة الطباعة</button>
+                                <button type="button" class="ui-button ui-button--primary btn btn-primary" id="templates-print" data-i18n data-i18n-key="projects.templates.actions.print">🖨️ طباعة PDF</button>
+                                <button type="button" class="ui-button ui-button--outline btn btn-outline templates-language-button" id="templates-lang-toggle" title="Language: EN">🌐 EN</button>
+                              </div>
+                            </div>
+                            <span class="templates-ribbon-group__label" data-i18n data-i18n-key="projects.templates.ribbon.groups.reviewActions">المراجعة والطباعة</span>
+                          </div>
+                          <div class="templates-ribbon-group templates-ribbon-group--alignment">
+                            <div class="templates-ribbon-group__content">
+                              <p class="surface-support-text surface-support-text--compact templates-ribbon-group__microcopy" data-i18n data-i18n-key="projects.templates.ribbon.alignmentHint">راجع المحاذاة وجرّب التكبير من داخل المعاينة نفسها قبل الطباعة.</p>
+                            </div>
+                            <span class="templates-ribbon-group__label" data-i18n data-i18n-key="projects.templates.ribbon.groups.alignment">المحاذاة والمعاينة</span>
                           </div>
                         </div>
-                      </div>
-                      
-                    </div>
-                  </div>
+                      </section>
 
-                  <div class="glass-card" style="overflow:auto;">
-                    <div id="templates-preview-host" style="display:flex;justify-content:center;align-items:flex-start;padding:16px;min-height:60vh;">
-                      <!-- A4 preview here -->
+                      <section class="templates-ribbon-panel" id="templates-ribbon-panel-tools" role="tabpanel" aria-labelledby="templates-ribbon-tab-tools" data-templates-ribbon-panel="tools" hidden>
+                        <div class="templates-ribbon-group templates-ribbon-group--populate">
+                          <div class="templates-ribbon-group__content">
+                            <div class="templates-command-grid templates-command-grid--tools">
+                              <button type="button" class="ui-button ui-button--outline btn btn-outline" id="templates-from-res" data-i18n data-i18n-key="projects.templates.actions.fromReservation">📅 من الحجز</button>
+                              <button type="button" class="ui-button ui-button--outline btn btn-outline" id="templates-fetch-crew" data-i18n data-i18n-key="projects.templates.actions.fetchCrew">👥 جلب الطاقم</button>
+                              <button type="button" class="ui-button ui-button--outline btn btn-outline" id="templates-fetch-crew-force" data-i18n data-i18n-key="projects.templates.actions.fetchCrewForce">👥 إعادة تعبئة الطاقم</button>
+                              <button type="button" class="ui-button ui-button--outline btn btn-outline" id="templates-refresh" data-i18n data-i18n-key="projects.templates.actions.refresh">تحديث</button>
+                            </div>
+                          </div>
+                          <span class="templates-ribbon-group__label" data-i18n data-i18n-key="projects.templates.ribbon.groups.populate">تعبئة ومزامنة</span>
+                        </div>
+                        <div class="templates-ribbon-group templates-ribbon-group--transfer">
+                          <div class="templates-ribbon-group__content">
+                            <div class="templates-command-grid templates-command-grid--tools">
+                              <button type="button" class="ui-button ui-button--outline btn btn-outline" id="templates-import" data-i18n data-i18n-key="projects.templates.actions.import">⬆️ استيراد</button>
+                              <button type="button" class="ui-button ui-button--outline btn btn-outline" id="templates-export" data-i18n data-i18n-key="projects.templates.actions.export">⬇️ تصدير</button>
+                              <button type="button" class="ui-button ui-button--outline btn btn-outline" id="templates-export-excel" data-i18n data-i18n-key="projects.templates.actions.exportExcel">⬇️ تصدير Excel</button>
+                              <input type="file" id="templates-import-file" accept="application/json" class="d-none" />
+                            </div>
+                          </div>
+                          <span class="templates-ribbon-group__label" data-i18n data-i18n-key="projects.templates.ribbon.groups.transfer">نقل القوالب</span>
+                        </div>
+                      </section>
                     </div>
-                  </div>
+                  </section>
+
+                  <section class="ui-card ui-card--content glass-card compact-surface-panel templates-preview-shell">
+                    <div class="templates-preview-shell__header">
+                      <div class="surface-heading-stack">
+                        <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="projects.templates.preview.title">المعاينة الحية</h3>
+                        <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="projects.templates.preview.subtitle">المعاينة قابلة للتعديل مباشرة، وتُحدّث الطباعة وعمليات الحفظ من نفس المحتوى الظاهر هنا.</p>
+                      </div>
+                    </div>
+                    <div class="templates-preview-shell__inline-tools" id="templates-preview-utilities-shell" hidden>
+                      <p class="surface-support-text surface-support-text--compact templates-preview-shell__inline-tools-note" data-i18n data-i18n-key="projects.templates.preview.toolsHintInline">استخدم شريط المعاينة للتكبير، التصغير، أو العودة إلى `1:1` قبل الطباعة.</p>
+                      <div class="templates-toolbar-utilities templates-preview-shell__utilities" id="templates-toolbar-utilities"></div>
+                    </div>
+                    <div class="templates-preview-shell__frame">
+                      <div id="templates-preview-host" class="templates-preview-host">
+                        <div class="ui-empty-state surface-empty-state templates-preview-empty-state p-6">
+                          <span class="ui-empty-state__icon" aria-hidden="true">📄</span>
+                          <p class="ui-empty-state__title" data-i18n data-i18n-key="projects.templates.empty">اختر مشروعاً لبدء إنشاء القوالب.</p>
+                          <p class="ui-empty-state__body surface-support-text surface-support-text--compact" data-i18n data-i18n-key="projects.templates.controls.subtitle">اختر المشروع والحجز ونوع القالب أولاً، ثم استخدم المحفوظات والإجراءات من نفس السطح.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
                 </div>
               </div>
             </section>
@@ -868,7 +793,7 @@
                 <p class="section-support-text" data-i18n data-i18n-key="projects.workflow.customersHint">حدّث بيانات العملاء هنا قبل ربطهم بالمشاريع أو إنشاء حجوزات جديدة لهم.</p>
               </div>
 
-              <div class="box customer-form-box management-form-box mb-4">
+              <div class="ui-card ui-card--content glass-card customer-form-box customer-embedded-form-card management-form-box mb-4">
                 <div class="management-form-header">
                   <div class="management-form-icon">👤</div>
                   <div class="management-form-header-text">
@@ -878,80 +803,104 @@
                 </div>
                 <form id="customer-form" class="management-form">
                   <input type="hidden" id="customer-id">
-                  <div class="management-form-grid">
-                    <div class="form-field">
-                      <label for="customer-name" class="form-label" data-i18n data-i18n-key="customers.form.labels.name">👤 الاسم</label>
-                      <input type="text" class="form-control" id="customer-name" required data-i18n data-i18n-placeholder-key="customers.form.placeholders.name">
-                    </div>
-                    <div class="form-field">
-                      <label for="customer-phone" class="form-label" data-i18n data-i18n-key="customers.form.labels.phone">📞 الجوال</label>
-                      <input type="tel" class="form-control" id="customer-phone" required data-i18n data-i18n-placeholder-key="customers.form.placeholders.phone">
-                    </div>
-                    <div class="form-field">
-                      <label for="customer-email" class="form-label" data-i18n data-i18n-key="customers.form.labels.email">📧 البريد</label>
-                      <input type="email" class="form-control" id="customer-email" dir="ltr" data-i18n data-i18n-placeholder-key="customers.form.placeholders.email">
-                    </div>
-                    <div class="form-field">
-                      <label for="customer-address" class="form-label" data-i18n data-i18n-key="customers.form.labels.address">📍 العنوان</label>
-                      <input type="text" class="form-control" id="customer-address" data-i18n data-i18n-placeholder-key="customers.form.placeholders.address">
-                    </div>
-                    <div class="form-field">
-                      <label for="customer-company" class="form-label" data-i18n data-i18n-key="customers.form.labels.company">🏢 الشركة</label>
-                      <input type="text" class="form-control" id="customer-company" data-i18n data-i18n-placeholder-key="customers.form.placeholders.company">
-                    </div>
-                    <div class="form-field">
-                      <label for="customer-tax-id" class="form-label" data-i18n data-i18n-key="customers.form.labels.taxId">🧾 الرقم الضريبي</label>
-                      <input type="text" class="form-control" id="customer-tax-id" placeholder="1234567890" data-i18n data-i18n-placeholder-key="customers.form.placeholders.taxId">
-                    </div>
-                    <div class="form-field">
-                      <label for="customer-document" class="form-label" data-i18n data-i18n-key="customers.form.labels.document">📎 مستند العميل</label>
-                      <div class="customer-upload-inline">
-                        <input type="file" class="form-control" id="customer-document" accept="application/pdf,image/*">
-                        <button type="button" class="btn btn-outline btn-secondary" id="customer-document-preview" disabled data-i18n data-i18n-key="customers.form.actions.previewDocument">عرض الملف</button>
-                        <small class="customer-upload-hint" id="customer-document-name" data-i18n data-i18n-key="customers.form.document.empty">لم يتم اختيار ملف بعد</small>
+                  <div class="customer-embedded-form-layout">
+                    <div class="customer-embedded-form-main">
+                      <div class="management-form-grid customer-embedded-form-grid">
+                        <div class="form-field">
+                          <label for="customer-name" class="form-label" data-i18n data-i18n-key="customers.form.labels.name">👤 الاسم</label>
+                          <input type="text" class="ui-input form-control" id="customer-name" required data-i18n data-i18n-placeholder-key="customers.form.placeholders.name">
+                        </div>
+                        <div class="form-field">
+                          <label for="customer-phone" class="form-label" data-i18n data-i18n-key="customers.form.labels.phone">📞 الجوال</label>
+                          <input type="tel" class="ui-input form-control" id="customer-phone" required data-i18n data-i18n-placeholder-key="customers.form.placeholders.phone">
+                        </div>
+                        <div class="form-field">
+                          <label for="customer-email" class="form-label" data-i18n data-i18n-key="customers.form.labels.email">📧 البريد</label>
+                          <input type="email" class="ui-input form-control" id="customer-email" dir="ltr" data-i18n data-i18n-placeholder-key="customers.form.placeholders.email">
+                        </div>
+                        <div class="form-field">
+                          <label for="customer-address" class="form-label" data-i18n data-i18n-key="customers.form.labels.address">📍 العنوان</label>
+                          <input type="text" class="ui-input form-control" id="customer-address" data-i18n data-i18n-placeholder-key="customers.form.placeholders.address">
+                        </div>
+                        <div class="form-field">
+                          <label for="customer-company" class="form-label" data-i18n data-i18n-key="customers.form.labels.company">🏢 الشركة</label>
+                          <input type="text" class="ui-input form-control" id="customer-company" data-i18n data-i18n-placeholder-key="customers.form.placeholders.company">
+                        </div>
+                        <div class="form-field">
+                          <label for="customer-tax-id" class="form-label" data-i18n data-i18n-key="customers.form.labels.taxId">🧾 الرقم الضريبي</label>
+                          <input type="text" class="ui-input form-control" id="customer-tax-id" placeholder="1234567890" data-i18n data-i18n-placeholder-key="customers.form.placeholders.taxId">
+                        </div>
                       </div>
                     </div>
-                    <div class="form-field form-field-notes">
-                      <label for="customer-notes" class="form-label" data-i18n data-i18n-key="customers.form.labels.notes">📝 الملاحظات</label>
-                      <textarea class="form-control" id="customer-notes" rows="2" placeholder="معلومات إضافية أو تذكيرات" data-i18n data-i18n-placeholder-key="customers.form.placeholders.notes"></textarea>
-                    </div>
+                    <aside class="customer-embedded-form-side">
+                      <div class="customer-embedded-form-side-card">
+                        <div class="form-field customer-embedded-upload-field">
+                          <label for="customer-document" class="form-label" data-i18n data-i18n-key="customers.form.labels.document">📎 مستند العميل</label>
+                          <div class="customer-upload-inline">
+                            <input type="file" class="customer-upload-input" id="customer-document" accept="application/pdf,image/*">
+                            <label for="customer-document" class="ui-button ui-button--secondary btn btn-secondary customer-upload-trigger" data-i18n data-i18n-key="customers.form.actions.chooseDocument">اختيار ملف</label>
+                            <button type="button" class="ui-button ui-button--outline btn btn-outline btn-secondary" id="customer-document-preview" disabled data-i18n data-i18n-key="customers.form.actions.previewDocument">عرض الملف</button>
+                            <small class="customer-upload-hint" id="customer-document-name" data-i18n data-i18n-key="customers.form.document.empty">لم يتم اختيار ملف بعد</small>
+                          </div>
+                        </div>
+                        <div class="form-field form-field-notes customer-embedded-notes-field">
+                          <label for="customer-notes" class="form-label" data-i18n data-i18n-key="customers.form.labels.notes">📝 الملاحظات</label>
+                          <textarea class="ui-textarea form-control" id="customer-notes" rows="6" placeholder="معلومات إضافية أو تذكيرات" data-i18n data-i18n-placeholder-key="customers.form.placeholders.notes"></textarea>
+                        </div>
+                      </div>
+                    </aside>
                   </div>
                   <div class="management-form-actions">
-                    <button type="button" class="btn btn-outline btn-secondary d-none" id="customer-cancel-btn" data-i18n data-i18n-key="customers.form.actions.cancel">إلغاء التعديل</button>
-                    <button type="submit" class="btn btn-primary" id="submit-btn" data-i18n data-i18n-key="customers.form.actions.submit">➕ إضافة عميل</button>
+                    <button type="button" class="ui-button ui-button--outline btn btn-outline btn-secondary d-none" id="customer-cancel-btn" data-i18n data-i18n-key="customers.form.actions.cancel">إلغاء التعديل</button>
+                    <button type="submit" class="ui-button ui-button--primary btn btn-primary" id="submit-btn" data-i18n data-i18n-key="customers.form.actions.submit">➕ إضافة عميل</button>
                   </div>
                 </form>
               </div>
 
-              <div class="mb-3 management-search-bar">
-                <input
-                  type="text"
-                  id="search-customer-input"
-                  class="form-control"
-                  placeholder="🔍 ابحث عن عميل بالاسم أو الجوال أو الشركة..."
-                  data-i18n data-i18n-placeholder-key="customers.search.placeholder"
-                >
-              </div>
+              <section class="ui-card ui-card--content glass-card customer-records-card">
+                <div class="projects-table__header customer-records-card__header">
+                  <div class="project-list-section-header customer-records-card__heading">
+                    <div class="surface-heading-stack">
+                      <h3 class="mb-0" data-i18n data-i18n-key="projects.customers.records.title">سجل العملاء</h3>
+                      <p class="section-support-text mb-0" data-i18n data-i18n-key="projects.customers.records.hint">ابحث، راجع، وعدّل العملاء المرتبطين بسير العمل من نفس السطح.</p>
+                    </div>
+                    <span id="customers-list-count" class="projects-table__count ui-badge ui-badge--soft badge-soft">0</span>
+                  </div>
+                </div>
 
-              <div class="customer-table-wrapper table-responsive">
-                <table class="customer-table align-middle">
-                  <thead>
-                    <tr>
-                      <th data-i18n data-i18n-key="customers.table.headers.name">👤 الاسم</th>
-                      <th data-i18n data-i18n-key="customers.table.headers.phone">📞 الجوال</th>
-                      <th data-i18n data-i18n-key="customers.table.headers.company">🏢 الشركة</th>
-                      <th class="table-notes-head" data-i18n data-i18n-key="customers.table.headers.notes">📝 ملاحظات</th>
-                      <th class="table-actions-head" data-i18n data-i18n-key="customers.table.headers.actions">⚙️ الإجراءات</th>
-                    </tr>
-                  </thead>
-                  <tbody id="customers-table">
-                    <tr>
-                      <td colspan="5" class="text-center" data-i18n data-i18n-key="customers.table.loading">جاري التحميل...</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <div id="customers-list-pagination" class="list-pagination" hidden></div>
+                <div class="customer-records-card__toolbar">
+                  <div class="management-search-bar customer-records-search">
+                    <input
+                      type="text"
+                      id="search-customer-input"
+                      class="ui-input form-control"
+                      placeholder="🔍 ابحث عن عميل بالاسم أو الجوال أو الشركة..."
+                      data-i18n data-i18n-placeholder-key="customers.search.placeholder"
+                    >
+                    <button type="button" class="ui-button ui-button--outline btn btn-outline btn-secondary customer-records-search__reset" id="customers-clear-search" data-i18n data-i18n-key="actions.clearFilters">🔄 إعادة التصفية</button>
+                  </div>
+                </div>
+
+                <div class="users-table-wrapper overflow-x-auto embedded-management-table-shell">
+                  <table class="ui-table table table-hover users-table surface-table embedded-management-table customer-table align-middle">
+                    <thead class="table-light">
+                      <tr>
+                        <th data-i18n data-i18n-key="customers.table.headers.name">👤 الاسم</th>
+                        <th data-i18n data-i18n-key="customers.table.headers.phone">📞 الجوال</th>
+                        <th data-i18n data-i18n-key="customers.table.headers.company">🏢 الشركة</th>
+                        <th class="table-notes-head" data-i18n data-i18n-key="customers.table.headers.notes">📝 ملاحظات</th>
+                        <th class="table-actions-head" data-i18n data-i18n-key="customers.table.headers.actions">⚙️ الإجراءات</th>
+                      </tr>
+                    </thead>
+                    <tbody id="customers-table">
+                      <tr>
+                        <td colspan="5" class="text-center" data-i18n data-i18n-key="customers.table.loading">جاري التحميل...</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div id="customers-list-pagination" class="list-pagination customer-records-card__pagination" hidden></div>
+              </section>
             </section>
 
             <section id="technicians-section" class="tab-pane d-none space-y-6" data-tab-pane="technicians-section">
@@ -960,7 +909,7 @@
                 <p class="section-support-text" data-i18n data-i18n-key="projects.workflow.techniciansHint">حدّث بيانات الطاقم والمناصب هنا قبل إسنادهم للمشاريع أو للحجوزات المرتبطة بها.</p>
               </div>
 
-              <div class="box add-technicians-box management-form-box mb-4">
+              <div class="ui-card ui-card--content glass-card add-technicians-box technician-embedded-form-card management-form-box mb-4">
                 <div class="management-form-header">
                   <div class="management-form-icon">😎</div>
                   <div class="management-form-header-text">
@@ -970,141 +919,293 @@
                 </div>
                 <form id="technician-form" class="management-form technician-form">
                   <input type="hidden" id="technician-id">
-                  <div class="management-form-grid">
-                    <div class="form-field">
-                      <label for="technician-name" class="form-label" data-i18n data-i18n-key="technicians.form.labels.name">😎 اسم العضو</label>
-                      <input type="text" class="form-control" id="technician-name" placeholder="اسم عضو الطاقم" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.name">
+                  <div class="technician-embedded-form-layout">
+                    <div class="technician-embedded-form-main">
+                      <div class="management-form-grid technician-embedded-form-grid">
+                        <div class="form-field">
+                          <label for="technician-name" class="form-label" data-i18n data-i18n-key="technicians.form.labels.name">😎 اسم العضو</label>
+                          <input type="text" class="ui-input form-control" id="technician-name" placeholder="اسم عضو الطاقم" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.name">
+                        </div>
+                        <div class="form-field">
+                          <label for="technician-phone" class="form-label" data-i18n data-i18n-key="technicians.form.labels.phone">📞 الجوال</label>
+                          <input type="text" class="ui-input form-control" id="technician-phone" placeholder="05xxxxxxxx" inputmode="tel" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.phone">
+                        </div>
+                        <div class="form-field">
+                          <label for="technician-role" class="form-label" data-i18n data-i18n-key="technicians.form.labels.role">👔 الوظيفة</label>
+                          <input type="text" class="ui-input form-control" id="technician-role" placeholder="مثال: مصور" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.role">
+                        </div>
+                        <div class="form-field">
+                          <label for="technician-department" class="form-label" data-i18n data-i18n-key="technicians.form.labels.department">🧩 القسم</label>
+                          <input type="text" class="ui-input form-control" id="technician-department" placeholder="مثال: قسم الصوت" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.department">
+                        </div>
+                        <div class="form-field">
+                          <label for="technician-wage" class="form-label" data-i18n data-i18n-key="technicians.form.labels.wage">💰 الأجر اليومي</label>
+                          <input type="text" class="ui-input form-control" id="technician-wage" placeholder="0" inputmode="decimal" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.wage">
+                        </div>
+                        <div class="form-field">
+                          <label for="technician-total" class="form-label" data-i18n data-i18n-key="technicians.form.labels.total">💼 التكلفة الإجمالية</label>
+                          <input type="text" class="ui-input form-control" id="technician-total" placeholder="0" inputmode="decimal" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.total">
+                        </div>
+                      </div>
                     </div>
-                    <div class="form-field">
-                      <label for="technician-phone" class="form-label" data-i18n data-i18n-key="technicians.form.labels.phone">📞 الجوال</label>
-                      <input type="text" class="form-control" id="technician-phone" placeholder="05xxxxxxxx" inputmode="tel" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.phone">
-                    </div>
-                    <div class="form-field">
-                      <label for="technician-role" class="form-label" data-i18n data-i18n-key="technicians.form.labels.role">👔 الوظيفة</label>
-                      <input type="text" class="form-control" id="technician-role" placeholder="مثال: مصور" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.role">
-                    </div>
-                    <div class="form-field">
-                      <label for="technician-department" class="form-label" data-i18n data-i18n-key="technicians.form.labels.department">🧩 القسم</label>
-                      <input type="text" class="form-control" id="technician-department" placeholder="مثال: قسم الصوت" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.department">
-                    </div>
-                    <div class="form-field">
-                      <label for="technician-wage" class="form-label" data-i18n data-i18n-key="technicians.form.labels.wage">💰 الأجر اليومي</label>
-                      <input type="text" class="form-control" id="technician-wage" placeholder="0" inputmode="decimal" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.wage">
-                    </div>
-                    <div class="form-field">
-                      <label for="technician-total" class="form-label" data-i18n data-i18n-key="technicians.form.labels.total">💼 التكلفة الإجمالية</label>
-                      <input type="text" class="form-control" id="technician-total" placeholder="0" inputmode="decimal" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.total">
-                    </div>
-                    <div class="form-field form-field-notes">
-                      <label for="technician-notes" class="form-label" data-i18n data-i18n-key="technicians.form.labels.notes">📝 ملاحظات</label>
-                      <textarea id="technician-notes" class="form-control" rows="2" placeholder="معلومات إضافية" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.notes"></textarea>
-                    </div>
+                    <aside class="technician-embedded-form-side">
+                      <div class="technician-embedded-form-side-card">
+                        <div class="form-field form-field-notes technician-embedded-notes-field">
+                          <label for="technician-notes" class="form-label" data-i18n data-i18n-key="technicians.form.labels.notes">📝 ملاحظات</label>
+                          <textarea id="technician-notes" class="ui-textarea form-control" rows="6" placeholder="معلومات إضافية" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.notes"></textarea>
+                        </div>
+                      </div>
+                    </aside>
                   </div>
                   <div class="management-form-actions">
-                    <button type="button" class="btn btn-outline btn-secondary d-none" id="technician-cancel-btn" data-i18n data-i18n-key="technicians.form.actions.cancel">إلغاء التعديل</button>
-                    <button type="submit" class="btn btn-primary" id="technician-submit-btn" data-i18n data-i18n-key="technicians.form.actions.submit">➕ إضافة عضو طاقم</button>
+                    <button type="button" class="ui-button ui-button--outline btn btn-outline btn-secondary d-none" id="technician-cancel-btn" data-i18n data-i18n-key="technicians.form.actions.cancel">إلغاء التعديل</button>
+                    <button type="submit" class="ui-button ui-button--primary btn btn-primary" id="technician-submit-btn" data-i18n data-i18n-key="technicians.form.actions.submit">➕ إضافة عضو طاقم</button>
                   </div>
                 </form>
               </div>
 
-              <div class="mb-3 d-flex flex-wrap gap-2 align-items-center">
-                <input
-                  type="text"
-                  id="search-technician-input"
-                  class="form-control"
-                  placeholder="🔍 ابحث عن عضو الطاقم بالاسم أو الجوال أو الوظيفة..."
-                  data-i18n data-i18n-placeholder-key="technicians.search.placeholder"
-                >
-                <select id="technician-role-filter" class="form-select">
-                  <option value="" data-i18n data-i18n-key="technicians.search.filters.allRoles">👔 كل الوظائف</option>
-                </select>
-              </div>
+              <section class="ui-card ui-card--content glass-card technician-records-card">
+                <div class="projects-table__header technician-records-card__header">
+                  <div class="project-list-section-header technician-records-card__heading">
+                    <div class="surface-heading-stack">
+                      <h3 class="mb-0" data-i18n data-i18n-key="projects.technicians.records.title">سجل الطاقم</h3>
+                      <p class="section-support-text mb-0" data-i18n data-i18n-key="projects.technicians.records.hint">ابحث، راجع، وعدّل أعضاء الطاقم والمناصب من نفس السطح قبل إسنادهم إلى المشاريع والحجوزات.</p>
+                    </div>
+                    <span id="technicians-list-count" class="projects-table__count ui-badge ui-badge--soft badge-soft">0</span>
+                  </div>
+                </div>
 
-              <div class="customer-table-wrapper technician-table-wrapper table-responsive">
-                <table class="customer-table technician-table align-middle">
-                  <thead>
-                    <tr>
-                      <th data-i18n data-i18n-key="technicians.table.headers.name">😎 اسم العضو</th>
-                      <th data-i18n data-i18n-key="technicians.table.headers.role">👔 الوظيفة</th>
-                      <th data-i18n data-i18n-key="technicians.table.headers.department">🧩 القسم</th>
-                      <th data-i18n data-i18n-key="technicians.table.headers.status">⚙️ الحالة</th>
-                      <th class="table-notes-head" data-i18n data-i18n-key="technicians.table.headers.notes">📝 ملاحظات</th>
-                      <th class="table-actions-head" data-i18n data-i18n-key="technicians.table.headers.actions">⚙️ الإجراءات</th>
-                    </tr>
-                  </thead>
-                  <tbody id="technicians-table">
-                    <tr>
-                      <td colspan="8" data-i18n data-i18n-key="technicians.table.loading">جاري التحميل...</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <div id="technicians-list-pagination" class="list-pagination" hidden></div>
+                <div class="technician-records-card__toolbar">
+                  <div class="management-search-bar technician-records-search">
+                    <input
+                      type="text"
+                      id="search-technician-input"
+                      class="ui-input form-control"
+                      placeholder="🔍 ابحث عن عضو الطاقم بالاسم أو الجوال أو الوظيفة..."
+                      data-i18n data-i18n-placeholder-key="technicians.search.placeholder"
+                    >
+                    <select id="technician-role-filter" class="ui-select form-select technician-records-search__role">
+                      <option value="" data-i18n data-i18n-key="technicians.search.filters.allRoles">👔 كل الوظائف</option>
+                    </select>
+                    <button type="button" class="ui-button ui-button--outline btn btn-outline btn-secondary technician-records-search__reset" id="technicians-clear-search" data-i18n data-i18n-key="actions.clearFilters">🔄 إعادة التصفية</button>
+                  </div>
+                </div>
+
+                <div class="users-table-wrapper overflow-x-auto embedded-management-table-shell">
+                  <table class="ui-table table table-hover users-table surface-table embedded-management-table technician-table align-middle">
+                    <thead class="table-light">
+                      <tr>
+                        <th data-i18n data-i18n-key="technicians.table.headers.name">😎 اسم العضو</th>
+                        <th data-i18n data-i18n-key="technicians.table.headers.role">👔 الوظيفة</th>
+                        <th data-i18n data-i18n-key="technicians.table.headers.department">🧩 القسم</th>
+                        <th data-i18n data-i18n-key="technicians.table.headers.status">⚙️ الحالة</th>
+                        <th class="table-notes-head" data-i18n data-i18n-key="technicians.table.headers.notes">📝 ملاحظات</th>
+                        <th class="table-actions-head" data-i18n data-i18n-key="technicians.table.headers.actions">⚙️ الإجراءات</th>
+                      </tr>
+                    </thead>
+                    <tbody id="technicians-table">
+                      <tr>
+                        <td colspan="6" class="text-center" data-i18n data-i18n-key="technicians.table.loading">جاري التحميل...</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div id="technicians-list-pagination" class="list-pagination technician-records-card__pagination" hidden></div>
+              </section>
             </section>
           </div>
-        </div>
-      </main>
-    </div>
-  </div>
-
-  
-
-  <div class="modal fade" id="projectDetailsModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" data-i18n data-i18n-key="projects.modal.title">تفاصيل المشروع</h5>
+</template>
+<template data-slot="afterShell">
+<div class="modal fade customer-edit-modal reservation-shell-modal reservation-quick-customer-modal" id="projectQuickCustomerModal" tabindex="-1" aria-labelledby="projectQuickCustomerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable customer-edit-modal__dialog reservation-shell-modal__dialog">
+      <div class="ui-modal__content modal-content customer-edit-modal__content reservation-shell-modal__content">
+        <div class="ui-modal__header modal-header customer-edit-modal__header reservation-shell-modal__header">
+          <div>
+            <h5 class="modal-title" id="projectQuickCustomerModalLabel" data-i18n data-i18n-key="projects.quickCustomer.modal.title">إضافة عميل سريع</h5>
+            <p class="reservation-quick-customer-modal__hint mb-0" data-i18n data-i18n-key="projects.quickCustomer.modal.hint">أضف العميل هنا وسيتم اختياره مباشرة في المشروع الحالي.</p>
+          </div>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
         </div>
-        <div class="modal-body" id="project-details-body"></div>
+        <form id="project-quick-customer-form">
+          <div class="ui-modal__body modal-body customer-edit-modal__body reservation-shell-modal__body">
+            <div class="reservation-quick-customer-grid">
+              <div class="form-field">
+                <label class="form-label" for="project-quick-customer-name" data-i18n data-i18n-key="projects.quickCustomer.fields.name">اسم العميل</label>
+                <input type="text" class="ui-input form-control" id="project-quick-customer-name" required data-i18n data-i18n-placeholder-key="projects.quickCustomer.placeholders.name">
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="project-quick-customer-phone" data-i18n data-i18n-key="projects.quickCustomer.fields.phone">رقم الجوال</label>
+                <input type="tel" class="ui-input form-control" id="project-quick-customer-phone" required data-i18n data-i18n-placeholder-key="projects.quickCustomer.placeholders.phone">
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="project-quick-customer-email" data-i18n data-i18n-key="projects.quickCustomer.fields.email">البريد الإلكتروني</label>
+                <input type="email" class="ui-input form-control" id="project-quick-customer-email" dir="ltr" data-i18n data-i18n-placeholder-key="projects.quickCustomer.placeholders.email">
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="project-quick-customer-company" data-i18n data-i18n-key="projects.quickCustomer.fields.company">الشركة</label>
+                <input type="text" class="ui-input form-control" id="project-quick-customer-company" data-i18n data-i18n-placeholder-key="projects.quickCustomer.placeholders.company">
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="project-quick-customer-tax-id" data-i18n data-i18n-key="projects.quickCustomer.fields.taxId">الرقم الضريبي</label>
+                <input type="text" class="ui-input form-control" id="project-quick-customer-tax-id" data-i18n data-i18n-placeholder-key="projects.quickCustomer.placeholders.taxId">
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="project-quick-customer-address" data-i18n data-i18n-key="projects.quickCustomer.fields.address">العنوان</label>
+                <input type="text" class="ui-input form-control" id="project-quick-customer-address" data-i18n data-i18n-placeholder-key="projects.quickCustomer.placeholders.address">
+              </div>
+              <div class="form-field reservation-quick-customer-grid__full">
+                <label class="form-label" for="project-quick-customer-notes" data-i18n data-i18n-key="projects.quickCustomer.fields.notes">ملاحظات</label>
+                <textarea class="ui-textarea form-control" id="project-quick-customer-notes" rows="3" data-i18n data-i18n-placeholder-key="projects.quickCustomer.placeholders.notes"></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="ui-modal__footer modal-footer customer-edit-modal__footer reservation-shell-modal__footer">
+            <button type="button" class="ui-button ui-button--outline btn btn-outline btn-secondary" data-bs-dismiss="modal" data-i18n data-i18n-key="actions.cancel">إلغاء</button>
+            <button type="submit" class="ui-button ui-button--primary btn btn-primary" id="project-quick-customer-save" data-i18n data-i18n-key="projects.quickCustomer.actions.save">حفظ واختيار العميل</button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
 
-  <div class="modal fade" id="reservationDetailsModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
+<div class="modal fade customer-edit-modal reservation-shell-modal reservation-quick-customer-modal project-quick-crew-modal" id="projectQuickPositionModal" tabindex="-1" aria-labelledby="projectQuickPositionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable customer-edit-modal__dialog reservation-shell-modal__dialog">
+      <div class="ui-modal__content modal-content customer-edit-modal__content reservation-shell-modal__content">
+        <div class="ui-modal__header modal-header customer-edit-modal__header reservation-shell-modal__header">
+          <div>
+            <h5 class="modal-title" id="projectQuickPositionModalLabel" data-i18n data-i18n-key="projects.quickCrew.position.title">إضافة منصب سريع</h5>
+            <p class="reservation-quick-customer-modal__hint mb-0" data-i18n data-i18n-key="projects.quickCrew.position.hint">أضف المنصب وسيظهر مباشرة داخل تجهيز فريق المشروع.</p>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
+        </div>
+        <form id="project-quick-position-form">
+          <div class="ui-modal__body modal-body customer-edit-modal__body reservation-shell-modal__body">
+            <div class="reservation-quick-customer-grid">
+              <div class="form-field">
+                <label class="form-label" for="project-quick-position-name-ar" data-i18n data-i18n-key="projects.quickCrew.position.fields.nameAr">اسم المنصب</label>
+                <input type="text" class="ui-input form-control" id="project-quick-position-name-ar" required placeholder="مثال: مدير تصوير">
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="project-quick-position-name-en" data-i18n data-i18n-key="projects.quickCrew.position.fields.nameEn">الاسم الإنجليزي</label>
+                <input type="text" class="ui-input form-control" id="project-quick-position-name-en" placeholder="Example: DOP">
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="project-quick-position-cost" data-i18n data-i18n-key="projects.quickCrew.position.fields.cost">تكلفة المنصب</label>
+                <input type="text" class="ui-input form-control" id="project-quick-position-cost" inputmode="decimal" placeholder="0">
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="project-quick-position-client-price" data-i18n data-i18n-key="projects.quickCrew.position.fields.clientPrice">سعر البيع</label>
+                <input type="text" class="ui-input form-control" id="project-quick-position-client-price" inputmode="decimal" placeholder="0">
+              </div>
+            </div>
+          </div>
+          <div class="ui-modal__footer modal-footer customer-edit-modal__footer reservation-shell-modal__footer">
+            <button type="button" class="ui-button ui-button--outline btn btn-outline btn-secondary" data-bs-dismiss="modal" data-i18n data-i18n-key="actions.cancel">إلغاء</button>
+            <button type="submit" class="ui-button ui-button--primary btn btn-primary" id="project-quick-position-save" data-i18n data-i18n-key="projects.quickCrew.position.save">حفظ وإضافة المنصب</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+<div class="modal fade customer-edit-modal reservation-shell-modal reservation-quick-customer-modal project-quick-crew-modal" id="projectQuickTechnicianModal" tabindex="-1" aria-labelledby="projectQuickTechnicianModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable customer-edit-modal__dialog reservation-shell-modal__dialog">
+      <div class="ui-modal__content modal-content customer-edit-modal__content reservation-shell-modal__content">
+        <div class="ui-modal__header modal-header customer-edit-modal__header reservation-shell-modal__header">
+          <div>
+            <h5 class="modal-title" id="projectQuickTechnicianModalLabel" data-i18n data-i18n-key="projects.quickCrew.technician.title">إضافة عضو فريق سريع</h5>
+            <p class="reservation-quick-customer-modal__hint mb-0" data-i18n data-i18n-key="projects.quickCrew.technician.hint">أضف عضو الفريق هنا ليصبح متاحًا للاختيار داخل المشروع.</p>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
+        </div>
+        <form id="project-quick-technician-form">
+          <div class="ui-modal__body modal-body customer-edit-modal__body reservation-shell-modal__body">
+            <div class="reservation-quick-customer-grid">
+              <div class="form-field">
+                <label class="form-label" for="project-quick-technician-name" data-i18n data-i18n-key="projects.quickCrew.technician.fields.name">اسم عضو الفريق</label>
+                <input type="text" class="ui-input form-control" id="project-quick-technician-name" required>
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="project-quick-technician-phone" data-i18n data-i18n-key="projects.quickCrew.technician.fields.phone">رقم الجوال</label>
+                <input type="tel" class="ui-input form-control" id="project-quick-technician-phone">
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="project-quick-technician-email" data-i18n data-i18n-key="projects.quickCrew.technician.fields.email">البريد الإلكتروني</label>
+                <input type="email" class="ui-input form-control" id="project-quick-technician-email" dir="ltr">
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="project-quick-technician-role" data-i18n data-i18n-key="projects.quickCrew.technician.fields.role">التخصص</label>
+                <input type="text" class="ui-input form-control" id="project-quick-technician-role">
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="project-quick-technician-department" data-i18n data-i18n-key="projects.quickCrew.technician.fields.department">القسم</label>
+                <input type="text" class="ui-input form-control" id="project-quick-technician-department">
+              </div>
+            </div>
+          </div>
+          <div class="ui-modal__footer modal-footer customer-edit-modal__footer reservation-shell-modal__footer">
+            <button type="button" class="ui-button ui-button--outline btn btn-outline btn-secondary" data-bs-dismiss="modal" data-i18n data-i18n-key="actions.cancel">إلغاء</button>
+            <button type="submit" class="ui-button ui-button--primary btn btn-primary" id="project-quick-technician-save" data-i18n data-i18n-key="projects.quickCrew.technician.save">حفظ عضو الفريق</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+<div class="modal fade customer-edit-modal project-shell-modal" id="projectDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable customer-edit-modal__dialog project-shell-modal__dialog">
+      <div class="ui-modal__content modal-content customer-edit-modal__content">
+        <div class="ui-modal__header modal-header customer-edit-modal__header">
+          <h5 class="modal-title" data-i18n data-i18n-key="projects.modal.title">تفاصيل المشروع</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
+        </div>
+        <div class="ui-modal__body modal-body customer-edit-modal__body" id="project-details-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade customer-edit-modal reservation-shell-modal" id="reservationDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable customer-edit-modal__dialog reservation-shell-modal__dialog">
+      <div class="ui-modal__content modal-content customer-edit-modal__content reservation-shell-modal__content">
+        <div class="ui-modal__header modal-header customer-edit-modal__header reservation-shell-modal__header">
           <h5 class="modal-title" data-i18n data-i18n-key="reservations.details.modalTitle">📋 تفاصيل الحجز</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
         </div>
-        <div class="modal-body" id="reservation-details-body"></div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n data-i18n-key="actions.close">إغلاق</button>
+        <div class="ui-modal__body modal-body customer-edit-modal__body reservation-shell-modal__body" id="reservation-details-body"></div>
+        <div class="ui-modal__footer modal-footer customer-edit-modal__footer reservation-shell-modal__footer">
+          <button type="button" class="btn modal-close-btn" data-bs-dismiss="modal" data-i18n data-i18n-key="actions.close">إغلاق</button>
         </div>
       </div>
     </div>
   </div>
 
   <!-- ✅ مودال إغلاق المشروع -->
-  <div class="modal fade" id="closeProjectModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
+  <div class="modal fade customer-edit-modal project-shell-modal" id="closeProjectModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable customer-edit-modal__dialog project-shell-modal__dialog project-shell-modal__dialog--compact">
+      <div class="ui-modal__content modal-content customer-edit-modal__content">
+        <div class="ui-modal__header modal-header customer-edit-modal__header">
           <h5 class="modal-title" data-i18n data-i18n-key="projects.closeModal.title">🔒 إغلاق المشروع</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
         </div>
-        <div class="modal-body">
-          <p class="text-muted" data-i18n data-i18n-key="projects.closeModal.subtitle">يرجى كتابة ملاحظة الإغلاق (اختياري).</p>
-          <label class="form-label" for="close-project-notes" data-i18n data-i18n-key="projects.closeModal.noteLabel">📝 ملاحظات الإغلاق</label>
-          <textarea id="close-project-notes" class="form-control" rows="3" data-i18n data-i18n-placeholder-key="projects.closeModal.notePlaceholder" placeholder="مثال: تم إنهاء المشروع بنجاح..."></textarea>
+        <div class="ui-modal__body modal-body customer-edit-modal__body">
+          <form class="customer-edit-form project-close-form" novalidate>
+            <p class="form-text text-muted project-close-form__intro" data-i18n data-i18n-key="projects.closeModal.subtitle">يرجى كتابة ملاحظة الإغلاق (اختياري).</p>
+            <div class="form-field form-field-notes">
+              <label class="form-label" for="close-project-notes" data-i18n data-i18n-key="projects.closeModal.noteLabel">📝 ملاحظات الإغلاق</label>
+              <textarea id="close-project-notes" class="ui-textarea form-control" rows="4" data-i18n data-i18n-placeholder-key="projects.closeModal.notePlaceholder" placeholder="مثال: تم إنهاء المشروع بنجاح..."></textarea>
+            </div>
+          </form>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline" id="close-project-cancel" data-bs-dismiss="modal" data-i18n data-i18n-key="projects.closeModal.cancel">إلغاء</button>
-          <button type="button" class="btn btn-primary" id="close-project-submit" data-i18n data-i18n-key="projects.closeModal.confirm">🔒 إغلاق المشروع</button>
+        <div class="ui-modal__footer modal-footer customer-edit-modal__footer">
+          <button type="button" class="ui-button ui-button--outline btn btn-outline" id="close-project-cancel" data-bs-dismiss="modal" data-i18n data-i18n-key="projects.closeModal.cancel">إلغاء</button>
+          <button type="button" class="ui-button ui-button--primary btn btn-primary customer-edit-modal__save-btn" id="close-project-submit" data-i18n data-i18n-key="projects.closeModal.confirm">🔒 إغلاق المشروع</button>
         </div>
       </div>
     </div>
   </div>
-
+</template>
+<template data-slot="pageScripts">
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-  <script type="module" src="/src/scripts/language.js"></script>
-  <script type="module" src="/src/scripts/translations/common.js"></script>
-  <script type="module" src="/src/scripts/translations/dashboard.js"></script>
   <script type="module" src="/src/scripts/translations/projects.js"></script>
-  <script type="module" src="/src/scripts/customers.js"></script>
-  <script type="module" src="/src/scripts/technicians.js"></script>
-  <!-- Preferred projects-page bootstrap owner -->
-  <script type="module" src="/src/scripts/projects.js"></script>
-</body>
+</template>
 </html>

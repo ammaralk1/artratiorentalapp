@@ -1,4 +1,5 @@
 import { calculateDraftFinancialBreakdown } from '../reservationsSummary.js';
+import { calculateProjectLineFinancials } from '../projects/financials.js';
 import {
   getProjectExpenses,
   getProjectServicesRevenue,
@@ -17,6 +18,7 @@ export interface ReservationRevenueTotals {
 export interface ProjectCommercialTotals {
   reservations: ReservationLike[];
   agg: ReservationRevenueTotals;
+  projectEquipmentRevenue: number;
   servicesRevenue: number;
   projectExpenses: number;
   grossBeforeDiscount: number;
@@ -43,6 +45,7 @@ interface ProjectCommercialLike extends ProjectLike {
 interface ReservationCommercialLike extends ReservationLike {
   items?: unknown[] | null;
   crewAssignments?: unknown[] | null;
+  techniciansDetails?: unknown[] | null;
   technicians?: unknown[] | null;
   discount?: unknown;
   discountType?: unknown;
@@ -69,7 +72,9 @@ export function aggregateReservationDraftTotals(
 ): ReservationRevenueTotals {
   return (Array.isArray(reservations) ? reservations : []).reduce<ReservationRevenueTotals>((acc, reservation) => {
     const items = Array.isArray(reservation.items) ? reservation.items : [];
-    const crewAssignments = Array.isArray(reservation.crewAssignments) ? reservation.crewAssignments : [];
+    const crewAssignments = Array.isArray(reservation.crewAssignments) && reservation.crewAssignments.length
+      ? reservation.crewAssignments
+      : (Array.isArray(reservation.techniciansDetails) ? reservation.techniciansDetails : []);
     const techniciansOrAssignments = crewAssignments.length
       ? crewAssignments
       : (Array.isArray(reservation.technicians) ? reservation.technicians : []);
@@ -105,16 +110,12 @@ export function computeProjectCommercialTotals(
 ): ProjectCommercialTotals {
   const linkedReservations = Array.isArray(reservations) ? reservations : [];
   const agg = aggregateReservationDraftTotals(linkedReservations);
+  const projectEquipmentRevenue = linkedReservations.length
+    ? 0
+    : Number(project?.raw?.equipmentEstimate ?? project?.equipmentEstimate ?? 0) || 0;
   const servicesRevenue = getProjectServicesRevenue(project);
   const projectExpenses = Number(getProjectExpenses(project) || 0);
-  const grossBeforeDiscount = agg.equipment + agg.crew + servicesRevenue;
-  const discountVal = Number(project?.raw?.discount ?? project?.discount ?? 0) || 0;
-  const discountType = (project?.raw?.discount_type ?? project?.discountType) === 'amount' ? 'amount' : 'percent';
-  let discountAmount = discountType === 'amount' ? discountVal : grossBeforeDiscount * (discountVal / 100);
-  if (!Number.isFinite(discountAmount) || discountAmount < 0) discountAmount = 0;
-  if (discountAmount > grossBeforeDiscount) discountAmount = grossBeforeDiscount;
-
-  const baseAfterDiscount = Math.max(0, grossBeforeDiscount - discountAmount);
+  const grossBeforeDiscount = projectEquipmentRevenue + agg.equipment + agg.crew + servicesRevenue;
   let applyTax = (() => {
     const value = (project?.applyTax !== undefined)
       ? project.applyTax
@@ -141,17 +142,32 @@ export function computeProjectCommercialTotals(
 
   if (shareEnabled && rawSharePercent > 0) applyTax = true;
   const sharePercent = (shareEnabled && applyTax) ? rawSharePercent : 0;
-  const companyShareAmount = sharePercent > 0
-    ? Number((baseAfterDiscount * (sharePercent / 100)).toFixed(2))
-    : 0;
-  const taxAmount = applyTax
-    ? Number(((baseAfterDiscount + companyShareAmount) * taxRate).toFixed(2))
-    : 0;
-  const finalTotal = Number((baseAfterDiscount + companyShareAmount + taxAmount).toFixed(2));
+  const discountVal = Number(project?.raw?.discount ?? project?.discount ?? 0) || 0;
+  const discountType = (project?.raw?.discount_type ?? project?.discountType) === 'amount' ? 'amount' : 'percent';
+  const clientAmounts = calculateProjectLineFinancials({
+    equipmentRevenue: projectEquipmentRevenue + agg.equipment,
+    crewRevenue: agg.crew,
+    servicesRevenue,
+    equipmentCost: agg.equipmentCost,
+    crewCost: agg.crewCost,
+    servicesCost: projectExpenses,
+    discountValue: discountVal,
+    discountType,
+    applyTax,
+    companyShareEnabled: shareEnabled,
+    companySharePercent: sharePercent,
+    taxRate,
+  });
+  const discountAmount = clientAmounts.discountAmount;
+  const baseAfterDiscount = clientAmounts.subtotalAfterDiscount;
+  const companyShareAmount = clientAmounts.companyShareAmount;
+  const taxAmount = clientAmounts.taxAmount;
+  const finalTotal = clientAmounts.totalWithTax;
 
   return {
     reservations: linkedReservations,
     agg,
+    projectEquipmentRevenue,
     servicesRevenue,
     projectExpenses,
     grossBeforeDiscount,
@@ -225,7 +241,7 @@ export function computeProjectsRevenueBreakdown(
     const linkedReservations = getReservationsForProject(reservations, project.id);
     const summary = computeProjectCommercialTotals(project, linkedReservations, taxRate);
 
-    equipmentTotalCombined += summary.agg.equipment;
+    equipmentTotalCombined += summary.agg.equipment + summary.projectEquipmentRevenue;
     equipmentCostTotalCombined += summary.agg.equipmentCost;
     crewTotal += summary.agg.crew;
     crewCostTotal += summary.agg.crewCost;
@@ -238,6 +254,7 @@ export function computeProjectsRevenueBreakdown(
 
     const perProjectNet = Number((
       summary.baseAfterDiscount
+      - summary.companyShareAmount
       - summary.projectExpenses
       - (summary.agg.crewCost || 0)
       - (summary.agg.equipmentCost || 0)

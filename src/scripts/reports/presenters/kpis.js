@@ -57,8 +57,8 @@ export function updateKpiCards(metrics) {
       // Lite meta: remove Net and Average to avoid duplication and reduce height
       const template = translate(
         'reservations.reports.kpi.revenue.metaLite',
-        'نسبة الشركة {share}',
-        'Company share {share}',
+        'المصاريف التشغيلية {share}',
+        'Company overhead {share}',
       );
       const text = template.replace('{share}', formatCurrency(companyShareTotal));
       revenueMetaEl.textContent = text;
@@ -69,41 +69,49 @@ export function updateKpiCards(metrics) {
     if (revenue > 0) {
       const rows = [
         {
+          key: 'gross',
           label: translate('reservations.reports.kpi.revenue.details.gross', 'الإيراد الكلي', 'Gross revenue'),
           value: formatCurrency(revenue),
           hint: translate('reservations.reports.kpi.revenue.details.grossHint', 'إجمالي قيمة الحجوزات (قبل الخصومات)', 'Total bookings value (before discounts)')
         },
         {
+          key: 'discount',
           label: translate('reservations.reports.kpi.revenue.details.discount', 'الخصومات', 'Discounts'),
           value: metrics.discountTotal > 0 ? `−${formatCurrency(metrics.discountTotal)}` : formatCurrency(0),
           hint: translate('reservations.reports.kpi.revenue.details.discountHint', 'إجمالي الخصومات المطبقة على الحجوزات المؤكدة', 'Sum of discounts applied to confirmed reservations')
         },
         {
-          label: translate('reservations.reports.kpi.revenue.details.share', 'نسبة الشركة', 'Company share'),
+          key: 'share',
+          label: translate('reservations.reports.kpi.revenue.details.share', 'المصاريف التشغيلية', 'Company overhead'),
           value: formatCurrency(companyShareTotal),
           hint: translate('reservations.reports.kpi.revenue.details.shareHint', 'تُحسب بعد الخصم، وتُضاف للإجمالي', 'Applied after discount and added to total')
         },
         {
+          key: 'tax',
           label: translate('reservations.reports.kpi.revenue.details.tax', 'الضريبة', 'Tax'),
           value: formatCurrency(taxTotal),
-          hint: translate('reservations.reports.kpi.revenue.details.taxHint', 'ضريبة 15% على (الإجمالي بعد الخصم + نسبة الشركة)', '15% VAT on (after-discount total + company share)')
+          hint: translate('reservations.reports.kpi.revenue.details.taxHint', 'ضريبة 15% على (الإجمالي بعد الخصم + المصاريف التشغيلية)', '15% VAT on (after-discount total + operating overhead)')
         },
         {
+          key: 'crewGross',
           label: translate('reservations.reports.kpi.revenue.details.crewGross', 'إجمالي الطاقم', 'Crew total'),
           value: formatCurrency(crewGross),
           hint: translate('reservations.reports.kpi.revenue.details.crewGrossHint', 'قيمة الطاقم للعميل', 'Crew price billed to client')
         },
         {
+          key: 'crew',
           label: translate('reservations.reports.kpi.revenue.details.crew', 'تكلفة الطاقم', 'Crew cost'),
           value: formatCurrency(crewCost),
           hint: translate('reservations.reports.kpi.revenue.details.crewHint', 'تكلفة الطاقم على الشركة', 'Crew cost to company')
         },
         {
+          key: 'equipmentGross',
           label: translate('reservations.reports.kpi.revenue.details.equipmentGross', 'إجمالي المعدات', 'Equipment total'),
           value: formatCurrency(equipmentGross),
           hint: translate('reservations.reports.kpi.revenue.details.equipmentGrossHint', 'قيمة المعدات للعميل', 'Equipment price billed to client')
         },
         {
+          key: 'equipment',
           label: translate('reservations.reports.kpi.revenue.details.equipment', 'تكلفة المعدات', 'Equipment cost'),
           value: formatCurrency(equipmentCost),
           hint: translate('reservations.reports.kpi.revenue.details.equipmentHint', 'تكلفة المعدات على الشركة', 'Equipment cost to company')
@@ -112,19 +120,21 @@ export function updateKpiCards(metrics) {
 
       if (maintenanceExpense > 0) {
         rows.push({
+          key: 'maintenance',
           label: translate('reservations.reports.kpi.revenue.details.maintenance', 'مصاريف الصيانة', 'Maintenance expenses'),
           value: `−${formatCurrency(maintenanceExpense)}`,
         });
       }
 
       rows.push({
+        key: 'net',
         label: translate('reservations.reports.kpi.revenue.details.net', 'صافي الربح', 'Net profit'),
         value: formatCurrency(net),
       });
 
       revenueDetailsEl.innerHTML = rows
-        .map(({ label, value, hint }) => `
-          <div class="reports-kpi-detail-row" title="${hint || ''}">
+        .map(({ key, label, value, hint }) => `
+          <div class="reports-kpi-detail-row reports-kpi-detail-card reports-kpi-detail-card--${key}" title="${hint || ''}">
             <span class="reports-kpi-detail-label">${label}</span>
             <span class="reports-kpi-detail-value">${value}</span>
           </div>

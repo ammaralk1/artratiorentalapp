@@ -122,6 +122,7 @@ CREATE TABLE project_expenses (
   label VARCHAR(255) NOT NULL,
   amount DECIMAL(12,2) NOT NULL DEFAULT 0,
   sale_price DECIMAL(12,2) NOT NULL DEFAULT 0,
+  service_days INT UNSIGNED NOT NULL DEFAULT 1,
   FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -305,9 +306,9 @@ INSERT INTO project_equipment (project_id, equipment_id, quantity) VALUES
 (1, 1, 4),
 (1, 2, 2);
 
-INSERT INTO project_expenses (project_id, label, amount, sale_price) VALUES
-(1, 'نقل المعدات', 1800.00, 2500.00),
-(1, 'تصاريح بلدية', 950.00, 1500.00);
+INSERT INTO project_expenses (project_id, label, amount, sale_price, service_days) VALUES
+(1, 'نقل المعدات', 1800.00, 2500.00, 1),
+(1, 'تصاريح بلدية', 950.00, 1500.00, 1);
 
 INSERT INTO project_payments (project_id, payment_type, value, amount, percentage, note, recorded_at) VALUES
 (1, 'amount', 20000, 20000, NULL, 'دفعة مقدمة', '2025-08-15 12:00:00');

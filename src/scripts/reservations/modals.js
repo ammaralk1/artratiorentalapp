@@ -2,15 +2,15 @@ import { ensurePackagesCached } from '../packagesCache.js';
 
 const MODAL_SNIPPETS = {
   reservationDetailsModal: `
-  <div class="modal fade" id="reservationDetailsModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
+  <div class="modal fade customer-edit-modal reservation-shell-modal" id="reservationDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable customer-edit-modal__dialog reservation-shell-modal__dialog">
+      <div class="ui-modal__content modal-content customer-edit-modal__content reservation-shell-modal__content">
+        <div class="ui-modal__header modal-header customer-edit-modal__header reservation-shell-modal__header">
           <h5 class="modal-title" data-i18n data-i18n-key="reservations.details.modalTitle">📋 تفاصيل الحجز</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
         </div>
-        <div class="modal-body" id="reservation-details-body"></div>
-        <div class="modal-footer">
+        <div class="ui-modal__body modal-body customer-edit-modal__body reservation-shell-modal__body" id="reservation-details-body"></div>
+        <div class="ui-modal__footer modal-footer customer-edit-modal__footer reservation-shell-modal__footer">
           <button type="button" class="btn modal-close-btn" data-bs-dismiss="modal" data-i18n data-i18n-key="actions.close">إغلاق</button>
         </div>
       </div>
@@ -18,15 +18,15 @@ const MODAL_SNIPPETS = {
   </div>
   `,
   editReservationModal: `
-  <div class="modal fade" id="editReservationModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
+  <div class="modal fade customer-edit-modal reservation-shell-modal" id="editReservationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable customer-edit-modal__dialog reservation-shell-modal__dialog reservation-shell-modal__dialog--wide">
+      <div class="ui-modal__content modal-content customer-edit-modal__content reservation-shell-modal__content">
+        <div class="ui-modal__header modal-header customer-edit-modal__header reservation-shell-modal__header">
           <h5 class="modal-title" data-i18n data-i18n-key="reservations.edit.modalTitle">✏️ تعديل الحجز</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
         </div>
-        <div class="modal-body">
-          <form id="edit-reservation-form" class="row g-3">
+        <div class="ui-modal__body modal-body customer-edit-modal__body reservation-shell-modal__body">
+          <form id="edit-reservation-form" class="row g-3 customer-edit-form reservation-shell-form">
             <input type="hidden" id="edit-res-index">
             <input type="hidden" id="edit-res-confirmed" value="false">
 
@@ -100,13 +100,14 @@ const MODAL_SNIPPETS = {
                 <div class="reservation-payment-card__header">
                   <span class="reservation-payment-card__title" data-i18n data-i18n-key="reservations.edit.paymentCard.title">💰 تفاصيل الدفع</span>
                 </div>
+                <p class="reservation-payment-card__meta" data-i18n data-i18n-key="reservations.edit.paymentCard.meta">تتحدث حالة الدفع تلقائياً من الدفعات المسجلة داخل الحجز.</p>
                 <div class="reservation-payment-card__body">
                   <div class="reservation-payment-card__toggles">
                     <div class="reservation-option-card">
                       <input type="checkbox" class="reservation-option-card__input" id="edit-res-company-share" data-company-share="10">
                       <label class="reservation-option-card__label" for="edit-res-company-share">
                         <span class="reservation-option-card__check" aria-hidden="true"></span>
-                        <span class="reservation-option-card__text" data-i18n data-i18n-key="reservations.create.billing.companyShareToggle">إضافة نسبة الشركة (10٪)</span>
+                        <span class="reservation-option-card__text" data-i18n data-i18n-key="reservations.create.billing.companyShareToggle">إضافة مصاريف تشغيلية (10٪)</span>
                       </label>
                     </div>
                     <div class="reservation-option-card">
@@ -119,31 +120,23 @@ const MODAL_SNIPPETS = {
                   </div>
                   <div class="reservation-payment-card__field">
                     <label class="form-label" for="edit-res-discount" data-i18n data-i18n-key="reservations.edit.labels.discount">💵 الخصم</label>
-                    <div class="input-group">
-                      <select id="edit-res-discount-type" class="form-select">
+                    <div class="input-group reservation-payment-inline-group">
+                      <select id="edit-res-discount-type" class="form-select reservation-payment-inline-group__control reservation-payment-inline-group__control--type">
                         <option value="percent" data-i18n data-i18n-key="reservations.edit.discount.percent">٪ نسبة</option>
                         <option value="amount" data-i18n data-i18n-key="reservations.edit.discount.amount">💵 مبلغ</option>
                       </select>
-                      <input type="text" class="form-control" id="edit-res-discount" placeholder="ادخل قيمة الخصم" data-i18n data-i18n-placeholder-key="reservations.edit.placeholders.discount">
+                      <input type="text" class="form-control reservation-payment-inline-group__control reservation-payment-inline-group__control--value" id="edit-res-discount" placeholder="ادخل قيمة الخصم" data-i18n data-i18n-placeholder-key="reservations.edit.placeholders.discount">
                     </div>
-                  </div>
-                  <div class="reservation-payment-card__field">
-                    <label class="form-label" for="edit-res-paid" data-i18n data-i18n-key="reservations.edit.labels.paymentStatus">💳 حالة الدفع</label>
-                    <select id="edit-res-paid" class="form-select payment-status-select">
-                      <option value="paid" data-i18n data-i18n-key="reservations.edit.payment.paid">مدفوع</option>
-                      <option value="partial" data-i18n data-i18n-key="reservations.edit.payment.partial">مدفوع جزئياً</option>
-                      <option value="unpaid" selected data-i18n data-i18n-key="reservations.edit.payment.unpaid">لم يتم الدفع</option>
-                    </select>
                   </div>
                   <div class="reservation-payment-card__field">
                     <label class="form-label" for="edit-res-payment-progress-value" data-i18n data-i18n-key="reservations.edit.paymentProgress.label">💰 الدفعات المستلمة</label>
                     <div class="reservation-payment-progress reservation-payment-progress--flush">
-                      <div class="reservation-payment-progress__grid">
-                        <select id="edit-res-payment-progress-type" class="form-select reservation-payment-progress__select">
+                      <div class="input-group reservation-payment-inline-group reservation-payment-progress__group">
+                        <select id="edit-res-payment-progress-type" class="form-select reservation-payment-inline-group__control reservation-payment-inline-group__control--type reservation-payment-progress__select reservation-payment-progress__control reservation-payment-progress__control--type">
                           <option value="amount" data-i18n data-i18n-key="reservations.edit.paymentProgress.amount">💵 مبلغ</option>
                           <option value="percent" selected data-i18n data-i18n-key="reservations.edit.paymentProgress.percent">٪ نسبة</option>
                         </select>
-                        <input type="text" class="form-control reservation-payment-progress__input" id="edit-res-payment-progress-value" placeholder="50" data-i18n data-i18n-placeholder-key="reservations.edit.paymentProgress.placeholder">
+                        <input type="text" class="form-control reservation-payment-inline-group__control reservation-payment-inline-group__control--value reservation-payment-progress__input reservation-payment-progress__control reservation-payment-progress__control--value" id="edit-res-payment-progress-value" placeholder="50" data-i18n data-i18n-placeholder-key="reservations.edit.paymentProgress.placeholder">
                       </div>
                       <div class="reservation-payment-progress__actions">
                         <button type="button" class="btn btn-outline-primary btn-sm" id="edit-res-payment-add" data-i18n data-i18n-key="reservations.paymentHistory.actions.add">➕ إضافة دفعة</button>
@@ -161,22 +154,22 @@ const MODAL_SNIPPETS = {
               </div>
             </div>
 
-            <div class="col-12 col-xl-4" id="edit-res-confirmed-wrapper">
-              <label class="form-label" for="edit-res-confirmed-btn" data-i18n data-i18n-key="reservations.edit.confirmation.label">✅ حالة التأكيد</label>
-              <button type="button" class="btn btn-outline-secondary w-100 btn-confirm-toggle" id="edit-res-confirmed-btn" aria-pressed="false" data-i18n data-i18n-key="reservations.edit.confirmation.pendingLabel">⏳ بانتظار التأكيد</button>
-              <div class="mt-2">
-                <div class="d-flex gap-2">
-                  <button type="button" class="btn btn-warning flex-fill" id="edit-res-close-btn" data-i18n data-i18n-key="reservations.edit.actions.close">🔒 إغلاق الحجز</button>
-                  <button type="button" class="btn btn-outline-secondary flex-fill" id="edit-res-reopen-btn" data-i18n data-i18n-key="reservations.edit.actions.reopen">↩️ إلغاء الإغلاق</button>
+            <div class="col-12 col-xl-4">
+              <div class="reservation-status-card reservation-status-card--edit" id="edit-res-status-card">
+                <div class="reservation-status-card__header reservation-status-card__header--stacked">
+                  <span class="reservation-status-card__title" data-i18n data-i18n-key="reservations.edit.statusCard.title">🔄 حالة الحجز</span>
+                  <span class="reservation-edit-status-badge" id="edit-res-status-badge" data-i18n data-i18n-key="reservations.edit.confirmation.pendingLabel">⏳ بانتظار التأكيد</span>
                 </div>
+                <p class="reservation-status-card__hint" data-i18n data-i18n-key="reservations.edit.statusCard.hint">اختر إجراءً واحداً لإدارة حالة الحجز بدل الأزرار المتفرقة.</p>
+                <div class="reservation-status-card__field">
+                  <label class="form-label" for="edit-res-status-action" data-i18n data-i18n-key="reservations.edit.statusCard.actionLabel">الإجراء</label>
+                  <select id="edit-res-status-action" class="ui-select form-select">
+                    <option value="" selected data-i18n data-i18n-key="reservations.edit.statusCard.actionPlaceholder">اختر الإجراء</option>
+                  </select>
+                </div>
+                <button type="button" class="btn btn-outline-secondary w-100" id="edit-res-status-apply" data-i18n data-i18n-key="reservations.edit.statusCard.apply">تطبيق الحالة</button>
               </div>
-            </div>
-            <div class="col-12 col-xl-4" id="edit-res-cancelled-wrapper">
-              <label class="form-label" for="edit-res-cancelled" data-i18n data-i18n-key="reservations.edit.labels.cancelled">❌ ملغي</label>
-              <div class="form-check">
-                <input type="checkbox" class="form-check-input" id="edit-res-cancelled">
-                <label class="form-check-label" for="edit-res-cancelled" data-i18n data-i18n-key="reservations.edit.labels.cancelled">❌ ملغي</label>
-              </div>
+              <input type="checkbox" class="visually-hidden" id="edit-res-cancelled" hidden>
             </div>
 
             <div class="col-12">
@@ -212,8 +205,17 @@ const MODAL_SNIPPETS = {
                 </div>
                 <div class="reservation-equipment-hint" id="edit-res-package-hint" data-i18n data-i18n-key="reservations.edit.packages.hint">حدد الحزمة ثم اضغط على الزر لإضافتها للحجز.</div>
               </div>
-              <div class="table-responsive">
-                <table class="table table-sm table-hover align-middle reservation-items-table">
+              <div class="table-responsive reservation-modal-table-shell reservation-edit-items-wrapper users-table-wrapper overflow-x-auto">
+                <table class="table table-sm table-hover align-middle reservation-modal-table reservation-items-table">
+                  <colgroup>
+                    <col class="reservation-items-table__col reservation-items-table__col--item">
+                    <col class="reservation-items-table__col reservation-items-table__col--quantity">
+                    <col class="reservation-items-table__col reservation-items-table__col--days">
+                    <col class="reservation-items-table__col reservation-items-table__col--unit-price">
+                    <col class="reservation-items-table__col reservation-items-table__col--unit-cost">
+                    <col class="reservation-items-table__col reservation-items-table__col--total">
+                    <col class="reservation-items-table__col reservation-items-table__col--actions">
+                  </colgroup>
                   <thead class="table-light">
                     <tr>
                       <th data-i18n data-i18n-key="reservations.equipment.table.item">المعدة</th>
@@ -233,7 +235,7 @@ const MODAL_SNIPPETS = {
             </div>
           </form>
         </div>
-        <div class="modal-footer">
+        <div class="ui-modal__footer modal-footer customer-edit-modal__footer reservation-shell-modal__footer">
           <button type="button" class="btn modal-close-btn" data-bs-dismiss="modal" data-i18n data-i18n-key="actions.cancel">إلغاء</button>
           <button type="button" class="btn btn-primary" id="save-reservation-changes" data-i18n data-i18n-key="reservations.edit.actions.save">💾 حفظ التعديلات</button>
         </div>
@@ -243,30 +245,39 @@ const MODAL_SNIPPETS = {
   `,
   selectTechniciansModal: `
   <div class="modal fade" id="selectTechniciansModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg crew-picker-modal__dialog">
-      <div class="modal-content crew-picker-modal">
-        <div class="modal-header crew-picker-modal__header">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable crew-picker-modal__dialog">
+      <div class="ui-modal__content modal-content crew-picker-modal">
+        <div class="ui-modal__header modal-header crew-picker-modal__header">
           <h5 class="modal-title crew-picker-modal__title" data-i18n data-i18n-key="technicians.picker.modalTitle">😎 اختيار طاقم العمل</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
         </div>
-        <div class="modal-body crew-picker-modal__body">
+        <div class="ui-modal__body modal-body crew-picker-modal__body">
           <div class="row g-3 crew-picker-layout">
-            <div class="col-lg-5 crew-picker-panel">
+            <div class="col-md-4 crew-picker-panel crew-picker-panel--positions">
               <label for="crew-position-search" class="form-label crew-picker-label" data-i18n data-i18n-key="technicians.picker.positions.label">🏷️ اختر المناصب</label>
-              <input type="text" class="form-control crew-picker-search" id="crew-position-search" placeholder="🔍 ابحث باسم المنصب..." data-i18n data-i18n-placeholder-key="technicians.picker.positions.search">
-              <div id="crew-position-list" class="mt-3 crew-picker-list"></div>
+              <p class="crew-picker-panel__hint" data-i18n data-i18n-key="technicians.picker.positions.hint">اختر المنصب أولًا ليظهر مباشرة في لوحة التعيين على اليمين.</p>
+              <input type="text" class="ui-input form-control crew-picker-search" id="crew-position-search" placeholder="🔍 ابحث باسم المنصب..." data-i18n data-i18n-placeholder-key="technicians.picker.positions.search">
+              <div id="crew-position-list" class="crew-picker-list" role="list"></div>
             </div>
-            <div class="col-lg-7 crew-assignment-column crew-picker-panel crew-picker-panel--assignments">
+            <div class="col-md-8 crew-assignment-column crew-picker-panel crew-picker-panel--assignments">
               <label class="form-label crew-picker-label" data-i18n data-i18n-key="technicians.picker.assignments.label">📋 المناصب المختارة</label>
-              <div class="crew-assignment-table-wrapper crew-picker-table-wrapper">
-                <table class="table table-hover align-middle" id="crew-assignment-table">
+              <p class="crew-picker-panel__hint crew-picker-panel__hint--assignments" data-i18n data-i18n-key="technicians.picker.assignments.hintVisible">بعد إضافة أي منصب من اليسار سيظهر هنا لتعيين عضو الطاقم وسعر العميل قبل المتابعة.</p>
+              <div class="users-table-wrapper overflow-x-auto crew-assignment-table-shell">
+                <table class="ui-table table table-hover users-table surface-table crew-assignment-table align-middle" id="crew-assignment-table">
+                  <colgroup>
+                    <col class="technician-picker-col-index">
+                    <col class="technician-picker-col-position">
+                    <col class="technician-picker-col-price">
+                    <col class="technician-picker-col-member">
+                    <col class="technician-picker-col-actions">
+                  </colgroup>
                   <thead class="table-light">
                     <tr>
-                      <th style="width:40px;">#</th>
-                      <th data-i18n data-i18n-key="technicians.picker.assignments.position">👔 المنصب</th>
-                      <th data-i18n data-i18n-key="technicians.picker.assignments.price">💼 سعر العميل</th>
-                      <th data-i18n data-i18n-key="technicians.picker.assignments.member">😎 العضو المعين</th>
-                      <th style="width:48px;" data-i18n data-i18n-key="technicians.picker.assignments.actions">⚙️</th>
+                      <th class="technician-picker-col-index">#</th>
+                      <th class="technician-picker-col-position" data-i18n data-i18n-key="technicians.picker.assignments.position">👔 المنصب</th>
+                      <th class="technician-picker-col-price" data-i18n data-i18n-key="technicians.picker.assignments.price">💼 سعر العميل</th>
+                      <th class="technician-picker-col-member" data-i18n data-i18n-key="technicians.picker.assignments.member">😎 العضو المعين</th>
+                      <th class="technician-picker-col-actions" data-i18n data-i18n-key="technicians.picker.assignments.actions">⚙️</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -277,7 +288,7 @@ const MODAL_SNIPPETS = {
             </div>
           </div>
         </div>
-        <div class="modal-footer crew-picker-modal__footer">
+        <div class="ui-modal__footer modal-footer crew-picker-modal__footer">
           <span class="text-muted me-auto crew-picker-selection-info" id="technician-picker-selection-info" data-i18n data-i18n-key="technicians.picker.selectionInfo">لم يتم اختيار أي عضو بعد</span>
           <button type="button" class="btn modal-close-btn crew-picker-cancel-btn" data-bs-dismiss="modal" data-i18n data-i18n-key="technicians.picker.actions.cancel">إلغاء</button>
           <button type="button" class="btn btn-primary reservation-primary-btn crew-picker-apply-btn" id="apply-technician-selection" data-i18n data-i18n-key="technicians.picker.actions.apply">تم</button>
@@ -287,19 +298,19 @@ const MODAL_SNIPPETS = {
   </div>
   `,
   closeReservationModal: `
-  <div class="modal fade" id="closeReservationModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
+  <div class="modal fade customer-edit-modal reservation-shell-modal" id="closeReservationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable customer-edit-modal__dialog reservation-shell-modal__dialog reservation-shell-modal__dialog--compact">
+      <div class="ui-modal__content modal-content customer-edit-modal__content reservation-shell-modal__content">
+        <div class="ui-modal__header modal-header customer-edit-modal__header reservation-shell-modal__header">
           <h5 class="modal-title" data-i18n data-i18n-key="reservations.closeModal.title">🔒 إغلاق الحجز</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
         </div>
-        <div class="modal-body">
+        <div class="ui-modal__body modal-body customer-edit-modal__body reservation-shell-modal__body">
           <p class="text-muted" data-i18n data-i18n-key="reservations.closeModal.subtitle">يرجى كتابة ملاحظة الإغلاق (اختياري).</p>
           <label class="form-label" for="close-reservation-notes" data-i18n data-i18n-key="reservations.closeModal.noteLabel">📝 ملاحظات الإغلاق</label>
-          <textarea id="close-reservation-notes" class="form-control" rows="3" data-i18n data-i18n-placeholder-key="reservations.closeModal.notePlaceholder" placeholder="مثال: تم إعادة المعدات مبكراً..."></textarea>
+          <textarea id="close-reservation-notes" class="ui-textarea form-control" rows="3" data-i18n data-i18n-placeholder-key="reservations.closeModal.notePlaceholder" placeholder="مثال: تم إعادة المعدات مبكراً..."></textarea>
         </div>
-        <div class="modal-footer">
+        <div class="ui-modal__footer modal-footer customer-edit-modal__footer reservation-shell-modal__footer">
           <button type="button" class="btn btn-outline" id="close-reservation-cancel" data-bs-dismiss="modal" data-i18n data-i18n-key="reservations.closeModal.cancel">إلغاء</button>
           <button type="button" class="btn btn-primary" id="close-reservation-submit" data-i18n data-i18n-key="reservations.closeModal.confirm">🔒 إغلاق الحجز</button>
         </div>
@@ -309,6 +320,37 @@ const MODAL_SNIPPETS = {
   `
 };
 
+const RESERVATION_MODAL_IDS = [
+  'reservationDetailsModal',
+  'editReservationModal',
+  'closeReservationModal',
+  'calendarReservationModal',
+];
+
+function syncReservationModalBackdropState() {
+  if (typeof document === 'undefined') return;
+  const isAnyReservationModalOpen = RESERVATION_MODAL_IDS.some((id) => {
+    const modal = document.getElementById(id);
+    return modal?.classList.contains('show');
+  });
+  document.body.classList.toggle('reservation-modal-open', isAnyReservationModalOpen);
+}
+
+function attachReservationModalBackdropLifecycle() {
+  if (typeof document === 'undefined') return;
+  RESERVATION_MODAL_IDS.forEach((id) => {
+    const modal = document.getElementById(id);
+    if (!modal || modal.dataset.reservationBackdropLifecycleAttached === 'true') return;
+    modal.addEventListener('show.bs.modal', () => {
+      document.body.classList.add('reservation-modal-open');
+    });
+    modal.addEventListener('hidden.bs.modal', () => {
+      syncReservationModalBackdropState();
+    });
+    modal.dataset.reservationBackdropLifecycleAttached = 'true';
+  });
+}
+
 export function mountReservationModalsIfNeeded() {
   if (typeof document === 'undefined') return;
   Object.entries(MODAL_SNIPPETS).forEach(([id, markup]) => {
@@ -317,6 +359,7 @@ export function mountReservationModalsIfNeeded() {
     wrapper.innerHTML = markup;
     document.body.appendChild(wrapper);
   });
+  attachReservationModalBackdropLifecycle();
   try {
     ensurePackagesCached();
   } catch (error) {

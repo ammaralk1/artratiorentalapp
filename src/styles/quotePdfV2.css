@@ -1,0 +1,498 @@
+#quote-pdf-v2-root {
+  --quote-green: #233e2a;
+  --quote-green-soft: #8ea77f;
+  --quote-ink: #263429;
+  --quote-muted: #667064;
+  --quote-line: #dfe5dd;
+  --quote-band: #f4f6f3;
+  --quote-page-width: 794px;
+  --quote-page-height: 1123px;
+  box-sizing: border-box;
+  color: var(--quote-ink);
+  font-family: "Tajawal", Arial, sans-serif;
+  background: #f2f4f1;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+#quote-pdf-v2-root *,
+#quote-pdf-v2-root *::before,
+#quote-pdf-v2-root *::after {
+  box-sizing: border-box;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+#quote-pdf-v2-root .quote-preview-pages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: 0;
+  background: #f2f4f1;
+}
+
+#quote-pdf-v2-root .quote-page {
+  width: var(--quote-page-width);
+  min-width: var(--quote-page-width);
+  max-width: var(--quote-page-width);
+  height: var(--quote-page-height);
+  min-height: var(--quote-page-height);
+  max-height: var(--quote-page-height);
+  background: #fff;
+  overflow: hidden;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.14);
+}
+
+#quote-pdf-v2-root .quote-v2-header {
+  display: block;
+  position: relative;
+  min-height: 156px;
+  width: calc(100% + 2px);
+  margin: -1px -1px 0;
+  padding: 14px 8px 14px 22px;
+  background: var(--quote-green);
+  color: #fff;
+  direction: ltr;
+}
+
+#quote-pdf-v2-root .quote-v2-logo-wrap {
+  position: absolute;
+  top: 50%;
+  right: 22px;
+  width: 150px;
+  height: 150px;
+  overflow: visible;
+  transform: translateY(-50%);
+  text-align: right;
+  z-index: 1;
+}
+
+#quote-pdf-v2-root .quote-v2-logo {
+  width: 150px;
+  max-width: 150px;
+  height: 150px;
+  max-height: 150px;
+  object-fit: contain;
+  object-position: center;
+  opacity: 1;
+}
+
+#quote-pdf-v2-root .quote-v2-title {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 430px;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  unicode-bidi: plaintext;
+  z-index: 2;
+}
+
+#quote-pdf-v2-root .quote-v2-title h1 {
+  margin: 0 0 8px;
+  font-size: 30px;
+  line-height: 1.15;
+  font-weight: 800;
+}
+
+#quote-pdf-v2-root .quote-v2-title p {
+  margin: 4px 0;
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 11px;
+  line-height: 1.35;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+#quote-pdf-v2-root .quote-v2-meta {
+  position: absolute;
+  top: 50%;
+  left: 22px;
+  width: 190px;
+  transform: translateY(-50%);
+  display: grid;
+  gap: 10px;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+#quote-pdf-v2-root .quote-v2-meta-row {
+  display: grid;
+  grid-template-columns: max-content max-content max-content;
+  justify-content: start;
+  align-items: baseline;
+  column-gap: 5px;
+}
+
+#quote-pdf-v2-root .quote-v2-meta-row strong {
+  justify-self: start;
+  color: #fff;
+}
+
+#quote-pdf-v2-root .quote-v2-meta-separator {
+  color: rgba(255, 255, 255, 0.76);
+}
+
+#quote-pdf-v2-root[dir="rtl"] .quote-v2-header {
+  direction: rtl;
+  padding: 14px 22px 14px 8px;
+}
+
+#quote-pdf-v2-root[dir="rtl"] .quote-v2-logo-wrap {
+  right: auto;
+  left: 22px;
+  width: 150px;
+  height: 150px;
+  overflow: visible;
+  text-align: left;
+}
+
+#quote-pdf-v2-root[dir="rtl"] .quote-v2-logo {
+  width: 150px;
+  max-width: 150px;
+  height: 150px;
+  max-height: 150px;
+  object-fit: contain;
+  object-position: center;
+  transform: none;
+}
+
+#quote-pdf-v2-root[dir="rtl"] .quote-v2-title {
+  top: 50%;
+  right: auto;
+  left: 50%;
+  width: 360px;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+#quote-pdf-v2-root[dir="rtl"] .quote-v2-title p {
+  font-size: 10.5px;
+}
+
+#quote-pdf-v2-root[dir="rtl"] .quote-v2-meta {
+  top: 50%;
+  right: 22px;
+  bottom: auto;
+  left: auto;
+  width: auto;
+  min-width: 210px;
+  transform: translateY(-50%);
+  direction: rtl;
+  text-align: right;
+  font-size: 11.5px;
+}
+
+#quote-pdf-v2-root[dir="rtl"] .quote-v2-meta-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  width: 100%;
+  white-space: nowrap;
+}
+
+#quote-pdf-v2-root[dir="rtl"] .quote-v2-meta-row strong {
+  justify-self: auto;
+}
+
+#quote-pdf-v2-root .quote-v2-body {
+  padding: 24px 32px 34px;
+}
+
+#quote-pdf-v2-root .quote-page--continued .quote-v2-body {
+  padding-top: 32px;
+}
+
+#quote-pdf-v2-root .quote-v2-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: start;
+  gap: 28px;
+  margin-bottom: 24px;
+}
+
+#quote-pdf-v2-root .quote-v2-info-grid .quote-v2-section {
+  margin-top: 0;
+}
+
+#quote-pdf-v2-root .quote-v2-section {
+  margin-top: 22px;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+#quote-pdf-v2-root .quote-v2-section:first-child {
+  margin-top: 0;
+}
+
+#quote-pdf-v2-root .quote-v2-section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 12px;
+  color: var(--quote-green);
+  font-size: 18px;
+  line-height: 1.2;
+  font-weight: 800;
+}
+
+#quote-pdf-v2-root .quote-v2-section-title::before {
+  content: "";
+  width: 4px;
+  height: 22px;
+  background: var(--quote-green-soft);
+}
+
+#quote-pdf-v2-root .quote-v2-info-list {
+  display: grid;
+  gap: 0;
+}
+
+#quote-pdf-v2-root .quote-v2-info-row {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 14px;
+  align-items: center;
+  min-height: 30px;
+  border-bottom: 1px solid var(--quote-line);
+  color: #424b42;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+#quote-pdf-v2-root .quote-v2-info-label {
+  color: var(--quote-green);
+  font-weight: 800;
+}
+
+#quote-pdf-v2-root .quote-v2-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 13px;
+  border: 1px solid var(--quote-line);
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+#quote-pdf-v2-root .quote-v2-table tr {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+#quote-pdf-v2-root .quote-v2-table th {
+  padding: 12px 10px;
+  background: var(--quote-green);
+  color: #fff;
+  border-inline-end: 1px solid rgba(255, 255, 255, 0.16);
+  text-align: center;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+#quote-pdf-v2-root .quote-v2-table th * {
+  color: #fff;
+}
+
+#quote-pdf-v2-root .quote-v2-table td {
+  padding: 11px 10px;
+  border-top: 1px solid var(--quote-line);
+  border-inline-end: 1px solid var(--quote-line);
+  text-align: center;
+  vertical-align: middle;
+  line-height: 1.45;
+}
+
+#quote-pdf-v2-root .quote-v2-table tbody tr:nth-child(even) td {
+  background: var(--quote-band);
+}
+
+#quote-pdf-v2-root .quote-v2-table .quote-v2-cell-main {
+  text-align: center;
+  font-weight: 700;
+}
+
+#quote-pdf-v2-root .quote-v2-empty {
+  padding: 12px;
+  border: 1px solid var(--quote-line);
+  color: var(--quote-muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+#quote-pdf-v2-root .quote-v2-table-total {
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;
+  margin-top: 8px;
+  margin-right: 0;
+  margin-left: auto;
+  direction: ltr;
+  text-align: right;
+}
+
+#quote-pdf-v2-root .quote-v2-table-total-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  min-width: 212px;
+  max-width: 320px;
+  padding: 9px 13px;
+  border: 1px solid var(--quote-line);
+  border-radius: 5px;
+  background: var(--quote-band);
+  color: var(--quote-green);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+#quote-pdf-v2-root .quote-v2-table-total-box strong {
+  color: #1e2f22;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+#quote-pdf-v2-root[dir="rtl"] .quote-v2-table-total-box {
+  direction: rtl;
+}
+
+#quote-pdf-v2-root[dir="rtl"] .quote-v2-table-total {
+  justify-content: flex-start;
+  margin-right: auto;
+  margin-left: 0;
+  text-align: left;
+}
+
+#quote-pdf-v2-root .quote-v2-financial-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+#quote-pdf-v2-root .quote-v2-financial-card {
+  min-height: 64px;
+  padding: 13px 16px;
+  border: 1px solid #d7ddd4;
+  border-radius: 6px;
+  text-align: center;
+}
+
+#quote-pdf-v2-root .quote-v2-financial-card strong {
+  display: block;
+  margin-top: 8px;
+  color: #1e2f22;
+  font-size: 18px;
+  line-height: 1.2;
+  font-weight: 900;
+}
+
+#quote-pdf-v2-root .quote-v2-financial-card span {
+  color: #555f55;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+#quote-pdf-v2-root .quote-v2-financial-card--total {
+  background: var(--quote-green);
+  border-color: var(--quote-green);
+  color: #fff;
+}
+
+#quote-pdf-v2-root .quote-v2-financial-card--total:last-child:nth-child(3n+1) {
+  grid-column: 2;
+}
+
+#quote-pdf-v2-root .quote-v2-financial-card--total span,
+#quote-pdf-v2-root .quote-v2-financial-card--total strong {
+  color: #fff;
+}
+
+#quote-pdf-v2-root .quote-v2-payment {
+  display: grid;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+#quote-pdf-v2-root .quote-v2-notes {
+  padding: 14px 16px;
+  border: 1px solid var(--quote-line);
+  background: #fbfcfa;
+  color: #424b42;
+  font-size: 13px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+#quote-pdf-v2-root .quote-v2-approval {
+  margin: 26px -32px 0;
+  padding: 14px 32px;
+  border-top: 1px solid var(--quote-green-soft);
+  border-bottom: 1px solid var(--quote-green-soft);
+  background: #eef3ed;
+  color: var(--quote-green);
+  text-align: center;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+#quote-pdf-v2-root .quote-v2-terms {
+  margin: 20px 0 0;
+  padding: 0;
+  color: #4b554b;
+  font-size: 12.5px;
+  line-height: 1.8;
+  list-style: none;
+}
+
+#quote-pdf-v2-root .quote-v2-terms li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 5px;
+  font-weight: 700;
+}
+
+#quote-pdf-v2-root .quote-v2-terms li::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 5px;
+  height: 5px;
+  margin-top: 0.7em;
+  border-radius: 999px;
+  background: var(--quote-green-soft);
+}
+
+#quote-pdf-v2-root[dir="ltr"] {
+  direction: ltr;
+}
+
+#quote-pdf-v2-root[dir="ltr"] .quote-v2-section-title::before {
+  order: -1;
+}
+
+#quote-pdf-v2-root[dir="rtl"] {
+  direction: rtl;
+}
+
+#quote-pdf-v2-root[dir="ltr"] .quote-v2-info-row {
+  grid-template-columns: 150px 1fr;
+}
+
+#quote-pdf-v2-root[dir="rtl"] .quote-v2-info-row {
+  grid-template-columns: 1fr 150px;
+}
+
+@media print {
+  #quote-pdf-v2-root,
+  #quote-pdf-v2-root .quote-preview-pages {
+    background: #fff;
+  }
+
+  #quote-pdf-v2-root .quote-page {
+    box-shadow: none;
+  }
+}

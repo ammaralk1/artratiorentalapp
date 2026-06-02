@@ -19,6 +19,12 @@ import { renderMaintenance } from './render.js';
 import { openCloseTicketModal, ensureCloseTicketModalElements, resetCloseTicketModal } from './close-modal.js';
 import { viewTicketReport, ensureReportModalElements, resetReportModalContent } from './report-modal.js';
 
+function resetMaintenanceFilters({ statusFilter, priorityFilter, searchInput }) {
+  if (statusFilter) statusFilter.value = 'all';
+  if (priorityFilter) priorityFilter.value = 'all';
+  if (searchInput) searchInput.value = '';
+}
+
 export function handleTableActions(event) {
   if (!state.hasLoaded || state.loading) {
     showToast(t('maintenance.toast.loading', '⏳ يتم تحديث بيانات الصيانة، يرجى الانتظار لحظة...'));
@@ -221,6 +227,15 @@ export function initMaintenance() {
     searchInput.addEventListener('input', onInput);
     searchInput.addEventListener('change', onInput);
     searchInput.dataset.listenerAttached = 'true';
+  }
+
+  const clearFiltersButton = document.getElementById('maintenance-clear-filters');
+  if (clearFiltersButton && !clearFiltersButton.dataset.listenerAttached) {
+    clearFiltersButton.addEventListener('click', () => {
+      resetMaintenanceFilters({ statusFilter, priorityFilter, searchInput });
+      renderMaintenance();
+    });
+    clearFiltersButton.dataset.listenerAttached = 'true';
   }
 
   const table = document.querySelector('.maintenance-table');

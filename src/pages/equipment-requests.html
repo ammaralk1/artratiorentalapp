@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <!-- @include "./_partials/manager-page-head.html" {"titleKey":"equipmentRequests.title","titleText":"بوابة طلبات المعدات"} -->
+</head>
+<!-- @include "./_partials/compact-manager-shell.html" {"bodyClass":"equipment-requests-page","activePage":"equipment-requests","greetingLabelKey":"equipmentRequests.title","greetingLabelText":"بوابة طلبات المعدات","pageScript":"/src/scripts/equipmentRequests.ts"} -->
+<template data-slot="greetingSummary">
+  <p class="text-sm text-base-content/60" data-i18n data-i18n-key="equipmentRequests.subtitle">متابعة طلبات المعدات القادمة من الواجهة الأمامية، تحديث حالتها، والتواصل مع العميل من داخل الباك أوفيس.</p>
+</template>
+<template data-slot="greetingActions">
+  <a href="#equipment-requests-list-card" class="ui-button ui-button--primary btn btn-primary btn-sm" data-i18n data-i18n-key="equipmentRequests.actions.openList">📋 فتح القائمة</a>
+  <a href="#equipment-request-detail-card" class="ui-button ui-button--outline btn btn-outline btn-sm" data-i18n data-i18n-key="equipmentRequests.actions.openDetails">🧾 فتح التفاصيل</a>
+</template>
+<template data-slot="mainContent">
+  <section class="ui-card ui-card--content glass-card space-y-2">
+    <div class="flex items-center justify-between gap-3 flex-wrap">
+      <div>
+        <h2 class="text-2xl font-bold text-base-content" data-i18n data-i18n-key="equipmentRequests.title">بوابة طلبات المعدات</h2>
+        <p class="text-sm text-base-content/70" data-i18n data-i18n-key="equipmentRequests.subtitle">متابعة طلبات المعدات القادمة من الواجهة الأمامية، تحديث حالتها، والتواصل مع العميل من داخل الباك أوفيس.</p>
+      </div>
+      <button type="button" class="ui-button ui-button--outline btn btn-outline btn-sm" id="equipment-requests-refresh" data-i18n data-i18n-key="actions.refresh">🔄 تحديث البيانات</button>
+    </div>
+  </section>
+
+  <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4" id="equipment-requests-stats">
+    <article class="ui-stat-card compact-kpi-card equipment-requests-stat equipment-requests-stat--pending">
+      <div class="equipment-requests-stat__content">
+        <div class="equipment-requests-stat__header">
+          <span class="ui-stat-card__icon equipment-requests-stat__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="8"></circle>
+              <path d="M12 8.5v4l2.5 1.5"></path>
+            </svg>
+          </span>
+          <span class="ui-stat-card__label" data-i18n data-i18n-key="equipmentRequests.stats.pending">بانتظار التأكيد</span>
+        </div>
+        <span class="ui-stat-card__value" id="equipment-requests-stat-pending">0</span>
+      </div>
+    </article>
+    <article class="ui-stat-card compact-kpi-card equipment-requests-stat equipment-requests-stat--confirmed">
+      <div class="equipment-requests-stat__content">
+        <div class="equipment-requests-stat__header">
+          <span class="ui-stat-card__icon equipment-requests-stat__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 7 9 18l-5-5"></path>
+            </svg>
+          </span>
+          <span class="ui-stat-card__label" data-i18n data-i18n-key="equipmentRequests.stats.confirmed">مؤكدة</span>
+        </div>
+        <span class="ui-stat-card__value" id="equipment-requests-stat-confirmed">0</span>
+      </div>
+    </article>
+    <article class="ui-stat-card compact-kpi-card equipment-requests-stat equipment-requests-stat--cancelled">
+      <div class="equipment-requests-stat__content">
+        <div class="equipment-requests-stat__header">
+          <span class="ui-stat-card__icon equipment-requests-stat__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 6 6 18"></path>
+              <path d="m6 6 12 12"></path>
+            </svg>
+          </span>
+          <span class="ui-stat-card__label" data-i18n data-i18n-key="equipmentRequests.stats.cancelled">ملغاة</span>
+        </div>
+        <span class="ui-stat-card__value" id="equipment-requests-stat-cancelled">0</span>
+      </div>
+    </article>
+    <article class="ui-stat-card compact-kpi-card equipment-requests-stat">
+      <div class="equipment-requests-stat__content">
+        <div class="equipment-requests-stat__header">
+          <span class="ui-stat-card__icon equipment-requests-stat__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 7.5h16"></path>
+              <path d="M6.5 7.5V6a1.5 1.5 0 0 1 1.5-1.5h8A1.5 1.5 0 0 1 17.5 6v1.5"></path>
+              <path d="M5 7.5h14a1 1 0 0 1 1 1V17a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8.5a1 1 0 0 1 1-1Z"></path>
+            </svg>
+          </span>
+          <span class="ui-stat-card__label" data-i18n data-i18n-key="equipmentRequests.stats.messages">رسائل مسجلة</span>
+        </div>
+        <span class="ui-stat-card__value" id="equipment-requests-stat-messages">0</span>
+      </div>
+    </article>
+  </section>
+
+  <section class="equipment-requests-layout">
+    <aside class="ui-card ui-card--content glass-card compact-surface-panel space-y-5 equipment-requests-queue-shell" id="equipment-requests-list-card">
+      <div class="surface-heading-stack">
+        <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="equipmentRequests.queue.title">قائمة الطلبات</h3>
+        <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="equipmentRequests.queue.subtitle">ابحث حسب الكود أو اسم العميل أو الجوال، ثم اختر الطلب لعرض التفاصيل.</p>
+      </div>
+
+      <div class="equipment-requests-filters">
+        <div class="flex flex-col gap-2 equipment-requests-filter equipment-requests-filter--search">
+          <label for="equipment-requests-search" class="font-medium text-base-content" data-i18n data-i18n-key="equipmentRequests.filters.search">بحث</label>
+          <input id="equipment-requests-search" type="search" class="ui-input w-full" data-i18n data-i18n-placeholder-key="equipmentRequests.filters.searchPlaceholder" placeholder="ابحث بالكود أو الاسم أو الجوال">
+        </div>
+        <div class="flex flex-col gap-2 equipment-requests-filter equipment-requests-filter--status">
+          <label for="equipment-requests-status" class="font-medium text-base-content" data-i18n data-i18n-key="equipmentRequests.filters.status">الحالة</label>
+          <select id="equipment-requests-status" class="ui-select w-full">
+            <option value="" data-i18n data-i18n-key="equipmentRequests.filters.statusAll">كل الحالات</option>
+            <option value="pending" data-i18n data-i18n-key="equipmentRequests.status.pending">بانتظار التأكيد</option>
+            <option value="confirmed" data-i18n data-i18n-key="equipmentRequests.status.confirmed">مؤكد</option>
+            <option value="cancelled" data-i18n data-i18n-key="equipmentRequests.status.cancelled">ملغي</option>
+          </select>
+        </div>
+        <div class="flex items-end equipment-requests-filter equipment-requests-filter--apply">
+          <button type="button" class="ui-button ui-button--outline btn btn-outline w-full" id="equipment-requests-apply-filter" data-i18n data-i18n-key="equipmentRequests.filters.apply">تطبيق</button>
+        </div>
+      </div>
+
+      <div class="users-table-wrapper overflow-x-auto">
+        <table class="table table-hover align-middle equipment-requests-table">
+          <thead class="users-table-head">
+            <tr>
+              <th data-i18n data-i18n-key="equipmentRequests.table.code">الكود</th>
+              <th data-i18n data-i18n-key="equipmentRequests.table.customer">العميل</th>
+              <th data-i18n data-i18n-key="equipmentRequests.table.status">الحالة</th>
+              <th data-i18n data-i18n-key="equipmentRequests.table.createdAt">التاريخ</th>
+            </tr>
+          </thead>
+          <tbody id="equipment-requests-body">
+            <tr>
+              <td colspan="4" class="text-center text-base-content/60" data-i18n data-i18n-key="equipmentRequests.table.loading">⏳ جارٍ تحميل الطلبات...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="equipment-requests-pagination" id="equipment-requests-queue-pagination" hidden>
+        <span class="equipment-requests-pagination__summary text-sm text-base-content/60" id="equipment-requests-queue-pagination-summary">—</span>
+        <div class="equipment-requests-pagination__actions">
+          <button type="button" class="ui-button ui-button--outline btn btn-outline btn-sm" id="equipment-requests-queue-prev" data-i18n data-i18n-key="equipmentRequests.pagination.previous">السابق</button>
+          <button type="button" class="ui-button ui-button--outline btn btn-outline btn-sm" id="equipment-requests-queue-next" data-i18n data-i18n-key="equipmentRequests.pagination.next">التالي</button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="space-y-5" id="equipment-request-detail-card">
+      <section class="ui-card ui-card--content glass-card compact-surface-panel space-y-5 equipment-requests-primary-shell">
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+          <div class="surface-heading-stack equipment-requests-primary-heading">
+            <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="equipmentRequests.details.title">تفاصيل الطلب</h3>
+            <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="equipmentRequests.details.subtitle">حدّث حالة الطلب والعناصر المرافقة، وسجّل أي ملاحظات تخص العميل.</p>
+          </div>
+          <span class="badge badge-outline" id="equipment-requests-status-badge">—</span>
+        </div>
+
+        <div id="equipment-requests-empty-state" class="ui-empty-state surface-empty-state p-6" data-i18n data-i18n-key="equipmentRequests.details.empty">اختر طلبًا من القائمة لعرض التفاصيل.</div>
+
+        <div id="equipment-requests-detail-content" class="space-y-5" hidden>
+          <div class="equipment-requests-detail-grid">
+            <article class="ui-card ui-card--content equipment-requests-detail-card">
+              <div class="text-sm text-base-content/60" data-i18n data-i18n-key="equipmentRequests.fields.code">الكود</div>
+              <div class="text-lg font-semibold text-base-content" id="equipment-request-code">—</div>
+            </article>
+            <article class="ui-card ui-card--content equipment-requests-detail-card">
+              <div class="text-sm text-base-content/60" data-i18n data-i18n-key="equipmentRequests.fields.customer">العميل</div>
+              <div class="text-lg font-semibold text-base-content" id="equipment-request-name">—</div>
+            </article>
+            <article class="ui-card ui-card--content equipment-requests-detail-card">
+              <div class="text-sm text-base-content/60" data-i18n data-i18n-key="equipmentRequests.fields.phone">الجوال</div>
+              <div class="text-base font-medium text-base-content" dir="ltr" id="equipment-request-phone">—</div>
+            </article>
+            <article class="ui-card ui-card--content equipment-requests-detail-card">
+              <div class="text-sm text-base-content/60" data-i18n data-i18n-key="equipmentRequests.fields.email">الإيميل</div>
+              <div class="text-base font-medium text-base-content" dir="ltr" id="equipment-request-email">—</div>
+            </article>
+            <article class="ui-card ui-card--content equipment-requests-detail-card">
+              <div class="text-sm text-base-content/60" data-i18n data-i18n-key="equipmentRequests.fields.createdAt">التاريخ</div>
+              <div class="text-base font-medium text-base-content" id="equipment-request-date">—</div>
+            </article>
+            <article class="ui-card ui-card--content equipment-requests-detail-card equipment-requests-detail-card--full">
+              <div class="text-sm text-base-content/60" data-i18n data-i18n-key="equipmentRequests.fields.notes">ملاحظات العميل</div>
+              <div class="text-base leading-8 text-base-content" id="equipment-request-notes">—</div>
+            </article>
+          </div>
+
+          <div class="equipment-requests-section-divider"></div>
+
+          <div class="surface-heading-stack equipment-requests-secondary-heading">
+            <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="equipmentRequests.items.title">المعدات المطلوبة</h3>
+            <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="equipmentRequests.items.subtitle">راجع حالة كل عنصر وأضف ملاحظة مخصصة إذا كانت هناك بدائل أو نقص.</p>
+          </div>
+          <div class="users-table-wrapper overflow-x-auto">
+            <table class="table align-middle equipment-requests-table equipment-requests-table--items">
+              <thead class="users-table-head">
+                <tr>
+                  <th data-i18n data-i18n-key="equipmentRequests.items.table.item">العنصر</th>
+                  <th data-i18n data-i18n-key="equipmentRequests.items.table.category">التصنيف</th>
+                  <th data-i18n data-i18n-key="equipmentRequests.items.table.quantity">الكمية</th>
+                  <th data-i18n data-i18n-key="equipmentRequests.items.table.status">حالة العنصر</th>
+                  <th data-i18n data-i18n-key="equipmentRequests.items.table.note">ملاحظة للعميل</th>
+                </tr>
+              </thead>
+              <tbody id="equipment-requests-items-body">
+                <tr>
+                  <td colspan="5" class="text-center text-base-content/60" data-i18n data-i18n-key="equipmentRequests.items.empty">لا توجد عناصر.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="equipment-requests-section-divider"></div>
+
+          <div class="surface-heading-stack equipment-requests-workflow-heading">
+            <h3 class="text-lg font-semibold text-base-content" data-i18n data-i18n-key="equipmentRequests.workflow.title">اعتماد الطلب بعد مراجعة العناصر</h3>
+            <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="equipmentRequests.workflow.subtitle">حدّث حالات العناصر أولاً، ثم اعتمد القرار النهائي للطلب من هنا.</p>
+          </div>
+          <div class="equipment-requests-status-actions">
+            <button class="ui-button equipment-requests-action equipment-requests-action--pending" data-set-status="pending" type="button" data-i18n data-i18n-key="equipmentRequests.actions.setPending">تعيين: بانتظار التأكيد</button>
+            <button class="ui-button equipment-requests-action equipment-requests-action--confirmed" data-set-status="confirmed" type="button" data-i18n data-i18n-key="equipmentRequests.actions.confirm">تأكيد الطلب</button>
+            <button class="ui-button equipment-requests-action equipment-requests-action--cancelled" data-set-status="cancelled" type="button" data-i18n data-i18n-key="equipmentRequests.actions.cancel">إلغاء الطلب</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </section>
+
+  <section class="ui-card ui-card--content glass-card compact-surface-panel space-y-5 equipment-requests-communication-shell">
+    <div class="surface-heading-stack equipment-requests-tertiary-heading">
+      <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="equipmentRequests.communication.title">التواصل مع العميل</h3>
+      <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="equipmentRequests.communication.subtitle">اكتب الرسالة، ثم راجع السجل من نفس المساحة بدون التنقل بين حاويتين منفصلتين.</p>
+    </div>
+
+    <div class="equipment-requests-communication-grid">
+      <article class="space-y-4">
+        <div class="surface-heading-stack equipment-requests-message-heading">
+          <h4 class="text-lg font-semibold text-base-content" data-i18n data-i18n-key="equipmentRequests.message.title">إرسال رسالة للعميل</h4>
+          <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="equipmentRequests.message.subtitle">اكتب رسالة مباشرة للعميل من داخل النظام، مع حفظها في السجل.</p>
+        </div>
+        <form id="equipment-requests-message-form" class="space-y-4">
+          <div class="flex flex-col gap-2">
+            <label for="equipment-requests-message-subject" class="font-medium text-base-content" data-i18n data-i18n-key="equipmentRequests.message.subject">العنوان</label>
+            <input id="equipment-requests-message-subject" type="text" class="ui-input w-full" data-i18n data-i18n-placeholder-key="equipmentRequests.message.subjectPlaceholder" placeholder="عنوان الرسالة">
+          </div>
+          <div class="flex flex-col gap-2">
+            <label for="equipment-requests-message-body" class="font-medium text-base-content" data-i18n data-i18n-key="equipmentRequests.message.body">الرسالة</label>
+            <textarea id="equipment-requests-message-body" rows="6" class="ui-textarea min-h-40 w-full" data-i18n data-i18n-placeholder-key="equipmentRequests.message.bodyPlaceholder" placeholder="اكتب الرسالة التي تريد إرسالها للعميل" required></textarea>
+          </div>
+          <button type="submit" class="ui-button ui-button--primary btn btn-primary equipment-requests-message-submit" data-i18n data-i18n-key="equipmentRequests.message.send">إرسال الرسالة</button>
+        </form>
+      </article>
+
+      <article class="space-y-4">
+        <div class="surface-heading-stack equipment-requests-log-heading">
+          <h4 class="text-lg font-semibold text-base-content" data-i18n data-i18n-key="equipmentRequests.messageLog.title">سجل الرسائل</h4>
+          <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="equipmentRequests.messageLog.subtitle">جميع الرسائل والإيميلات المرتبطة بهذا الطلب، مع إمكانية إعادة المحاولة للرسائل الفاشلة.</p>
+        </div>
+        <div id="equipment-requests-email-failures" class="equipment-requests-email-failures" hidden></div>
+        <ul id="equipment-requests-message-log" class="equipment-requests-message-log">
+          <li class="ui-empty-state surface-empty-state p-5" data-i18n data-i18n-key="equipmentRequests.messageLog.empty">لا توجد رسائل بعد.</li>
+        </ul>
+        <div class="equipment-requests-pagination" id="equipment-requests-message-pagination" hidden>
+          <span class="equipment-requests-pagination__summary text-sm text-base-content/60" id="equipment-requests-message-pagination-summary">—</span>
+          <div class="equipment-requests-pagination__actions">
+            <button type="button" class="ui-button ui-button--outline btn btn-outline btn-sm" id="equipment-requests-message-prev" data-i18n data-i18n-key="equipmentRequests.pagination.previous">السابق</button>
+            <button type="button" class="ui-button ui-button--outline btn btn-outline btn-sm" id="equipment-requests-message-next" data-i18n data-i18n-key="equipmentRequests.pagination.next">التالي</button>
+          </div>
+        </div>
+      </article>
+    </div>
+  </section>
+</template>
+</html>

@@ -51,6 +51,15 @@ function escapeSelectorValue(value: string): string {
   }
 }
 
+function collectExpenseGroupKeys(host: Element): string[] {
+  const keys = new Set<string>();
+  Array.from(host.querySelectorAll<HTMLElement>('tr[data-subgroup-marker]')).forEach((marker) => {
+    const key = String(marker.getAttribute('data-parent-group') || '').trim();
+    if (key) keys.add(key);
+  });
+  return Array.from(keys);
+}
+
 export function recomputeExpensesSubtotals(options: RecomputeExpensesSubtotalsOptions): void {
   const host = options.root ?? document.querySelector('#templates-preview-host');
   if (!(host instanceof Element)) return;
@@ -61,7 +70,7 @@ export function recomputeExpensesSubtotals(options: RecomputeExpensesSubtotalsOp
   if (!tables.length) return;
 
   if (tables[0]?.classList.contains('exp-table')) {
-    const groupTotals: Record<string, number> = { atl: 0, prod: 0, post: 0 };
+    const groupTotals = Object.fromEntries(collectExpenseGroupKeys(host).map((key) => [key, 0])) as Record<string, number>;
     let grand = 0;
     const subgroupTotals: Record<string, number> = {};
     const subgroupCounts: Record<string, number> = {};

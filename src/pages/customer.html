@@ -1,191 +1,96 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <link rel="icon" type="image/x-icon" href="/favicon.ico">
-  <title data-i18n data-i18n-key="customerDetails.pageTitle">معلومات العميل</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="robots" content="noindex,nofollow,noarchive">
-  <meta name="color-scheme" content="light dark">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' https://cdn.jsdelivr.net https://img1.wsimg.com https://static.cloudflareinsights.com; connect-src 'self' http://127.0.0.1:8000 http://localhost:8000 http://127.0.0.1:8080 http://localhost:8080 https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://csp.secureserver.net https://cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://assets.art-ratio.com; font-src 'self' https://fonts.gstatic.com data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'self' https://assets.art-ratio.com; worker-src 'self' blob:; upgrade-insecure-requests;">
-
-  <script src="/js/godaddy-monitor.js" defer></script>
-  <script src="/js/page-boot.js"></script>
-
+  <!-- @include "./_partials/manager-page-head.html" {"titleKey":"customerDetails.pageTitle","titleText":"معلومات العميل"} -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/src/styles/app.css">
-  <link rel="stylesheet" href="/dist/css/sidebar.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 </head>
-<body class="page-shell theme-loading customer-page" data-theme="light">
-  <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
-
-  <aside id="dashboard-sidebar" class="sidebar-shell sidebar-drawer" aria-label="التنقل الجانبي" data-i18n data-i18n-aria-label-key="dashboard.nav.sidebar">
-    <div class="flex items-center justify-between gap-3 border-b border-base-200/70 pb-4 sidebar-brand">
-      <div class="flex items-center gap-3">
-        <div class="sidebar-brand-logo">
-          <img src="https://assets.art-ratio.com/AR-Logo-v3.5-curved.png" alt="Art Ratio" class="sidebar-logo-img" loading="lazy" decoding="async">
-        </div>
-        <div class="text-start sidebar-brand-text">
-          <p class="text-xs text-base-content/60">Art Ratio</p>
-          <p class="text-lg font-semibold text-base-content" data-i18n data-i18n-key="dashboard.sidebar.title">مركز التحكم</p>
-        </div>
+<!-- @include "./_partials/tabs-manager-shell.html" {"bodyClass":"details-page customer-page","greetingLabelKey":"customerDetails.title","greetingLabelText":"بيانات العميل","pageScript":"/src/scripts/customerPage.js"} -->
+<template data-slot="sidebarTabs">
+  <a class="ui-tab tab-button active" href="clients.html" data-close-sidebar>
+    <span class="flex items-center gap-3">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+        <path d="M10 13a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"></path>
+        <path d="M8 21v-1a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v1"></path>
+        <path d="M15 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"></path>
+        <path d="M17 10h2a2 2 0 0 1 2 2v1"></path>
+        <path d="M5 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"></path>
+        <path d="M3 13v-1a2 2 0 0 1 2 -2h2"></path>
+      </svg>
+      <span data-i18n data-i18n-key="tabs.customers">العملاء</span>
+    </span>
+  </a>
+  <a class="ui-tab tab-button" href="equipment.html" data-close-sidebar>
+    <span class="flex items-center gap-3">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+        <path d="M5 7h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2"></path>
+        <path d="M9 13a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"></path>
+      </svg>
+      <span data-i18n data-i18n-key="tabs.equipment">المعدات</span>
+    </span>
+  </a>
+  <a class="ui-tab tab-button" href="maintenance.html" data-close-sidebar>
+    <span class="flex items-center gap-3">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+        <path d="M3 21h4l13 -13a1.5 1.5 0 0 0 -4 -4l-13 13v4"></path>
+        <path d="M14.5 5.5l4 4"></path>
+        <path d="M12 8l-5 -5l-4 4l5 5"></path>
+        <path d="M7 8l-1.5 1.5"></path>
+        <path d="M16 12l5 5l-4 4l-5 -5"></path>
+        <path d="M16 17l-1.5 1.5"></path>
+      </svg>
+      <span data-i18n data-i18n-key="tabs.maintenance">الصيانة</span>
+    </span>
+  </a>
+  <a class="ui-tab tab-button" href="crew.html" data-close-sidebar>
+    <span class="flex items-center gap-3">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+        <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+        <path d="M6 21v-2a4 4 0 0 1 4 -4h2.5"></path>
+        <path d="M19.001 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"></path>
+        <path d="M19.001 15.5v1.5"></path>
+        <path d="M19.001 21v1.5"></path>
+        <path d="M22.032 17.25l-1.299 .75"></path>
+        <path d="M17.27 20l-1.3 .75"></path>
+        <path d="M15.97 17.25l1.3 .75"></path>
+        <path d="M20.733 20l1.3 .75"></path>
+      </svg>
+      <span data-i18n data-i18n-key="tabs.technicians">طاقم العمل</span>
+    </span>
+  </a>
+  <a class="ui-tab tab-button" href="operations.html#reservations-tab" data-close-sidebar>
+    <span class="flex items-center gap-3">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+        <path d="M6 5m0 1a1 1 0 0 1 1 -1h1a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1z"></path>
+        <path d="M6 9m0 1a1 1 0 0 1 1 -1h1a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1z"></path>
+        <path d="M6 13m0 1a1 1 0 0 1 1 -1h1a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1z"></path>
+        <path d="M9 3v18"></path>
+        <path d="M15 3v18"></path>
+        <path d="M18 5m0 1a1 1 0 0 1 1 -1h1a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1z"></path>
+        <path d="M18 9m0 1a1 1 0 0 1 1 -1h1a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1z"></path>
+        <path d="M18 13m0 1a1 1 0 0 1 1 -1h1a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1z"></path>
+      </svg>
+      <span data-i18n data-i18n-key="tabs.reservations">الحجوزات</span>
+    </span>
+  </a>
+</template>
+<template data-slot="greetingPanel">
+  <div class="flex flex-col gap-6">
+    <div class="flex flex-wrap items-start gap-4">
+      <div class="space-y-1 text-start">
+        <p class="text-sm text-base-content/60" data-i18n data-i18n-key="customerDetails.hero.subtitle">👋 هذه نظرة سريعة على بيانات العميل</p>
+        <h2 class="text-2xl font-bold text-base-content" id="dashboard-greeting-customer-name">—</h2>
+        <p class="text-sm text-base-content/60" id="dashboard-greeting-customer-company">—</p>
       </div>
-      <button type="button" id="sidebar-close" class="btn btn-circle btn-ghost lg:hidden" aria-label="إغلاق القائمة" data-i18n data-i18n-aria-label-key="dashboard.nav.closeMenu">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-          <path d="M18 6l-12 12"></path>
-          <path d="M6 6l12 12"></path>
-        </svg>
-      </button>
     </div>
-
-    <div class="sidebar-panel sidebar-panel--stats mt-6">
-      <h3 class="sidebar-heading" data-i18n data-i18n-key="dashboard.sidebar.statsHeading">ملخص اليوم</h3>
-      <div class="sidebar-stats" role="list">
-        <div class="sidebar-stats-row" role="listitem">
-          <span data-i18n data-i18n-key="dashboard.metrics.projects.label">المشاريع</span>
-          <span id="sidebar-stat-projects" class="badge-soft">0</span>
-        </div>
-        <div class="sidebar-stats-row" role="listitem">
-          <span data-i18n data-i18n-key="dashboard.metrics.reservations.label">الحجوزات</span>
-          <span id="sidebar-stat-reservations" class="badge-soft">0</span>
-        </div>
-        <div class="sidebar-stats-row" role="listitem">
-          <span data-i18n data-i18n-key="dashboard.metrics.equipment.label">المعدات</span>
-          <span id="sidebar-stat-equipment" class="badge-soft">0</span>
-        </div>
-        <div class="sidebar-stats-row" role="listitem">
-          <span data-i18n data-i18n-key="dashboard.metrics.technicians.label">طاقم العمل</span>
-          <span id="sidebar-stat-technicians" class="badge-soft">0</span>
-        </div>
-      </div>
-    </div>
-
-    <nav class="sidebar-menu mt-6 space-y-6" aria-label="التنقل بين أقسام لوحة التحكم" data-i18n data-i18n-aria-label-key="dashboard.nav.sections">
-      <div class="sidebar-panel sidebar-panel--tabs">
-        <p class="sidebar-heading mb-2" data-i18n data-i18n-key="dashboard.sidebar.tabsHeading">التبويبات</p>
-        <div class="tab-buttons tab-buttons-vertical" role="tablist">
-          <a class="tab-button active" href="dashboard.html#customers-tab" data-close-sidebar data-i18n data-i18n-key="tabs.customers">
-            <span class="flex items-center gap-3">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                <path d="M10 13a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"></path>
-                <path d="M8 21v-1a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v1"></path>
-                <path d="M15 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"></path>
-                <path d="M17 10h2a2 2 0 0 1 2 2v1"></path>
-                <path d="M5 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"></path>
-                <path d="M3 13v-1a2 2 0 0 1 2 -2h2"></path>
-              </svg>
-              <span data-i18n data-i18n-key="tabs.customers">👤 العملاء</span>
-            </span>
-          </a>
-          <a class="tab-button" href="dashboard.html#equipment-tab" data-close-sidebar data-i18n data-i18n-key="tabs.equipment">
-            <span class="flex items-center gap-3">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                <path d="M5 7h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2"></path>
-                <path d="M9 13a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"></path>
-              </svg>
-              <span data-i18n data-i18n-key="tabs.equipment">🎥 المعدات</span>
-            </span>
-          </a>
-          <a class="tab-button" href="dashboard.html#maintenance-tab" data-close-sidebar data-i18n data-i18n-key="tabs.maintenance">
-            <span class="flex items-center gap-3">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                <path d="M3 21h4l13 -13a1.5 1.5 0 0 0 -4 -4l-13 13v4"></path>
-                <path d="M14.5 5.5l4 4"></path>
-                <path d="M12 8l-5 -5l-4 4l5 5"></path>
-                <path d="M7 8l-1.5 1.5"></path>
-                <path d="M16 12l5 5l-4 4l-5 -5"></path>
-                <path d="M16 17l-1.5 1.5"></path>
-              </svg>
-              <span data-i18n data-i18n-key="tabs.maintenance">🛠️ الصيانة</span>
-            </span>
-          </a>
-          <a class="tab-button" href="dashboard.html#technicians-tab" data-close-sidebar data-i18n data-i18n-key="tabs.technicians">
-            <span class="flex items-center gap-3">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
-                <path d="M6 21v-2a4 4 0 0 1 4 -4h2.5"></path>
-                <path d="M19.001 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"></path>
-                <path d="M19.001 15.5v1.5"></path>
-                <path d="M19.001 21v1.5"></path>
-                <path d="M22.032 17.25l-1.299 .75"></path>
-                <path d="M17.27 20l-1.3 .75"></path>
-                <path d="M15.97 17.25l1.3 .75"></path>
-                <path d="M20.733 20l1.3 .75"></path>
-              </svg>
-              <span data-i18n data-i18n-key="tabs.technicians">😎 طاقم العمل</span>
-            </span>
-          </a>
-          <a class="tab-button" href="dashboard.html#reservations-tab" data-close-sidebar data-i18n data-i18n-key="tabs.reservations">
-            <span class="flex items-center gap-3">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                <path d="M6 5m0 1a1 1 0 0 1 1 -1h1a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1z"></path>
-                <path d="M6 9m0 1a1 1 0 0 1 1 -1h1a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1z"></path>
-                <path d="M6 13m0 1a1 1 0 0 1 1 -1h1a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1z"></path>
-                <path d="M9 3v18"></path>
-                <path d="M15 3v18"></path>
-                <path d="M18 5m0 1a1 1 0 0 1 1 -1h1a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1z"></path>
-                <path d="M18 9m0 1a1 1 0 0 1 1 -1h1a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1z"></path>
-                <path d="M18 13m0 1a1 1 0 0 1 1 -1h1a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1z"></path>
-              </svg>
-              <span data-i18n data-i18n-key="tabs.reservations">📅 الحجوزات</span>
-            </span>
-          </a>
-        </div>
-      </div>
-    </nav>
-  </aside>
-
-  <div class="page-grid">
-    <header class="dashboard-header">
-      <div class="dashboard-header-nav">
-        <div class="dashboard-header-start">
-          <button type="button" id="sidebar-open" class="mobile-sidebar-toggle" aria-label="فتح القائمة" data-i18n data-i18n-aria-label-key="dashboard.nav.openMenu">
-            <span class="mobile-sidebar-toggle__icon" aria-hidden="true">
-              <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--top"></span>
-              <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--middle"></span>
-              <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--bottom"></span>
-            </span>
-          </button>
-          <a href="home.html" class="flex items-center gap-3 dashboard-hero-brand" data-close-sidebar>
-            <div class="dashboard-hero-logo flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary sm:h-12 sm:w-12">
-              <img src="https://assets.art-ratio.com/AR-Logo-v3.5-curved.png" alt="Art Ratio" class="dashboard-logo-img" loading="lazy" decoding="async">
-            </div>
-            <div class="dashboard-hero-brand-text">
-              <h1 class="dashboard-hero-title text-xl font-bold text-base-content" data-i18n data-i18n-key="dashboard.hero.title">Art Ratio</h1>
-            </div>
-          </a>
-        </div>
-        <div class="dashboard-header-center">
-          <section class="dashboard-greeting" data-dashboard-greeting data-state="closed">
-            <button type="button" class="dashboard-greeting-toggle" data-greeting-toggle aria-controls="dashboard-greeting-panel" aria-expanded="false">
-              <span class="dashboard-greeting-toggle-label" data-i18n data-i18n-key="customerDetails.title">👤 بيانات العميل</span>
-              <svg xmlns="http://www.w3.org/2000/svg" class="dashboard-greeting-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                <path d="M6 9l6 6l6 -6"></path>
-              </svg>
-            </button>
-            <div class="glass-card dashboard-greeting-panel" id="dashboard-greeting-panel" data-greeting-panel hidden>
-              <div class="flex flex-col gap-6">
-                <div class="flex flex-wrap items-start gap-4">
-                  <div class="space-y-1 text-start">
-                    <p class="text-sm text-base-content/60" data-i18n data-i18n-key="customerDetails.hero.subtitle">👋 هذه نظرة سريعة على بيانات العميل</p>
-                    <h2 class="text-2xl font-bold text-base-content" id="dashboard-greeting-customer-name">—</h2>
-                    <p class="text-sm text-base-content/60" id="dashboard-greeting-customer-company">—</p>
-                  </div>
-                </div>
-                <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3" id="customer-financial-stats">
-                  <article class="relative overflow-hidden rounded-2xl border border-base-200/70 bg-base-100/80 p-4 shadow-xs">
+    <div class="detail-stats-grid grid gap-4 md:grid-cols-2 xl:grid-cols-3" id="customer-financial-stats">
+                  <article class="detail-stat-card relative overflow-hidden rounded-2xl border border-base-200/70 bg-base-100/80 p-4 shadow-xs">
                     <span class="absolute right-4 top-4 rounded-xl bg-primary/10 p-2 text-primary">
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
@@ -201,7 +106,7 @@
                       <p class="text-sm text-base-content/60 leading-relaxed" id="customer-stat-projects-desc" data-i18n data-i18n-key="customerDetails.stats.projectsDesc">المشاريع المرتبطة بالعميل</p>
                     </div>
                   </article>
-                  <article class="relative overflow-hidden rounded-2xl border border-base-200/70 bg-base-100/80 p-4 shadow-xs">
+                  <article class="detail-stat-card relative overflow-hidden rounded-2xl border border-base-200/70 bg-base-100/80 p-4 shadow-xs">
                     <span class="absolute right-4 top-4 rounded-xl bg-info/10 p-2 text-info">
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
@@ -218,7 +123,7 @@
                       <p class="text-sm text-base-content/60 leading-relaxed" id="customer-stat-upcoming-desc">—</p>
                     </div>
                   </article>
-                  <article class="relative overflow-hidden rounded-2xl border border-base-200/70 bg-base-100/80 p-4 shadow-xs">
+                  <article class="detail-stat-card relative overflow-hidden rounded-2xl border border-base-200/70 bg-base-100/80 p-4 shadow-xs">
                     <span class="absolute right-4 top-4 rounded-xl bg-success/10 p-2 text-success">
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
@@ -230,20 +135,20 @@
                     </span>
                     <div class="space-y-3 pt-12 text-start">
                       <span class="text-sm font-semibold text-base-content/70" data-i18n data-i18n-key="customerDetails.stats.payment">قيمة المدفوع/المستحق</span>
-                      <div id="customer-stat-payment" class="payment-breakdown" aria-live="polite">
-                        <div class="payment-line payment-line--paid">
-                          <span class="payment-line-label" data-i18n data-i18n-key="customerDetails.stats.paymentPaid">المدفوع</span>
+                      <div id="customer-stat-payment" class="payment-breakdown detail-payment-breakdown" aria-live="polite">
+                        <div class="detail-payment-line payment-line payment-line--paid">
+                          <span class="detail-payment-line-label payment-line-label" data-i18n data-i18n-key="customerDetails.stats.paymentPaid">المدفوع</span>
                           <span class="payment-line-value">0 SR</span>
                         </div>
-                        <div class="payment-line payment-line--outstanding">
-                          <span class="payment-line-label" data-i18n data-i18n-key="customerDetails.stats.paymentOutstandingLabel">المستحق</span>
+                        <div class="detail-payment-line payment-line payment-line--outstanding">
+                          <span class="detail-payment-line-label payment-line-label" data-i18n data-i18n-key="customerDetails.stats.paymentOutstandingLabel">المستحق</span>
                           <span class="payment-line-value">0 SR</span>
                         </div>
                       </div>
                       <p class="text-sm text-base-content/60 leading-relaxed" id="customer-stat-payment-desc" data-i18n data-i18n-key="customerDetails.stats.paymentBreakdown">مدفوع / مستحق</p>
                     </div>
                   </article>
-                  <article class="relative overflow-hidden rounded-2xl border border-base-200/70 bg-base-100/80 p-4 shadow-xs">
+                  <article class="detail-stat-card relative overflow-hidden rounded-2xl border border-base-200/70 bg-base-100/80 p-4 shadow-xs">
                     <span class="absolute right-4 top-4 rounded-xl bg-secondary/10 p-2 text-secondary">
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
@@ -257,7 +162,7 @@
                       <p class="text-sm text-base-content/60 leading-relaxed" id="customer-stat-activity-desc">—</p>
                     </div>
                   </article>
-                  <article class="relative overflow-hidden rounded-2xl border border-base-200/70 bg-base-100/80 p-4 shadow-xs">
+                  <article class="detail-stat-card relative overflow-hidden rounded-2xl border border-base-200/70 bg-base-100/80 p-4 shadow-xs">
                     <span class="absolute right-4 top-4 rounded-xl bg-warning/10 p-2 text-warning">
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
@@ -274,114 +179,87 @@
                       <p class="text-sm text-base-content/60 leading-relaxed" id="customer-stat-compliance-desc">—</p>
                     </div>
                   </article>
-                </div>
-              </div>
-            </div>
-          </section>
-        </div>
-        <div class="dashboard-header-end">
-          <button class="language-toggle-btn" id="language-toggle" data-label-ar="🇸🇦 العربية" data-label-en="🇬🇧 English" aria-pressed="false"></button>
-          <label class="theme-toggle-btn swap swap-rotate" data-theme-toggle role="button">
-            <input id="theme-toggle" type="checkbox" class="sr-only" aria-hidden="true">
-            <svg class="swap-off fill-current text-warning w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-              <path d="M12 4v-1"></path>
-              <path d="M12 21v-1"></path>
-              <path d="M4 12h-1"></path>
-              <path d="M21 12h-1"></path>
-              <path d="M5.6 5.6l-.7 -.7"></path>
-              <path d="M18.4 18.4l-.7 -.7"></path>
-              <path d="M5.6 18.4l-.7 .7"></path>
-              <path d="M18.4 5.6l-.7 .7"></path>
-              <path d="M16 12a4 4 0 1 0 -4 4"></path>
-            </svg>
-            <svg class="swap-on fill-current text-primary w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-              <path d="M12 3c.132 0 .263 0 .393 .007a7.5 7.5 0 0 0 7.098 12.675a9 9 0 1 1 -7.491 -12.682z"></path>
-            </svg>
-            <span class="sr-only" data-theme-label data-i18n data-i18n-key="theme.toggle.toDark">🌙 الوضع الليلي</span>
-          </label>
-          <button class="btn btn-error btn-sm rounded-full text-error-content" id="logout-btn" data-i18n data-i18n-key="actions.logout">🚪 تسجيل الخروج</button>
-        </div>
-      </div>
-    </header>
-
-    <div class="flex flex-1 flex-col">
-      <main class="dashboard-main w-full">
-        <div class="dashboard-main-inner space-y-8">
-          <div class="glass-card primary-actions-card" aria-label="روابط الإدارة السريعة">
+    </div>
+  </div>
+</template>
+<template data-slot="mainContent">
+  <div class="ui-card ui-card--content glass-card primary-actions-card" aria-label="روابط الإدارة السريعة">
             <div class="primary-actions-buttons">
               <a
-                href="dashboard.html#reservations-tab"
-                class="btn btn-primary primary-action-btn"
+                href="operations.html#reservations-tab"
+                class="ui-button ui-button--primary btn btn-primary primary-action-btn"
                 data-i18n
                 data-i18n-key="customerDetails.primaryNav.reservations"
               >📅 إدارة الحجوزات</a>
               <a
                 href="projects.html"
-                class="btn btn-secondary primary-action-btn"
+                class="ui-button ui-button--secondary btn btn-secondary primary-action-btn"
                 data-i18n
                 data-i18n-key="customerDetails.primaryNav.projects"
               >📁 إدارة المشاريع</a>
             </div>
           </div>
 
-          <section class="glass-card space-y-6">
+          <section class="ui-card ui-card--content glass-card space-y-6">
             <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div class="space-y-2">
-                <p class="text-sm font-medium text-base-content/70" data-i18n data-i18n-key="customerDetails.title">👤 بيانات العميل</p>
+                <p class="text-sm font-medium text-base-content/70" data-i18n data-i18n-key="customerDetails.title">بيانات العميل</p>
                 <h2 id="customer-hero-name" class="text-2xl font-bold text-base-content">—</h2>
-                <div class="flex flex-wrap items-center gap-2 text-sm text-base-content/70">
-                  <span class="badge badge-outline badge-lg" id="customer-hero-phone">📞 —</span>
-                  <span class="badge badge-outline badge-lg hidden" id="customer-hero-company">🏢 —</span>
-                  <span class="badge badge-outline badge-lg hidden" id="customer-hero-email">📧 —</span>
-                  <span class="badge badge-outline badge-lg hidden" id="customer-hero-tax">🧾 —</span>
+                <div class="customer-hero-meta text-sm text-base-content/70">
+                  <span class="customer-hero-badge customer-hero-badge--phone" id="customer-hero-phone">📞 —</span>
+                  <span class="customer-hero-badge customer-hero-badge--company" id="customer-hero-company" hidden>🏢 —</span>
+                  <span class="customer-hero-badge customer-hero-badge--email" id="customer-hero-email" hidden>📧 —</span>
+                  <span class="customer-hero-badge customer-hero-badge--tax" id="customer-hero-tax" hidden>🧾 —</span>
                 </div>
               </div>
               <div class="flex items-start justify-end">
-                <button class="btn btn-primary btn-wide" id="customer-edit-btn-secondary" type="button" data-i18n data-i18n-key="customerDetails.actions.edit">✏️ تعديل العميل</button>
+                <button class="ui-button ui-button--primary btn btn-primary btn-wide" id="customer-edit-btn-secondary" type="button" data-i18n data-i18n-key="customerDetails.actions.edit">✏️ تعديل العميل</button>
               </div>
             </div>
             <div class="rounded-3xl border border-base-200/60 bg-base-100/75 p-4">
-              <div id="customer-details" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3"></div>
+              <div id="customer-details" class="detail-record-grid grid gap-4 md:grid-cols-2 xl:grid-cols-3"></div>
             </div>
           </section>
 
-          <div class="glass-card dashboard-tabbar customer-tabbar">
-            <div class="tab-buttons tab-buttons-horizontal" role="tablist">
+          <div class="ui-card ui-card--content glass-card dashboard-tabbar detail-tabbar">
+            <div class="ui-tabs tab-buttons tab-buttons-horizontal" role="tablist">
               <button
                 type="button"
-                class="tab-button tab-active"
+                class="ui-tab tab-button tab-active"
                 data-customer-tab="reservations"
+                aria-selected="true"
+                aria-controls="customer-tab-panel-reservations"
                 data-i18n
                 data-i18n-key="customerTabs.customerReservations"
               >📅 حجوزات العميل</button>
               <button
                 type="button"
-                class="tab-button"
+                class="ui-tab tab-button"
                 data-customer-tab="projects"
+                aria-selected="false"
+                aria-controls="customer-tab-panel-projects"
                 data-i18n
                 data-i18n-key="customerTabs.customerProjects"
               >📁 مشاريع العميل</button>
             </div>
           </div>
 
-          <section class="glass-card space-y-5 customer-reservations-section" data-customer-tab-panel="reservations">
+          <section class="ui-card ui-card--content glass-card space-y-5 customer-reservations-section" id="customer-tab-panel-reservations" data-customer-tab-panel="reservations">
             <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
               <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="customerTabs.customerReservations">📅 حجوزات العميل</h3>
-              <button type="button" class="btn btn-outline btn-secondary" id="customer-clear-filters" data-i18n data-i18n-key="actions.clearFilters">🔄 إعادة التصفية</button>
+              <button type="button" class="ui-button ui-button--outline btn btn-outline btn-secondary" id="customer-clear-filters" data-i18n data-i18n-key="actions.clearFilters">🔄 إعادة التصفية</button>
             </div>
             <div class="filters-bar flex flex-wrap items-center gap-2 rounded-2xl border border-base-200 bg-base-100/80 p-3">
-              <input type="text" id="customer-search-reservation" class="form-control w-auto flex-1 min-w-[14rem]" placeholder="🔍 ابحث باسم العميل أو رقم الحجز..." data-i18n data-i18n-placeholder-key="customerDetails.filters.search">
-              <input type="text" id="customer-filter-start-date" class="form-control w-auto" placeholder="📅 من تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.start">
-              <input type="text" id="customer-filter-end-date" class="form-control w-auto" placeholder="📅 إلى تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.end">
-              <select id="customer-reservation-date-range" class="form-select w-auto">
+              <input type="text" id="customer-search-reservation" class="ui-input form-control w-auto flex-1 min-w-[14rem]" placeholder="🔍 ابحث باسم العميل أو رقم الحجز..." data-i18n data-i18n-placeholder-key="customerDetails.filters.search">
+              <input type="text" id="customer-filter-start-date" class="ui-input form-control w-auto" placeholder="📅 من تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.start">
+              <input type="text" id="customer-filter-end-date" class="ui-input form-control w-auto" placeholder="📅 إلى تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.end">
+              <select id="customer-reservation-date-range" class="ui-select form-select w-auto">
                 <option value="" data-i18n data-i18n-key="reservations.list.filters.range.all">⏱️ كل التواريخ</option>
                 <option value="today" data-i18n data-i18n-key="reservations.list.filters.range.today">📅 اليوم</option>
                 <option value="week" data-i18n data-i18n-key="reservations.list.filters.range.week">📆 هذا الأسبوع</option>
                 <option value="month" data-i18n data-i18n-key="reservations.list.filters.range.month">🗓️ هذا الشهر</option>
               </select>
-              <select id="customer-reservation-status-filter" class="form-select w-auto">
+              <select id="customer-reservation-status-filter" class="ui-select form-select w-auto">
                 <option value="" data-i18n data-i18n-key="reservations.list.filters.status.all">⚙️ كل الحالات</option>
                 <option value="confirmed" data-i18n data-i18n-key="reservations.list.filters.status.confirmed">✅ مؤكدة</option>
                 <option value="pending" data-i18n data-i18n-key="reservations.list.filters.status.pending">⏳ غير مؤكدة</option>
@@ -394,22 +272,22 @@
             </div>
           </section>
 
-          <section class="glass-card space-y-5 customer-projects-section hidden" data-customer-tab-panel="projects">
+          <section class="ui-card ui-card--content glass-card space-y-5 customer-projects-section" id="customer-tab-panel-projects" data-customer-tab-panel="projects" hidden>
             <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
               <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="customerProjects.title">📁 مشاريع العميل</h3>
-              <button type="button" class="btn btn-outline btn-secondary" id="customer-projects-clear-filters" data-i18n data-i18n-key="actions.clearFilters">🔄 إعادة التصفية</button>
+              <button type="button" class="ui-button ui-button--outline btn btn-outline btn-secondary" id="customer-projects-clear-filters" data-i18n data-i18n-key="actions.clearFilters">🔄 إعادة التصفية</button>
             </div>
             <div class="filters-bar flex flex-wrap items-center gap-2 rounded-2xl border border-base-200 bg-base-100/80 p-3">
-              <input type="text" id="customer-project-search" class="form-control w-auto flex-1 min-w-[14rem]" placeholder="🔍 ابحث باسم المشروع أو الوصف..." data-i18n data-i18n-placeholder-key="projectCards.filters.search">
-              <input type="text" id="customer-project-start-date" class="form-control w-auto" placeholder="📅 من تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.start">
-              <input type="text" id="customer-project-end-date" class="form-control w-auto" placeholder="📅 إلى تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.end">
-              <select id="customer-project-date-range" class="form-select w-auto">
+              <input type="text" id="customer-project-search" class="ui-input form-control w-auto flex-1 min-w-[14rem]" placeholder="🔍 ابحث باسم المشروع أو الوصف..." data-i18n data-i18n-placeholder-key="projectCards.filters.search">
+              <input type="text" id="customer-project-start-date" class="ui-input form-control w-auto" placeholder="📅 من تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.start">
+              <input type="text" id="customer-project-end-date" class="ui-input form-control w-auto" placeholder="📅 إلى تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.end">
+              <select id="customer-project-date-range" class="ui-select form-select w-auto">
                 <option value="" data-i18n data-i18n-key="reservations.list.filters.range.all">⏱️ كل التواريخ</option>
                 <option value="today" data-i18n data-i18n-key="reservations.list.filters.range.today">📅 اليوم</option>
                 <option value="week" data-i18n data-i18n-key="reservations.list.filters.range.week">📆 هذا الأسبوع</option>
                 <option value="month" data-i18n data-i18n-key="reservations.list.filters.range.month">🗓️ هذا الشهر</option>
               </select>
-              <select id="customer-project-status-filter" class="form-select w-auto">
+              <select id="customer-project-status-filter" class="ui-select form-select w-auto">
                 <option value="" data-i18n data-i18n-key="projectCards.filters.status.all">⚙️ كل الحالات</option>
                 <option value="upcoming" data-i18n data-i18n-key="projectCards.filters.status.upcoming">📅 مشاريع قادمة</option>
                 <option value="ongoing" data-i18n data-i18n-key="projectCards.filters.status.ongoing">⚙️ مشاريع قيد التنفيذ</option>
@@ -417,70 +295,68 @@
               </select>
             </div>
             <div class="rounded-3xl border border-base-200/60 bg-base-100/80 p-4">
-              <div id="customer-projects" class="project-card-grid" data-empty="لا توجد مشاريع مرتبطة بهذا العميل." data-empty-key="customerProjects.empty"></div>
+              <div id="customer-projects" class="project-focus-groups" data-empty="لا توجد مشاريع مرتبطة بهذا العميل." data-empty-key="customerProjects.empty"></div>
             </div>
           </section>
-        </div>
-      </main>
-    </div>
-  </div>
-
-  <div class="modal fade" id="reservationDetailsModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
+</template>
+<template data-slot="afterShell">
+  <div class="modal fade customer-edit-modal reservation-shell-modal" id="reservationDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable customer-edit-modal__dialog reservation-shell-modal__dialog">
+      <div class="ui-modal__content modal-content customer-edit-modal__content reservation-shell-modal__content">
+        <div class="ui-modal__header modal-header customer-edit-modal__header reservation-shell-modal__header">
           <h5 class="modal-title" data-i18n data-i18n-key="reservations.details.modalTitle">📋 تفاصيل الحجز</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
         </div>
-        <div class="modal-body" id="reservation-details-body"></div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n data-i18n-key="actions.close">إغلاق</button>
+        <div class="ui-modal__body modal-body customer-edit-modal__body reservation-shell-modal__body" id="reservation-details-body"></div>
+        <div class="ui-modal__footer modal-footer customer-edit-modal__footer reservation-shell-modal__footer">
+          <button type="button" class="btn modal-close-btn" data-bs-dismiss="modal" data-i18n data-i18n-key="actions.close">إغلاق</button>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="modal fade" id="editCustomerModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
+  <div class="modal fade customer-edit-modal" id="editCustomerModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable customer-edit-modal__dialog">
+      <div class="modal-content customer-edit-modal__content">
+        <div class="modal-header customer-edit-modal__header">
           <h5 class="modal-title" data-i18n data-i18n-key="customerDetails.edit.modalTitle">✏️ تعديل العميل</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
         </div>
-        <div class="modal-body">
-          <form id="edit-customer-form" class="management-form" novalidate>
+        <div class="modal-body customer-edit-modal__body">
+          <form id="edit-customer-form" class="management-form customer-edit-form" novalidate>
             <input type="hidden" id="edit-id">
 
             <div class="management-form-grid">
               <div class="form-field">
                 <label class="form-label" for="edit-name" data-i18n data-i18n-key="customers.form.labels.name">👤 الاسم</label>
-                <input class="form-control" id="edit-name" placeholder="اسم العميل" data-i18n data-i18n-placeholder-key="customers.form.placeholders.name">
+                <input class="ui-input form-control" id="edit-name" placeholder="اسم العميل" data-i18n data-i18n-placeholder-key="customers.form.placeholders.name">
               </div>
               <div class="form-field">
                 <label class="form-label" for="edit-phone" data-i18n data-i18n-key="customers.form.labels.phone">📞 الجوال</label>
-                <input class="form-control" id="edit-phone" placeholder="05xxxxxxxx" data-i18n data-i18n-placeholder-key="customers.form.placeholders.phone">
+                <input class="ui-input form-control" id="edit-phone" placeholder="05xxxxxxxx" data-i18n data-i18n-placeholder-key="customers.form.placeholders.phone">
               </div>
               <div class="form-field">
                 <label class="form-label" for="edit-company" data-i18n data-i18n-key="customers.form.labels.company">🏢 الشركة</label>
-                <input class="form-control" id="edit-company" placeholder="اسم الشركة" data-i18n data-i18n-placeholder-key="customers.form.placeholders.company">
+                <input class="ui-input form-control" id="edit-company" placeholder="اسم الشركة" data-i18n data-i18n-placeholder-key="customers.form.placeholders.company">
               </div>
               <div class="form-field">
                 <label class="form-label" for="edit-email" data-i18n data-i18n-key="customers.form.labels.email">📧 البريد</label>
-                <input class="form-control" id="edit-email" placeholder="example@email.com" data-i18n data-i18n-placeholder-key="customers.form.placeholders.email">
+                <input class="ui-input form-control" id="edit-email" placeholder="example@email.com" data-i18n data-i18n-placeholder-key="customers.form.placeholders.email">
               </div>
               <div class="form-field">
                 <label class="form-label" for="edit-address" data-i18n data-i18n-key="customers.form.labels.address">📍 العنوان</label>
-                <input class="form-control" id="edit-address" placeholder="عنوان العميل" data-i18n data-i18n-placeholder-key="customers.form.placeholders.address">
+                <input class="ui-input form-control" id="edit-address" placeholder="عنوان العميل" data-i18n data-i18n-placeholder-key="customers.form.placeholders.address">
               </div>
               <div class="form-field">
                 <label class="form-label" for="edit-tax-id" data-i18n data-i18n-key="customers.form.labels.taxId">🧾 الرقم الضريبي</label>
-                <input class="form-control" id="edit-tax-id" placeholder="1234567890" data-i18n data-i18n-placeholder-key="customers.form.placeholders.taxId">
+                <input class="ui-input form-control" id="edit-tax-id" placeholder="1234567890" data-i18n data-i18n-placeholder-key="customers.form.placeholders.taxId">
               </div>
               <div class="form-field col-span-full">
                 <label class="form-label" for="edit-document-file" data-i18n data-i18n-key="customers.form.labels.document">📎 مستند العميل</label>
-                <div class="customer-upload-inline">
-                  <input type="file" class="form-control" id="edit-document-file" accept="application/pdf,image/*,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
-                  <button type="button" class="btn btn-outline btn-secondary" id="edit-document-preview" disabled data-i18n data-i18n-key="customers.form.actions.previewDocument">عرض الملف</button>
+                <div class="customer-upload-inline customer-upload-inline--modal">
+                  <input type="file" class="customer-upload-input" id="edit-document-file" accept="application/pdf,image/*,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+                  <label for="edit-document-file" class="ui-button ui-button--secondary btn btn-secondary customer-upload-trigger" data-i18n data-i18n-key="customers.form.actions.chooseDocument">اختيار ملف</label>
+                  <button type="button" class="ui-button ui-button--outline btn btn-outline btn-secondary" id="edit-document-preview" disabled data-i18n data-i18n-key="customers.form.actions.previewDocument">عرض الملف</button>
                   <small class="customer-upload-hint" id="edit-document-file-name" data-i18n data-i18n-key="customers.form.document.empty">لم يتم اختيار ملف بعد</small>
                 </div>
                 <small class="form-text text-muted d-block mt-2" data-i18n data-i18n-key="customers.form.document.helper">يمكنك لصق رابط مباشر للمستند أو لملف مخزن.</small>
@@ -490,37 +366,34 @@
 
               <div class="form-field form-field-notes">
                 <label class="form-label" for="edit-notes" data-i18n data-i18n-key="customers.form.labels.notes">📝 الملاحظات</label>
-                <textarea class="form-control" id="edit-notes" rows="3" placeholder="معلومات إضافية أو تذكيرات" data-i18n data-i18n-placeholder-key="customers.form.placeholders.notes"></textarea>
+                <textarea class="ui-textarea form-control" id="edit-notes" rows="3" placeholder="معلومات إضافية أو تذكيرات" data-i18n data-i18n-placeholder-key="customers.form.placeholders.notes"></textarea>
               </div>
             </div>
           </form>
         </div>
-        <div class="modal-footer">
-          <button class="btn btn-primary" id="save-edit-btn" data-i18n data-i18n-key="customers.form.actions.update">💾 حفظ التعديل</button>
+        <div class="modal-footer customer-edit-modal__footer">
+          <button class="ui-button ui-button--primary btn btn-primary customer-edit-modal__save-btn" id="save-edit-btn" data-i18n data-i18n-key="customers.form.actions.update">💾 حفظ التعديل</button>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="modal fade" id="projectDetailsModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
+  <div class="modal fade customer-edit-modal project-shell-modal" id="projectDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable customer-edit-modal__dialog project-shell-modal__dialog">
+      <div class="ui-modal__content modal-content customer-edit-modal__content">
+        <div class="ui-modal__header modal-header customer-edit-modal__header">
           <h5 class="modal-title" data-i18n data-i18n-key="projects.modal.title">تفاصيل المشروع</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
         </div>
-        <div class="modal-body" id="project-details-body"></div>
+        <div class="ui-modal__body modal-body customer-edit-modal__body" id="project-details-body"></div>
       </div>
     </div>
   </div>
 
+ </template>
+<template data-slot="pageScripts">
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-
-  <script type="module" src="/src/scripts/language.js"></script>
-  <script type="module" src="/src/scripts/translations/common.js"></script>
-  <script type="module" src="/src/scripts/translations/dashboard.js"></script>
   <script type="module" src="/src/scripts/translations/projects.js"></script>
   <script type="module" src="/src/scripts/translations/customer.js"></script>
-  <script type="module" src="/src/scripts/customerPage.js"></script>
-</body>
+</template>
 </html>

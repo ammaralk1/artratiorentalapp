@@ -28,6 +28,15 @@
     return;
   }
 
+  function isAuthPage() {
+    try {
+      const body = document.body || null;
+      return !!body?.classList?.contains('auth-page') || /\/login\.html$/i.test(window.location?.pathname || '');
+    } catch (_) {
+      return false;
+    }
+  }
+
   // Ensure sidebar CSS is present even on legacy pages.
   // Run after the document has parsed so we don't inject a duplicate
   // fallback stylesheet before the page's own <link> tags are discovered.
@@ -38,7 +47,10 @@
       const hasSidebarCss = Array.from(head.querySelectorAll('link[rel="stylesheet"], link'))
         .some((l) => {
           const href = (l.getAttribute('href') || l.href || '').toLowerCase();
-          return href.includes('/css/sidebar.css') || href.includes('/dist/css/sidebar.css');
+          // Skip injection if the new design-system CSS (app.css) is already loaded — it
+          // contains full sidebar styles and the old sidebar.css would override them with
+          // the legacy blue palette.
+          return href.includes('/css/sidebar.css') || href.includes('/dist/css/sidebar.css') || href.includes('app.css');
         });
       // Inject unconditionally when missing (the script runs very early,
       // before body is parsed on some pages — gating on DOM presence would miss it).
@@ -100,6 +112,8 @@
     console.warn('[page-boot] could not apply preferred color scheme', error);
   }
 
+  initialTheme = initialTheme || 'light';
+
   if (initialTheme === 'dark') {
     root.classList.add('dark-mode', 'dark');
     root.setAttribute('data-theme', 'dark');
@@ -129,6 +143,7 @@
   const onReady = () => {
     // Give modules a moment; then force visibility
     setTimeout(removeLoadingSafely, 1500);
+    if (isAuthPage()) return;
     try { ensureSidebarStructure(); } catch (_) {}
     try { initializeSidebarFallback(); } catch (_) {}
     try { refreshSidebarCountersFallback(); } catch (_) {}
@@ -143,6 +158,7 @@
   // Re-apply sidebar/burger/metrics after تغيير اللغة بدون إعادة تحميل
   try {
     document.addEventListener('language:changed', () => {
+      if (isAuthPage()) return;
       try { ensureSidebarStructure(); } catch (_) {}
       try { initializeSidebarFallback(); } catch (_) {}
       try { refreshSidebarCountersFallback(); } catch (_) {}
@@ -172,6 +188,10 @@
 
 // Minimal sidebar functionality for legacy pages (Arabic/English)
 function initializeSidebarFallback() {
+  if (isAuthPageFallback()) {
+    removeSidebarFallbackArtifacts();
+    return;
+  }
   const sidebar = ensureSidebarStructure();
   const backdrop = document.getElementById('sidebar-backdrop');
   const openBtn  = document.getElementById('sidebar-open');
@@ -206,6 +226,10 @@ function initializeSidebarFallback() {
 
 // Fallback: hydrate sidebar counters from /backend/api/summary/
 function refreshSidebarCountersFallback() {
+  if (isAuthPageFallback()) {
+    removeSidebarFallbackArtifacts();
+    return;
+  }
   // Do not override detail pages; صفحات الفني/العميل تعتمد على التصفية الخاصة بها
   const body = document.body || document.documentElement;
   const isDetailPage = body?.classList?.contains('technician-page') || body?.classList?.contains('customer-page');
@@ -288,6 +312,10 @@ function refreshSidebarCountersFallback() {
 
 // Ensure sidebar shell, menu, stats panel, and quick tabs exist for legacy pages
 function ensureSidebarStructure() {
+  if (isAuthPageFallback()) {
+    removeSidebarFallbackArtifacts();
+    return null;
+  }
   // Backdrop
   if (!document.getElementById('sidebar-backdrop')) {
     const backdrop = document.createElement('div');
@@ -448,8 +476,10 @@ function ensureSidebarStructure() {
     return sidebar;
   }
 
-  // الصفحات الأخرى: أعد بناء الهيكل بالكامل لضمان التوافق
-  buildFullSidebar(true);
+  // الصفحات التي تملك shell حديثاً تحتوي على تبويبات وظيفية داخل الـ sidebar.
+  // لا نعيد بناءها من الصفر حتى لا تتحول أزرار data-tab إلى روابط fallback.
+  const hasPageOwnedSidebar = Boolean(sidebar.querySelector('.sidebar-panel--tabs'));
+  buildFullSidebar(!hasPageOwnedSidebar);
   ensureBurgerToggle();
 
   return sidebar;
@@ -457,6 +487,10 @@ function ensureSidebarStructure() {
 
 // Ensure burger button exists and has the three-line icon
 function ensureBurgerToggle() {
+  if (isAuthPageFallback()) {
+    removeSidebarFallbackArtifacts();
+    return null;
+  }
   let openBtn = document.getElementById('sidebar-open');
   if (!openBtn) {
     openBtn = document.createElement('button');
@@ -476,4 +510,19 @@ function ensureBurgerToggle() {
       <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--middle"></span>
       <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--bottom"></span>
     </span>`;
+}
+
+function isAuthPageFallback() {
+  try {
+    const body = document.body || null;
+    return !!body?.classList?.contains('auth-page') || /\/login\.html$/i.test(window.location?.pathname || '');
+  } catch (_) {
+    return false;
+  }
+}
+
+function removeSidebarFallbackArtifacts() {
+  try { document.getElementById('sidebar-open')?.remove(); } catch (_) {}
+  try { document.getElementById('dashboard-sidebar')?.remove(); } catch (_) {}
+  try { document.getElementById('sidebar-backdrop')?.remove(); } catch (_) {}
 }

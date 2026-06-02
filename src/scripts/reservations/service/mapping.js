@@ -656,13 +656,15 @@ function mergeItemCostsFromExisting(reservation) {
     }
     if (!existingItem) return item;
     const merged = { ...item };
-    const existingCost = Number(existingItem.cost);
-    const existingPrice = Number(existingItem.price);
-    if (Number.isFinite(existingCost) && existingCost > 0) {
+    const existingCost = Number(existingItem.cost ?? existingItem.unit_cost);
+    const existingPrice = Number(existingItem.price ?? existingItem.unit_price);
+    const currentCost = Number(item.cost ?? item.unit_cost);
+    const currentPrice = Number(item.price ?? item.unit_price);
+    if (Number.isFinite(existingCost) && existingCost > 0 && (!Number.isFinite(currentCost) || currentCost <= 0)) {
       merged.cost = existingCost;
       merged.unit_cost = existingCost;
     }
-    if (Number.isFinite(existingPrice) && existingPrice > 0) {
+    if (Number.isFinite(existingPrice) && existingPrice > 0 && (!Number.isFinite(currentPrice) || currentPrice <= 0)) {
       merged.price = existingPrice;
       merged.unit_price = existingPrice;
     }

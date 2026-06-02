@@ -1,287 +1,134 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <link rel="icon" type="image/x-icon" href="/favicon.ico">
-  <title data-i18n data-i18n-key="users.nav.brand">🛡️ إدارة المستخدمين</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="robots" content="noindex,nofollow,noarchive">
-  <meta name="color-scheme" content="light dark">
-
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' https://cdn.jsdelivr.net https://img1.wsimg.com https://static.cloudflareinsights.com; connect-src 'self' http://127.0.0.1:8000 http://localhost:8000 http://127.0.0.1:8080 http://localhost:8080 https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://csp.secureserver.net https://cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://assets.art-ratio.com; font-src 'self' https://fonts.gstatic.com data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'self' https://assets.art-ratio.com; worker-src 'self' blob:; upgrade-insecure-requests;">
-
-  <script src="/js/godaddy-monitor.js" defer></script>
-  <script src="/js/page-boot.js"></script>
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/src/styles/app.css">
-  <link rel="stylesheet" href="/dist/css/sidebar.css">
-
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
-  
+  <!-- @include "./_partials/manager-page-head.html" {"titleKey":"users.nav.brand","titleText":"🛡️ إدارة المستخدمين"} -->
 </head>
-<body class="page-shell theme-loading users-page" data-theme="light">
-  <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
-
-  <aside id="dashboard-sidebar" class="sidebar-shell sidebar-drawer" aria-label="التنقل الجانبي" data-i18n data-i18n-aria-label-key="dashboard.nav.sidebar">
-    <div class="flex items-center justify-between gap-3 border-b border-base-200/70 pb-4 sidebar-brand">
-      <div class="flex items-center gap-3">
-        <div class="sidebar-brand-logo">
-          <img src="https://assets.art-ratio.com/AR-Logo-v3.5-curved.png" alt="Art Ratio" class="sidebar-logo-img" loading="lazy" decoding="async">
-        </div>
-        <div class="text-start sidebar-brand-text">
-          <p class="text-xs text-base-content/60">Art Ratio</p>
-          <p class="text-lg font-semibold text-base-content" data-i18n data-i18n-key="dashboard.sidebar.title">مركز التحكم</p>
-        </div>
+<!-- @include "./_partials/compact-manager-shell.html" {"bodyClass":"users-page","activePage":"users","greetingLabelKey":"home.users.title","greetingLabelText":"إدارة المستخدمين","pageScript":"/src/scripts/users.js"} -->
+<template data-slot="greetingSummary">
+  <p class="text-sm text-base-content/60" data-i18n data-i18n-key="users.form.subtitle">يمكنك إضافة مستخدم جديد، تعديل بياناته، أو إعادة تعيين كلمة المرور.</p>
+  <p class="text-sm text-base-content/70" data-i18n data-i18n-key="users.table.subtitle">استعرض جميع المستخدمين، مع إمكانية التعديل أو حذف الحسابات، والاطلاع على السجلات.</p>
+</template>
+<template data-slot="greetingActions">
+  <a href="#user-form" class="btn btn-primary btn-sm" data-i18n data-i18n-key="users.form.actions.submit">💾 حفظ المستخدم</a>
+  <a href="#users-table" class="btn btn-outline btn-sm" data-i18n data-i18n-key="users.table.title">👥 قائمة المستخدمين</a>
+</template>
+<template data-slot="mainContent">
+  <section class="ui-card ui-card--content glass-card users-card space-y-6" id="users-hero">
+    <div class="flex flex-wrap items-start justify-between gap-4">
+      <div class="surface-heading-stack">
+        <h2 class="text-2xl font-bold text-base-content" data-i18n data-i18n-key="users.nav.brand">🛡️ إدارة المستخدمين</h2>
+        <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="users.form.subtitle">يمكنك إضافة مستخدم جديد، تعديل بياناته، أو إعادة تعيين كلمة المرور.</p>
       </div>
-      <button type="button" id="sidebar-close" class="btn btn-circle btn-ghost lg:hidden" aria-label="إغلاق القائمة" data-i18n data-i18n-aria-label-key="dashboard.nav.closeMenu">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-          <path d="M18 6l-12 12"></path>
-          <path d="M6 6l12 12"></path>
-        </svg>
-      </button>
-    </div>
-
-    <div class="sidebar-panel sidebar-panel--stats mt-6">
-      <h3 class="sidebar-heading" data-i18n data-i18n-key="dashboard.sidebar.tabsHeading">أقسام رئيسية</h3>
-      <div class="tab-buttons tab-buttons-vertical" role="tablist">
-        <a class="tab-button" href="home.html" data-close-sidebar data-i18n data-i18n-key="dashboard.quickLinks.home">
-          <span class="tab-button__content">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-              <path d="M5 12l-2 0"></path>
-              <path d="M5 12l2 0"></path>
-              <path d="M5 12v-7a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v7"></path>
-              <path d="M5 12l7 -7l7 7"></path>
-              <path d="M12 12v7"></path>
-            </svg>
-            <span data-i18n data-i18n-key="dashboard.quickLinks.home">الصفحة الرئيسية</span>
-          </span>
-        </a>
-        <a class="tab-button" href="dashboard.html" data-close-sidebar data-i18n data-i18n-key="dashboard.quickLinks.dashboard">
-          <span class="tab-button__content">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-              <path d="M3 3h18v18h-18z"></path>
-              <path d="M7 9h2v2h-2z"></path>
-              <path d="M7 13h2v2h-2z"></path>
-              <path d="M11 9h2v2h-2z"></path>
-              <path d="M11 13h2v2h-2z"></path>
-              <path d="M15 9h2v6h-2z"></path>
-            </svg>
-            <span data-i18n data-i18n-key="dashboard.quickLinks.dashboard">لوحة التحكم</span>
-          </span>
-        </a>
-        <a class="tab-button" href="projects.html" data-close-sidebar data-i18n data-i18n-key="home.projects.title">
-          <span class="tab-button__content">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-              <path d="M4 13h16v8H4z"></path>
-              <path d="M4 9h16v4H4z"></path>
-              <path d="M4 5h16v4H4z"></path>
-            </svg>
-            <span data-i18n data-i18n-key="home.projects.title">🏗️ إدارة المشاريع</span>
-          </span>
-        </a>
-        <a class="tab-button active" href="users.html" aria-current="page" data-close-sidebar data-i18n data-i18n-key="dashboard.quickLinks.users">
-          <span class="tab-button__content">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-              <path d="M8 7a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"></path>
-              <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
-            </svg>
-            <span data-i18n data-i18n-key="dashboard.quickLinks.users">إدارة المستخدمين</span>
-          </span>
-        </a>
+      <div class="flex flex-wrap items-center gap-3">
+        <span class="ui-badge ui-badge--outline badge badge-outline badge-error badge-lg" data-i18n data-i18n-key="users.form.adminOnly">متاح للمسؤولين فقط</span>
+        <button type="button" class="ui-button ui-button--outline btn btn-outline btn-sm" id="refresh-users-btn" data-i18n data-i18n-key="users.actions.refresh">🔄 تحديث القائمة</button>
       </div>
     </div>
+  </section>
 
-    <nav class="sidebar-menu mt-6 space-y-6" aria-label="روابط مساعدة" data-i18n data-i18n-aria-label-key="notifications.sidebar.helpLinksAria">
-      <div class="sidebar-panel space-y-3">
-        <p class="sidebar-heading" data-i18n data-i18n-key="users.table.title">👥 قائمة المستخدمين</p>
-        <p class="text-sm text-base-content/70" data-i18n data-i18n-key="users.table.subtitle">استعرض جميع المستخدمين، مع إمكانية التعديل أو حذف الحسابات، والاطلاع على السجلات.</p>
-        <a href="#user-form" class="btn btn-primary btn-sm" data-close-sidebar data-i18n data-i18n-key="users.form.title">➕ إضافة أو تعديل مستخدم</a>
-      </div>
-    </nav>
-  </aside>
+  <div class="alert alert-error" role="alert" id="users-error" hidden></div>
 
-  <div class="page-grid">
-    <header class="dashboard-header">
-      <div class="dashboard-header-nav">
-        <div class="dashboard-header-start">
-          <button type="button" id="sidebar-open" class="mobile-sidebar-toggle" aria-label="فتح القائمة" data-i18n data-i18n-aria-label-key="dashboard.nav.openMenu">
-            <span class="mobile-sidebar-toggle__icon" aria-hidden="true">
-              <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--top"></span>
-              <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--middle"></span>
-              <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--bottom"></span>
-            </span>
-          </button>
-          <a href="home.html" class="flex items-center gap-3 dashboard-hero-brand" data-close-sidebar>
-            <div class="dashboard-hero-logo flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary sm:h-12 sm:w-12">
-              <img src="https://assets.art-ratio.com/AR-Logo-v3.5-curved.png" alt="Art Ratio" class="dashboard-logo-img" loading="lazy" decoding="async">
-            </div>
-            <div class="dashboard-hero-brand-text">
-              <h1 class="dashboard-hero-title text-xl font-bold text-base-content" data-i18n data-i18n-key="dashboard.hero.title">Art Ratio</h1>
-            </div>
-          </a>
-        </div>
-        <div class="dashboard-header-center">
-          <section class="dashboard-greeting" data-dashboard-greeting data-state="closed">
-            <button type="button" class="dashboard-greeting-toggle" data-greeting-toggle aria-controls="dashboard-greeting-panel" aria-expanded="false">
-              <span class="dashboard-greeting-toggle-label" data-i18n data-i18n-key="users.nav.brand">🛡️ إدارة المستخدمين</span>
-              <svg xmlns="http://www.w3.org/2000/svg" class="dashboard-greeting-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                <path d="M6 9l6 6l6 -6"></path>
-              </svg>
-            </button>
-            <div class="glass-card dashboard-greeting-panel" id="dashboard-greeting-panel" data-greeting-panel hidden>
-              <div class="flex flex-col gap-6">
-                <div class="space-y-2 text-start">
-                  <p class="text-sm text-base-content/60" data-i18n data-i18n-key="users.form.subtitle">يمكنك إضافة مستخدم جديد، تعديل بياناته، أو إعادة تعيين كلمة المرور.</p>
-                  <p class="text-sm text-base-content/70" data-i18n data-i18n-key="users.table.subtitle">استعرض جميع المستخدمين، مع إمكانية التعديل أو حذف الحسابات، والاطلاع على السجلات.</p>
-                </div>
-                <div class="flex flex-wrap items-center gap-2">
-                  <a href="#user-form" class="btn btn-primary btn-sm" data-i18n data-i18n-key="users.form.actions.submit">💾 حفظ المستخدم</a>
-                  <a href="#users-table" class="btn btn-outline btn-sm" data-i18n data-i18n-key="users.table.title">👥 قائمة المستخدمين</a>
-                </div>
-              </div>
-            </div>
-          </section>
-        </div>
-        <div class="dashboard-header-end">
-          <button class="language-toggle-btn" id="language-toggle" data-label-ar="🇸🇦 العربية" data-label-en="🇬🇧 English" aria-pressed="false"></button>
-          <label class="theme-toggle-btn swap swap-rotate" data-theme-toggle role="button">
-            <input id="theme-toggle" type="checkbox" class="sr-only" aria-hidden="true">
-            <svg class="swap-off fill-current text-warning w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-              <path d="M12 4v-1"></path>
-              <path d="M12 21v-1"></path>
-              <path d="M4 12h-1"></path>
-              <path d="M21 12h-1"></path>
-              <path d="M5.6 5.6l-.7 -.7"></path>
-              <path d="M18.4 18.4l-.7 -.7"></path>
-              <path d="M5.6 18.4l-.7 .7"></path>
-              <path d="M18.4 5.6l-.7 .7"></path>
-              <path d="M16 12a4 4 0 1 0 -4 4"></path>
-            </svg>
-            <svg class="swap-on fill-current text-primary w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-              <path d="M12 3c.132 0 .263 0 .393 .007a7.5 7.5 0 0 0 7.098 12.675a9 9 0 1 1 -7.491 -12.682z"></path>
-            </svg>
-            <span class="sr-only" data-theme-label data-i18n data-i18n-key="theme.toggle.toDark">🌙 الوضع الليلي</span>
-          </label>
-          <button class="btn btn-error btn-sm rounded-full text-error-content" id="logout-btn" data-i18n data-i18n-key="actions.logout">🚪 تسجيل الخروج</button>
-        </div>
-      </div>
+  <section class="users-stats-grid" id="users-stats">
+    <article class="ui-card ui-card--content glass-card ui-stat-card users-stat-card">
+      <span class="ui-stat-card__label" data-i18n data-i18n-key="users.stats.total">إجمالي المستخدمين</span>
+      <strong class="ui-stat-card__value" id="users-stat-total">0</strong>
+    </article>
+    <article class="ui-card ui-card--content glass-card ui-stat-card users-stat-card">
+      <span class="ui-stat-card__label" data-i18n data-i18n-key="users.stats.admins">المسؤولون</span>
+      <strong class="ui-stat-card__value" id="users-stat-admins">0</strong>
+    </article>
+    <article class="ui-card ui-card--content glass-card ui-stat-card users-stat-card">
+      <span class="ui-stat-card__label" data-i18n data-i18n-key="users.stats.managers">المديرون</span>
+      <strong class="ui-stat-card__value" id="users-stat-managers">0</strong>
+    </article>
+    <article class="ui-card ui-card--content glass-card ui-stat-card users-stat-card">
+      <span class="ui-stat-card__label" data-i18n data-i18n-key="users.stats.technicians">الفنيون</span>
+      <strong class="ui-stat-card__value" id="users-stat-technicians">0</strong>
+    </article>
+  </section>
+
+  <section class="ui-card ui-card--content glass-card users-card space-y-6" id="user-form-section">
+    <header class="surface-heading-stack">
+      <h2 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="users.form.title">➕ إضافة أو تعديل مستخدم</h2>
+      <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="users.form.subtitle">يمكنك إضافة مستخدم جديد، تعديل بياناته، أو إعادة تعيين كلمة المرور.</p>
     </header>
-
-    <div class="flex flex-1 flex-col">
-      <main class="dashboard-main w-full">
-        <div class="dashboard-main-inner space-y-8">
-          <section class="glass-card users-card space-y-6" id="users-hero">
-            <div class="flex flex-wrap items-start justify-between gap-4">
-              <div class="surface-heading-stack">
-                <h2 class="text-2xl font-bold text-base-content" data-i18n data-i18n-key="users.nav.brand">🛡️ إدارة المستخدمين</h2>
-                <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="users.form.subtitle">يمكنك إضافة مستخدم جديد، تعديل بياناته، أو إعادة تعيين كلمة المرور.</p>
-              </div>
-              <div class="flex flex-wrap items-center gap-3">
-                <span class="badge badge-outline badge-error badge-lg" data-i18n data-i18n-key="users.form.adminOnly">متاح للمسؤولين فقط</span>
-                <button type="button" class="btn btn-outline btn-sm" id="refresh-users-btn" data-i18n data-i18n-key="users.actions.refresh">🔄 تحديث القائمة</button>
-              </div>
-            </div>
-          </section>
-
-          <div class="alert alert-error d-none" role="alert" id="users-error"></div>
-
-          <section class="glass-card users-card space-y-6" id="user-form-section">
-            <header class="surface-heading-stack">
-              <h2 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="users.form.title">➕ إضافة أو تعديل مستخدم</h2>
-              <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="users.form.subtitle">يمكنك إضافة مستخدم جديد، تعديل بياناته، أو إعادة تعيين كلمة المرور.</p>
-            </header>
-            <form id="user-form" class="space-y-6" autocomplete="off">
-              <input type="hidden" id="user-id">
-              <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                <div class="flex flex-col gap-2">
-                  <label for="user-username" class="font-medium text-base-content" data-i18n data-i18n-key="users.form.fields.username">👤 اسم المستخدم</label>
-                  <input type="text" class="input input-bordered w-full" id="user-username" required maxlength="100" data-i18n data-i18n-placeholder-key="users.form.placeholders.username" placeholder="admin" autocomplete="off">
-                </div>
-                <div class="flex flex-col gap-2">
-                  <label for="user-password" class="font-medium text-base-content" data-i18n data-i18n-key="users.form.fields.password">🔑 كلمة المرور</label>
-                  <input type="password" class="input input-bordered w-full" id="user-password" minlength="8" maxlength="255" data-i18n data-i18n-placeholder-key="users.form.placeholders.password" placeholder="********" autocomplete="new-password">
-                  <p class="text-sm text-base-content/60" data-i18n data-i18n-key="users.form.help.password">متطلبات كلمة المرور: 8 أحرف على الأقل.</p>
-                </div>
-                <div class="flex flex-col gap-2">
-                  <label for="user-role" class="font-medium text-base-content" data-i18n data-i18n-key="users.form.fields.role">🎯 الصلاحية</label>
-                  <select class="select select-bordered w-full" id="user-role" required>
-                    <option value="" data-i18n data-i18n-key="users.form.selectRole">اختر الصلاحية</option>
-                    <option value="admin" data-i18n data-i18n-key="users.roles.admin">مسؤول</option>
-                    <option value="manager" data-i18n data-i18n-key="users.roles.manager">مدير</option>
-                    <option value="technician" data-i18n data-i18n-key="users.roles.technician">فني</option>
-                  </select>
-                </div>
-              </div>
-              <div class="flex flex-wrap justify-end gap-2">
-                <button type="button" class="btn btn-outline btn-sm d-none" id="user-cancel-btn" data-i18n data-i18n-key="users.form.actions.cancel">إلغاء</button>
-                <button type="submit" class="btn btn-primary" data-i18n data-i18n-key="users.form.actions.submit">💾 حفظ المستخدم</button>
-              </div>
-            </form>
-          </section>
-
-          <section class="glass-card users-card space-y-6" id="users-table-section">
-            <header class="flex flex-wrap items-center justify-between gap-3">
-              <div class="surface-heading-stack">
-                <h2 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="users.table.title">👥 قائمة المستخدمين</h2>
-                <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="users.table.subtitle">استعرض جميع المستخدمين، مع إمكانية التعديل أو حذف الحسابات، والاطلاع على السجلات.</p>
-              </div>
-              <label class="input input-bordered flex items-center gap-2 w-full max-w-xs" for="users-search">
-                <span aria-hidden="true">🔍</span>
-                <input type="search" class="grow bg-transparent outline-hidden" id="users-search" data-i18n data-i18n-placeholder-key="users.table.search" placeholder="ابحث بالاسم أو الصلاحية">
-              </label>
-            </header>
-            <div class="users-table-wrapper overflow-x-auto">
-              <table class="table table-hover align-middle text-nowrap users-table" id="users-table">
-                <thead class="table-light users-table-head">
-                  <tr>
-                    <th data-i18n data-i18n-key="users.table.headers.username">👤 اسم المستخدم</th>
-                    <th data-i18n data-i18n-key="users.table.headers.role">🎯 الصلاحية</th>
-                    <th data-i18n data-i18n-key="users.table.headers.lastLogin">آخر تسجيل دخول</th>
-                    <th data-i18n data-i18n-key="users.table.headers.createdAt">تاريخ الإنشاء</th>
-                    <th data-i18n data-i18n-key="users.table.headers.sessions">سجلات الجلسات</th>
-                    <th data-i18n data-i18n-key="users.table.headers.activity">سجلات النشاط</th>
-                    <th data-i18n data-i18n-key="users.table.headers.actions">⚙️ الإجراءات</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td colspan="7" class="text-center text-muted" data-i18n data-i18n-key="users.table.loading">⏳ جارٍ تحميل المستخدمين...</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
+    <form id="user-form" class="space-y-6" autocomplete="off">
+      <input type="hidden" id="user-id">
+      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div class="flex flex-col gap-2">
+          <label for="user-username" class="font-medium text-base-content" data-i18n data-i18n-key="users.form.fields.username">👤 اسم المستخدم</label>
+          <input type="text" class="ui-input input input-bordered w-full" id="user-username" required maxlength="100" data-i18n data-i18n-placeholder-key="users.form.placeholders.username" placeholder="admin" autocomplete="off">
         </div>
-      </main>
-    </div>
-  </div>
+        <div class="flex flex-col gap-2">
+          <label for="user-password" class="font-medium text-base-content" data-i18n data-i18n-key="users.form.fields.password">🔑 كلمة المرور</label>
+          <input type="password" class="ui-input input input-bordered w-full" id="user-password" minlength="8" maxlength="255" data-i18n data-i18n-placeholder-key="users.form.placeholders.password" placeholder="********" autocomplete="new-password">
+          <p class="text-sm text-base-content/60" data-i18n data-i18n-key="users.form.help.password">متطلبات كلمة المرور: 8 أحرف على الأقل.</p>
+        </div>
+        <div class="flex flex-col gap-2">
+          <label for="user-role" class="font-medium text-base-content" data-i18n data-i18n-key="users.form.fields.role">🎯 الصلاحية</label>
+          <select class="ui-select select select-bordered w-full" id="user-role" required>
+            <option value="" data-i18n data-i18n-key="users.form.selectRole">اختر الصلاحية</option>
+            <option value="admin" data-i18n data-i18n-key="users.roles.admin">مسؤول</option>
+            <option value="manager" data-i18n data-i18n-key="users.roles.manager">مدير</option>
+            <option value="technician" data-i18n data-i18n-key="users.roles.technician">فني</option>
+          </select>
+        </div>
+      </div>
+      <div class="flex flex-wrap justify-end gap-2">
+        <button type="button" class="ui-button ui-button--outline btn btn-outline btn-sm d-none" id="user-cancel-btn" data-i18n data-i18n-key="users.form.actions.cancel">إلغاء</button>
+        <button type="submit" class="ui-button ui-button--primary btn btn-primary" data-i18n data-i18n-key="users.form.actions.submit">💾 حفظ المستخدم</button>
+      </div>
+    </form>
+  </section>
 
+  <section class="ui-card ui-card--content glass-card users-card space-y-6" id="users-table-section">
+    <header class="surface-heading-stack">
+      <h2 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="users.table.title">👥 قائمة المستخدمين</h2>
+      <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="users.table.subtitle">استعرض جميع المستخدمين، مع إمكانية التعديل أو حذف الحسابات، والاطلاع على السجلات.</p>
+    </header>
+    <div class="grid gap-4 md:grid-cols-2">
+      <div class="flex flex-col gap-2">
+        <label for="users-search" class="font-medium text-base-content" data-i18n data-i18n-key="users.table.searchLabel">بحث</label>
+        <input type="search" class="ui-input input input-bordered w-full" id="users-search" data-i18n data-i18n-placeholder-key="users.table.search" placeholder="ابحث بالاسم أو الصلاحية">
+      </div>
+    </div>
+    <div class="users-table-wrapper overflow-x-auto">
+      <table class="ui-table table table-hover align-middle users-table surface-table" id="users-table">
+        <thead class="table-light users-table-head">
+          <tr>
+            <th data-i18n data-i18n-key="users.table.headers.username">👤 اسم المستخدم</th>
+            <th data-i18n data-i18n-key="users.table.headers.role">🎯 الصلاحية</th>
+            <th data-i18n data-i18n-key="users.table.headers.lastLogin">آخر تسجيل دخول</th>
+            <th data-i18n data-i18n-key="users.table.headers.createdAt">تاريخ الإنشاء</th>
+            <th data-i18n data-i18n-key="users.table.headers.sessions">سجلات الجلسات</th>
+            <th data-i18n data-i18n-key="users.table.headers.activity">سجلات النشاط</th>
+            <th data-i18n data-i18n-key="users.table.headers.actions">⚙️ الإجراءات</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="7" class="text-center text-muted" data-i18n data-i18n-key="users.table.loading">⏳ جارٍ تحميل المستخدمين...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="list-pagination" id="users-pagination" hidden></div>
+  </section>
+</template>
+<template data-slot="afterShell">
   <div class="modal fade users-modal" id="userLogsModal" tabindex="-1" aria-labelledby="userLogsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
-      <div class="modal-content users-modal-content">
-        <div class="modal-header users-modal-header">
+      <div class="ui-modal__content modal-content users-modal-content">
+        <div class="ui-modal__header modal-header users-modal-header">
           <h5 class="modal-title" id="userLogsModalLabel" data-i18n data-i18n-key="users.logs.title">📜 سجلات المستخدم</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <button type="button" class="btn-close" data-modal-close aria-label="Close"></button>
         </div>
-        <div class="modal-body users-modal-body">
+        <div class="ui-modal__body modal-body users-modal-body">
           <div class="row g-4">
             <div class="col-lg-6">
               <h6 class="users-logs-heading" data-i18n data-i18n-key="users.logs.sessionsTitle">🕒 سجلات الجلسات</h6>
-              <div class="table-responsive border rounded p-2 users-logs-table-wrapper" id="user-sessions-container">
-                <table class="table table-sm mb-0 users-logs-table">
+              <div class="ui-table-shell table-responsive border rounded p-2 users-logs-table-wrapper" id="user-sessions-container">
+                <table class="ui-table table table-sm mb-0 users-logs-table">
                   <thead class="users-logs-table-head">
                     <tr>
                       <th data-i18n data-i18n-key="users.logs.headers.login">تسجيل الدخول</th>
@@ -299,8 +146,8 @@
             </div>
             <div class="col-lg-6">
               <h6 class="users-logs-heading" data-i18n data-i18n-key="users.logs.activityTitle">📘 سجلات النشاط</h6>
-              <div class="table-responsive border rounded p-2 users-logs-table-wrapper" id="user-activity-container">
-                <table class="table table-sm mb-0 users-logs-table">
+              <div class="ui-table-shell table-responsive border rounded p-2 users-logs-table-wrapper" id="user-activity-container">
+                <table class="ui-table table table-sm mb-0 users-logs-table">
                   <thead class="users-logs-table-head">
                     <tr>
                       <th data-i18n data-i18n-key="users.logs.headers.timestamp">التاريخ</th>
@@ -318,17 +165,14 @@
             </div>
           </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n data-i18n-key="users.logs.actions.close">إغلاق</button>
+        <div class="ui-modal__footer modal-footer">
+          <button type="button" class="ui-button ui-button--secondary btn btn-secondary" data-modal-close data-i18n data-i18n-key="users.logs.actions.close">إغلاق</button>
         </div>
       </div>
     </div>
   </div>
-
-  <script type="module" src="/src/scripts/language.js"></script>
-  <script type="module" src="/src/scripts/translations/common.js"></script>
-  <script type="module" src="/src/scripts/translations/dashboard.js"></script>
+</template>
+<template data-slot="pageScripts">
   <script type="module" src="/src/scripts/translations/users.js"></script>
-  <script type="module" src="/src/scripts/users.js"></script>
-</body>
+</template>
 </html>

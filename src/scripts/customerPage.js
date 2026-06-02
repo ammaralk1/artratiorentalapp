@@ -6,8 +6,8 @@ import { renderCustomerReservations, renderCustomerProjects } from './customerDe
 import { showToast, normalizeNumbers } from './utils.js';
 import { t } from './language.js';
 import { apiRequest, ApiError } from './apiClient.js';
-import { mapReservationFromApi, refreshReservationsFromApi, getReservationsState } from './reservationsService.js';
-import { mapProjectFromApi, refreshProjectsFromApi, getProjectsState } from './projectsService.js';
+import { mapReservationFromApi, refreshReservationsFromApi, getReservationsState, setReservationsState } from './reservationsService.js';
+import { mapProjectFromApi, refreshProjectsFromApi, getProjectsState, setProjectsState } from './projectsService.js';
 import { mapTechnicianFromApi, refreshTechniciansFromApi } from './techniciansService.js';
 import { initDashboardShell } from './dashboardShell.js';
 import { formatCurrencyLocalized } from './projectsCommon.js';
@@ -17,12 +17,32 @@ import { refreshEquipmentFromApi } from './equipment.js';
 import { initDashboardMetrics } from './dashboardMetrics.js';
 import { registerReservationGlobals, getReservationsEditContext, setupEditReservationModalEvents } from './reservations/controller.js';
 import mountReservationModalsIfNeeded from './reservations/modals.js';
+import { applyLocalDetailsFixture, isLocalDetailsFixtureEnabled } from './devFixtures.js';
+import { initDetailResponsiveLayout } from './detailResponsiveLayout.js';
 
 applyStoredTheme();
-checkAuth();
 initThemeToggle();
 initDashboardShell();
+initDetailResponsiveLayout();
 migrateOldData();
+const detailsFixtureActive = applyLocalDetailsFixture();
+
+function revealPage() {
+  document.body.classList.remove('auth-pending');
+}
+
+Promise.resolve(checkAuth({ redirect: false, retries: 1, retryDelay: 250 }))
+  .then((user) => {
+    if (!user) {
+      window.location.href = 'login.html';
+      return;
+    }
+
+    revealPage();
+  })
+  .catch(() => {
+    revealPage();
+  });
 
 mountReservationModalsIfNeeded();
 const logoutBtn = document.getElementById('logout-btn');
@@ -53,7 +73,6 @@ const heroPhoneEl = document.getElementById('customer-hero-phone');
 const heroCompanyEl = document.getElementById('customer-hero-company');
 const heroEmailEl = document.getElementById('customer-hero-email');
 const heroTaxEl = document.getElementById('customer-hero-tax');
-const heroSummaryEl = document.getElementById('customer-hero-summary');
 const heroPanelNameEl = document.getElementById('dashboard-greeting-customer-name');
 const heroPanelCompanyEl = document.getElementById('dashboard-greeting-customer-company');
 const heroStatProjectsEl = document.getElementById('customer-stat-projects');
@@ -71,7 +90,6 @@ const sidebarReservationsEl = document.getElementById('sidebar-stat-reservations
 const sidebarEquipmentEl = document.getElementById('sidebar-stat-equipment');
 const sidebarTechniciansEl = document.getElementById('sidebar-stat-technicians');
 const editButtons = [
-  document.getElementById('customer-edit-btn'),
   document.getElementById('customer-edit-btn-secondary')
 ].filter(Boolean);
 const customerTabButtons = Array.from(document.querySelectorAll('[data-customer-tab]'));
@@ -111,6 +129,92 @@ let customerLoadError = '';
 let activeCustomerTab = 'reservations';
 let customerReservationsCache = null;
 let customerProjectsCache = null;
+
+function resolveReservationCustomerId(reservation) {
+  return reservation?.customerId
+    ?? reservation?.customer_id
+    ?? reservation?.customer?.id
+    ?? null;
+}
+
+function resolveProjectCustomerId(project) {
+  return project?.clientId
+    ?? project?.client_id
+    ?? project?.customerId
+    ?? project?.customer_id
+    ?? project?.customer?.id
+    ?? null;
+}
+
+function resolveReservationRecordKey(reservation, fallbackIndex = 0) {
+  const candidates = [
+    reservation?.id,
+    reservation?.reservationId,
+    reservation?.reservation_id,
+    reservation?.reservationCode,
+    reservation?.reservation_code
+  ];
+  for (const candidate of candidates) {
+    if (candidate == null || candidate === '') continue;
+    return `reservation:${String(candidate)}`;
+  }
+  return `reservation:fallback:${fallbackIndex}`;
+}
+
+function resolveProjectRecordKey(project, fallbackIndex = 0) {
+  const candidates = [
+    project?.id,
+    project?.projectId,
+    project?.project_id,
+    project?.projectCode,
+    project?.project_code
+  ];
+  for (const candidate of candidates) {
+    if (candidate == null || candidate === '') continue;
+    return `project:${String(candidate)}`;
+  }
+  return `project:fallback:${fallbackIndex}`;
+}
+
+function mergeCustomerScopedRecords(existingRecords, fetchedRecords, customerId, {
+  resolveCustomerId,
+  resolveRecordKey
+}) {
+  const scopedCustomerId = customerId == null ? '' : String(customerId);
+  const preserved = Array.isArray(existingRecords)
+    ? existingRecords.filter((record) => {
+        const recordCustomerId = resolveCustomerId(record);
+        return recordCustomerId == null || String(recordCustomerId) !== scopedCustomerId;
+      })
+    : [];
+
+  const uniqueFetched = [];
+  const seen = new Set();
+  (Array.isArray(fetchedRecords) ? fetchedRecords : []).forEach((record, index) => {
+    const key = resolveRecordKey(record, index);
+    if (seen.has(key)) return;
+    seen.add(key);
+    uniqueFetched.push(record);
+  });
+
+  return [...preserved, ...uniqueFetched];
+}
+
+function syncCustomerReservationsState(customerId, records) {
+  const merged = mergeCustomerScopedRecords(getReservationsState(), records, customerId, {
+    resolveCustomerId: resolveReservationCustomerId,
+    resolveRecordKey: resolveReservationRecordKey
+  });
+  return setReservationsState(merged);
+}
+
+function syncCustomerProjectsState(customerId, records) {
+  const merged = mergeCustomerScopedRecords(getProjectsState(), records, customerId, {
+    resolveCustomerId: resolveProjectCustomerId,
+    resolveRecordKey: resolveProjectRecordKey
+  });
+  return setProjectsState(merged);
+}
 
 function escapeHtml(value = '') {
   const div = document.createElement('div');
@@ -232,15 +336,15 @@ function updateHeroBadge(element, icon, value, { hideWhenEmpty = false } = {}) {
   const hasValue = stringValue.length > 0;
   const displayValue = hasValue ? stringValue : t('common.placeholder.empty', '—');
   element.textContent = `${icon} ${displayValue}`;
+  element.title = hasValue ? stringValue : '';
   if (hideWhenEmpty) {
-    element.classList.toggle('hidden', !hasValue);
+    element.hidden = !hasValue;
   } else {
-    element.classList.remove('hidden');
+    element.hidden = false;
   }
 }
 
 function setHeroData(customer) {
-  const fallbackSummary = t('customerDetails.pageTitle', 'معلومات العميل');
   const emptyDash = t('common.placeholder.empty', '—');
   const displayName = customer?.customerName || emptyDash;
   const phoneValue = customer?.phone ? normalizeNumbers(customer.phone) : '';
@@ -250,9 +354,6 @@ function setHeroData(customer) {
 
   if (heroNameEl) {
     heroNameEl.textContent = displayName;
-  }
-  if (heroSummaryEl) {
-    heroSummaryEl.textContent = displayName !== emptyDash ? displayName : fallbackSummary;
   }
 
   updateHeroBadge(heroPhoneEl, '📞', phoneValue, { hideWhenEmpty: false });
@@ -317,7 +418,7 @@ function setActiveCustomerTab(tab) {
   });
   customerTabPanels.forEach((panel, key) => {
     if (!panel) return;
-    panel.classList.toggle('hidden', key !== tab);
+    panel.hidden = key !== tab;
   });
 
   if (tab === 'projects' && customerId && currentCustomer) {
@@ -522,12 +623,12 @@ function renderPaymentBreakdownHtml(paidDisplay, outstandingDisplay) {
   const paidLabel = t('customerDetails.stats.paymentPaid', 'المدفوع');
   const outstandingLabel = t('customerDetails.stats.paymentOutstandingLabel', 'المستحق');
   return `
-    <div class="payment-line payment-line--paid">
-      <span class="payment-line-label">${paidLabel}</span>
+    <div class="detail-payment-line payment-line payment-line--paid">
+      <span class="detail-payment-line-label payment-line-label">${paidLabel}</span>
       ${renderCurrencyCompact(paidDisplay)}
     </div>
-    <div class="payment-line payment-line--outstanding">
-      <span class="payment-line-label">${outstandingLabel}</span>
+    <div class="detail-payment-line payment-line payment-line--outstanding">
+      <span class="detail-payment-line-label payment-line-label">${outstandingLabel}</span>
       ${renderCurrencyCompact(outstandingDisplay)}
     </div>
   `;
@@ -1064,6 +1165,10 @@ function upsertCustomerInStore(customer) {
 }
 
 async function ensureTechniciansLoaded() {
+  if (detailsFixtureActive) {
+    return;
+  }
+
   const { technicians } = loadData();
   if (Array.isArray(technicians) && technicians.length > 0) {
     return;
@@ -1088,6 +1193,15 @@ async function fetchCustomerReservationsData(id) {
     return [];
   }
 
+  if (detailsFixtureActive) {
+    const reservations = getReservationsState().filter((reservation) => {
+      const value = resolveReservationCustomerId(reservation);
+      return value != null && String(value) === String(id);
+    });
+    customerReservationsCache = reservations;
+    return reservations;
+  }
+
   try {
     const query = new URLSearchParams({ customer_id: String(id), limit: '200' });
     const response = await apiRequest(`/reservations/?${query.toString()}`);
@@ -1096,6 +1210,7 @@ async function fetchCustomerReservationsData(id) {
       : [];
 
     customerReservationsCache = records;
+    syncCustomerReservationsState(id, records);
     return records;
   } catch (error) {
     console.warn('⚠️ Failed to load customer reservations', error);
@@ -1108,6 +1223,15 @@ async function fetchCustomerProjectsData(id) {
     return [];
   }
 
+  if (detailsFixtureActive) {
+    const projects = getProjectsState().filter((project) => {
+      const value = resolveProjectCustomerId(project);
+      return value != null && String(value) === String(id);
+    });
+    customerProjectsCache = projects;
+    return projects;
+  }
+
   try {
     const query = new URLSearchParams({ client_id: String(id), limit: '200' });
     const response = await apiRequest(`/projects/?${query.toString()}`);
@@ -1116,6 +1240,7 @@ async function fetchCustomerProjectsData(id) {
       : [];
 
     customerProjectsCache = records;
+    syncCustomerProjectsState(id, records);
     return records;
   } catch (error) {
     console.warn('⚠️ Failed to load customer projects', error);
@@ -1204,6 +1329,12 @@ async function loadCustomerFromApi(id, { showSpinner = false } = {}) {
 }
 
 async function hydrateSidebarSummary() {
+  if (detailsFixtureActive) {
+    updateSidebarStats();
+    try { window.__CUSTOMER_STATS__ = { ...getGlobalSidebarStats() }; } catch (_) {}
+    return;
+  }
+
   // Try fast summary endpoint first; fallback to fetching individual datasets.
   try {
     const response = await apiRequest('/summary/');
@@ -1301,7 +1432,7 @@ function renderDetails() {
         }
       }
       return `
-        <article class="rounded-2xl border border-base-200 bg-base-100/90 p-4 shadow-xs">
+        <article class="detail-record-card rounded-2xl border border-base-200 bg-base-100/90 p-4 shadow-xs">
           <span class="text-sm font-medium text-base-content/70" data-i18n data-i18n-key="${field.key}">${escapeHtml(label)}</span>
           <div class="mt-2">${docContent}</div>
         </article>
@@ -1313,7 +1444,7 @@ function renderDetails() {
     const displayValue = trimmedValue.length > 0 ? trimmedValue : '—';
     const valueHtml = field.multiline ? escapeMultiline(displayValue) : escapeHtml(displayValue);
     return `
-      <article class="rounded-2xl border border-base-200 bg-base-100/90 p-4 shadow-xs">
+      <article class="detail-record-card rounded-2xl border border-base-200 bg-base-100/90 p-4 shadow-xs">
         <span class="text-sm font-medium text-base-content/70" data-i18n data-i18n-key="${field.key}">${escapeHtml(label)}</span>
         <p class="mt-2 text-lg font-semibold text-base-content">${valueHtml}</p>
       </article>
@@ -1450,6 +1581,13 @@ async function initializeCustomerPage() {
     renderCustomerProjects(customerId);
     updateHeroStats();
     applyCustomerSidebarStats();
+  }
+
+  if (detailsFixtureActive && isLocalDetailsFixtureEnabled()) {
+    if (!currentCustomer) {
+      renderDetails();
+    }
+    return;
   }
 
   await loadCustomerFromApi(customerId, { showSpinner: !currentCustomer });

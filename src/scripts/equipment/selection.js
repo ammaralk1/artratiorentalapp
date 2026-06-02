@@ -132,7 +132,7 @@ export function navigateBackToReservationForm() {
     reservationsTabButton.click();
     window.requestAnimationFrame(() => {
       setTimeout(() => {
-        document.querySelector('#sub-tab-trigger-create-tab')?.click();
+        document.querySelector('[data-sub-tab="my-reservations-tab"]')?.click();
         const barcodeInput = document.getElementById('equipment-barcode');
         if (barcodeInput) {
           try {

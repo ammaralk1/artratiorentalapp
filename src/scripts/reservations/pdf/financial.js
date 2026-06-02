@@ -8,8 +8,11 @@ import {
   calculatePaymentProgress,
   determinePaymentStatus,
   calculateDraftFinancialBreakdown,
+  calculateOverheadInclusiveAmounts,
 } from '../../reservationsSummary.js';
 import { PROJECT_TAX_RATE } from '../../projects/constants.js';
+import { resolveProjectOverheadSettings } from '../../projects/helpers.js';
+import { calculateProjectLineFinancials } from '../../projects/financials.js';
 import { parsePriceValue } from '../../reservationsShared.js';
 
 // Format numbers with thousands separators and 2 decimals, localized to our digits via normalizeNumbers
@@ -302,7 +305,12 @@ export function getProjectExpensesTotal(project) {
   if (Array.isArray(project?.expenses)) {
     const hasAnySale = project.expenses.some((exp) => Number.isFinite(Number(exp?.salePrice ?? exp?.sale_price)));
     if (hasAnySale) {
-      return project.expenses.reduce((sum, exp) => sum + (Number(exp?.salePrice ?? exp?.sale_price) || 0), 0);
+      return project.expenses.reduce((sum, exp) => {
+        const unitPrice = Number(exp?.salePrice ?? exp?.sale_price) || 0;
+        const rawDays = Number(exp?.days ?? exp?.service_days ?? exp?.serviceDays ?? 1);
+        const days = Number.isFinite(rawDays) && rawDays > 0 ? rawDays : 1;
+        return sum + (unitPrice * days);
+      }, 0);
     }
   }
 
@@ -325,67 +333,40 @@ export function getProjectExpensesTotal(project) {
 export function resolveProjectTotalsForPdf(project) {
   const equipmentEstimate = Number(project?.equipmentEstimate) || 0;
   const expensesTotal = getProjectExpensesTotal(project);
-  const baseSubtotal = equipmentEstimate + expensesTotal;
-  const applyTax = project?.applyTax === true || project?.applyTax === 'true';
-
+  const servicesClientPrice = Number(project?.servicesClientPrice ?? project?.services_client_price ?? expensesTotal) || 0;
+  const { applyTax, sharePercent } = resolveProjectOverheadSettings(project, {
+    applyTaxRaw: project?.applyTax === true || project?.applyTax === 'true',
+  });
   const discountValue = Number.parseFloat(project?.discount ?? project?.discountValue ?? 0) || 0;
   const discountType = project?.discountType === 'amount' ? 'amount' : 'percent';
-  let discountAmount = discountType === 'amount'
-    ? discountValue
-    : baseSubtotal * (discountValue / 100);
-  if (!Number.isFinite(discountAmount) || discountAmount < 0) {
-    discountAmount = 0;
-  }
-  if (discountAmount > baseSubtotal) {
-    discountAmount = baseSubtotal;
-  }
+  const clientAmounts = calculateProjectLineFinancials({
+    equipmentRevenue: equipmentEstimate,
+    servicesRevenue: servicesClientPrice,
+    servicesCost: expensesTotal,
+    discountValue,
+    discountType,
+    applyTax,
+    companyShareEnabled: sharePercent > 0,
+    companySharePercent: sharePercent,
+  });
 
-  const subtotalAfterDiscount = Math.max(0, baseSubtotal - discountAmount);
-
-  const companyShareEnabled = project?.companyShareEnabled === true
-    || project?.companyShareEnabled === 'true'
-    || project?.company_share_enabled === true
-    || project?.company_share_enabled === 'true';
-  const rawSharePercent = Number.parseFloat(
-    project?.companySharePercent
-      ?? project?.company_share_percent
-      ?? project?.companyShare
-      ?? project?.company_share
-      ?? 0
-  ) || 0;
-  const sharePercent = companyShareEnabled && applyTax && rawSharePercent > 0 ? rawSharePercent : 0;
-  const companyShareAmount = sharePercent > 0
-    ? Number((subtotalAfterDiscount * (sharePercent / 100)).toFixed(2))
-    : 0;
-
-  const subtotal = subtotalAfterDiscount + companyShareAmount;
-
-  let taxAmount = applyTax ? subtotal * PROJECT_TAX_RATE : 0;
-  if (!Number.isFinite(taxAmount) || taxAmount < 0) {
-    taxAmount = 0;
-  }
-  taxAmount = Number(taxAmount.toFixed(2));
-
-  let totalWithTax = applyTax ? Number(project?.totalWithTax) : subtotal;
-  if (applyTax) {
-    if (!Number.isFinite(totalWithTax) || totalWithTax <= 0) {
-      totalWithTax = Number((subtotal + taxAmount).toFixed(2));
-    }
-  } else {
-    totalWithTax = subtotal;
-  }
+  const discountAmount = clientAmounts.discountAmount;
+  const subtotalAfterDiscount = clientAmounts.subtotalAfterDiscount;
+  const companyShareAmount = clientAmounts.companyShareAmount;
+  const subtotal = clientAmounts.taxableAmount;
 
   return {
     equipmentEstimate,
     expensesTotal,
-    baseSubtotal,
+    baseSubtotal: clientAmounts.baseSubtotal,
+    clientSubtotalBeforeDiscount: clientAmounts.clientSubtotalBeforeDiscount,
     discountAmount,
     subtotalAfterDiscount,
     companyShareAmount,
     subtotal,
     applyTax,
-    taxAmount,
-    totalWithTax
+    taxAmount: clientAmounts.taxAmount,
+    totalWithTax: clientAmounts.totalWithTax
   };
 }
 

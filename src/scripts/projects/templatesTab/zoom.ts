@@ -26,8 +26,24 @@ function getTemplatesTypeValue(): string {
   return typeSelect instanceof HTMLSelectElement ? (typeSelect.value || 'expenses') : 'expenses';
 }
 
+function isDesktopViewport(): boolean {
+  try {
+    return typeof window !== 'undefined' && window.innerWidth >= 1024;
+  } catch {
+    return false;
+  }
+}
+
 export function clampTemplatesZoom(value: number): number {
   return Math.min(Math.max(value, 0.25), 2.5);
+}
+
+export function resolveTemplatesPreviewRenderZoom(value: number, type: string = getTemplatesTypeValue()): number {
+  const logicalZoom = clampTemplatesZoom(value);
+  if (type === 'callsheet' && isDesktopViewport()) {
+    return clampTemplatesZoom(logicalZoom * 0.9);
+  }
+  return logicalZoom;
 }
 
 export function normalizeTemplatesZoomMode(value: string | null | undefined): TemplatesZoomMode {
@@ -69,6 +85,10 @@ export function writeTplZoomModePref(mode: TemplatesZoomMode, storage: StorageLi
 
 export function applyTemplatesPreviewZoom(value: number, root: HTMLElement | null = getPreviewRoot()): void {
   if (!root) return;
+  const renderZoom =
+    templatesTabState.zoomMode === 'fit'
+      ? clampTemplatesZoom(value)
+      : resolveTemplatesPreviewRenderZoom(value);
 
   try {
     root.style.transformOrigin = 'top center';
@@ -77,7 +97,7 @@ export function applyTemplatesPreviewZoom(value: number, root: HTMLElement | nul
   }
 
   try {
-    root.style.transform = `scale(${value})`;
+    root.style.transform = `scale(${renderZoom})`;
   } catch {
     // ignore style failures
   }
@@ -174,20 +194,26 @@ export function ensureResizeObserver(): void {
 }
 
 export function ensureTemplatesZoomUI(): void {
-  const actionsRow = document.getElementById('templates-actions');
-  if (!(actionsRow instanceof HTMLElement) || document.getElementById('tpl-zoom-controls')) return;
+  const utilities = document.getElementById('templates-toolbar-utilities');
+  if (!(utilities instanceof HTMLElement) || document.getElementById('tpl-zoom-controls')) return;
+  const utilitiesShell = document.getElementById('templates-preview-utilities-shell');
 
   const wrap = document.createElement('div');
   wrap.id = 'tpl-zoom-controls';
   wrap.className = 'tpl-zoom-controls';
+  wrap.setAttribute('role', 'group');
+  wrap.setAttribute('aria-label', 'Template zoom controls');
   wrap.innerHTML = `
-    <button type="button" class="tpl-zoom-btn" data-tpl-zoom-out title="تصغير">−</button>
-    <span class="tpl-zoom-value" data-tpl-zoom-value>100%</span>
-    <button type="button" class="tpl-zoom-btn" data-tpl-zoom-in title="تكبير">+</button>
-    <button type="button" class="tpl-zoom-btn" data-tpl-zoom-fit title="ملء العرض">↔︎</button>
     <button type="button" class="tpl-zoom-btn" data-tpl-zoom-reset title="1:1">1:1</button>
+    <button type="button" class="tpl-zoom-btn" data-tpl-zoom-fit title="ملء العرض">↔︎</button>
+    <button type="button" class="tpl-zoom-btn" data-tpl-zoom-in title="تكبير">+</button>
+    <span class="tpl-zoom-value" data-tpl-zoom-value>100%</span>
+    <button type="button" class="tpl-zoom-btn" data-tpl-zoom-out title="تصغير">−</button>
   `;
-  actionsRow.appendChild(wrap);
+  utilities.appendChild(wrap);
+  if (utilitiesShell instanceof HTMLElement) {
+    utilitiesShell.hidden = false;
+  }
 
   const outBtn = wrap.querySelector('[data-tpl-zoom-out]');
   const inBtn = wrap.querySelector('[data-tpl-zoom-in]');

@@ -53,6 +53,9 @@ vi.mock('../../src/scripts/reservations/editForm.js', () => ({
   removeEditReservationItem: removeEditReservationItemMock,
   updateEditReservationSummary: updateEditReservationSummaryMock
 }));
+vi.mock('../../src/scripts/reservations/modals.js', () => ({
+  default: vi.fn()
+}));
 vi.mock('../../src/scripts/auth.js', () => ({
   userCanManageDestructiveActions: vi.fn(() => true),
   notifyPermissionDenied: vi.fn(),
@@ -242,7 +245,7 @@ describe('reservations/controller module', () => {
     const restoreLocation = setMockLocation();
     config.onEdit(9, { reservation: { reservationId: 'EDIT-42' } });
     expect(localStorage.getItem('pendingReservationEditId')).toBe('EDIT-42');
-    expect(window.location.href).toBe('dashboard.html?reservationEditId=EDIT-42#reservations');
+    expect(window.location.href).toBe('operations.html?reservationEditId=EDIT-42#reservations');
     restoreLocation();
   });
 
@@ -306,7 +309,7 @@ describe('reservations/controller module', () => {
     module.openReservationEditor(8, { reservationId: 'RSV-9999' });
 
     expect(localStorage.getItem('pendingReservationEditId')).toBe('RSV-9999');
-    expect(window.location.href).toBe('dashboard.html?reservationEditId=RSV-9999#reservations');
+    expect(window.location.href).toBe('operations.html?reservationEditId=RSV-9999#reservations');
     restoreLocation();
   });
 

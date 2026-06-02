@@ -12,6 +12,7 @@ interface TableProjectLike {
   start?: Date | string | null;
   end?: Date | string | null;
   overallTotal?: unknown;
+  unpaidValue?: unknown;
   paymentStatus?: unknown;
   applyTax?: unknown;
   raw?: Record<string, unknown> | null;
@@ -38,6 +39,115 @@ interface TableDeps {
   formatProjectPeriod: (start: unknown, end: unknown) => string;
   computeMetrics: (project: TableProjectLike) => TableMetricsLike;
   resolveProjectPaymentState: (project: TableProjectLike) => 'paid' | 'partial' | 'unpaid';
+}
+
+type AttentionSeverity = 'healthy' | 'warning' | 'critical';
+
+interface ProjectAttentionAssessment {
+  severity: AttentionSeverity;
+  paymentState: 'paid' | 'partial' | 'unpaid';
+  outstandingValue: number;
+  marginPercent: number;
+  netProfit: number;
+  labelKey: string | null;
+  labelFallback: string | null;
+}
+
+function toFiniteNumber(value: unknown) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : 0;
+}
+
+export function assessProjectAttention(
+  project: TableProjectLike,
+  deps: Pick<TableDeps, 'computeMetrics' | 'resolveProjectPaymentState'>,
+): ProjectAttentionAssessment {
+  const metrics = deps.computeMetrics(project);
+  const paymentState = deps.resolveProjectPaymentState(project);
+  const outstandingValue = Math.max(0, toFiniteNumber(project.unpaidValue));
+  const marginPercent = toFiniteNumber(metrics.marginPercent);
+  const netProfit = toFiniteNumber(metrics.netProfit);
+  const normalizedStatus = String(project.status || '').toLowerCase();
+  const isCompleted = normalizedStatus === 'completed';
+
+  if (netProfit < 0) {
+    return {
+      severity: 'critical',
+      paymentState,
+      outstandingValue,
+      marginPercent,
+      netProfit,
+      labelKey: 'projects.reports.table.attention.negativeProfit',
+      labelFallback: 'Negative profit',
+    };
+  }
+
+  if (isCompleted && paymentState !== 'paid' && outstandingValue > 0) {
+    return {
+      severity: 'critical',
+      paymentState,
+      outstandingValue,
+      marginPercent,
+      netProfit,
+      labelKey: 'projects.reports.table.attention.completedUnpaid',
+      labelFallback: 'Completed, payment pending',
+    };
+  }
+
+  if (marginPercent > 0 && marginPercent < 15) {
+    return {
+      severity: 'warning',
+      paymentState,
+      outstandingValue,
+      marginPercent,
+      netProfit,
+      labelKey: 'projects.reports.table.attention.lowMargin',
+      labelFallback: 'Low margin',
+    };
+  }
+
+  if (paymentState !== 'paid' && outstandingValue > 0) {
+    return {
+      severity: 'warning',
+      paymentState,
+      outstandingValue,
+      marginPercent,
+      netProfit,
+      labelKey: 'projects.reports.table.attention.paymentFollowUp',
+      labelFallback: 'Payment follow-up',
+    };
+  }
+
+  return {
+    severity: 'healthy',
+    paymentState,
+    outstandingValue,
+    marginPercent,
+    netProfit,
+    labelKey: null,
+    labelFallback: null,
+  };
+}
+
+export function summarizeProjectsAttention(
+  projects: TableProjectLike[],
+  deps: Pick<TableDeps, 'computeMetrics' | 'resolveProjectPaymentState'>,
+) {
+  return projects.reduce((summary, project) => {
+    const assessment = assessProjectAttention(project, deps);
+    summary[assessment.severity] += 1;
+    if (assessment.outstandingValue > 0) {
+      summary.paymentFollowUp += 1;
+      summary.outstandingValue += assessment.outstandingValue;
+    }
+    return summary;
+  }, {
+    critical: 0,
+    warning: 0,
+    healthy: 0,
+    paymentFollowUp: 0,
+    outstandingValue: 0,
+  });
 }
 
 const SORTABLE_LABEL_KEYS: Record<string, string> = {
@@ -155,33 +265,72 @@ export function renderProjectsTable(params: {
 
   const rowsHtml = sortProjects(projects, sortState, { computeMetrics: deps.computeMetrics }).map((project) => {
     const metrics = deps.computeMetrics(project);
+    const assessment = assessProjectAttention(project, deps);
     const periodLabel = deps.formatProjectPeriod(project.start, project.end);
     const statusLabel = deps.t(`projects.status.${project.status}`, String(project.status || ''));
-    const statusChip = `<span class="timeline-status-badge timeline-status-badge--${project.status}">${deps.escapeHtml(statusLabel)}</span>`;
+    const statusChip = ['upcoming', 'ongoing', 'completed'].includes(String(project.status || ''))
+      ? `<span class="timeline-status-badge timeline-status-badge--${deps.escapeHtml(String(project.status))}">${deps.escapeHtml(statusLabel)}</span>`
+      : `<span class="reservation-chip status-chip status-info">${deps.escapeHtml(statusLabel)}</span>`;
     const paymentState = deps.resolveProjectPaymentState(project);
     const paymentClass = paymentState === 'paid' ? 'status-paid' : (paymentState === 'partial' ? 'status-partial' : 'status-unpaid');
     const paymentText = paymentState === 'paid'
-      ? deps.t('reservations.list.payment.paid', '💳 مدفوع')
+      ? deps.t('reservations.list.payment.paid', 'Paid')
       : (paymentState === 'partial'
-          ? deps.t('reservations.list.payment.partial', '💳 مدفوع جزئياً')
-          : deps.t('reservations.list.payment.unpaid', '💳 غير مدفوع'));
-    const paymentChip = `<span class="reservation-chip ${paymentClass}">${deps.escapeHtml(paymentText)}</span>`;
+          ? deps.t('reservations.list.payment.partial', 'Partially paid')
+          : deps.t('reservations.list.payment.unpaid', 'Unpaid'));
+    const paymentChip = `<span class="reservation-chip status-chip ${paymentClass}">${deps.escapeHtml(paymentText)}</span>`;
     const clientLabel = deps.escapeHtml(project.clientName || deps.t('projects.fallback.unknownClient', 'Unknown client'));
+    const projectTitle = deps.escapeHtml(project.title || project.projectCode || deps.t('projects.reports.table.columns.project', 'Project'));
+    const projectCode = String(project.projectCode || '').trim();
+    const projectCodeLabel = projectCode ? deps.escapeHtml(`#${projectCode}`) : '';
+    const attentionChip = assessment.labelKey && assessment.labelFallback
+      ? `<span class="reports-table-attention reports-table-attention--${assessment.severity} ui-badge ui-badge--soft badge-soft">${deps.escapeHtml(deps.t(assessment.labelKey, assessment.labelFallback))}</span>`
+      : '';
+    const netProfitLabel = deps.escapeHtml(deps.t('projects.reports.table.netProfitShort', 'Net profit'));
+    const outstandingLabel = deps.escapeHtml(deps.t('projects.reports.table.outstandingShort', 'Outstanding'));
+    const collectedPercent = Number(project.overallTotal || 0) > 0
+      ? ((Math.max(0, Number(project.overallTotal || 0) - assessment.outstandingValue) / Number(project.overallTotal || 0)) * 100)
+      : 0;
+    const paymentMeta = assessment.outstandingValue > 0
+      ? `<small class="reports-table__subvalue">${outstandingLabel}: ${deps.escapeHtml(deps.formatCurrency(assessment.outstandingValue))}</small>`
+      : '';
 
     const mainRow = `
-      <tr>
+      <tr class="reports-table-row reports-table-row--${assessment.severity}">
         <td>
-          <div class="d-flex flex-column gap-1">
-            <span class="fw-semibold">${deps.escapeHtml(project.title || project.projectCode)}</span>
-            <small class="text-muted">${deps.escapeHtml(`#${project.projectCode}`)}</small>
+          <div class="projects-table__project-cell d-flex flex-column gap-1">
+            <span class="projects-table__title">${projectTitle}</span>
+            <div class="reports-table__meta-line">
+              ${projectCodeLabel ? `<small class="text-muted">${projectCodeLabel}</small>` : ''}
+              ${attentionChip}
+            </div>
           </div>
         </td>
-        <td>${clientLabel}</td>
+        <td class="projects-table__client-cell">${clientLabel}</td>
         <td>${statusChip}</td>
-        <td>${deps.escapeHtml(periodLabel)}</td>
-        <td>${deps.escapeHtml(deps.formatCurrency(project.overallTotal))}</td>
-        <td>${deps.escapeHtml(deps.formatPercent(metrics.marginPercent))}</td>
-        <td>${paymentChip}</td>
+        <td>
+          <div class="projects-table__schedule date-range">
+            <span class="date-line">${deps.escapeHtml(periodLabel)}</span>
+          </div>
+        </td>
+        <td>
+          <div class="reports-table__metric">
+            <span class="projects-table__amount">${deps.escapeHtml(deps.formatCurrency(project.overallTotal))}</span>
+          </div>
+        </td>
+        <td>
+          <div class="reports-table__metric">
+            <span class="projects-table__amount reports-table__amount--margin">${deps.escapeHtml(deps.formatPercent(metrics.marginPercent))}</span>
+            <small class="reports-table__subvalue">${netProfitLabel}: ${deps.escapeHtml(deps.formatCurrency(assessment.netProfit))}</small>
+          </div>
+        </td>
+        <td>
+          <div class="reports-table__payment-cell">
+            ${paymentChip}
+            <small class="reports-table__subvalue">${deps.escapeHtml(deps.t('projects.reports.table.paymentCollected', 'Collected'))}: ${deps.escapeHtml(deps.formatPercent(collectedPercent))}</small>
+            ${paymentMeta}
+          </div>
+        </td>
       </tr>
     `;
 

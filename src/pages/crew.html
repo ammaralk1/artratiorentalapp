@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <!-- @include "./_partials/manager-page-head.html" {"titleKey":"crew.pageTitle","titleText":"إدارة طاقم العمل"} -->
+</head>
+<!-- @include "./_partials/tabs-manager-shell.html" {"bodyClass":"dashboard-page crew-page no-js","greetingLabelKey":"crew.pageTitle","greetingLabelText":"إدارة طاقم العمل","pageScript":"/src/scripts/crewPage.js"} -->
+<template data-slot="sidebarTabs">
+  <a class="ui-tab tab-button" href="home.html" data-close-sidebar>
+    <span class="tab-button__content">🏠 <span data-i18n data-i18n-key="dashboard.quickLinks.home">الصفحة الرئيسية</span></span>
+  </a>
+  <a class="ui-tab tab-button" href="operations.html#reservations-tab" data-close-sidebar>
+    <span class="tab-button__content">📅 <span data-i18n data-i18n-key="tabs.reservations">الحجوزات</span></span>
+  </a>
+  <a class="ui-tab tab-button" href="clients.html" data-close-sidebar>
+    <span class="tab-button__content">👤 <span data-i18n data-i18n-key="tabs.customers">العملاء</span></span>
+  </a>
+  <a class="ui-tab tab-button active" href="crew.html" data-close-sidebar aria-current="page">
+    <span class="tab-button__content">😎 <span data-i18n data-i18n-key="tabs.technicians">طاقم العمل</span></span>
+  </a>
+  <a class="ui-tab tab-button" href="projects.html" data-close-sidebar>
+    <span class="tab-button__content">🏗️ <span data-i18n data-i18n-key="home.projects.title">إدارة المشاريع</span></span>
+  </a>
+
+</template>
+<template data-slot="greetingPanel">
+  <div class="flex flex-col gap-4 text-start">
+    <div class="space-y-1">
+      <p class="text-sm text-base-content/60" data-i18n data-i18n-key="crew.pageTitle">إدارة طاقم العمل</p>
+      <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="crew.pageSummary">إدارة أعضاء الطاقم والمناصب كمساحة مستقلة مع الحفاظ على استخدامها داخل الحجوزات والمشاريع.</p>
+    </div>
+  </div>
+</template>
+<template data-slot="mainContent">
+  <div class="tab-content-wrapper">
+      <!-- ✅ تبويب: الفريق الفني -->
+      <div class="tab active" id="technicians-tab" role="tabpanel" aria-labelledby="crew-page-section-title" tabindex="0">
+        <div class="tab-section-header">
+          <h2 class="tab-section-title" id="crew-page-section-title" data-i18n data-i18n-key="technicians.section.title">😎 إدارة طاقم العمل</h2>
+        </div>
+
+        <div class="ui-card ui-card--content glass-card subtab-scroll-card tech-subtabs-container" data-tech-tabs>
+          <div class="tab-scroll tab-scroll--subtabs" data-tab-scroll>
+            <button type="button" class="tab-scroll-btn tab-scroll-btn--prev" data-tab-scroll-prev aria-label="انتقال إلى اليسار" data-i18n data-i18n-aria-label-key="dashboard.tabScroll.prev" hidden>
+              <span aria-hidden="true">‹</span>
+            </button>
+            <div class="tab-scroll-track" data-tab-scroll-track>
+              <div class="ui-tabs sub-tab-buttons tabs tabs-boxed" role="tablist" aria-orientation="horizontal">
+                <button
+                  type="button"
+                  class="ui-tab sub-tab-button tab tab-active tech-subtab-button"
+                  id="tech-subtab-trigger-management"
+                  data-tech-tab="technicians-management"
+                  role="tab"
+                  aria-selected="true"
+                  aria-controls="technicians-management-panel"
+                  data-i18n
+                  data-i18n-key="technicians.subTabs.management"
+                >⚙️ إدارة الطاقم</button>
+                <button
+                  type="button"
+                  class="ui-tab sub-tab-button tab tech-subtab-button"
+                  id="tech-subtab-trigger-positions"
+                  data-tech-tab="technicians-positions"
+                  role="tab"
+                  aria-selected="false"
+                  aria-controls="technicians-positions-panel"
+                  data-i18n
+                  data-i18n-key="technicians.subTabs.positions"
+                >🏷️ المناصب</button>
+              </div>
+            </div>
+            <button type="button" class="tab-scroll-btn tab-scroll-btn--next" data-tab-scroll-next aria-label="انتقال إلى اليمين" data-i18n data-i18n-aria-label-key="dashboard.tabScroll.next" hidden>
+              <span aria-hidden="true">›</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="tech-subtab-panel sub-tab" id="technicians-management-panel" data-tech-tab-panel="technicians-management" role="tabpanel" aria-labelledby="tech-subtab-trigger-management">
+          <!-- ✅ نموذج إضافة فني -->
+          <div class="ui-card ui-card--content glass-card add-technicians-box technician-embedded-form-card management-form-box mb-4">
+            <div class="management-form-header">
+              <div class="management-form-icon">😎</div>
+              <div class="management-form-header-text">
+                <h4 data-i18n data-i18n-key="technicians.form.title">إضافة / تعديل عضو طاقم</h4>
+                <p class="management-form-hint" data-i18n data-i18n-key="technicians.form.hint">أدخل بيانات عضو الطاقم ليتم حفظها وتحديثها في سجلات الحجز.</p>
+              </div>
+            </div>
+            <form id="technician-form" class="management-form technician-form">
+              <input type="hidden" id="technician-id">
+              <div class="technician-embedded-form-layout">
+                <div class="technician-embedded-form-main">
+                  <div class="management-form-grid technician-embedded-form-grid">
+                    <div class="form-field">
+                      <label for="technician-name" class="form-label" data-i18n data-i18n-key="technicians.form.labels.name">😎 اسم العضو</label>
+                      <input type="text" class="ui-input form-control" id="technician-name" placeholder="اسم عضو الطاقم" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.name">
+                    </div>
+                    <div class="form-field">
+                      <label for="technician-phone" class="form-label" data-i18n data-i18n-key="technicians.form.labels.phone">📞 الجوال</label>
+                      <input type="text" class="ui-input form-control" id="technician-phone" placeholder="05xxxxxxxx" inputmode="tel" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.phone">
+                    </div>
+                    <div class="form-field">
+                      <label for="technician-email" class="form-label" data-i18n data-i18n-key="technicians.form.labels.email">📧 البريد</label>
+                      <input type="email" class="ui-input form-control" id="technician-email" placeholder="example@email.com" dir="ltr" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.email">
+                    </div>
+                    <div class="form-field">
+                      <label for="technician-role" class="form-label" data-i18n data-i18n-key="technicians.form.labels.role">👔 الوظيفة</label>
+                      <input type="text" class="ui-input form-control" id="technician-role" list="technician-position-options" placeholder="مثال: مصور" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.role">
+                      <datalist id="technician-position-options"></datalist>
+                    </div>
+                    <div class="form-field">
+                      <label for="technician-department" class="form-label" data-i18n data-i18n-key="technicians.form.labels.department">🧩 القسم</label>
+                      <input type="text" class="ui-input form-control" id="technician-department" placeholder="مثال: قسم الصوت" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.department">
+                    </div>
+                  </div>
+                </div>
+                <aside class="technician-embedded-form-side">
+                  <div class="technician-embedded-form-side-card">
+                    <div class="form-field form-field-notes technician-embedded-notes-field">
+                      <label for="technician-notes" class="form-label" data-i18n data-i18n-key="technicians.form.labels.notes">📝 ملاحظات</label>
+                      <textarea id="technician-notes" class="ui-textarea form-control" rows="6" placeholder="معلومات إضافية" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.notes"></textarea>
+                    </div>
+                    <div id="technician-position-summary" class="alert alert-info technician-position-summary" hidden>
+                      <div class="flex flex-col gap-1">
+                        <span class="font-semibold" data-i18n data-i18n-key="technicians.positionSummary.title">💵 تفاصيل التكلفة</span>
+                        <span id="technician-position-summary-body"></span>
+                      </div>
+                    </div>
+                  </div>
+                </aside>
+              </div>
+              <div class="management-form-actions">
+                <button type="button" class="ui-button ui-button--outline btn btn-outline btn-secondary" id="technician-cancel-btn" data-i18n data-i18n-key="technicians.form.actions.cancel" hidden>إلغاء التعديل</button>
+                <button type="submit" class="ui-button ui-button--primary btn btn-primary" id="technician-submit-btn" data-i18n data-i18n-key="technicians.form.actions.submit">➕ إضافة عضو طاقم</button>
+              </div>
+            </form>
+          </div>
+
+          <section class="ui-card ui-card--content glass-card technician-records-card">
+            <div class="projects-table__header technician-records-card__header">
+              <div class="project-list-section-header technician-records-card__heading">
+                <div class="surface-heading-stack">
+                  <h3 class="mb-0" data-i18n data-i18n-key="projects.technicians.records.title">سجل الطاقم</h3>
+                  <p class="section-support-text mb-0" data-i18n data-i18n-key="projects.technicians.records.hint">ابحث، راجع، وعدّل أعضاء الطاقم والمناصب من نفس السطح قبل إسنادهم إلى المشاريع والحجوزات.</p>
+                </div>
+                <span id="technicians-list-count" class="projects-table__count ui-badge ui-badge--soft badge-soft">0</span>
+              </div>
+            </div>
+
+            <div class="technician-records-card__toolbar">
+              <div class="management-search-bar technician-records-search">
+                <input
+                  type="text"
+                  id="search-technician-input"
+                  class="ui-input form-control"
+                  placeholder="🔍 ابحث عن عضو الطاقم بالاسم أو الجوال أو الوظيفة..."
+                  data-i18n data-i18n-placeholder-key="technicians.search.placeholder"
+                >
+                <select id="technician-role-filter" class="ui-select form-select technician-records-search__role">
+                  <option value="" data-i18n data-i18n-key="technicians.search.filters.allRoles">👔 كل الوظائف</option>
+                </select>
+                <button type="button" class="ui-button ui-button--outline btn btn-outline btn-secondary technician-records-search__reset" id="technicians-clear-search" data-i18n data-i18n-key="actions.clearFilters">🔄 إعادة التصفية</button>
+              </div>
+            </div>
+
+            <div class="users-table-wrapper overflow-x-auto embedded-management-table-shell">
+              <table class="ui-table table table-hover users-table surface-table embedded-management-table technician-table align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th data-i18n data-i18n-key="technicians.table.headers.name">😎 اسم العضو</th>
+                    <th data-i18n data-i18n-key="technicians.table.headers.role">👔 الوظيفة</th>
+                    <th data-i18n data-i18n-key="technicians.table.headers.department">🧩 القسم</th>
+                    <th data-i18n data-i18n-key="technicians.table.headers.status">⚙️ الحالة</th>
+                    <th class="table-notes-head" data-i18n data-i18n-key="technicians.table.headers.notes">📝 ملاحظات</th>
+                    <th class="table-actions-head" data-i18n data-i18n-key="technicians.table.headers.actions">⚙️ الإجراءات</th>
+                  </tr>
+                </thead>
+                <tbody id="technicians-table">
+                  <tr>
+                    <td colspan="6" class="text-center" data-i18n data-i18n-key="technicians.table.loading">جاري التحميل...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div id="technicians-list-pagination" class="list-pagination technician-records-card__pagination" hidden></div>
+          </section>
+        </div>
+
+        <div class="tech-subtab-panel sub-tab" id="technicians-positions-panel" data-tech-tab-panel="technicians-positions" role="tabpanel" aria-labelledby="tech-subtab-trigger-positions" hidden>
+          <!-- ✅ إدارة المناصب -->
+          <div class="ui-card ui-card--content glass-card positions-form-box management-form-box mb-4">
+            <div class="management-form-header">
+              <div class="management-form-icon">🏷️</div>
+              <div class="management-form-header-text">
+                <h4 data-i18n data-i18n-key="positions.form.title">إضافة / تعديل منصب</h4>
+                <p class="management-form-hint" data-i18n data-i18n-key="positions.form.hint">عرّف المناصب القياسية مع التكلفة وسعر العميل لتسهيل تعبئة بيانات الطاقم.</p>
+              </div>
+            </div>
+            <form id="position-form" class="management-form position-form">
+              <input type="hidden" id="position-id">
+              <div class="positions-form-layout">
+                <section class="positions-form-section positions-form-section--identity">
+                  <div class="positions-form-section__header">
+                    <h5 class="positions-form-section__title" data-i18n data-i18n-key="positions.form.sections.identity">بيانات المنصب</h5>
+                    <p class="positions-form-section__hint" data-i18n data-i18n-key="positions.form.sections.identityHint">أدخل الاسم بالعربية والإنجليزية حتى يظهر بشكل واضح في كل الأسطح.</p>
+                  </div>
+                  <div class="management-form-grid positions-form-grid">
+                    <div class="form-field">
+                      <label for="position-name-ar" class="form-label" data-i18n data-i18n-key="positions.form.labels.nameAr">🏷️ اسم المنصب (العربية)</label>
+                      <input type="text" class="ui-input form-control" id="position-name-ar" placeholder="مثال: مصور فوتوغرافي" data-i18n data-i18n-placeholder-key="positions.form.placeholders.nameAr">
+                    </div>
+                    <div class="form-field">
+                      <label for="position-name-en" class="form-label" data-i18n data-i18n-key="positions.form.labels.nameEn">🏷️ اسم المنصب (بالإنجليزية)</label>
+                      <input type="text" class="ui-input form-control" id="position-name-en" placeholder="مثال: Photographer" data-i18n data-i18n-placeholder-key="positions.form.placeholders.nameEn">
+                    </div>
+                  </div>
+                </section>
+                <aside class="positions-form-section positions-form-section--pricing">
+                  <div class="positions-form-section__header">
+                    <h5 class="positions-form-section__title" data-i18n data-i18n-key="positions.form.sections.pricing">التكلفة والتسعير</h5>
+                    <p class="positions-form-section__hint" data-i18n data-i18n-key="positions.form.sections.pricingHint">حدّد تكلفة الطاقم والسعر القياسي للعميل لتسريع تعبئة الحجز والمشاريع.</p>
+                  </div>
+                  <div class="positions-form-pricing-grid">
+                    <div class="form-field">
+                      <label for="position-cost" class="form-label" data-i18n data-i18n-key="positions.form.labels.cost">💵 التكلفة</label>
+                      <input type="text" class="ui-input form-control" id="position-cost" placeholder="0" inputmode="decimal" required data-i18n data-i18n-placeholder-key="positions.form.placeholders.cost">
+                    </div>
+                    <div class="form-field">
+                      <label for="position-client-price" class="form-label" data-i18n data-i18n-key="positions.form.labels.clientPrice">💼 السعر المقدم للعميل</label>
+                      <input type="text" class="ui-input form-control" id="position-client-price" placeholder="0" inputmode="decimal" data-i18n data-i18n-placeholder-key="positions.form.placeholders.clientPrice">
+                    </div>
+                  </div>
+                  <div class="positions-form-note" data-i18n data-i18n-key="positions.form.pricingNote">سيُستخدم هذا التسعير كقيمة افتراضية عند اختيار المنصب في الطاقم.</div>
+                </aside>
+              </div>
+              <div class="management-form-actions">
+                <button type="button" class="ui-button ui-button--outline btn btn-outline btn-secondary" id="position-cancel-btn" data-i18n data-i18n-key="positions.form.actions.cancel" hidden>إلغاء</button>
+                <button type="submit" class="ui-button ui-button--primary btn btn-primary" id="position-submit-btn" data-i18n data-i18n-key="positions.form.actions.submit">➕ إضافة منصب</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="ui-card ui-card--content glass-card positions-list-box">
+            <div class="positions-list-header d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
+              <div class="positions-list-header__text">
+                <h5 class="mb-0" data-i18n data-i18n-key="positions.list.title">📋 المناصب الحالية</h5>
+                <p class="positions-list-hint mb-0" data-i18n data-i18n-key="positions.list.hint">راجع المناصب القياسية وعدّلها قبل ربطها بأعضاء الطاقم أو استخدامها في الحجوزات.</p>
+              </div>
+              <span class="ui-badge ui-badge--soft badge-soft" id="positions-count">0</span>
+            </div>
+            <div class="positions-records-toolbar">
+              <div class="management-search-bar positions-records-search">
+                <input
+                  type="text"
+                  id="search-position-input"
+                  class="ui-input form-control"
+                  placeholder="🔍 ابحث باسم المنصب..."
+                  data-i18n data-i18n-placeholder-key="positions.search.placeholder"
+                >
+                <button
+                  type="button"
+                  class="ui-button ui-button--outline btn btn-outline btn-secondary positions-records-search__reset"
+                  id="positions-clear-search"
+                  data-i18n data-i18n-key="actions.clearFilters"
+                >🔄 إعادة التصفية</button>
+              </div>
+            </div>
+            <div class="users-table-wrapper overflow-x-auto">
+              <table class="ui-table table table-hover users-table surface-table positions-table align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th data-i18n data-i18n-key="positions.table.headers.nameAr">🏷️ المنصب (العربية)</th>
+                    <th data-i18n data-i18n-key="positions.table.headers.nameEn">🏷️ المنصب (بالإنجليزية)</th>
+                    <th data-i18n data-i18n-key="positions.table.headers.cost">💵 التكلفة</th>
+                    <th data-i18n data-i18n-key="positions.table.headers.clientPrice">💼 سعر العميل</th>
+                    <th class="table-actions-head" data-i18n data-i18n-key="positions.table.headers.actions">⚙️ الإجراءات</th>
+                  </tr>
+                </thead>
+                <tbody id="positions-table">
+                  <tr>
+                    <td colspan="5" class="projects-table-empty-row text-center text-muted" data-i18n data-i18n-key="positions.table.empty">لا توجد مناصب بعد.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div id="positions-list-pagination" class="list-pagination technician-records-card__pagination" hidden></div>
+          </div>
+        </div>
+      </div> <!-- نهاية تبويب الفريق الفني -->
+
+
+
+  </div>
+</template>
+</html>

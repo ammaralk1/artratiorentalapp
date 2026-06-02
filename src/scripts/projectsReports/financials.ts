@@ -1,5 +1,6 @@
 import { normalizeNumbers } from '../utils.js';
 import { computeReservationFinancials } from '../reports/calculations.js';
+import { calculateProjectLineFinancials } from '../projects/financials.js';
 
 export interface ProjectLike {
   id?: unknown;
@@ -14,6 +15,12 @@ export interface ProjectLike {
   servicesClientPrice?: unknown;
   services_client_price?: unknown;
   overallTotal?: unknown;
+  discount?: unknown;
+  discountType?: unknown;
+  applyTax?: unknown;
+  companyShareEnabled?: unknown;
+  companySharePercent?: unknown;
+  company_share_percent?: unknown;
   raw?: Record<string, unknown> | null;
 }
 
@@ -62,9 +69,57 @@ const CLOSED_STATUS_KEYWORDS = new Set([
   'منتهية',
 ]);
 
+const PENDING_STATUS_KEYWORDS = new Set([
+  'pending',
+  'unconfirmed',
+  'not_confirmed',
+  'not-confirmed',
+  'draft',
+  'قيد التأكيد',
+  'غير مؤكد',
+  'غير مؤكدة',
+]);
+
 export function normalizeStatusValue(value: unknown): string {
   if (value == null) return '';
   return String(value).trim().toLowerCase();
+}
+
+export function isProjectConfirmed(project: ProjectLike | null | undefined): boolean {
+  if (!project) return false;
+  if (project.confirmed === true || project.confirmed === 'true') return true;
+  if (project.confirmed === 1 || project.confirmed === '1') return true;
+  return false;
+}
+
+export function isProjectCancelled(project: ProjectLike | null | undefined): boolean {
+  if (!project) return false;
+  if (project.cancelled === true || project.cancelled === 'true') return true;
+  if (project.cancelled === 1 || project.cancelled === '1') return true;
+
+  const status = normalizeStatusValue(project.status);
+  return status === 'cancelled' || status === 'canceled' || status === 'ملغي' || status === 'ملغى';
+}
+
+export function isProjectPendingForReports(project: ProjectLike | null | undefined): boolean {
+  if (!project) return true;
+  const raw = (project.raw || project) as ProjectRawLike;
+  const candidates = [
+    project.status,
+    raw?.status,
+    raw?.project_status,
+    raw?.projectStatus,
+    raw?.state,
+    raw?.project_state,
+    raw?.projectState,
+    raw?.status_label,
+    raw?.statusLabel,
+  ];
+
+  return candidates.some((candidate) => {
+    const normalized = normalizeStatusValue(candidate);
+    return normalized ? PENDING_STATUS_KEYWORDS.has(normalized) : false;
+  });
 }
 
 export function getReservationsForProject<T extends ReservationLike = ReservationLike>(
@@ -109,9 +164,8 @@ export function isProjectClosed(project: ProjectLike | null | undefined): boolea
 }
 
 export function isProjectEligibleForReports(project: ProjectLike | null | undefined): boolean {
-  if (!project || Boolean(project.cancelled)) return false;
-  if (project.confirmed === true) return true;
-  return isProjectClosed(project);
+  if (!project || isProjectCancelled(project)) return false;
+  return isProjectConfirmed(project);
 }
 
 export function getProjectExpenses(project: ProjectLike | null | undefined): number {
@@ -122,7 +176,10 @@ export function getProjectExpenses(project: ProjectLike | null | undefined): num
   }
 
   if (Array.isArray(project.expenses)) {
-    return project.expenses.reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0);
+    return project.expenses.reduce((sum, expense) => {
+      const days = Number(expense.days ?? expense.service_days ?? expense.serviceDays ?? 1) || 1;
+      return sum + ((Number(expense.amount) || 0) * Math.max(1, days));
+    }, 0);
   }
 
   return 0;
@@ -153,7 +210,10 @@ export function getProjectServicesRevenue(project: ProjectLike | null | undefine
     return Number.isFinite(parsed) ? parsed : 0;
   };
 
-  return expenses.reduce((sum, expense) => sum + parseNum(expense?.salePrice ?? expense?.sale_price ?? 0), 0);
+  return expenses.reduce((sum, expense) => {
+    const days = parseNum(expense?.days ?? expense?.service_days ?? expense?.serviceDays ?? 1) || 1;
+    return sum + (parseNum(expense?.salePrice ?? expense?.sale_price ?? 0) * Math.max(1, days));
+  }, 0);
 }
 
 export function determineProjectStatus(project: ProjectLike): 'upcoming' | 'ongoing' | 'completed' {
@@ -237,10 +297,30 @@ export function computeProjectMetrics(project: ProjectLike, reservations: Reserv
   });
 
   const equipmentEstimate = Number(project?.raw?.equipmentEstimate ?? project?.equipmentEstimate ?? 0) || 0;
+  const directEquipmentRevenue = reservations.length ? 0 : equipmentEstimate;
   const servicesRevenue = Number(project?.raw?.servicesClientPrice ?? project?.servicesClientPrice ?? 0) || 0;
   const projectExpenses = Number(project?.expensesTotal ?? 0) || 0;
-  const revenueExTax = resNetRevenue + equipmentEstimate + servicesRevenue;
-  const netProfit = resNetRevenue + (servicesRevenue - projectExpenses);
+  const raw = (project?.raw || project || {}) as ProjectRawLike;
+  const applyTax = raw?.applyTax === true || raw?.apply_tax === true || raw?.applyTax === 'true' || raw?.apply_tax === 'true';
+  const companyShareEnabled = raw?.companyShareEnabled === true
+    || raw?.company_share_enabled === true
+    || raw?.companyShareEnabled === 'true'
+    || raw?.company_share_enabled === 'true';
+  const companySharePercent = Number(raw?.companySharePercent ?? raw?.company_share_percent ?? 0) || 0;
+  const discountValue = Number(raw?.discount ?? project?.discount ?? 0) || 0;
+  const discountType = (raw?.discount_type ?? project?.discountType) === 'amount' ? 'amount' : 'percent';
+  const projectFinancials = calculateProjectLineFinancials({
+    equipmentRevenue: directEquipmentRevenue,
+    servicesRevenue,
+    servicesCost: projectExpenses,
+    discountValue,
+    discountType,
+    applyTax,
+    companyShareEnabled,
+    companySharePercent,
+  });
+  const revenueExTax = resNetRevenue + projectFinancials.taxableAmount;
+  const netProfit = resNetRevenue + projectFinancials.marginBeforeTax;
   const marginPercent = revenueExTax > 0 ? (netProfit / revenueExTax) * 100 : 0;
 
   return {

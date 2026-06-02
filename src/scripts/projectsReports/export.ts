@@ -30,6 +30,8 @@ const PROJECTS_EXPORT_HEADERS: string[] = [
   'الحالة',
   'الفترة',
   'القيمة (مع الضريبة)',
+  'الخصم',
+  'الضريبة',
   'تقدير المعدات',
   'إيرادات الخدمات',
   'تكلفة الخدمات',
@@ -38,6 +40,8 @@ const PROJECTS_EXPORT_HEADERS: string[] = [
   'هامش الربح %',
   'حالة الدفع',
   'المبالغ المدفوعة',
+  'المبلغ غير المدفوع',
+  'معدل التحصيل %',
   'نسبة الدفع %',
   'عدد الدفعات',
 ] as const;
@@ -56,10 +60,13 @@ export function buildProjectsExportRows(
       commercial.baseAfterDiscount
       - commercial.projectExpenses
       - (commercial.agg.crewCost || 0)
+      - (commercial.agg.equipmentCost || 0)
     ).toFixed(2));
     const marginPercent = revenueExTax > 0 ? (perProjectNet / revenueExTax) * 100 : 0;
     const finalTotal = Number(project.overallTotal || commercial.finalTotal || 0);
     const paidAmount = resolveProjectPaidAmount(project, finalTotal);
+    const outstandingAmount = Math.max(0, finalTotal - paidAmount);
+    const collectionRate = finalTotal > 0 ? (paidAmount / finalTotal) * 100 : 0;
     const paidPercent = finalTotal > 0 ? (paidAmount / finalTotal) * 100 : 0;
     const history = Array.isArray(project.raw?.paymentHistory)
       ? project.raw.paymentHistory
@@ -79,6 +86,8 @@ export function buildProjectsExportRows(
       statusLabel,
       periodLabel,
       Math.round(finalTotal),
+      Math.round(commercial.discountAmount || 0),
+      Math.round(commercial.taxAmount || 0),
       Math.round(Number(project?.raw?.equipmentEstimate ?? project?.equipmentEstimate ?? 0) || 0),
       Math.round(commercial.servicesRevenue || 0),
       Math.round(commercial.projectExpenses || 0),
@@ -87,6 +96,8 @@ export function buildProjectsExportRows(
       Number(marginPercent.toFixed(1)),
       paymentLabel,
       Math.round(paidAmount || 0),
+      Math.round(outstandingAmount || 0),
+      Number(collectionRate.toFixed(1)),
       Number(paidPercent.toFixed(1)),
       history.length,
     ];
@@ -131,6 +142,7 @@ export function buildProjectsBreakdownSheet(
       commercial.baseAfterDiscount
       - commercial.projectExpenses
       - (commercial.agg.crewCost || 0)
+      - (commercial.agg.equipmentCost || 0)
     ).toFixed(2));
     const marginPercent = commercial.baseAfterDiscount > 0 ? (perProjectNet / commercial.baseAfterDiscount) * 100 : 0;
 
@@ -191,16 +203,20 @@ export async function exportProjectsToExcel(
       { v: row[8], t: 'n', s: num0 },
       { v: row[9], t: 'n', s: num0 },
       { v: row[10], t: 'n', s: num0 },
-      { v: row[11], t: 'n', s: num1 },
-      { v: row[12] },
-      { v: row[13], t: 'n', s: num0 },
-      { v: row[14], t: 'n', s: num1 },
+      { v: row[11], t: 'n', s: num0 },
+      { v: row[12], t: 'n', s: num0 },
+      { v: row[13], t: 'n', s: num1 },
+      { v: row[14] },
       { v: row[15], t: 'n', s: num0 },
+      { v: row[16], t: 'n', s: num0 },
+      { v: row[17], t: 'n', s: num1 },
+      { v: row[18], t: 'n', s: num1 },
+      { v: row[19], t: 'n', s: num0 },
     ]);
   });
 
   const worksheet = XLSX.utils.aoa_to_sheet(styledAoa);
-  worksheet['!cols'] = [8, 24, 18, 12, 16, 16, 14, 14, 14, 18, 14, 12, 12, 14, 12, 10].map((wch: number) => ({ wch }));
+  worksheet['!cols'] = [8, 24, 18, 12, 16, 16, 12, 12, 14, 14, 14, 18, 14, 12, 12, 14, 14, 12, 12, 10].map((wch: number) => ({ wch }));
   const lastCol = String.fromCharCode('A'.charCodeAt(0) + PROJECTS_EXPORT_HEADERS.length - 1);
   worksheet['!autofilter'] = { ref: `A1:${lastCol}${styledAoa.length}` };
 

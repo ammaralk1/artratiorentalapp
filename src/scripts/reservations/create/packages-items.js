@@ -563,7 +563,7 @@ export function renderReservationItems(containerId = 'reservation-items') {
       return `
         <tr data-group-key="${group.key}">
           <td>
-            <div class="reservation-item-info">
+            <div class="reservation-item-info reservation-item-info--static">
               <div class="reservation-item-thumb-wrapper">${imageCell}</div>
               <div class="reservation-item-copy">
                 <div class="reservation-item-title">${group.description || '-'}</div>

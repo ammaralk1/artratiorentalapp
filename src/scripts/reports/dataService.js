@@ -6,6 +6,7 @@ import { loadData } from '../storage.js';
 import { translate } from './formatters.js';
 import reportsState from './state.js';
 import { clearReportsMemo, resolveRange } from './calculations.js';
+import { isLocalDashboardFixtureEnabled } from '../fixtureRuntime.js';
 
 function mapCustomerFromApi(raw = {}) {
   return {
@@ -32,18 +33,29 @@ function mapEquipmentFromApi(raw = {}) {
   };
 }
 
-function mapProjectFromApi(raw = {}) {
+function mapProjectFromApi(raw = {}, customersMap = null) {
   const title = raw?.title ?? raw?.name ?? '';
   const code = raw?.project_code ?? raw?.projectCode ?? '';
   const status = raw?.status ?? '';
   const confirmed = raw?.confirmed === true;
+  const clientId = raw?.client_id != null ? String(raw.client_id) : raw?.clientId != null ? String(raw.clientId) : '';
+  const directClientName = String(raw?.client_name ?? raw?.clientName ?? raw?.customer_name ?? raw?.customerName ?? '').trim();
+  const fallbackClientName = clientId && customersMap instanceof Map
+    ? String(customersMap.get(clientId)?.customerName ?? customersMap.get(clientId)?.name ?? '').trim()
+    : '';
 
   return {
     id: raw?.id != null ? String(raw.id) : '',
     title,
     code,
+    projectCode: code,
     status,
     confirmed,
+    clientId,
+    clientName: directClientName || fallbackClientName,
+    clientCompany: raw?.client_company ?? raw?.clientCompany ?? '',
+    start: raw?.start_datetime ?? raw?.start ?? null,
+    end: raw?.end_datetime ?? raw?.end ?? null,
   };
 }
 
@@ -85,6 +97,7 @@ export function hydrateReportsFromCache() {
   reportsState.data.customers = Array.isArray(customers)
     ? customers.map(mapCustomerFromApi)
     : [];
+  const customersMap = new Map(reportsState.data.customers.map((customer) => [String(customer.id), customer]));
   reportsState.data.equipment = Array.isArray(equipment)
     ? equipment.map(mapEquipmentFromApi)
     : [];
@@ -92,7 +105,7 @@ export function hydrateReportsFromCache() {
     ? technicians.map(mapTechnicianFromApi)
     : [];
   reportsState.data.projects = Array.isArray(projects)
-    ? projects.map(mapProjectFromApi)
+    ? projects.map((project) => mapProjectFromApi(project, customersMap))
     : [];
   reportsState.data.projectsMap = new Map(reportsState.data.projects.map((project) => [project.id, project]));
   reportsState.data.maintenance = Array.isArray(maintenance)
@@ -126,6 +139,13 @@ export async function loadReportsData({ silent = false, force = false, signature
   }
 
   try {
+    if (isLocalDashboardFixtureEnabled()) {
+      hydrateReportsFromCache();
+      reportsState.lastFetchSignature = signature || null;
+      reportsState.lastFetchAt = Date.now();
+      return;
+    }
+
     // Build server-side date filters from current UI filters to reduce payload
     const { startDate, endDate } = resolveRange(reportsState.filters || {});
     const toYmd = (d) => {
@@ -175,6 +195,7 @@ export async function loadReportsData({ silent = false, force = false, signature
     reportsState.data.customers = Array.isArray(customersRes?.data)
       ? customersRes.data.map(mapCustomerFromApi)
       : [];
+    const customersMap = new Map(reportsState.data.customers.map((customer) => [String(customer.id), customer]));
     reportsState.data.equipment = Array.isArray(equipmentRes?.data)
       ? equipmentRes.data.map(mapEquipmentFromApi)
       : [];
@@ -182,7 +203,7 @@ export async function loadReportsData({ silent = false, force = false, signature
       ? techniciansRes.data.map(mapTechnicianFromApi)
       : [];
     reportsState.data.projects = Array.isArray(projectsRes?.data)
-      ? projectsRes.data.map(mapProjectFromApi)
+      ? projectsRes.data.map((project) => mapProjectFromApi(project, customersMap))
       : [];
     reportsState.data.projectsMap = new Map(reportsState.data.projects.map((project) => [project.id, project]));
     reportsState.data.maintenance = Array.isArray(maintenanceRes?.data)

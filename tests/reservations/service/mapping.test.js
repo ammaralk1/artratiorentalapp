@@ -74,8 +74,12 @@ vi.mock('../../../src/scripts/reservations/service/packages.js', () => ({
 }));
 
 // ── Import after mocks ────────────────────────────────────────────────────────
-const { normalizeCrewAssignmentEntry, mapReservationItem, toInternalReservation, mapLegacyReservation } =
+const { normalizeCrewAssignmentEntry, mapReservationItem, toInternalReservation, mapLegacyReservation, mapReservationFromApi, setMappingStateGetter } =
   await import('../../../src/scripts/reservations/service/mapping.js');
+
+beforeEach(() => {
+  setMappingStateGetter(() => []);
+});
 
 // ── normalizeCrewAssignmentEntry ──────────────────────────────────────────────
 describe('normalizeCrewAssignmentEntry', () => {
@@ -218,6 +222,41 @@ describe('mapReservationItem', () => {
   it('maps equipment_id to equipmentId', () => {
     const result = mapReservationItem({ equipment_id: 42 });
     expect(result.equipmentId).toBe(42);
+  });
+});
+
+// ── mapReservationFromApi ──────────────────────────────────────────────────────
+describe('mapReservationFromApi', () => {
+  it('keeps fresh server prices when an existing reservation has older prices', () => {
+    setMappingStateGetter(() => [
+      {
+        id: '10',
+        items: [
+          {
+            equipmentId: 5,
+            unit_price: 3010,
+            price: 3010,
+            unit_cost: 0,
+            cost: 0,
+          },
+        ],
+      },
+    ]);
+
+    const result = mapReservationFromApi({
+      id: '10',
+      total_amount: 1000,
+      items: [
+        {
+          equipment_id: 5,
+          quantity: 1,
+          unit_price: 1000,
+          unit_cost: 0,
+        },
+      ],
+    });
+
+    expect(result.items[0].price).toBe(1000);
   });
 });
 

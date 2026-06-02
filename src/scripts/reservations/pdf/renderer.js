@@ -5,7 +5,6 @@ import {
   A4_HEIGHT_MM,
   A4_WIDTH_PX,
   A4_HEIGHT_PX,
-  PAGE_OVERFLOW_TOLERANCE_PX,
 } from './constants.js';
 import {
   logPdfWarn,
@@ -15,25 +14,15 @@ import {
   isMobileSafariBrowser,
 } from './utils.js';
 import {
-  layoutQuoteDocument,
-  sleep,
-  pagesOverflow,
-  enforceQuoteTextColor,
-  applyQuoteBlockOffsets,
-  setupPreviewBlockDrag,
-  syncBlockDragModeToPreview,
-  updateInfoAlignmentControls,
-} from './layout.js';
-import {
   rasterizeQuoteImages,
   waitForQuoteAssets,
   ensureHtml2Canvas,
   ensureJsPdf,
-  ensureHtml2Pdf,
 } from './assets.js';
-import { buildQuotationHtml } from './html-builder.js';
+import { buildQuoteV2Html, isQuoteV2Context } from './v2/template.js';
 import { getChecklistPreviewReservation } from './checklist.js';
-import { t, getCurrentLanguage, setLanguage } from '../../language.js';
+import { callQuotePdfCallback, registerQuotePdfCallbacks } from './callbacks.js';
+import { t } from '../../language.js';
 import { showToast, showToastWithAction } from '../../utils.js';
 import { escapeHtml } from './utils.js';
 import {
@@ -54,17 +43,12 @@ export function handlePdfError(error, context = 'export', { toastMessage, suppre
 
     const retryHandler = () => {
       if (context === 'exportQuoteAsPdf') {
-        // showQuotePreviewStatus and exportQuoteAsPdf are in modal.js — import lazily
-        import('./modal.js').then(({ showQuotePreviewStatus, exportQuoteAsPdf }) => {
-          showQuotePreviewStatus('export');
-          exportQuoteAsPdf();
-        }).catch(() => {});
+        callQuotePdfCallback('showQuotePreviewStatus', 'export');
+        callQuotePdfCallback('exportQuoteAsPdf');
       } else {
-        import('./modal.js').then(({ showQuotePreviewStatus }) => {
-          showQuotePreviewStatus('render');
-          state.quoteAssetWarningShown = false;
-          renderQuotePreview();
-        }).catch(() => {});
+        callQuotePdfCallback('showQuotePreviewStatus', 'render');
+        state.quoteAssetWarningShown = false;
+        renderQuotePreview();
       }
     };
 
@@ -78,14 +62,12 @@ export function handlePdfError(error, context = 'export', { toastMessage, suppre
     });
 
     if (state.quoteModalRefs?.modal?.classList.contains('show')) {
-      import('./modal.js').then(({ showQuotePreviewStatus }) => {
-        showQuotePreviewStatus('error', {
-          message,
-          actionLabel: canRetry ? retryLabel : undefined,
-          onAction: canRetry ? retryHandler : undefined,
-          showSpinner: false
-        });
-      }).catch(() => {});
+      callQuotePdfCallback('showQuotePreviewStatus', 'error', {
+        message,
+        actionLabel: canRetry ? retryLabel : undefined,
+        onAction: canRetry ? retryHandler : undefined,
+        showSpinner: false
+      });
     }
 
     if (error && typeof error === 'object') {
@@ -163,7 +145,6 @@ export async function renderQuotePagesAsPdf(root, { filename, safariWindowRef = 
     captureScale = Math.min(2.0, Math.max(1.6, devicePixelRatio * 1.4));
   }
 
-  const jpegQuality = mobileSafari ? 0.9 : safariMode ? 0.9 : mobileViewport ? 0.92 : 0.95;
   const pdf = new JsPdfConstructor({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
   const html2canvasBaseOptions = {
     scale: captureScale,
@@ -205,13 +186,11 @@ export async function renderQuotePagesAsPdf(root, { filename, safariWindowRef = 
       pageClone.style.minHeight = `${A4_HEIGHT_PX}px`;
       pageClone.style.position = 'relative';
       pageClone.style.background = '#ffffff';
-      enforceQuoteTextColor(pageClone);
-
       const captureRoot = doc.createElement('div');
       const sourceAttributes = Array.from(root?.attributes || []);
       const rootId = (root?.id && typeof root.id === 'string' && root.id.trim().length)
         ? root.id
-        : 'quotation-pdf-root';
+        : 'quote-pdf-v2-root';
       captureRoot.id = rootId;
       sourceAttributes.forEach((attr) => {
         if (!attr?.name || attr.name === 'id') return;
@@ -305,13 +284,23 @@ export async function renderQuotePagesAsPdf(root, { filename, safariWindowRef = 
         horizontalOffsetMm = Math.max(0, (A4_WIDTH_MM - targetWidthMm) / 2);
       }
 
-      const imageData = canvas.toDataURL('image/jpeg', jpegQuality);
+      const imageFormat = 'PNG';
+      const imageData = canvas.toDataURL('image/png');
 
       if (pdfPageIndex > 0) {
         pdf.addPage();
       }
 
-      pdf.addImage(imageData, 'JPEG', horizontalOffsetMm, 0, targetWidthMm, targetHeightMm, `page-${pdfPageIndex + 1}`, 'FAST');
+      pdf.addImage(
+        imageData,
+        imageFormat,
+        horizontalOffsetMm,
+        0,
+        targetWidthMm,
+        targetHeightMm,
+        `page-${pdfPageIndex + 1}`,
+        undefined
+      );
       pdfPageIndex += 1;
 
       // Yield to keep UI responsive, important for mobile devices
@@ -335,7 +324,7 @@ export async function renderQuotePagesAsPdf(root, { filename, safariWindowRef = 
 
     if (mobileSafari) {
       const blobUrl = URL.createObjectURL(blob);
-      import('./modal.js').then(({ hideQuotePreviewStatus }) => hideQuotePreviewStatus()).catch(() => {});
+      callQuotePdfCallback('hideQuotePreviewStatus');
       try {
         window.location.assign(blobUrl);
       } catch (assignError) {
@@ -357,7 +346,7 @@ export async function renderQuotePagesAsPdf(root, { filename, safariWindowRef = 
       };
 
       const deliverToWindow = (targetWindow, url) => {
-        import('./modal.js').then(({ hideQuotePreviewStatus }) => hideQuotePreviewStatus()).catch(() => {});
+        callQuotePdfCallback('hideQuotePreviewStatus');
         if (!targetWindow) {
           window.location.assign(url);
           return;
@@ -383,7 +372,7 @@ export async function renderQuotePagesAsPdf(root, { filename, safariWindowRef = 
       setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
     }
   } else {
-    import('./modal.js').then(({ hideQuotePreviewStatus }) => hideQuotePreviewStatus()).catch(() => {});
+    callQuotePdfCallback('hideQuotePreviewStatus');
     const blobUrl = pdf.output('bloburl');
     const link = document.createElement('a');
     link.href = blobUrl;
@@ -405,47 +394,19 @@ export function renderQuotePreview() {
   const { previewFrame } = state.quoteModalRefs;
   if (!previewFrame) return;
 
-  import('./modal.js').then(({ refreshAlignmentOptions, showQuotePreviewStatus, hideQuotePreviewStatus, applyPreviewZoom }) => {
-    refreshAlignmentOptions();
-  }).catch(() => {});
+  const useV2 = isQuoteV2Context(state.activeQuoteState);
+  if (!useV2) return;
 
   const context = state.activeQuoteState.context || 'reservation';
   const reservationForPreview = context === 'reservationChecklist'
     ? getChecklistPreviewReservation()
     : state.activeQuoteState.reservation;
-  const html = buildQuotationHtml({
-    context,
+  const html = buildQuoteV2Html({
+    ...state.activeQuoteState,
     reservation: reservationForPreview || state.activeQuoteState.reservation,
-    customer: state.activeQuoteState.customer,
-    project: state.activeQuoteState.project,
-    crewAssignments: state.activeQuoteState.crewAssignments,
-    totals: state.activeQuoteState.totals,
-    totalsDisplay: state.activeQuoteState.totalsDisplay,
-    rentalDays: state.activeQuoteState.rentalDays,
-    currencyLabel: state.activeQuoteState.currencyLabel,
-    sections: state.activeQuoteState.sections,
-    fieldSelections: state.activeQuoteState.fields,
-    quoteNumber: state.activeQuoteState.quoteNumber,
-    quoteDate: state.activeQuoteState.quoteDateLabel,
-    terms: state.activeQuoteState.terms,
-    checklistType: state.activeQuoteState.checklistType,
-    checklistNotes: state.activeQuoteState.checklistNotes,
-    checklistNotesTitle: state.activeQuoteState.checklistNotesTitle,
-    hideLogo: Boolean(state.activeQuoteState.hideLogo),
-    hideCompany: Boolean(state.activeQuoteState.hideCompany),
-    headerOffset: Number(state.activeQuoteState.headerOffset || 0),
-    projectCrew: state.activeQuoteState.projectCrew,
-    projectExpenses: state.activeQuoteState.projectExpenses,
-    projectEquipment: state.activeQuoteState.projectEquipment,
-    projectInfo: state.activeQuoteState.projectInfo,
-    clientInfo: state.activeQuoteState.clientInfo,
-    paymentSummary: state.activeQuoteState.paymentSummary,
-    projectTotals: state.activeQuoteState.projectTotals,
-    blockOffsets: state.activeQuoteState.blockOffsets,
-    infoAlignments: state.activeQuoteState.infoAlignments
   });
 
-  import('./modal.js').then(({ showQuotePreviewStatus }) => showQuotePreviewStatus('render')).catch(() => {});
+  callQuotePdfCallback('showQuotePreviewStatus', 'render');
   previewFrame.srcdoc = `<!DOCTYPE html>${html}`;
   previewFrame.addEventListener('load', async () => {
     try {
@@ -457,66 +418,8 @@ export function renderQuotePreview() {
         sanitizeComputedColorFunctions(rootNode, view);
         enforceLegacyColorFallback(rootNode, view);
       }
-      const pdfRoot = doc?.getElementById('quotation-pdf-root');
-      try {
-        if (pdfRoot) {
-          await layoutQuoteDocument(pdfRoot, { context: 'preview' });
-          // Re-validate after fonts/images stabilize to avoid single-page glitch
-          await sleep(120);
-          if (pagesOverflow(pdfRoot)) {
-            await layoutQuoteDocument(pdfRoot, { context: 'preview' });
-          }
-          enforceQuoteTextColor(pdfRoot);
-        }
-      } catch (error) {
-        console.error('[reservations/pdf] failed to layout preview document', error);
-      }
+      const pdfRoot = doc?.getElementById('quote-pdf-v2-root');
       const pages = Array.from(doc?.querySelectorAll?.('.quote-page') || []);
-
-      // Enable dragging the header down when hideCompany is active in checklist mode (preview only)
-      try {
-        const isChecklist = (state.activeQuoteState?.context === 'reservationChecklist');
-        if (isChecklist && state.activeQuoteState?.hideCompany) {
-          const header = doc.querySelector('.quote-header');
-          if (header && !header.dataset.dragReady) {
-            header.style.cursor = 'grab';
-            let dragging = false;
-            let startY = 0;
-            let startOffset = Number(state.activeQuoteState.headerOffset || 0);
-            const onDown = (e) => {
-              dragging = true;
-              startY = e.clientY || e.touches?.[0]?.clientY || 0;
-              startOffset = Number(state.activeQuoteState.headerOffset || 0);
-              header.style.cursor = 'grabbing';
-              doc.addEventListener('mousemove', onMove);
-              doc.addEventListener('mouseup', onUp, { once: true });
-              doc.addEventListener('touchmove', onMove, { passive: false });
-              doc.addEventListener('touchend', onUp, { once: true });
-            };
-            const onMove = (e) => {
-              if (!dragging) return;
-              const y = e.clientY || e.touches?.[0]?.clientY || 0;
-              const delta = y - startY;
-              const next = Math.max(0, Math.min(240, startOffset + delta));
-              header.style.marginTop = `${next}px`;
-              state.activeQuoteState.headerOffset = next;
-              e.preventDefault?.();
-            };
-            const onUp = () => {
-              dragging = false;
-              header.style.cursor = 'grab';
-              doc.removeEventListener('mousemove', onMove);
-              doc.removeEventListener('touchmove', onMove);
-            };
-            header.addEventListener('mousedown', onDown);
-            header.addEventListener('touchstart', onDown, { passive: true });
-            header.dataset.dragReady = 'true';
-        }
-      }
-    } catch (_) { /* non-fatal */ }
-      setupPreviewBlockDrag(doc);
-      syncBlockDragModeToPreview(doc);
-      updateInfoAlignmentControls();
       const pagesContainer = doc?.querySelector('.quote-preview-pages');
       const baseWidth = A4_WIDTH_PX;
 
@@ -541,7 +444,9 @@ export function renderQuotePreview() {
       previewFrame.style.height = `${totalHeight}px`;
       previewFrame.style.minHeight = `${totalHeight}px`;
 
-      if (state.quoteModalRefs?.previewFrameWrapper && !state.quoteModalRefs?.userAdjustedZoom) {
+      if (useV2 && !state.quoteModalRefs?.userAdjustedZoom) {
+        state.previewZoom = 0.9;
+      } else if (state.quoteModalRefs?.previewFrameWrapper && !state.quoteModalRefs?.userAdjustedZoom) {
         const availableWidth = state.quoteModalRefs.previewFrameWrapper.clientWidth - 24;
         if (availableWidth > 0 && availableWidth < baseWidth) {
           state.previewZoom = Math.max(availableWidth / baseWidth, 0.3);
@@ -550,9 +455,11 @@ export function renderQuotePreview() {
         }
       }
 
-      import('./modal.js').then(({ applyPreviewZoom }) => applyPreviewZoom(state.previewZoom)).catch(() => {});
+      callQuotePdfCallback('applyPreviewZoom', state.previewZoom);
     } finally {
-      import('./modal.js').then(({ hideQuotePreviewStatus }) => hideQuotePreviewStatus()).catch(() => {});
+      callQuotePdfCallback('hideQuotePreviewStatus');
     }
   }, { once: true });
 }
+
+registerQuotePdfCallbacks({ renderQuotePreview });

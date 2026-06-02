@@ -3,8 +3,6 @@ import {
   DEFAULT_TERMS,
   PROJECT_QUOTE_TERMS,
   QUOTE_TROUBLESHOOT_URL,
-  A4_WIDTH_PX,
-  A4_HEIGHT_PX,
 } from './constants.js';
 import {
   getQuoteSectionDefs,
@@ -23,20 +21,11 @@ import {
 } from './toggle-prefs.js';
 import {
   isMobileViewport,
+  isIosSafari,
+  isMobileSafariBrowser,
   logPdfWarn,
 } from './utils.js';
 import { escapeHtml } from './utils.js';
-import {
-  initializeQuoteBlockOffsets,
-  setBlockDragMode,
-  persistCurrentBlockOffsets,
-  resetStoredBlockOffsets,
-  applyInfoAlignment,
-  updateInfoAlignmentControls,
-  exportCurrentLayoutSettings,
-  getBlockDragContext,
-  updateBlockDragButtons,
-} from './layout.js';
 import {
   refreshChecklistLessorOptions,
   buildChecklistEquipmentLookup,
@@ -49,20 +38,22 @@ import {
   collectReservationCrewAssignments,
   collectReservationFinancials,
   collectProjectQuoteData,
+  normalizeTermsInput,
   resolveTermsFromForms,
   formatQuoteDate,
 } from './data-collection.js';
-import { buildQuotationHtml } from './html-builder.js';
+import { buildQuoteV2Html, isQuoteV2Context } from './v2/template.js';
+import { normalizeQuoteV2Language } from './v2/i18n.js';
+import { registerQuotePdfCallbacks } from './callbacks.js';
 import { getChecklistPreviewReservation } from './checklist.js';
 import { ensurePackagesAvailable, waitForQuoteAssets } from './assets.js';
 import { ensureHtml2Pdf } from './assets.js';
-import { layoutQuoteDocument, sleep, pagesOverflow, enforceQuoteTextColor } from './layout.js';
 import {
   normalizeNumbers,
   showToast,
   showToastWithAction,
 } from '../../utils.js';
-import { t, setLanguage, getCurrentLanguage } from '../../language.js';
+import { t, getCurrentLanguage } from '../../language.js';
 import { getReservationsState, refreshReservationsFromApi } from '../../reservationsService.js';
 import {
   sanitizeComputedColorFunctions,
@@ -140,6 +131,7 @@ export function showModalFallback(modalEl) {
     modalEl.setAttribute('role', 'dialog');
   }
   document.body.classList.add('modal-open');
+  document.body.classList.add('quote-preview-modal-open');
 
   if (!state.manualQuoteBackdrop) {
     state.manualQuoteBackdrop = document.createElement('div');
@@ -178,6 +170,7 @@ export function hideModalFallback(modalEl) {
   modalEl.setAttribute('aria-hidden', 'true');
   modalEl.removeAttribute('aria-modal');
   document.body.classList.remove('modal-open');
+  document.body.classList.remove('quote-preview-modal-open');
 
   if (state.manualQuoteBackdrop) {
     state.manualQuoteBackdrop.remove();
@@ -195,6 +188,7 @@ export function showQuoteModalElement(modalEl) {
   if (!modalEl) return;
   if (hasBootstrapModalSupport()) {
     const instance = window.bootstrap.Modal.getOrCreateInstance(modalEl);
+    document.body.classList.add('quote-preview-modal-open');
     try {
       const onHidden = () => {
         try {
@@ -205,6 +199,7 @@ export function showQuoteModalElement(modalEl) {
           }
         } catch (_) {}
         try { detachQuoteLiveListeners(); } catch (_) {}
+        document.body.classList.remove('quote-preview-modal-open');
         try { modalEl.removeEventListener('hidden.bs.modal', onHidden); } catch (_) {}
       };
       modalEl.addEventListener('hidden.bs.modal', onHidden, { once: true });
@@ -354,7 +349,7 @@ export function renderChecklistLessorFilters() {
       ? ` <small>(${escapeHtml(normalizeNumbers(String(option.count)))})</small>`
       : '';
     return `
-      <label for="${checkboxId}" style="display:flex;align-items:center;gap:6px;">
+      <label for="${checkboxId}" class="quote-checklist-option quote-checklist-option--checkbox quote-checklist-lessor-option">
         <input type="checkbox" id="${checkboxId}" value="${option.key}" ${filter.has(option.key) ? 'checked' : ''}>
         <span>${escapeHtml(option.label)}${countLabel}</span>
       </label>
@@ -496,9 +491,18 @@ export function updateQuoteMeta() {
     meta.innerHTML = `
       <div class="quote-meta-card">
         <div><span>${escapeHtml(t('reservations.quote.labels.number', 'رقم عرض سعر'))}</span><strong>${escapeHtml(state.activeQuoteState.quoteNumber)}</strong></div>
-        <div><span>${escapeHtml(t('reservations.quote.labels.dateGregorian', 'التاريخ الميلادي'))}</span><strong>${escapeHtml(state.activeQuoteState.quoteDateLabel)}</strong></div>
+        <div>
+          <label for="quote-date-label-input">${escapeHtml(t('reservations.quote.labels.dateGregorian', 'التاريخ الميلادي'))}</label>
+          <input id="quote-date-label-input" type="text" data-quote-date-input value="${escapeHtml(state.activeQuoteState.quoteDateLabel)}">
+        </div>
       </div>
     `;
+    const dateInput = meta.querySelector('[data-quote-date-input]');
+    dateInput?.addEventListener('input', (event) => {
+      if (!state.activeQuoteState) return;
+      state.activeQuoteState.quoteDateLabel = String(event.target.value || '').trim() || formatQuoteDate(state.activeQuoteState.quoteDate || new Date());
+      renderQuotePreview();
+    });
   }
 }
 
@@ -510,45 +514,55 @@ export function updateQuoteTermsEditor() {
   }
 }
 
+export function syncQuoteLanguageControls() {
+  const refs = state.quoteModalRefs;
+  if (!refs?.languageControls) return;
+  const isV2 = isQuoteV2Context(state.activeQuoteState);
+  refs.languageControls.hidden = !isV2;
+  const current = normalizeQuoteV2Language(state.activeQuoteState?.quoteLanguage);
+  refs.languageControls.querySelectorAll('[data-quote-language]').forEach((button) => {
+    const active = normalizeQuoteV2Language(button.dataset.quoteLanguage) === current;
+    button.classList.toggle('is-active', active);
+    button.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+}
+
 function handleQuoteTermsInput(event) {
   if (!state.activeQuoteState) return;
-  const nextTerms = resolveTermsFromForms.normalizeTermsInput
-    ? resolveTermsFromForms.normalizeTermsInput(event?.target?.value ?? '')
-    : (event?.target?.value ?? '').split('\n').map((s) => s.trim()).filter(Boolean);
-  // normalizeTermsInput is imported from data-collection lazily to avoid circular dep
-  import('./data-collection.js').then(({ normalizeTermsInput }) => {
-    const terms = normalizeTermsInput(event?.target?.value ?? '');
-    if (terms.length) {
-      state.activeQuoteState.terms = terms;
-      const creationInput = document.getElementById('reservation-terms');
-      if (creationInput) {
-        creationInput.value = event.target.value;
-      }
-      const editInput = document.getElementById('edit-res-terms');
-      if (editInput) {
-        editInput.value = event.target.value;
-      }
-    } else {
-      state.activeQuoteState.terms = [...DEFAULT_TERMS];
-      updateQuoteTermsEditor();
-      const defaultText = DEFAULT_TERMS.join('\n');
-      const creationInput = document.getElementById('reservation-terms');
-      if (creationInput) {
-        creationInput.value = defaultText;
-      }
-      const editInput = document.getElementById('edit-res-terms');
-      if (editInput) {
-        editInput.value = defaultText;
-      }
+  const terms = normalizeTermsInput(event?.target?.value ?? '');
+  if (terms.length) {
+    state.activeQuoteState.terms = terms;
+    state.activeQuoteState.termsEdited = true;
+    const creationInput = document.getElementById('reservation-terms');
+    if (creationInput) {
+      creationInput.value = event.target.value;
     }
-    renderQuotePreview();
-  }).catch(() => {});
+    const editInput = document.getElementById('edit-res-terms');
+    if (editInput) {
+      editInput.value = event.target.value;
+    }
+  } else {
+    state.activeQuoteState.terms = [...DEFAULT_TERMS];
+    state.activeQuoteState.termsEdited = false;
+    updateQuoteTermsEditor();
+    const defaultText = DEFAULT_TERMS.join('\n');
+    const creationInput = document.getElementById('reservation-terms');
+    if (creationInput) {
+      creationInput.value = defaultText;
+    }
+    const editInput = document.getElementById('edit-res-terms');
+    if (editInput) {
+      editInput.value = defaultText;
+    }
+  }
+  renderQuotePreview();
 }
 
 function handleQuoteTermsReset(event) {
   event?.preventDefault?.();
   if (!state.activeQuoteState) return;
   state.activeQuoteState.terms = [...DEFAULT_TERMS];
+  state.activeQuoteState.termsEdited = false;
   const creationInput = document.getElementById('reservation-terms');
   if (creationInput) {
     creationInput.value = DEFAULT_TERMS.join('\n');
@@ -565,7 +579,6 @@ export async function exportQuoteAsPdf() {
   if (!state.activeQuoteState) return;
   showQuotePreviewStatus('export');
   const mobileViewport = isMobileViewport();
-  const { isIosSafari, isMobileSafariBrowser } = await import('./utils.js');
   const safariPopupRequired = !mobileViewport && isIosSafari();
   const mobileSafari = isMobileSafariBrowser();
   const mobileDownloadWindow = null;
@@ -585,8 +598,6 @@ export async function exportQuoteAsPdf() {
   primeDownloadWindow(safariDownloadWindow);
 
   let container = null;
-  const browserLimitMessage = t('reservations.quote.errors.browserLimit', 'تعذر إتمام عملية التحويل بسبب قيود المتصفح، يرجى إعادة المحاولة أو تقليل حجم المحتوى.');
-
   try {
     await ensureHtml2Pdf();
 
@@ -596,46 +607,21 @@ export async function exportQuoteAsPdf() {
       : state.activeQuoteState.reservation;
     // Do not reserve server-side sequences; we use digits-only from reservation/project identifiers for both contexts.
     // Keeping this block disabled preserves deterministic quote numbers and avoids server dependency.
-    const html = buildQuotationHtml({
-      context,
+    const html = buildQuoteV2Html({
+      ...state.activeQuoteState,
       reservation: reservationForExport || state.activeQuoteState.reservation,
-      customer: state.activeQuoteState.customer,
-      project: state.activeQuoteState.project,
-      crewAssignments: state.activeQuoteState.crewAssignments,
-      totals: state.activeQuoteState.totals,
-      totalsDisplay: state.activeQuoteState.totalsDisplay,
-      rentalDays: state.activeQuoteState.rentalDays,
-      currencyLabel: state.activeQuoteState.currencyLabel,
-      sections: state.activeQuoteState.sections,
-      fieldSelections: state.activeQuoteState.fields,
-      quoteNumber: state.activeQuoteState.quoteNumber,
-      quoteDate: state.activeQuoteState.quoteDateLabel,
-      terms: state.activeQuoteState.terms,
-      checklistType: state.activeQuoteState.checklistType,
-      checklistNotes: state.activeQuoteState.checklistNotes,
-      checklistNotesTitle: state.activeQuoteState.checklistNotesTitle,
-      hideLogo: Boolean(state.activeQuoteState.hideLogo),
-      hideCompany: Boolean(state.activeQuoteState.hideCompany),
-      headerOffset: Number(state.activeQuoteState.headerOffset || 0),
-      projectCrew: state.activeQuoteState.projectCrew,
-      projectExpenses: state.activeQuoteState.projectExpenses,
-    projectEquipment: state.activeQuoteState.projectEquipment,
-    projectInfo: state.activeQuoteState.projectInfo,
-    clientInfo: state.activeQuoteState.clientInfo,
-    paymentSummary: state.activeQuoteState.paymentSummary,
-    projectTotals: state.activeQuoteState.projectTotals,
-    blockOffsets: state.activeQuoteState.blockOffsets,
-    infoAlignments: state.activeQuoteState.infoAlignments
-  });
+    });
 
     container = document.createElement('div');
     container.innerHTML = html;
     Object.assign(container.style, {
       position: 'fixed',
       top: '0',
-      left: '0',
+      left: '-12000px',
       pointerEvents: 'none',
-      zIndex: '-1'
+      zIndex: '-1',
+      background: 'transparent',
+      overflow: 'hidden'
     });
     document.body.appendChild(container);
 
@@ -648,9 +634,8 @@ export async function exportQuoteAsPdf() {
     if (pdfRoot) {
       // Respect language-specific direction for export as in preview
       try {
-        const langNow = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : (pdfRoot.getAttribute('data-lang') || 'ar');
-        const isChecklist = (state.activeQuoteState?.context === 'reservationChecklist');
-        const rootDir = (isChecklist && langNow === 'en') ? 'ltr' : 'rtl';
+        const langNow = normalizeQuoteV2Language(state.activeQuoteState?.quoteLanguage);
+        const rootDir = langNow === 'en' ? 'ltr' : 'rtl';
         pdfRoot.setAttribute('dir', rootDir);
         pdfRoot.style.direction = rootDir;
         // Ensure CSS language-specific rules (e.g., table LTR) apply during export
@@ -670,18 +655,11 @@ export async function exportQuoteAsPdf() {
       pdfRoot.style.marginRight = 'auto';
       pdfRoot.scrollTop = 0;
       pdfRoot.scrollLeft = 0;
-    try {
-      await layoutQuoteDocument(pdfRoot, { context: 'export' });
-      // Re-validate after assets stabilize to ensure correct pagination
-      await sleep(120);
-      if (pagesOverflow(pdfRoot)) {
-        await layoutQuoteDocument(pdfRoot, { context: 'export' });
+      try {
+        await waitForQuoteAssets(pdfRoot);
+      } catch (layoutError) {
+        handlePdfError(layoutError, 'quoteV2Assets', { suppressToast: true });
       }
-      await waitForQuoteAssets(pdfRoot);
-      enforceQuoteTextColor(pdfRoot);
-    } catch (layoutError) {
-      handlePdfError(layoutError, 'layoutQuoteDocument', { suppressToast: true });
-    }
     }
 
     const filename = (context === 'reservationChecklist')
@@ -749,33 +727,25 @@ export function applyPreviewZoom(value) {
   wrapper.style.height = `${baseHeight}px`;
 }
 
-export function getAlignmentOptionsForContext(context = 'reservation') {
-  if (context === 'project') {
-    return [
-      { value: 'projectCustomer', label: t('projects.quote.sections.customer', 'بيانات العميل')} ,
-      { value: 'projectDetails', label: t('projects.quote.sections.project', 'بيانات المشروع') },
-    ];
+function getChecklistTitle(type = 'items', language = 'ar') {
+  const normalizedType = type === 'crew' || type === 'both' ? type : 'items';
+  const normalizedLanguage = normalizeQuoteV2Language(language);
+  if (normalizedLanguage === 'en') {
+    if (normalizedType === 'crew') return 'Crew List';
+    if (normalizedType === 'both') return 'Equipment & Crew List';
+    return 'Equipment List';
   }
-  return [
-    { value: 'customer', label: t('reservations.quote.sections.customer', 'بيانات العميل') },
-    { value: 'reservation', label: t('reservations.quote.sections.reservation', 'تفاصيل الحجز') },
-    { value: 'project', label: t('reservations.quote.sections.project', 'بيانات المشروع') },
-  ];
+  if (normalizedType === 'crew') return 'قائمة الفريق الفني';
+  if (normalizedType === 'both') return 'قائمة المعدات والطاقم الفني';
+  return 'قائمة المعدات';
 }
 
-export function refreshAlignmentOptions() {
-  if (!state.quoteModalRefs?.alignTarget) return;
-  const context = state.activeQuoteState?.context || 'reservation';
-  const options = getAlignmentOptionsForContext(context);
-  const select = state.quoteModalRefs.alignTarget;
-  const previous = select.value;
-  select.innerHTML = options.map((option) => `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`).join('');
-  if (options.some((option) => option.value === previous)) {
-    select.value = previous;
-  } else {
-    select.value = options[0]?.value || '';
-  }
-  updateInfoAlignmentControls();
+function syncChecklistModalTitle(titleEl = state.quoteModalRefs?.modal?.querySelector('#reservationQuoteModalLabel')) {
+  if (!titleEl || state.activeQuoteState?.context !== 'reservationChecklist') return;
+  titleEl.textContent = getChecklistTitle(
+    state.activeQuoteState.checklistType,
+    state.activeQuoteState.quoteLanguage || getCurrentLanguage?.() || 'ar',
+  );
 }
 
 export function ensureQuoteModal() {
@@ -783,19 +753,19 @@ export function ensureQuoteModal() {
 
   const modal = document.createElement('div');
   modal.id = 'reservationQuoteModal';
-  modal.className = 'modal fade quote-preview-modal';
+  modal.className = 'modal fade customer-edit-modal reservation-shell-modal quote-preview-modal';
   modal.tabIndex = -1;
   modal.setAttribute('aria-labelledby', 'reservationQuoteModalLabel');
   modal.setAttribute('aria-hidden', 'true');
   modal.style.display = 'none';
   modal.innerHTML = `
-    <div class="modal-dialog modal-xl modal-dialog-scrollable">
-      <div class="modal-content">
-        <div class="modal-header">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable customer-edit-modal__dialog reservation-shell-modal__dialog reservation-shell-modal__dialog--wide">
+      <div class="ui-modal__content modal-content customer-edit-modal__content reservation-shell-modal__content">
+        <div class="ui-modal__header modal-header customer-edit-modal__header reservation-shell-modal__header">
           <h5 class="modal-title" id="reservationQuoteModalLabel">${escapeHtml(t('reservations.quote.previewTitle', 'معاينة عرض سعر'))}</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="${escapeHtml(t('actions.close', 'إغلاق'))}"></button>
         </div>
-        <div class="modal-body">
+        <div class="ui-modal__body modal-body customer-edit-modal__body reservation-shell-modal__body">
           <div class="quote-preview-layout">
             <aside class="quote-preview-sidebar">
               <h6>${escapeHtml(t('reservations.quote.toggleHeading', 'حدد المعلومات المراد تصديرها'))}</h6>
@@ -812,7 +782,7 @@ export function ensureQuoteModal() {
             </section>
           </div>
         </div>
-        <div class="modal-footer">
+        <div class="ui-modal__footer modal-footer customer-edit-modal__footer reservation-shell-modal__footer">
           <button type="button" class="btn btn-light" data-bs-dismiss="modal">${escapeHtml(t('reservations.quote.actions.close', 'إغلاق'))}</button>
           <button type="button" class="btn btn-primary" data-quote-download>
             ${escapeHtml(t('reservations.quote.actions.export', '📄 تنزيل PDF'))}
@@ -823,6 +793,12 @@ export function ensureQuoteModal() {
   `;
 
   document.body.appendChild(modal);
+  modal.addEventListener('show.bs.modal', () => {
+    document.body.classList.add('quote-preview-modal-open');
+  });
+  modal.addEventListener('hidden.bs.modal', () => {
+    document.body.classList.remove('quote-preview-modal-open');
+  });
 
   const toggles = modal.querySelector('[data-quote-toggles]');
   const preview = modal.querySelector('[data-quote-preview]');
@@ -839,65 +815,6 @@ export function ensureQuoteModal() {
   if (modalHeader) {
     modalHeader.insertBefore(headerActions, headerCloseButton || null);
   }
-  const dropdownRegistry = [];
-  const closeAllDropdowns = (exceptEntry = null) => {
-    dropdownRegistry.forEach((entry) => {
-      if (entry !== exceptEntry) {
-        entry.menu.hidden = true;
-        entry.toggle.setAttribute('aria-expanded', 'false');
-        entry.wrapper.classList.remove('is-open');
-      }
-    });
-  };
-  const registerDropdown = (wrapper, toggle, menu) => {
-    dropdownRegistry.push({ wrapper, toggle, menu });
-  };
-  const handleDropdownOutsideClick = (event) => {
-    if (!dropdownRegistry.length) return;
-    const target = event.target;
-    const insideDropdown = dropdownRegistry.some((entry) => entry.wrapper.contains(target));
-    if (!insideDropdown) {
-      closeAllDropdowns();
-    }
-  };
-  document.addEventListener('click', handleDropdownOutsideClick);
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') {
-      closeAllDropdowns();
-    }
-  });
-  const createControlsDropdown = ({ label, icon, content }) => {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'quote-controls-dropdown';
-    const toggle = document.createElement('button');
-    toggle.type = 'button';
-    toggle.className = 'quote-controls-dropdown__toggle';
-    toggle.setAttribute('aria-haspopup', 'true');
-    toggle.setAttribute('aria-expanded', 'false');
-    toggle.innerHTML = `
-      ${icon ? `<span class="quote-controls-dropdown__icon" aria-hidden="true">${escapeHtml(icon)}</span>` : ''}
-      <span class="quote-controls-dropdown__label">${escapeHtml(label)}</span>
-      <span class="quote-controls-dropdown__caret" aria-hidden="true">▾</span>
-    `;
-    const menu = document.createElement('div');
-    menu.className = 'quote-controls-dropdown__menu';
-    menu.hidden = true;
-    menu.appendChild(content);
-    wrapper.appendChild(toggle);
-    wrapper.appendChild(menu);
-    toggle.addEventListener('click', (event) => {
-      event.stopPropagation();
-      const isOpen = wrapper.classList.contains('is-open');
-      closeAllDropdowns();
-      if (!isOpen) {
-        wrapper.classList.add('is-open');
-        menu.hidden = false;
-        toggle.setAttribute('aria-expanded', 'true');
-      }
-    });
-    registerDropdown(wrapper, toggle, menu);
-    return wrapper;
-  };
 
   const previewFrame = document.createElement('iframe');
   previewFrame.className = 'quote-preview-frame';
@@ -912,38 +829,12 @@ export function ensureQuoteModal() {
     <button type="button" class="quote-preview-zoom-btn" data-zoom-in title="${escapeHtml(t('reservations.quote.zoom.in', 'تكبير'))}">+</button>
     <button type="button" class="quote-preview-zoom-btn" data-zoom-reset title="${escapeHtml(t('reservations.quote.zoom.reset', 'إعادة الضبط'))}">1:1</button>
   `;
-  const dragControls = document.createElement('div');
-  dragControls.className = 'quote-preview-zoom-controls quote-preview-drag-controls';
-  dragControls.innerHTML = `
-    <button type="button" class="quote-preview-zoom-btn" data-block-drag-toggle title="${escapeHtml(t('reservations.quote.drag.enable', 'وضع تحريك البلوكات'))}" aria-label="${escapeHtml(t('reservations.quote.drag.enable', 'وضع تحريك البلوكات'))}">
-      <span aria-hidden="true">↕️</span>
-    </button>
-    <button type="button" class="quote-preview-zoom-btn" data-block-drag-save disabled title="${escapeHtml(t('reservations.quote.drag.save', 'تثبيت المواضع'))}" aria-label="${escapeHtml(t('reservations.quote.drag.save', 'تثبيت المواضع'))}">
-      <span aria-hidden="true">💾</span>
-    </button>
-    <button type="button" class="quote-preview-zoom-btn" data-block-drag-reset title="${escapeHtml(t('reservations.quote.drag.resetBtn', 'تصفير المواضع'))}" aria-label="${escapeHtml(t('reservations.quote.drag.resetBtn', 'تصفير المواضع'))}">
-      <span aria-hidden="true">⟲</span>
-    </button>
+  const languageControls = document.createElement('div');
+  languageControls.className = 'quote-preview-zoom-controls quote-preview-language-controls';
+  languageControls.innerHTML = `
+    <button type="button" class="quote-preview-zoom-btn" data-quote-language="ar">العربية</button>
+    <button type="button" class="quote-preview-zoom-btn" data-quote-language="en">English</button>
   `;
-  const alignControls = document.createElement('div');
-  alignControls.className = 'quote-preview-zoom-controls quote-preview-align-controls';
-  const alignCustomerLabel = escapeHtml(t('reservations.quote.align.customer', 'بيانات العميل'));
-  const alignReservationLabel = escapeHtml(t('reservations.quote.align.reservation', 'تفاصيل الحجز'));
-  const alignProjectLabel = escapeHtml(t('reservations.quote.align.project', 'بيانات المشروع'));
-  alignControls.innerHTML = `
-    <select class="quote-preview-align-select" data-align-target>
-      <option value="customer">${alignCustomerLabel}</option>
-      <option value="reservation">${alignReservationLabel}</option>
-      <option value="project">${alignProjectLabel}</option>
-    </select>
-    <div class="quote-preview-align-buttons">
-      <button type="button" class="quote-preview-zoom-btn" data-align-value="left" title="${escapeHtml(t('reservations.quote.align.left', 'محاذاة يسار'))}">⬅️</button>
-      <button type="button" class="quote-preview-zoom-btn" data-align-value="center" title="${escapeHtml(t('reservations.quote.align.center', 'محاذاة وسط'))}">↔️</button>
-      <button type="button" class="quote-preview-zoom-btn" data-align-value="right" title="${escapeHtml(t('reservations.quote.align.right', 'محاذاة يمين'))}">➡️</button>
-    </div>
-    <button type="button" class="quote-preview-zoom-btn" data-layout-export title="${escapeHtml(t('reservations.quote.align.export', 'نسخ الإعدادات الحالية'))}">📋</button>
-  `;
-
   const frameWrapper = document.createElement('div');
   frameWrapper.className = 'quote-preview-frame-wrapper';
   frameWrapper.appendChild(previewFrame);
@@ -964,13 +855,8 @@ export function ensureQuoteModal() {
     <button type="button" class="quote-preview-status-action" data-quote-status-action hidden></button>
   `;
   preview.appendChild(statusIndicator);
-  const dragDropdownLabel = t('reservations.quote.dropdown.drag', 'التحريك', 'Adjust layout');
-  const alignDropdownLabel = t('reservations.quote.dropdown.align', 'المحاذاة', 'Alignment');
-  const dragDropdown = createControlsDropdown({ label: dragDropdownLabel, icon: '🎚️', content: dragControls });
-  const alignDropdown = createControlsDropdown({ label: alignDropdownLabel, icon: '📐', content: alignControls });
+  headerActions.appendChild(languageControls);
   headerActions.appendChild(zoomControls);
-  headerActions.appendChild(dragDropdown);
-  headerActions.appendChild(alignDropdown);
 
   downloadBtn?.addEventListener('click', async () => {
     if (!state.activeQuoteState) return;
@@ -1009,6 +895,7 @@ export function ensureQuoteModal() {
     previewScroll,
     previewFrameWrapper: frameWrapper,
     zoomControls,
+    languageControls,
     zoomValue: zoomControls.querySelector('[data-zoom-value]'),
     previewFrame,
     meta,
@@ -1020,37 +907,26 @@ export function ensureQuoteModal() {
     termsInput,
     termsReset,
     statusKind: null,
-    userAdjustedZoom: false,
-    blockDragToggle: dragControls.querySelector('[data-block-drag-toggle]'),
-    blockDragSave: dragControls.querySelector('[data-block-drag-save]'),
-    blockDragReset: dragControls.querySelector('[data-block-drag-reset]'),
-    alignTarget: alignControls.querySelector('[data-align-target]'),
-    alignButtons: Array.from(alignControls.querySelectorAll('[data-align-value]')),
-    layoutExportBtn: alignControls.querySelector('[data-layout-export]')
+    userAdjustedZoom: false
   };
 
   const zoomOutBtn = zoomControls.querySelector('[data-zoom-out]');
   const zoomInBtn = zoomControls.querySelector('[data-zoom-in]');
   const zoomResetBtn = zoomControls.querySelector('[data-zoom-reset]');
+  const languageButtons = Array.from(languageControls.querySelectorAll('[data-quote-language]'));
 
   zoomOutBtn?.addEventListener('click', () => adjustPreviewZoom(-0.1));
   zoomInBtn?.addEventListener('click', () => adjustPreviewZoom(0.1));
-  zoomResetBtn?.addEventListener('click', () => setPreviewZoom(1, { markManual: true }));
-  state.quoteModalRefs.blockDragToggle?.addEventListener('click', () => setBlockDragMode(!state.blockDragMode));
-  state.quoteModalRefs.blockDragSave?.addEventListener('click', persistCurrentBlockOffsets);
-  state.quoteModalRefs.blockDragReset?.addEventListener('click', resetStoredBlockOffsets);
-  state.quoteModalRefs.alignTarget?.addEventListener('change', () => updateInfoAlignmentControls());
-  (state.quoteModalRefs.alignButtons || []).forEach((button) => {
+  zoomResetBtn?.addEventListener('click', () => setPreviewZoom(isQuoteV2Context(state.activeQuoteState) ? 0.9 : 1, { markManual: true }));
+  languageButtons.forEach((button) => {
     button.addEventListener('click', () => {
-      const target = state.quoteModalRefs.alignTarget?.value || 'customer';
-      const value = button.dataset.alignValue || 'right';
-      applyInfoAlignment(target, value);
+      if (!state.activeQuoteState) return;
+      state.activeQuoteState.quoteLanguage = normalizeQuoteV2Language(button.dataset.quoteLanguage);
+      syncQuoteLanguageControls();
+      syncChecklistModalTitle();
+      renderQuotePreview();
     });
   });
-  state.quoteModalRefs.layoutExportBtn?.addEventListener('click', exportCurrentLayoutSettings);
-  updateBlockDragButtons();
-  refreshAlignmentOptions();
-
   if (termsInput) {
     termsInput.addEventListener('input', handleQuoteTermsInput);
   }
@@ -1069,11 +945,12 @@ function openQuoteModal() {
   if (!refs?.modal) return;
 
   state.quoteAssetWarningShown = false;
-  state.previewZoom = 1;
+  state.previewZoom = isQuoteV2Context(state.activeQuoteState) ? 0.9 : 1;
   if (state.quoteModalRefs) {
     state.quoteModalRefs.userAdjustedZoom = false;
   }
-  setPreviewZoom(state.previewZoom, { silent: true });
+  setPreviewZoom(state.previewZoom);
+  syncQuoteLanguageControls();
 
   // Inject checklist-specific controls and labels when needed
   if (state.activeQuoteState?.context === 'reservationChecklist') {
@@ -1095,38 +972,33 @@ function openQuoteModal() {
         const hideCompanyLabel = escapeHtml(t('reservations.checklist.controls.hideCompany', 'إخفاء اسم الشركة'));
         const notesTitle = escapeHtml(t('reservations.checklist.controls.notes.title', 'ملاحظات اللستة (اختياري)'));
         const notesPlaceholder = escapeHtml(t('reservations.checklist.controls.notes.placeholder', 'اكتب أي ملاحظات خاصة بهذه اللستة'));
-        const lang = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'ar';
-        const langBtnLabel = lang === 'en'
-          ? escapeHtml(t('language.toggle.labelAr', '🇸🇦 العربية'))
-          : escapeHtml(t('language.toggle.labelEn', '🇬🇧 English'));
         const lessorTitle = escapeHtml(t('reservations.checklist.controls.lessors.title', '🏢 تصفية حسب المؤجر'));
         const lessorClearLabel = escapeHtml(t('reservations.checklist.controls.lessors.clear', 'إظهار كل المؤجرين'));
 
         controls.innerHTML = `
-          <div class="quote-meta-card" style="margin-bottom:10px">
-            <div style="display:flex;gap:10px;flex-wrap:wrap">
-              <label style="display:flex;align-items:center;gap:6px">
+          <div class="quote-checklist-card quote-checklist-type-card">
+            <div class="quote-checklist-option-list">
+              <label class="quote-checklist-option">
                 <input type="radio" name="checklist-type" value="items" checked>
                 <span data-i18n data-i18n-key="reservations.checklist.controls.items">${itemsLabel}</span>
               </label>
-              <label style="display:flex;align-items:center;gap:6px">
+              <label class="quote-checklist-option">
                 <input type="radio" name="checklist-type" value="crew">
                 <span data-i18n data-i18n-key="reservations.checklist.controls.crew">${crewLabel}</span>
               </label>
-              <label style="display:flex;align-items:center;gap:6px">
+              <label class="quote-checklist-option">
                 <input type="radio" name="checklist-type" value="both">
                 <span data-i18n data-i18n-key="reservations.checklist.controls.both">${bothLabel}</span>
               </label>
             </div>
           </div>
-          <div class="quote-meta-card" style="margin-bottom:10px">
-            <div style="display:flex;gap:8px;flex-wrap:wrap">
-              <button type="button" class="btn btn-sm btn-light" data-checklist-lang>${langBtnLabel}</button>
-              <label style="display:flex;align-items:center;gap:6px">
+          <div class="quote-checklist-card quote-checklist-branding-card">
+            <div class="quote-checklist-option-list quote-checklist-option-list--compact">
+              <label class="quote-checklist-option quote-checklist-option--checkbox">
                 <input type="checkbox" data-checklist-hide-logo>
                 <span data-i18n data-i18n-key="reservations.checklist.controls.hideLogo">${hideLogoLabel}</span>
               </label>
-              <label style="display:flex;align-items:center;gap:6px">
+              <label class="quote-checklist-option quote-checklist-option--checkbox">
                 <input type="checkbox" data-checklist-hide-company>
                 <span data-i18n data-i18n-key="reservations.checklist.controls.hideCompany">${hideCompanyLabel}</span>
               </label>
@@ -1139,11 +1011,11 @@ function openQuoteModal() {
             <textarea id="checklist-notes-input" class="quote-terms-editor__textarea" rows="4" data-i18n-placeholder-key="reservations.checklist.controls.notes.placeholder" placeholder="${notesPlaceholder}"></textarea>
           </div>
           <div class="quote-meta-card" data-checklist-lessors hidden>
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">
+            <div class="quote-checklist-lessor-head">
               <span data-i18n data-i18n-key="reservations.checklist.controls.lessors.title">${lessorTitle}</span>
               <button type="button" class="btn btn-sm btn-outline-secondary" data-lessor-clear>${lessorClearLabel}</button>
             </div>
-            <div data-lessor-options style="display:flex;flex-direction:column;gap:6px;"></div>
+            <div class="quote-checklist-lessor-options" data-lessor-options></div>
           </div>
         `;
         sidebar.prepend(controls);
@@ -1165,12 +1037,7 @@ function openQuoteModal() {
             }
             state.activeQuoteState.sections = base;
             // Update modal title to reflect selection
-            if (titleEl) {
-              const langNow = getCurrentLanguage?.() || 'ar';
-              const labelAr = state.activeQuoteState.checklistType === 'crew' ? 'قائمة الفريق الفني' : (state.activeQuoteState.checklistType === 'both' ? 'قائمة المعدات والطاقم الفني' : 'قائمة المعدات');
-              const labelEn = state.activeQuoteState.checklistType === 'crew' ? 'Crew List' : (state.activeQuoteState.checklistType === 'both' ? 'Equipment & Crew List' : 'Equipment List');
-              titleEl.textContent = langNow === 'en' ? labelEn : labelAr;
-            }
+            syncChecklistModalTitle(titleEl);
             renderQuoteToggles();
             updateQuoteMeta();
             renderQuotePreview();
@@ -1181,7 +1048,7 @@ function openQuoteModal() {
         const notesTitleInput = controls.querySelector('#checklist-notes-title-input');
         const syncNotesDirection = () => {
           try {
-            const langNow = getCurrentLanguage?.() || 'ar';
+            const langNow = normalizeQuoteV2Language(state.activeQuoteState?.quoteLanguage || getCurrentLanguage?.() || 'ar');
             const dir = langNow === 'en' ? 'ltr' : 'rtl';
             const align = langNow === 'en' ? 'left' : 'right';
             if (notesInput) { notesInput.setAttribute('dir', dir); notesInput.style.textAlign = align; }
@@ -1206,35 +1073,6 @@ function openQuoteModal() {
           renderQuotePreview();
         });
 
-        // Language toggle
-        const langBtn = controls.querySelector('[data-checklist-lang]');
-        if (langBtn) {
-          const syncLabel = () => {
-            const lang = getCurrentLanguage?.() || 'ar';
-            langBtn.textContent = lang === 'ar' ? '🇬🇧 English' : '🇸🇦 العربية';
-          };
-          syncLabel();
-          langBtn.addEventListener('click', () => {
-            const lang = getCurrentLanguage?.() || 'ar';
-            const next = lang === 'ar' ? 'en' : 'ar';
-            try { setLanguage?.(next); } catch(_) {}
-            syncLabel();
-            // Ensure notes input direction matches chosen language
-            syncNotesDirection();
-            // update title to current language
-            if (titleEl) {
-              const langNow = getCurrentLanguage?.() || 'ar';
-              const type = state.activeQuoteState.checklistType;
-              const labelAr = type === 'crew' ? 'قائمة الفريق الفني' : (type === 'both' ? 'قائمة المعدات والطاقم الفني' : 'قائمة المعدات');
-              const labelEn = type === 'crew' ? 'Crew List' : (type === 'both' ? 'Equipment & Crew List' : 'Equipment List');
-              titleEl.textContent = langNow === 'en' ? labelEn : labelAr;
-            }
-            renderQuoteToggles();
-            updateQuoteMeta();
-            renderQuotePreview();
-          });
-        }
-
         // Header branding visibility
         const hideLogoCb = controls.querySelector('[data-checklist-hide-logo]');
         const hideCompanyCb = controls.querySelector('[data-checklist-hide-company]');
@@ -1258,9 +1096,7 @@ function openQuoteModal() {
       refs.checklistLessorOptionsHost = controls.querySelector('[data-lessor-options]');
       renderChecklistLessorFilters();
 
-      if (titleEl) {
-        titleEl.textContent = state.activeQuoteState.checklistType === 'crew' ? 'قائمة الفريق الفني' : 'قائمة المعدات';
-      }
+      syncChecklistModalTitle(titleEl);
       // Update preview frame title for a11y
       try { refs.previewFrame?.setAttribute('title', 'معاينة اللستة'); } catch(_) {}
     } catch (_) { /* non-fatal */ }
@@ -1298,15 +1134,16 @@ export async function exportReservationPdf({ reservation, customer, project }) {
     ];
     const first = codeCandidates.find((v) => v != null && String(v).trim() !== '');
     const normalized = normalizeNumbers(String(first ?? '1'));
-    const digitsOnly = normalized.replace(/\D+/g, '');
-    return digitsOnly || normalized || '1';
+    return normalized || '1';
   };
   const quoteNumber = deriveReservationQuoteNumber(reservation);
-  const sequence = Number.parseInt(quoteNumber, 10) || 1;
+  const sequence = Number.parseInt(String(quoteNumber).replace(/\D+/g, ''), 10) || 1;
   const now = new Date();
   const baseTerms = resolveTermsFromForms();
 
   state.activeQuoteState = {
+    quoteVersion: state.quotePdfVersion || 'v2',
+    quoteLanguage: normalizeQuoteV2Language(getCurrentLanguage?.() || 'ar'),
     context: 'reservation',
     reservation,
     customer,
@@ -1323,6 +1160,7 @@ export async function exportReservationPdf({ reservation, customer, project }) {
     sectionExpansions: buildDefaultSectionExpansions('reservation'),
     fields: buildDefaultFieldSelections('reservation'),
     terms: baseTerms,
+    termsEdited: false,
     // Show reservation-based quote number in preview; no server reservation needed
     quoteSequence: sequence,
     quoteNumber,
@@ -1330,11 +1168,7 @@ export async function exportReservationPdf({ reservation, customer, project }) {
     quoteDateLabel: formatQuoteDate(now),
     sequenceCommitted: false
   };
-  state.initializedInfoAlignments = false;
-
   applyQuoteTogglePreferences(state.activeQuoteState);
-  initializeQuoteBlockOffsets(state.activeQuoteState);
-  import('./layout.js').then(({ initializeInfoAlignments }) => initializeInfoAlignments(state.activeQuoteState)).catch(() => {});
   openQuoteModal();
   // Attach live update listeners once per session
   try { attachQuoteLiveListeners(); } catch (_) {}
@@ -1355,8 +1189,24 @@ export async function exportReservationChecklistPdf({ reservation, customer, pro
 
   // In checklist mode, we don't need a unique quote sequence, but keep date/number for consistency
   const now = new Date();
+  const deriveChecklistQuoteNumber = (res) => {
+    if (!res) return '1';
+    const codeCandidates = [
+      res.reservationCode,
+      res.reservation_code,
+      res.reservationId,
+      res.reservation_id,
+      res.id
+    ];
+    const first = codeCandidates.find((value) => value != null && String(value).trim() !== '');
+    const normalized = normalizeNumbers(String(first ?? '1'));
+    return normalized || '1';
+  };
+  const quoteNumber = deriveChecklistQuoteNumber(reservation);
 
   state.activeQuoteState = {
+    quoteVersion: state.quotePdfVersion || 'v2',
+    quoteLanguage: normalizeQuoteV2Language(getCurrentLanguage?.() || 'ar'),
     context: 'reservationChecklist',
     reservation,
     customer,
@@ -1377,6 +1227,7 @@ export async function exportReservationChecklistPdf({ reservation, customer, pro
     fields: buildDefaultFieldSelections('reservationChecklist'),
     // Checklist: no default terms; controlled by custom notes input instead
     terms: [],
+    quoteNumber,
     quoteDate: now,
     quoteDateLabel: formatQuoteDate(now),
     sequenceCommitted: false
@@ -1384,12 +1235,8 @@ export async function exportReservationChecklistPdf({ reservation, customer, pro
   state.activeQuoteState.checklistLessorFilter = new Set();
   state.activeQuoteState.checklistLessorOptions = [];
   state.activeQuoteState.checklistEquipmentLookup = buildChecklistEquipmentLookup();
-  state.initializedInfoAlignments = false;
-
   refreshChecklistLessorOptions();
   applyQuoteTogglePreferences(state.activeQuoteState);
-  initializeQuoteBlockOffsets(state.activeQuoteState);
-  import('./layout.js').then(({ initializeInfoAlignments }) => initializeInfoAlignments(state.activeQuoteState)).catch(() => {});
   openQuoteModal();
   try { attachQuoteLiveListeners(); } catch (_) {}
 }
@@ -1433,15 +1280,16 @@ export async function exportProjectPdf({ project }) {
     ];
     const first = candidates.find((v) => v != null && String(v).trim() !== '');
     const normalized = normalizeNumbers(String(first ?? '1'));
-    const digitsOnly = normalized.replace(/\D+/g, '');
-    return digitsOnly || normalized || '1';
+    return normalized || '1';
   };
   const quoteNumber = deriveProjectQuoteNumber(resolvedProject);
-  const sequence = Number.parseInt(quoteNumber, 10) || 1;
+  const sequence = Number.parseInt(String(quoteNumber).replace(/\D+/g, ''), 10) || 1;
   const now = new Date();
   const baseTerms = [...PROJECT_QUOTE_TERMS];
 
   state.activeQuoteState = {
+    quoteVersion: state.quotePdfVersion || 'v2',
+    quoteLanguage: normalizeQuoteV2Language(getCurrentLanguage?.() || 'ar'),
     context: 'project',
     reservation: null,
     customer: projectData.customer,
@@ -1464,6 +1312,7 @@ export async function exportProjectPdf({ project }) {
     sectionExpansions: buildDefaultSectionExpansions('project'),
     fields: buildDefaultFieldSelections('project'),
     terms: baseTerms,
+    termsEdited: false,
     quoteSequence: sequence,
     quoteNumber,
     quoteDate: now,
@@ -1473,11 +1322,16 @@ export async function exportProjectPdf({ project }) {
     projectNotes: projectData.notes,
     paymentHistory: projectData.paymentHistory
   };
-  state.initializedInfoAlignments = false;
-
   applyQuoteTogglePreferences(state.activeQuoteState);
-  initializeQuoteBlockOffsets(state.activeQuoteState);
-  import('./layout.js').then(({ initializeInfoAlignments }) => initializeInfoAlignments(state.activeQuoteState)).catch(() => {});
   openQuoteModal();
   try { attachQuoteLiveListeners(); } catch (_) {}
 }
+
+registerQuotePdfCallbacks({
+  showQuotePreviewStatus,
+  hideQuotePreviewStatus,
+  notifyQuoteAssetFailure,
+  exportQuoteAsPdf,
+  renderChecklistLessorFilters,
+  applyPreviewZoom,
+});

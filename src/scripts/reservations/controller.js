@@ -40,12 +40,21 @@ import {
 } from './formUtils.js';
 import { updatePreferences } from '../preferencesService.js';
 import { ensureProjectsLoaded } from '../projectsService.js';
+import { ensureEquipmentCatalogLoaded } from '../reservationsEquipment.js';
 import { setReservationsUIHandlers } from './uiBridge.js';
+import mountReservationModalsIfNeeded from './modals.js';
 
 export function loadReservationForm() {
-  return ensureProjectsLoaded().catch((error) => {
-    console.warn('⚠️ [reservations/controller] Failed to refresh projects before loading form', error);
-  }).finally(() => {
+  return Promise.allSettled([
+    ensureProjectsLoaded(),
+    ensureEquipmentCatalogLoaded(),
+  ]).then(([projectsResult, equipmentResult]) => {
+    if (projectsResult.status === 'rejected') {
+      console.warn('⚠️ [reservations/controller] Failed to refresh projects before loading form', projectsResult.reason);
+    }
+    if (equipmentResult.status === 'rejected') {
+      console.warn('⚠️ [reservations/controller] Failed to refresh equipment before loading form', equipmentResult.reason);
+    }
     const { technicians } = loadData() || {};
     reconcileTechnicianSelections(technicians || []);
     refreshCreateReservationForm();
@@ -154,11 +163,13 @@ function getCloseModalElements() {
 }
 
 export function openCloseReservationModal(index, _event = null, reservationId = null) {
+  mountReservationModalsIfNeeded();
   pendingCloseIndex = index;
   pendingCloseReservationId = reservationId ?? null;
   const { modal, note } = getCloseModalElements();
   if (note) note.value = '';
   if (modal && (window.bootstrap?.Modal || (typeof bootstrap !== 'undefined' && bootstrap?.Modal))) {
+    document.body.classList.add('reservation-modal-open');
     const inst = (window.bootstrap?.Modal || bootstrap.Modal).getOrCreateInstance(modal);
     inst.show();
   }
@@ -190,6 +201,7 @@ function bindCloseReservationModalOnce() {
 }
 
 export function openReservationEditor(index, reservation = null) {
+  mountReservationModalsIfNeeded();
   if (document.getElementById('reservation-form')) {
     try {
       localStorage.removeItem('pendingReservationEditId');
@@ -241,7 +253,7 @@ export function openReservationEditor(index, reservation = null) {
   });
 
   const search = params.toString();
-  const target = search ? `dashboard.html?${search}#reservations` : 'dashboard.html#reservations';
+  const target = search ? `operations.html?${search}#reservations` : 'operations.html#reservations';
   window.location.href = target;
 }
 

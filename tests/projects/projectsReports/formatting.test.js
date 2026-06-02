@@ -24,7 +24,7 @@ describe('projectsReports/formatting', () => {
     expect(formatDateOnly('2026-04-05T10:30:00Z', 'en')).toMatch(/04\/05\/2026|4\/5\/2026|05\/04\/2026/);
     expect(formatProjectPeriod('2026-04-05T10:30:00Z', '2026-04-06T10:30:00Z', 'en')).toContain('→');
     expect(formatCurrency(1530, 'en')).toBe('1,530 SR');
-    expect(formatPercent(12.34, 'en')).toBe('12.3%');
+    expect(formatPercent(12.34, 'en')).toBe('\u206812.3%\u2069');
   });
 
   it('formats compact values for charts', () => {

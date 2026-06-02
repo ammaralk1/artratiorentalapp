@@ -40,6 +40,9 @@ export interface TemplatesTabState {
   editingTimer: TimerHandle | null;
   autosaveTimer: TimerHandle | null;
   remoteAutosaveTimer: TimerHandle | null;
+  manualEditConfirmed: boolean;
+  hasManualEdits: boolean;
+  hydratedReservations: Record<string, unknown>;
 }
 
 function readInitialTemplateLang(): TemplatesLang {
@@ -84,4 +87,39 @@ export const templatesTabState: TemplatesTabState = {
   editingTimer: null,
   autosaveTimer: null,
   remoteAutosaveTimer: null,
+  manualEditConfirmed: false,
+  hasManualEdits: false,
+  hydratedReservations: {},
 };
+
+export function resetTemplatesRuntimeState(): void {
+  templatesTabState.eventsBound = false;
+  templatesTabState.hostEl = null;
+  templatesTabState.repopulateTimer = null;
+  templatesTabState.tableUnbind = null;
+  templatesTabState.subtotalTimer = null;
+  templatesTabState.expensesUnbind = null;
+  templatesTabState.isComposing = false;
+  templatesTabState.inputTimer = null;
+  templatesTabState.enforceTimer = null;
+  templatesTabState.listeners.hostInput = null;
+  templatesTabState.listeners.hostMouseDown = null;
+  templatesTabState.listeners.hostFocusIn = null;
+  templatesTabState.listeners.hostFocusOut = null;
+  templatesTabState.listeners.hostCompStart = null;
+  templatesTabState.listeners.hostCompEnd = null;
+  templatesTabState.listeners.projChanged = null;
+  templatesTabState.listeners.resChanged = null;
+  templatesTabState.listeners.resUpdated = null;
+  templatesTabState.listeners.tabClick = null;
+  templatesTabState.manualEditConfirmed = false;
+  templatesTabState.hasManualEdits = false;
+  templatesTabState.hydratedReservations = {};
+}
+
+export function setTemplatesHydratedReservation(reservation: { id?: unknown; reservationId?: unknown } | null | undefined): void {
+  if (!reservation || typeof reservation !== 'object') return;
+  const id = reservation.id ?? reservation.reservationId ?? null;
+  if (id == null || id === '') return;
+  templatesTabState.hydratedReservations[String(id)] = reservation;
+}

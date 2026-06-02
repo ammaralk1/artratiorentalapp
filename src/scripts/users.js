@@ -1,10 +1,12 @@
 import '../styles/app.css';
+import '../styles/users.css';
 import { applyStoredTheme, initThemeToggle } from './theme.js';
 import { checkAuth, logout, getCurrentUser } from './auth.js';
 import { apiRequest, ApiError } from './apiClient.js';
 import { showToast, formatDateTime, normalizeNumbers } from './utils.js';
 import { t } from './language.js';
 import { initDashboardShell } from './dashboardShell.js';
+import { jumpPaginationSectionToStart, settlePaginationSectionToStart } from './ui/paginationViewport.js';
 
 applyStoredTheme();
 initDashboardShell();
@@ -15,7 +17,11 @@ const state = {
   loading: false,
   processing: false,
   editingId: null,
+  page: 1,
 };
+
+const USERS_PAGE_SIZE = 10;
+const USERS_TABLE_COLSPAN = 7;
 
 const ACTION_LABELS = {
   LOGIN_SUCCESS: { key: 'users.logs.actions.loginSuccess', fallback: 'Successful login' },
@@ -51,6 +57,11 @@ const selectors = {
   idInput: '#user-id',
   submitBtn: '#user-form button[type="submit"]',
   searchInput: '#users-search',
+  pagination: '#users-pagination',
+  statTotal: '#users-stat-total',
+  statAdmins: '#users-stat-admins',
+  statManagers: '#users-stat-managers',
+  statTechnicians: '#users-stat-technicians',
   tableBody: '#users-table tbody',
   sessionsBody: '#user-sessions-body',
   activityBody: '#user-activity-body',
@@ -59,8 +70,81 @@ const selectors = {
 };
 
 const elements = {};
-let logsModalInstance = null;
+let logsModalController = null;
 let activeUser = null;
+
+function createLogsModalController() {
+  const modalEl = elements.modal;
+  if (!modalEl) return null;
+
+  const backdropSelector = '[data-users-modal-backdrop="true"]';
+
+  const removeBackdrop = () => {
+    document.querySelector(backdropSelector)?.remove();
+  };
+
+  const createBackdrop = () => {
+    removeBackdrop();
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop fade show';
+    backdrop.dataset.usersModalBackdrop = 'true';
+    document.body.append(backdrop);
+  };
+
+  const focusPrimaryControl = () => {
+    modalEl.querySelector('[data-modal-close], .btn-close, button, [href]')?.focus({ preventScroll: true });
+  };
+
+  const close = () => {
+    modalEl.classList.remove('show');
+    modalEl.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('modal-open');
+    document.documentElement.classList.remove('modal-open');
+    removeBackdrop();
+    renderSessions([]);
+    renderActivity([]);
+    if (activeUser && typeof activeUser.focus === 'function') {
+      activeUser.focus({ preventScroll: true });
+    }
+    activeUser = null;
+  };
+
+  const open = () => {
+    activeUser = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    modalEl.classList.add('show');
+    modalEl.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('modal-open');
+    document.documentElement.classList.add('modal-open');
+    createBackdrop();
+    requestAnimationFrame(focusPrimaryControl);
+  };
+
+  if (!modalEl.dataset.modalControllerBound) {
+    modalEl.addEventListener('click', (event) => {
+      if (event.target === modalEl || event.target.closest('[data-modal-close]')) {
+        close();
+      }
+    });
+    modalEl.dataset.modalControllerBound = 'true';
+  }
+
+  return {
+    open,
+    close,
+    isOpen: () => modalEl.classList.contains('show'),
+  };
+}
+
+function ensureLogsModalController() {
+  if (!logsModalController) {
+    logsModalController = createLogsModalController();
+  }
+  return logsModalController;
+}
+
+function revealPage() {
+  document.body.classList.remove('auth-pending');
+}
 
 function cacheElements() {
   Object.entries(selectors).forEach(([key, selector]) => {
@@ -75,6 +159,65 @@ function escapeHtml(value) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+function renderTableStateRow(message, tone = 'muted', colspan = USERS_TABLE_COLSPAN) {
+  return `
+    <tr>
+      <td colspan="${colspan}" class="text-center text-${tone}">${escapeHtml(message)}</td>
+    </tr>
+  `;
+}
+
+function renderTableStack(primary, secondary = '', { primaryDir = '', secondaryDir = '' } = {}) {
+  const primaryAttr = primaryDir ? ` dir="${primaryDir}"` : '';
+  const secondaryAttr = secondaryDir ? ` dir="${secondaryDir}"` : '';
+  return `
+    <div class="flex flex-col gap-1">
+      <div class="users-table-primary"${primaryAttr}>${escapeHtml(primary || '—')}</div>
+      ${secondary ? `<div class="users-table-secondary"${secondaryAttr}>${escapeHtml(secondary)}</div>` : ''}
+    </div>
+  `;
+}
+
+function renderClientPagination(host, { total, page, pageSize, onPageAttr }) {
+  if (!host) return;
+  const safePageSize = Math.max(1, Number(pageSize) || 1);
+  const totalItems = Math.max(0, Number(total) || 0);
+  const totalPages = Math.max(1, Math.ceil(totalItems / safePageSize));
+  const currentPage = Math.min(Math.max(1, Number(page) || 1), totalPages);
+
+  if (totalPages <= 1) {
+    host.hidden = true;
+    host.innerHTML = '';
+    return;
+  }
+
+  const navLabel = t('users.pagination.navigation', 'User list pagination');
+  const prevLabel = t('users.pagination.prev', 'Previous page');
+  const nextLabel = t('users.pagination.next', 'Next page');
+  const pageLabelTemplate = t('users.pagination.page', 'Page {page}');
+  const start = totalItems === 0 ? 0 : ((currentPage - 1) * safePageSize) + 1;
+  const end = Math.min(totalItems, currentPage * safePageSize);
+  const rangeText = t('users.pagination.range', 'Showing {start}-{end} of {total}')
+    .replace('{start}', normalizeNumbers(String(start)))
+    .replace('{end}', normalizeNumbers(String(end)))
+    .replace('{total}', normalizeNumbers(String(totalItems)));
+
+  const pages = Array.from({ length: totalPages }, (_, index) => index + 1);
+  host.hidden = false;
+  host.innerHTML = `
+    <div class="list-pagination__summary text-muted small">${escapeHtml(rangeText)}</div>
+    <div class="list-pagination__controls btn-group" role="group" aria-label="${escapeHtml(navLabel)}">
+      <button type="button" class="btn btn-sm btn-outline-primary" ${onPageAttr}="${Math.max(1, currentPage - 1)}" ${currentPage <= 1 ? 'disabled' : ''} aria-label="${escapeHtml(prevLabel)}">‹</button>
+      ${pages.map((pageNumber) => {
+        const active = pageNumber === currentPage;
+        const label = pageLabelTemplate.replace('{page}', normalizeNumbers(String(pageNumber)));
+        return `<button type="button" class="btn btn-sm ${active ? 'btn-primary' : 'btn-outline-primary'}" ${onPageAttr}="${pageNumber}" aria-label="${escapeHtml(label)}" ${active ? 'aria-current="page"' : ''}>${normalizeNumbers(String(pageNumber))}</button>`;
+      }).join('')}
+      <button type="button" class="btn btn-sm btn-outline-primary" ${onPageAttr}="${Math.min(totalPages, currentPage + 1)}" ${currentPage >= totalPages ? 'disabled' : ''} aria-label="${escapeHtml(nextLabel)}">›</button>
+    </div>
+  `;
 }
 
 function toTitleCase(value) {
@@ -195,12 +338,12 @@ function formatDetailValue(value) {
 function setError(message) {
   if (!elements.errorAlert) return;
   if (!message) {
-    elements.errorAlert.classList.add('d-none');
+    elements.errorAlert.hidden = true;
     elements.errorAlert.textContent = '';
     return;
   }
   elements.errorAlert.textContent = message;
-  elements.errorAlert.classList.remove('d-none');
+  elements.errorAlert.hidden = false;
 }
 
 function setLoading(isLoading) {
@@ -233,42 +376,54 @@ function roleBadge(role) {
     technician: t('users.badges.role.technician', 'Technician'),
   };
 
-  const badgeClass = normalized === 'admin'
-    ? 'badge badge-outline badge-error'
+  const variantClass = normalized === 'admin'
+    ? 'users-role-chip--admin'
     : normalized === 'manager'
-      ? 'badge badge-outline badge-primary'
-      : 'badge badge-outline';
+      ? 'users-role-chip--manager'
+      : 'users-role-chip--technician';
 
-  return `<span class="${badgeClass}">${escapeHtml(labels[normalized] || role || '')}</span>`;
+  return `<span class="users-role-chip ${variantClass}">${escapeHtml(labels[normalized] || role || '')}</span>`;
 }
 
 function currentUserBadge() {
-  return `<span class="badge badge-outline badge-info">${escapeHtml(t('users.badges.currentUser', '🧑‍💻 Current account'))}</span>`;
+  return `<span class="users-self-chip">${escapeHtml(t('users.badges.currentUser', '🧑‍💻 Current account'))}</span>`;
 }
 
 function buildUsersTableRow(user) {
-  const username = escapeHtml(user.username || '');
-  const lastLogin = escapeHtml(formatDateOrDash(user.last_login));
-  const createdAt = escapeHtml(formatDateOrDash(user.created_at));
+  const username = user.username || '';
+  const role = user.role || '';
+  const lastLogin = formatDateOrDash(user.last_login);
+  const createdAt = formatDateOrDash(user.created_at);
   const sessions = normalizeNumbers(String(user.session_count ?? 0));
   const activity = normalizeNumbers(String(user.activity_count ?? 0));
   const disableDelete = user.is_current_user ? 'disabled' : '';
-  const selfBadge = user.is_current_user ? ` <span class="ms-1">${currentUserBadge()}</span>` : '';
+  const activeClass = Number(user.id) === Number(state.editingId) ? ' class="is-active"' : '';
 
   const editLabel = escapeHtml(t('users.actions.edit', '✏️ Edit'));
   const logsLabel = escapeHtml(t('users.actions.logs', '📜 Logs'));
   const deleteLabel = escapeHtml(t('users.actions.delete', '🗑️ Delete'));
 
+  const usernameSecondary = user.is_current_user
+    ? t('users.table.currentAccount', 'الحساب المستخدم حالياً')
+    : t(`users.roles.${role}`, role || '');
+
   return `
-    <tr data-user-id="${user.id}">
-      <td class="font-semibold text-base-content">${username}${selfBadge}</td>
-      <td>${roleBadge(user.role)}</td>
-      <td>${lastLogin}</td>
-      <td>${createdAt}</td>
-      <td><span class="badge badge-outline badge-primary badge-sm">${sessions}</span></td>
-      <td><span class="badge badge-outline badge-secondary badge-sm">${activity}</span></td>
+    <tr data-user-id="${user.id}"${activeClass}>
       <td>
-        <div class="flex flex-wrap items-center gap-1.5" role="group">
+        ${renderTableStack(username, usernameSecondary)}
+      </td>
+      <td>
+        <div class="users-row-badges">
+          ${roleBadge(user.role)}
+          ${user.is_current_user ? currentUserBadge() : ''}
+        </div>
+      </td>
+      <td>${renderTableStack(lastLogin)}</td>
+      <td>${renderTableStack(createdAt)}</td>
+      <td><span class="users-metric-chip">${sessions}</span></td>
+      <td><span class="users-metric-chip">${activity}</span></td>
+      <td>
+        <div class="users-row-actions" role="group">
           <button type="button" class="btn btn-ghost btn-sm" data-action="logs" data-id="${user.id}" title="${logsLabel}">📜</button>
           <button type="button" class="btn btn-outline btn-sm" data-action="edit" data-id="${user.id}" title="${editLabel}">✏️</button>
           <button type="button" class="btn btn-outline btn-error btn-sm" data-action="delete" data-id="${user.id}" ${disableDelete} title="${deleteLabel}">🗑️</button>
@@ -278,36 +433,54 @@ function buildUsersTableRow(user) {
   `;
 }
 
+function renderUsersStats() {
+  const items = Array.isArray(state.users) ? state.users : [];
+  const counts = {
+    total: items.length,
+    admins: items.filter((user) => String(user.role || '').toLowerCase() === 'admin').length,
+    managers: items.filter((user) => String(user.role || '').toLowerCase() === 'manager').length,
+    technicians: items.filter((user) => String(user.role || '').toLowerCase() === 'technician').length,
+  };
+
+  if (elements.statTotal) elements.statTotal.textContent = normalizeNumbers(String(counts.total));
+  if (elements.statAdmins) elements.statAdmins.textContent = normalizeNumbers(String(counts.admins));
+  if (elements.statManagers) elements.statManagers.textContent = normalizeNumbers(String(counts.managers));
+  if (elements.statTechnicians) elements.statTechnicians.textContent = normalizeNumbers(String(counts.technicians));
+}
+
 function renderUsersTable() {
   if (!elements.tableBody) return;
 
   if (state.loading) {
-    elements.tableBody.innerHTML = `
-      <tr>
-        <td colspan="7" class="text-center text-muted">${escapeHtml(t('users.table.loading', '⏳ Loading users...'))}</td>
-      </tr>
-    `;
+    elements.tableBody.innerHTML = renderTableStateRow(t('users.table.loading', '⏳ Loading users...'));
+    renderClientPagination(elements.pagination, { total: 0, page: 1, pageSize: USERS_PAGE_SIZE, onPageAttr: 'data-users-page' });
     return;
   }
 
   if (!Array.isArray(state.filtered) || state.filtered.length === 0) {
     const hasSearch = Boolean(elements.searchInput && elements.searchInput.value.trim());
     const messageKey = hasSearch ? 'users.table.emptyFilter' : 'users.table.empty';
-    elements.tableBody.innerHTML = `
-      <tr>
-        <td colspan="7" class="text-center text-muted">${escapeHtml(t(messageKey, hasSearch ? 'No results match your filters.' : 'No accounts found yet.'))}</td>
-      </tr>
-    `;
+    elements.tableBody.innerHTML = renderTableStateRow(t(messageKey, hasSearch ? 'No results match your filters.' : 'No accounts found yet.'));
+    renderClientPagination(elements.pagination, { total: 0, page: 1, pageSize: USERS_PAGE_SIZE, onPageAttr: 'data-users-page' });
     return;
   }
 
-  elements.tableBody.innerHTML = state.filtered.map(buildUsersTableRow).join('');
+  const start = (state.page - 1) * USERS_PAGE_SIZE;
+  const pageItems = state.filtered.slice(start, start + USERS_PAGE_SIZE);
+  elements.tableBody.innerHTML = pageItems.map(buildUsersTableRow).join('');
+  renderClientPagination(elements.pagination, {
+    total: state.filtered.length,
+    page: state.page,
+    pageSize: USERS_PAGE_SIZE,
+    onPageAttr: 'data-users-page',
+  });
 }
 
 function applyFilters() {
   const searchTerm = (elements.searchInput?.value || '').trim().toLowerCase();
   if (!searchTerm) {
     state.filtered = [...state.users];
+    state.page = 1;
     renderUsersTable();
     return;
   }
@@ -318,6 +491,7 @@ function applyFilters() {
     return usernameMatch || roleMatch;
   });
 
+  state.page = 1;
   renderUsersTable();
 }
 
@@ -333,6 +507,7 @@ async function loadUsers() {
     const response = await apiRequest('/users/');
     const data = Array.isArray(response?.data) ? response.data : [];
     state.users = data.map((user) => ({ ...user }));
+    renderUsersStats();
     applyFilters();
   } catch (error) {
     console.error('❌ Failed to load users', error);
@@ -342,6 +517,7 @@ async function loadUsers() {
     setError(message);
     state.users = [];
     state.filtered = [];
+    renderUsersStats();
   } finally {
     setLoading(false);
   }
@@ -368,9 +544,12 @@ function setFormMode({ editing, user }) {
   if (isEditing) {
     elements.cancelBtn.classList.remove('d-none');
     elements.usernameInput.focus();
+    document.querySelector(`#users-table tbody tr[data-user-id="${user.id}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   } else {
     elements.cancelBtn.classList.add('d-none');
   }
+
+  renderUsersTable();
 }
 
 function resetForm() {
@@ -489,19 +668,15 @@ function renderSessions(sessions) {
   if (!elements.sessionsBody) return;
 
   if (!Array.isArray(sessions) || sessions.length === 0) {
-    elements.sessionsBody.innerHTML = `
-      <tr>
-        <td colspan="3" class="text-center text-muted">${escapeHtml(t('users.logs.emptySessions', 'No session history available.'))}</td>
-      </tr>
-    `;
+    elements.sessionsBody.innerHTML = renderTableStateRow(t('users.logs.emptySessions', 'No session history available.'), 'muted', 3);
     return;
   }
 
   elements.sessionsBody.innerHTML = sessions.map((session) => `
     <tr>
-      <td>${escapeHtml(formatDateOrDash(session.login_time))}</td>
-      <td>${escapeHtml(formatDateOrDash(session.logout_time))}</td>
-      <td>${escapeHtml(session.ip_address || '—')}</td>
+      <td>${renderTableStack(formatDateOrDash(session.login_time))}</td>
+      <td>${renderTableStack(formatDateOrDash(session.logout_time))}</td>
+      <td>${renderTableStack(session.ip_address || '—', '', { primaryDir: 'ltr' })}</td>
     </tr>
   `).join('');
 }
@@ -533,18 +708,14 @@ function renderActivity(activity) {
   if (!elements.activityBody) return;
 
   if (!Array.isArray(activity) || activity.length === 0) {
-    elements.activityBody.innerHTML = `
-      <tr>
-        <td colspan="3" class="text-center text-muted">${escapeHtml(t('users.logs.emptyActivity', 'No activity history available.'))}</td>
-      </tr>
-    `;
+    elements.activityBody.innerHTML = renderTableStateRow(t('users.logs.emptyActivity', 'No activity history available.'), 'muted', 3);
     return;
   }
 
   elements.activityBody.innerHTML = activity.map((entry) => `
     <tr>
-      <td>${escapeHtml(formatDateOrDash(entry.timestamp))}</td>
-      <td>${escapeHtml(formatActivityAction(entry.action))}</td>
+      <td>${renderTableStack(formatDateOrDash(entry.timestamp))}</td>
+      <td>${renderTableStack(formatActivityAction(entry.action))}</td>
       <td>${formatActivityDetails(entry.details)}</td>
     </tr>
   `).join('');
@@ -554,29 +725,19 @@ async function handleViewLogs(userId) {
   const user = findUserById(userId);
   if (!user) return;
 
-  if (!elements.modal || !elements.modalTitle) return;
-
-  const modalEl = elements.modal;
-  logsModalInstance = logsModalInstance || new window.bootstrap.Modal(modalEl, { backdrop: 'static' });
+  const modalController = ensureLogsModalController();
+  if (!modalController || !elements.modalTitle) return;
 
   elements.modalTitle.textContent = `${t('users.logs.title', 'User Logs')} — ${user.username}`;
-  const loadingMessage = escapeHtml(t('users.logs.loading', 'Loading logs...'));
+  const loadingMessage = t('users.logs.loading', 'Loading logs...');
   if (elements.sessionsBody) {
-    elements.sessionsBody.innerHTML = `
-      <tr>
-        <td colspan="3" class="text-center text-muted">${loadingMessage}</td>
-      </tr>
-    `;
+    elements.sessionsBody.innerHTML = renderTableStateRow(loadingMessage, 'muted', 3);
   }
   if (elements.activityBody) {
-    elements.activityBody.innerHTML = `
-      <tr>
-        <td colspan="3" class="text-center text-muted">${loadingMessage}</td>
-      </tr>
-    `;
+    elements.activityBody.innerHTML = renderTableStateRow(loadingMessage, 'muted', 3);
   }
 
-  logsModalInstance.show();
+  modalController.open();
 
   try {
     const response = await apiRequest(`/users/?scope=logs&user_id=${userId}&limit=50`);
@@ -648,16 +809,29 @@ function bindEvents() {
     elements.searchInput.addEventListener('input', () => applyFilters());
   }
 
+  if (elements.pagination) {
+    elements.pagination.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-users-page]');
+      if (!button) return;
+      const nextPage = Number(button.getAttribute('data-users-page'));
+      if (!Number.isFinite(nextPage) || nextPage < 1 || nextPage === state.page) return;
+      state.page = nextPage;
+      jumpPaginationSectionToStart(elements.pagination);
+      renderUsersTable();
+      settlePaginationSectionToStart(elements.pagination, { behavior: 'smooth' });
+    });
+  }
+
   if (elements.tableBody) {
     elements.tableBody.addEventListener('click', handleTableClick);
   }
 
-  if (elements.modal) {
-    elements.modal.addEventListener('hidden.bs.modal', () => {
-      renderSessions([]);
-      renderActivity([]);
-    });
-  }
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && ensureLogsModalController()?.isOpen()) {
+      event.preventDefault();
+      logsModalController.close();
+    }
+  });
 
   document.addEventListener('language:changed', () => {
     // Re-render dynamic content when language changes
@@ -704,6 +878,7 @@ async function bootstrapUsersManagement() {
   cacheElements();
   initThemeToggle();
   bindEvents();
+  revealPage();
 
   const hasAccess = await ensureAdminAccess();
   if (!hasAccess) {

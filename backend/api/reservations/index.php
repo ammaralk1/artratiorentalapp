@@ -214,33 +214,8 @@ function handleReservationsCreate(PDO $pdo, ReservationRepository $repo): void
             'items' => isset($data['items']) ? count((array) $data['items']) : 0,
         ]);
 
-        // Respond immediately to avoid slow notification channels blocking the request.
         respond($reservation, 201);
         $mark('respond');
-        if (function_exists('fastcgi_finish_request')) {
-            fastcgi_finish_request();
-        } else {
-            if (function_exists('session_write_close')) {
-                @session_write_close();
-            }
-            @ob_end_flush();
-            @flush();
-            @ignore_user_abort(true);
-        }
-
-        // Fire-and-forget notifications after the response is sent.
-        register_shutdown_function(function () use ($pdo, $reservation, $mark) {
-            try {
-                $mark('notifyReservationCreated:start');
-                require_once __DIR__ . '/../../services/notifications.php';
-                if (is_array($reservation)) {
-                    notifyReservationCreated($pdo, $reservation);
-                }
-                $mark('notifyReservationCreated');
-            } catch (Throwable $notifyError) {
-                error_log('Reservation create notification failed: ' . $notifyError->getMessage());
-            }
-        });
         return;
     } catch (Throwable $exception) {
         $pdo->rollBack();
@@ -305,33 +280,20 @@ function handleReservationsUpdate(PDO $pdo, ReservationRepository $repo): void
             'changes' => array_keys($data),
         ]);
 
-        // Notifications for status change and newly assigned technicians
+        // Notifications are sent only when a booking becomes confirmed and has assigned technicians.
         try {
             require_once __DIR__ . '/../../services/notifications.php';
             if (is_array($reservation)) {
-                // Status change
                 if ($existing && array_key_exists('status', $data)) {
                     $old = normaliseStatus($existing['status'] ?? 'pending');
                     $new = normaliseStatus($reservation['status'] ?? 'pending');
-                    if ($old !== $new) {
+                    if ($old !== 'confirmed' && $new === 'confirmed' && reservationHasTechnicians($reservation)) {
                         notifyReservationStatusChanged($pdo, $reservation, $old, $new);
                     }
                 }
-                // Technician assignment changes
-                if (array_key_exists('technicians', $data)) {
-                    $oldIds = [];
-                    if ($existing && is_array($existing['technicians'] ?? null)) {
-                        foreach ($existing['technicians'] as $t) {
-                            $oldIds[] = (int)($t['technician_id'] ?? ($t['id'] ?? 0));
-                        }
-                    }
-                    $newIds = [];
-                    if (is_array($reservation['technicians'] ?? null)) {
-                        foreach ($reservation['technicians'] as $t) {
-                            $newIds[] = (int)($t['technician_id'] ?? ($t['id'] ?? 0));
-                        }
-                    }
-                    $added = array_values(array_diff(array_unique($newIds), array_unique($oldIds)));
+
+                if ($existing && normaliseStatus($reservation['status'] ?? 'pending') === 'confirmed' && array_key_exists('technicians', $data)) {
+                    $added = findNewReservationTechnicianIds($existing, $reservation);
                     if ($added) {
                         notifyReservationTechnicianAssigned($pdo, $reservation, $added);
                     }
@@ -1305,6 +1267,43 @@ function normalizeReservationTechniciansPayload(array $technicians): array
     return $result;
 }
 
+function reservationHasTechnicians(array $reservation): bool
+{
+    foreach ((array) ($reservation['technicians'] ?? []) as $technician) {
+        $technicianId = is_array($technician)
+            ? (int) ($technician['technician_id'] ?? ($technician['id'] ?? 0))
+            : (int) $technician;
+        if ($technicianId > 0) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function findNewReservationTechnicianIds(array $existing, array $reservation): array
+{
+    $oldIds = collectReservationTechnicianIds($existing);
+    $newIds = collectReservationTechnicianIds($reservation);
+
+    return array_values(array_diff($newIds, $oldIds));
+}
+
+function collectReservationTechnicianIds(array $reservation): array
+{
+    $ids = [];
+
+    foreach ((array) ($reservation['technicians'] ?? []) as $technician) {
+        $technicianId = is_array($technician)
+            ? (int) ($technician['technician_id'] ?? ($technician['id'] ?? 0))
+            : (int) $technician;
+        if ($technicianId > 0) {
+            $ids[] = $technicianId;
+        }
+    }
+
+    return array_values(array_unique($ids));
+}
 
 function fetchReservationById(PDO $pdo, int $id): array|false
 {
@@ -1514,6 +1513,7 @@ function fetchReservationTechnicians(PDO $pdo, int $reservationId): array
         $sql = 'SELECT 
             rt.*,
             t.full_name AS technician_name,
+            t.phone AS technician_phone,
             COALESCE(rt.position_name, tp.label_ar, tp.label_en, tp.name) AS effective_position_name
          FROM reservation_technicians rt
          INNER JOIN technicians t ON t.id = rt.technician_id
@@ -1527,6 +1527,7 @@ function fetchReservationTechnicians(PDO $pdo, int $reservationId): array
             'SELECT 
                 rt.*,
                 t.full_name AS technician_name,
+                t.phone AS technician_phone,
                 rt.position_name AS effective_position_name
              FROM reservation_technicians rt
              INNER JOIN technicians t ON t.id = rt.technician_id
@@ -1560,6 +1561,7 @@ function fetchReservationTechnicians(PDO $pdo, int $reservationId): array
             'position_label_en' => $row['position_label_en'] ?? null,
             'position_cost' => isset($row['position_cost']) ? (float) $row['position_cost'] : 0,
             'position_client_price' => isset($row['position_client_price']) ? (float) $row['position_client_price'] : 0,
+            'technician_phone' => $row['technician_phone'] ?? null,
             'assignment_id' => $row['assignment_id'] ?? null,
         ];
     }

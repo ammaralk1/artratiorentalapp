@@ -68,7 +68,7 @@ describe('reservationsSummary', () => {
   it('calculateReservationTotal sums equipment and crew with discount/tax', async () => {
     // Equipment: qty=2, unitPrice=50 per day, 2 days → 200
     // Crew: 100/day * 2 days → 200, Subtotal=400
-    // Discount 10% → 360, Company share 10% → 396, Tax 15% → 455.4
+    // Discount 10% → 360, Company overhead 10% → 396, Tax 15% → 455.4
     buildReservationDisplayGroupsMock.mockReturnValue({
       groups: [{ type: 'equipment', quantity: 2, unitPrice: 50, unitCost: 0, items: [{ price: 50, qty: 2 }] }],
     });
@@ -483,6 +483,28 @@ describe('calculateDraftFinancialBreakdown', () => {
     expect(result.subtotalAfterDiscount).toBe(180);
   });
 
+  it('applies percent discounts to the overhead-inclusive client subtotal', async () => {
+    buildReservationDisplayGroupsMock.mockReturnValue({
+      groups: [{ type: 'equipment', quantity: 1, unitPrice: 10000, unitCost: 0, items: [{ price: 10000 }] }],
+    });
+    const { calculateDraftFinancialBreakdown } = await import('../../src/scripts/reservationsSummary.js');
+    const result = calculateDraftFinancialBreakdown({
+      items: [{ price: 10000, qty: 1 }],
+      discount: 10,
+      discountType: 'percent',
+      applyTax: true,
+      companySharePercent: 10,
+    });
+
+    expect(result.clientSubtotalBeforeDiscount).toBe(11000);
+    expect(result.discountAmount).toBe(1100);
+    expect(result.subtotalAfterDiscount).toBe(9000);
+    expect(result.companyShareAmount).toBe(900);
+    expect(result.taxableAmount).toBe(9900);
+    expect(result.taxAmount).toBe(1485);
+    expect(result.finalTotal).toBe(11385);
+  });
+
   it('discount type amount deducts flat amount', async () => {
     buildReservationDisplayGroupsMock.mockReturnValue({
       groups: [{ type: 'equipment', quantity: 1, unitPrice: 200, unitCost: 0, items: [{ price: 200 }] }],
@@ -495,6 +517,28 @@ describe('calculateDraftFinancialBreakdown', () => {
     });
     expect(result.discountAmount).toBe(50);
     expect(result.subtotalAfterDiscount).toBe(150);
+  });
+
+  it('applies fixed amount discounts to the overhead-inclusive client subtotal', async () => {
+    buildReservationDisplayGroupsMock.mockReturnValue({
+      groups: [{ type: 'equipment', quantity: 1, unitPrice: 10000, unitCost: 0, items: [{ price: 10000 }] }],
+    });
+    const { calculateDraftFinancialBreakdown } = await import('../../src/scripts/reservationsSummary.js');
+    const result = calculateDraftFinancialBreakdown({
+      items: [{ price: 10000, qty: 1 }],
+      discount: 1000,
+      discountType: 'amount',
+      applyTax: true,
+      companySharePercent: 10,
+    });
+
+    expect(result.clientSubtotalBeforeDiscount).toBe(11000);
+    expect(result.discountAmount).toBe(1000);
+    expect(result.taxableAmount).toBe(10000);
+    expect(result.companyShareAmount).toBeCloseTo(909.09, 2);
+    expect(result.subtotalAfterDiscount).toBeCloseTo(9090.91, 2);
+    expect(result.taxAmount).toBe(1500);
+    expect(result.finalTotal).toBe(11500);
   });
 
   it('applyTax: true → taxAmount is 15% of taxableAmount', async () => {

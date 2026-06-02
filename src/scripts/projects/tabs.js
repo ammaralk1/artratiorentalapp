@@ -15,6 +15,26 @@ import { refreshProjectsFromApi } from '../projectsService.js';
 
 let unsubscribeProjectPreferences = null;
 
+function scrollTabButtonIntoView(button) {
+  if (!(button instanceof HTMLElement) || typeof button.scrollIntoView !== 'function') return;
+
+  try {
+    const track = button.closest('[data-tab-scroll-track]');
+    if (!(track instanceof HTMLElement)) return;
+
+    button.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+
+    const root = track.closest('[data-tab-scroll]');
+    if (root instanceof HTMLElement) {
+      window.requestAnimationFrame(() => {
+        root.dispatchEvent(new CustomEvent('tabScroll:update', { bubbles: true }));
+      });
+    }
+  } catch (error) {
+    console.warn('⚠️ [projects/tabs] Failed to keep active tab visible', error);
+  }
+}
+
 export function persistActiveMainTab(tabId) {
   if (!tabId) return;
   if (getStoredActiveMainTab() === tabId) return;
@@ -86,6 +106,7 @@ export function activateTab(targetId, triggerButton) {
   });
 
   if (triggerButton) {
+    scrollTabButtonIntoView(triggerButton);
     persistActiveMainTab(targetId);
   }
 }
@@ -156,6 +177,10 @@ export async function activateProjectSubTab(targetId, triggerButton) {
       console.warn('[projects] Failed to render list after sub-tab switch', error);
     }
   }
+
+  if (triggerButton) {
+    scrollTabButtonIntoView(triggerButton);
+  }
 }
 
 export function initProjectSubTabs() {
@@ -196,7 +221,10 @@ export function restoreProjectSubTab() {
 }
 
 export function isProjectsSectionActive() {
-  if (!dom.tabButtons) return false;
+  if (!dom.tabButtons || !dom.tabButtons.length) {
+    const projectsPane = document.querySelector('[data-tab-pane="projects-section"]');
+    return !(projectsPane instanceof HTMLElement) || !projectsPane.classList.contains('d-none');
+  }
   const activeButton = dom.tabButtons.find((btn) => btn.classList.contains('active'));
   return activeButton?.dataset.tabTarget === 'projects-section';
 }

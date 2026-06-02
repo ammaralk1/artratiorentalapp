@@ -1,5 +1,4 @@
-import quotePdfStyles from '../../../styles/quotePdf.css?raw';
-import quoteLogoUrl from '../../../assets/AR-Logo-v3.5-curved-WH.png?url';
+import quoteLogoUrl from '../../../assets/ART-RATIO-LGWG.png?url';
 // Font URLs (served from public/fonts) resolved by Vite for reliable loading in preview/export windows
 import taj400Url from '/assets/Tajawal-400.ttf?url';
 import taj500Url from '/assets/Tajawal-500.ttf?url';
@@ -38,12 +37,12 @@ export function resolveQuoteLogoUrl(value = '') {
 export const QUOTE_DEFAULT_LOGO_URL = quoteLogoUrl;
 
 export const QUOTE_COMPANY_INFO = {
-  logoUrl: resolveQuoteLogoUrl(quoteLogoUrl),
+  logoUrl: QUOTE_DEFAULT_LOGO_URL,
   companyName: 'شركة فود آرت للدعاية والإعلان (شركة شخص واحد)',
   commercialRegistry: '4030485240',
   beneficiaryName: 'شركة فود آرت للدعاية والإعلان (شركة شخص واحد)',
   bankName: 'مصرف الراجحي',
-  accountNumber: '٣٥٨٠٠٠٠١٠٠٠٦٠٨٦٠٦٥٧٠٦',
+  accountNumber: '358000010006086065706',
   iban: 'SA1680000358608016065706',
   approvalNote: 'الموافقة على هذا العرض تعتبر موافقة على جميع الشروط والأحكام.'
 };
@@ -70,9 +69,9 @@ export const QUOTE_SECTION_DEFS = [
   { id: 'customerInfo', labelKey: 'reservations.quote.sections.customer', fallback: 'بيانات العميل', defaultSelected: true },
   { id: 'reservationInfo', labelKey: 'reservations.quote.sections.reservation', fallback: 'تفاصيل الحجز', defaultSelected: true },
   { id: 'projectInfo', labelKey: 'reservations.quote.sections.project', fallback: 'بيانات المشروع', defaultSelected: true },
-  { id: 'financialSummary', labelKey: 'reservations.quote.sections.financial', fallback: 'الملخص المالي', defaultSelected: true },
   { id: 'items', labelKey: 'reservations.quote.sections.items', fallback: 'قائمة المعدات', defaultSelected: true },
   { id: 'crew', labelKey: 'reservations.quote.sections.crew', fallback: 'طاقم العمل', defaultSelected: true },
+  { id: 'financialSummary', labelKey: 'reservations.quote.sections.financial', fallback: 'الملخص المالي', defaultSelected: true },
   { id: 'notes', labelKey: 'reservations.quote.sections.notes', fallback: 'ملاحظات الحجز', defaultSelected: true },
   // جعل بيانات الدفع اختيارية من خلال المعاينة
   { id: 'payment', labelKey: 'reservations.quote.sections.payment', fallback: 'بيانات الدفع', defaultSelected: false }
@@ -82,9 +81,9 @@ export const PROJECT_QUOTE_SECTION_DEFS = [
   { id: 'customerInfo', labelKey: 'projects.quote.sections.customer', fallback: 'بيانات العميل', defaultSelected: true },
   { id: 'projectInfo', labelKey: 'projects.quote.sections.project', fallback: 'بيانات المشروع', defaultSelected: true },
   { id: 'projectExpenses', labelKey: 'projects.quote.sections.expenses', fallback: 'الخدمات الإنتاجية', defaultSelected: true },
+  { id: 'projectEquipment', labelKey: 'projects.quote.sections.equipment', fallback: 'المعدات', defaultSelected: true },
   { id: 'projectCrew', labelKey: 'projects.quote.sections.crew', fallback: 'طاقم العمل', defaultSelected: true },
   { id: 'financialSummary', labelKey: 'projects.quote.sections.financial', fallback: 'الملخص المالي', defaultSelected: true },
-  { id: 'projectEquipment', labelKey: 'projects.quote.sections.equipment', fallback: 'المعدات', defaultSelected: true },
   { id: 'projectNotes', labelKey: 'projects.quote.sections.notes', fallback: 'ملاحظات المشروع', defaultSelected: true },
   // خيار إظهار/إخفاء بيانات الدفع في معاينة المشروع
   { id: 'payment', labelKey: 'reservations.quote.sections.payment', fallback: 'بيانات الدفع', defaultSelected: false }
@@ -94,7 +93,6 @@ export const HTML2PDF_SRC = 'https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dis
 export const HTML2CANVAS_SRC = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
 export const JSPDF_SRC = 'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js';
 
-export const QUOTE_PDF_STYLES = quotePdfStyles.trim();
 export const PDF_FONT_FACE = `
 @font-face { font-family: 'Tajawal'; font-style: normal; font-weight: 400; font-display: swap; src: url(${JSON.stringify(taj400Url)}) format('truetype'); }
 @font-face { font-family: 'Tajawal'; font-style: normal; font-weight: 500; font-display: swap; src: url(${JSON.stringify(taj500Url)}) format('truetype'); }
@@ -115,58 +113,11 @@ export const A4_HEIGHT_MM = 297;
 export const A4_WIDTH_PX = Math.round((A4_WIDTH_MM / MM_PER_INCH) * CSS_DPI);
 export const A4_HEIGHT_PX = Math.round((A4_HEIGHT_MM / MM_PER_INCH) * CSS_DPI);
 
-export const PAGE_OVERFLOW_TOLERANCE_PX = 2;
 export const SAFARI_USER_AGENT_REGEX = /safari/i;
 export const IOS_PLATFORM_REGEX = /(iphone|ipad|ipod)/i;
 export const IOS_SAFARI_REGEX = /(iphone|ipad|ipod)/i;
 export const IOS_SAFARI_EXCLUDED_BROWSERS_REGEX = /(crios|fxios|edgios|opios)/i;
 export const PAGE_SEGMENT_MAX_HEIGHT_PX = Math.round((A4_HEIGHT_MM / MM_PER_INCH) * CSS_DPI);
 export const PDF_LOG_PREFIX = '[reservations/pdf]';
-
-export const BLOCK_DRAG_STORAGE_KEY = 'quoteBlockOffsets';
-export const BLOCK_DRAG_LIMIT_PX = 1800;
-export const INFO_ALIGN_STORAGE_KEY = 'quoteInfoAlignments';
-export const INFO_ALIGN_TARGETS = [
-  'customer',
-  'reservation',
-  'project',
-  'projectCustomer',
-  'projectDetails',
-];
-export const INFO_ALIGN_DEFAULTS = {
-  customer: 'left',
-  reservation: 'left',
-  project: 'left',
-  projectCustomer: 'left',
-  projectDetails: 'left',
-};
-export const INFO_ALIGN_CONTEXT_DEFAULTS = {
-  project: {
-    customer: 'left',
-    reservation: 'left',
-    project: 'left',
-    projectCustomer: 'left',
-    projectDetails: 'left',
-  },
-  reservationChecklist: {
-    customer: 'left',
-    reservation: 'left',
-    project: 'left',
-    projectCustomer: 'left',
-    projectDetails: 'left',
-  },
-};
-export const DEFAULT_BLOCK_OFFSETS = {
-  project: {
-    'project-title': { x: -182.78680419921875, y: -5.0181427001953125 },
-    'project-content': { x: -140.1977996826172, y: -4.7384796142578125 },
-  },
-};
-
-export const QUOTE_LAYOUT_DATA_ATTRS = {
-  blockOffsets: 'data-block-offsets',
-  infoAlignments: 'data-info-alignments',
-  context: 'data-quote-source-context',
-};
 
 export const ARABIC_RTL_REGEX = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/;

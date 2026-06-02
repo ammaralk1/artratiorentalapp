@@ -1,4 +1,5 @@
 import { state } from './state.js';
+import { callQuotePdfCallback } from './callbacks.js';
 import {
   TRANSPARENT_PIXEL_DATA_URL,
   SVG_DATA_URI_REGEX,
@@ -507,15 +508,21 @@ export async function waitForQuoteAssets(root) {
   const doc = root.ownerDocument || document;
   const view = doc.defaultView || window;
   const images = Array.from(root.querySelectorAll?.('img') || []);
-  const fontPromise = doc.fonts?.ready ? doc.fonts.ready : Promise.resolve();
+  const fontFaces = doc.fonts;
+  const fontPromise = fontFaces?.ready
+    ? Promise.all([
+      fontFaces.load('400 12px Tajawal'),
+      fontFaces.load('500 12px Tajawal'),
+      fontFaces.load('600 12px Tajawal'),
+      fontFaces.load('700 12px Tajawal'),
+      fontFaces.ready,
+    ])
+    : Promise.resolve();
   const imagePromises = images.map((img) => waitForImage(img));
   const assetPromises = [fontPromise, ...imagePromises].map((promise) => (
     promise.catch((error) => {
       logPdfWarn('asset load failed', error);
-      // notifyQuoteAssetFailure is in modal.js — import lazily to avoid circular init
-      import('./modal.js').then(({ notifyQuoteAssetFailure }) => {
-        notifyQuoteAssetFailure();
-      }).catch(() => {});
+      callQuotePdfCallback('notifyQuoteAssetFailure');
       return null;
     })
   ));

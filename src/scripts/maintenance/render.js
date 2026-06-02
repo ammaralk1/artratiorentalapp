@@ -38,6 +38,39 @@ function buildMaintenanceStatusTag(ticket) {
   return `<span class="${classes.filter(Boolean).join(' ')}">${label}</span>`;
 }
 
+function renderMaintenanceTableState(tbody, message, tone = 'muted') {
+  if (!(tbody instanceof HTMLElement)) return;
+  const toneClass = tone === 'danger' ? 'text-danger' : 'text-muted';
+  tbody.innerHTML = `<tr><td colspan="6" class="projects-table-empty-row text-center ${toneClass}">${message}</td></tr>`;
+}
+
+function renderMaintenanceEmptyState(tbody, { hasActiveFilters = false } = {}) {
+  if (!(tbody instanceof HTMLElement)) return;
+
+  const emptyTitle = hasActiveFilters
+    ? t('maintenance.table.emptyFiltered', 'لا توجد تذاكر مطابقة لهذا الفلتر.')
+    : t('maintenance.empty.title', 'لا توجد تذاكر صيانة');
+  const emptySubtitle = hasActiveFilters
+    ? t('maintenance.list.hint', 'تابع حالة الأعطال وقم بإغلاق التذاكر بعد إتمام الإصلاح.')
+    : t('maintenance.empty.subtitle', 'عند إنشاء تذكرة جديدة ستظهر في هذه القائمة.');
+
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="6" class="maintenance-empty-row">
+        <div class="maintenance-empty-icon">✅</div>
+        <h5>${emptyTitle}</h5>
+        <p>${emptySubtitle}</p>
+      </td>
+    </tr>
+  `;
+}
+
+function updateMaintenanceListCount(count) {
+  const badge = document.getElementById('maintenance-list-count');
+  if (!badge) return;
+  badge.textContent = normalizeNumbers(String(Math.max(0, Number(count) || 0)));
+}
+
 function renderStats(tickets) {
   const container = document.getElementById('maintenance-stats');
   if (!container) return;
@@ -73,28 +106,30 @@ function renderStats(tickets) {
   `;
 }
 
-function renderTable(tickets) {
+function getMaintenanceFilterState() {
+  const statusFilter = document.getElementById('maintenance-status-filter');
+  if (statusFilter && !statusFilter.value) {
+    statusFilter.value = 'all';
+  }
+
+  const searchEl = document.getElementById('maintenance-search');
+  const priorityEl = document.getElementById('maintenance-priority-filter');
+  const status = statusFilter?.value || 'all';
+  const query = searchEl?.value || '';
+  const priority = priorityEl?.value || 'all';
+  const hasActiveFilters = status !== 'all' || priority !== 'all' || normalizeSearchValue(query).length > 0;
+
+  return { status, query, priority, hasActiveFilters };
+}
+
+function renderTable(tickets, { hasActiveFilters = false } = {}) {
   const tbody = document.getElementById('maintenance-table-body');
-  const emptyState = document.getElementById('maintenance-empty-state');
   if (!tbody) return;
 
   if (!tickets || tickets.length === 0) {
-    const emptyTitle = t('maintenance.empty.title', 'لا توجد تذاكر صيانة');
-    const emptySubtitle = t('maintenance.empty.subtitle', 'عند إنشاء تذكرة جديدة ستظهر في هذه القائمة.');
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="6" class="maintenance-empty-row">
-          <div class="maintenance-empty-icon">✅</div>
-          <h5>${emptyTitle}</h5>
-          <p>${emptySubtitle}</p>
-        </td>
-      </tr>
-    `;
-    if (emptyState) emptyState.classList.add('active');
+    renderMaintenanceEmptyState(tbody, { hasActiveFilters });
     return;
   }
-
-  if (emptyState) emptyState.classList.remove('active');
 
   tbody.innerHTML = tickets
     .map((ticket) => {
@@ -188,39 +223,38 @@ function filterTickets({ status = 'all', query = '', priority = 'all' } = {}) {
   return result;
 }
 
+function renderMaintenancePrimaryState(tbody) {
+  if (state.loading && !state.hasLoaded) {
+    const loadingMessage = t('maintenance.table.loading', 'جاري التحميل...');
+    updateMaintenanceListCount(0);
+    renderMaintenanceTableState(tbody, loadingMessage);
+    return true;
+  }
+
+  if (state.errorMessage && !state.hasLoaded) {
+    updateMaintenanceListCount(0);
+    renderMaintenanceTableState(tbody, state.errorMessage, 'danger');
+    return true;
+  }
+
+  return false;
+}
+
 export function renderMaintenance() {
   const allTickets = loadTickets();
   populateEquipmentInputs();
 
   renderStats(allTickets);
-
-  const statusFilter = document.getElementById('maintenance-status-filter');
-  if (statusFilter && !statusFilter.value) {
-    statusFilter.value = 'all';
-  }
-  const status = statusFilter?.value || 'all';
-  const searchEl = document.getElementById('maintenance-search');
-  const query = searchEl?.value || '';
-  const priorityEl = document.getElementById('maintenance-priority-filter');
-  const priority = priorityEl?.value || 'all';
+  const { status, query, priority, hasActiveFilters } = getMaintenanceFilterState();
 
   const tbody = document.getElementById('maintenance-table-body');
-  const emptyState = document.getElementById('maintenance-empty-state');
   if (!tbody) return;
 
-  if (state.loading && !state.hasLoaded) {
-    const loadingMessage = t('maintenance.table.loading', 'جاري التحميل...');
-    tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">${loadingMessage}</td></tr>`;
-    if (emptyState) emptyState.classList.remove('active');
-    return;
-  }
-
-  if (state.errorMessage && !state.hasLoaded) {
-    tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">${state.errorMessage}</td></tr>`;
-    if (emptyState) emptyState.classList.remove('active');
+  if (renderMaintenancePrimaryState(tbody)) {
     return;
   }
 
   const tickets = filterTickets({ status, query, priority });
-  renderTable(tickets);
+  updateMaintenanceListCount(tickets.length);
+  renderTable(tickets, { hasActiveFilters });
 }

@@ -35,3 +35,9 @@ Production remains locked until all of the following exist:
 - migration rehearsal
 - post-deploy checklist
 - approved staging verification
+
+## Current Release Plan Draft
+
+The first release/data-migration plan is now recorded in `docs/PRODUCTION_RELEASE_AND_DATA_MIGRATION_PLAN.md`.
+
+Key rule: production MySQL data is the source of truth. Local test data used during the UI redesign must be discarded and must not overwrite production. Deployment should move code and schema migrations forward while preserving existing production rows.

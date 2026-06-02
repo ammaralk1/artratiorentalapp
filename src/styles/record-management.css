@@ -1,0 +1,205 @@
+:is(.contact-inquiries-page, .feedback-submissions-page) .compact-hero-card::before,
+:is(.contact-inquiries-page, .feedback-submissions-page) .compact-surface-panel::before {
+  display: none;
+}
+
+:is(.contact-inquiries-page, .feedback-submissions-page) .dashboard-main-inner {
+  gap: 2rem;
+}
+
+:is(.contact-inquiries-page, .feedback-submissions-page) :is(
+  .contact-inquiries-hero-shell,
+  .contact-inquiries-table-shell,
+  .contact-inquiries-detail-shell,
+  .contact-inquiries-workflow-shell,
+  .feedback-submissions-hero-shell,
+  .feedback-submissions-table-shell,
+  .feedback-submissions-detail-shell,
+  .feedback-submissions-workflow-shell
+) {
+  background: var(--records-shell-bg);
+  background-image: none;
+  border-color: var(--records-shell-border);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+:is(.contact-inquiries-page, .feedback-submissions-page) :is(
+  .contact-inquiries-hero-shell,
+  .feedback-submissions-hero-shell
+) {
+  padding: 1.4rem 1.5rem;
+}
+
+:is(.contact-inquiries-page, .feedback-submissions-page) :is(
+  .contact-inquiries-stats-grid,
+  .feedback-submissions-stats-grid
+) {
+  gap: 0.9rem;
+}
+
+:is(.contact-inquiries-page, .feedback-submissions-page) :is(
+  .contact-inquiries-stat-card,
+  .feedback-submissions-stat-card
+) {
+  min-height: 8.15rem;
+  padding: 1.05rem 1.15rem;
+  align-content: center;
+  text-align: center;
+  background: var(--records-card-bg);
+  background-image: none;
+  border-color: var(--records-card-border);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+:is(.contact-inquiries-page, .feedback-submissions-page) :is(
+  .contact-inquiries-filter-grid,
+  .feedback-submissions-filter-grid
+) {
+  gap: 0.85rem 1rem;
+  align-items: end;
+}
+
+:is(.contact-inquiries-page, .feedback-submissions-page) :is(
+  .contact-inquiries-filter-field,
+  .feedback-submissions-filter-field
+) {
+  gap: 0.45rem;
+}
+
+:is(.contact-inquiries-page, .feedback-submissions-page) :is(
+  #contact-status-filter,
+  #contact-search-filter,
+  #contact-detail-status,
+  #contact-detail-follow-up,
+  #contact-detail-notes,
+  #feedback-status-filter,
+  #feedback-rating-filter,
+  #feedback-search-filter,
+  #feedback-detail-status,
+  #feedback-detail-follow-up,
+  #feedback-detail-notes
+) {
+  min-height: 2.7rem;
+  background: var(--records-control-bg);
+  background-image: none;
+  border-color: var(--records-control-border);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+:is(.contact-inquiries-page, .feedback-submissions-page) :is(
+  #contact-status-filter,
+  #contact-search-filter,
+  #contact-detail-status,
+  #contact-detail-follow-up,
+  #contact-detail-notes,
+  #feedback-status-filter,
+  #feedback-rating-filter,
+  #feedback-search-filter,
+  #feedback-detail-status,
+  #feedback-detail-follow-up,
+  #feedback-detail-notes
+):is(:hover, :focus, :focus-visible) {
+  background: var(--records-control-bg-hover);
+  border-color: var(--records-control-border-focus);
+  box-shadow: none;
+}
+
+:is(.contact-inquiries-page, .feedback-submissions-page) .users-table-wrapper {
+  border-radius: var(--radius-lg, 12px);
+}
+
+.contact-inquiries-page .users-table,
+.feedback-submissions-page .feedback-submissions-table {
+  table-layout: fixed;
+}
+
+.contact-inquiries-page .users-table :is(th, td),
+.feedback-submissions-page .feedback-submissions-table :is(th, td) {
+  padding-block: 0.9rem;
+}
+
+.contact-inquiries-page .contact-inquiries-row-selected > *,
+.feedback-submissions-page .feedback-submissions-row-selected > * {
+  background: var(--records-row-active) !important;
+}
+
+.contact-inquiries-page .contact-inquiries-table-stack,
+.feedback-submissions-page .feedback-submissions-table-stack {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.contact-inquiries-page .contact-inquiries-table-primary,
+.feedback-submissions-page .feedback-submissions-table-primary {
+  color: var(--bo-color-text-primary);
+  font-weight: 700;
+  line-height: 1.45;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.contact-inquiries-page .contact-inquiries-table-secondary,
+.feedback-submissions-page .feedback-submissions-table-secondary {
+  color: var(--bo-color-text-muted);
+  font-size: 0.76rem;
+  line-height: 1.45;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.contact-inquiries-page .contact-inquiries-table-action,
+.feedback-submissions-page .feedback-submissions-table-action {
+  min-height: 2.35rem;
+  padding-inline: 0.9rem;
+}
+
+:is(.contact-inquiries-page, .feedback-submissions-page) :is(
+  .contact-inquiries-content-grid,
+  .feedback-submissions-content-grid
+) {
+  align-items: start;
+}
+
+.contact-inquiries-page .contact-inquiries-detail-card,
+.feedback-submissions-page .feedback-submissions-detail-card {
+  background: var(--records-card-bg);
+  background-image: none;
+  border: 1px solid var(--records-card-border);
+  box-shadow: none;
+  backdrop-filter: none;
+  border-radius: var(--radius-lg, 12px);
+}
+
+.contact-inquiries-page .contact-inquiries-detail-label,
+.feedback-submissions-page .feedback-submissions-detail-label {
+  color: var(--bo-color-text-muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.contact-inquiries-page .contact-inquiries-detail-value,
+.feedback-submissions-page .feedback-submissions-detail-value {
+  color: var(--bo-color-text-primary);
+  font-size: 1.12rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.contact-inquiries-page .contact-inquiries-message-body,
+.feedback-submissions-page .feedback-submissions-message-body {
+  color: var(--bo-color-text-primary);
+  line-height: 1.9;
+}
+
+.contact-inquiries-page .contact-inquiries-empty-state,
+.feedback-submissions-page .feedback-submissions-empty-state {
+  background: var(--records-card-bg);
+  background-image: none;
+  border-color: var(--records-card-border);
+  box-shadow: none;
+  backdrop-filter: none;
+}

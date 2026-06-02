@@ -185,10 +185,7 @@ export function buildEquipmentOptionLabel(entry) {
   return `${baseValue} — ${unavailableLabel} (${describeEquipmentStatus(statusToDisplay)})`;
 }
 
-export function populateEquipmentDescriptionLists() {
-  const createList = document.getElementById('equipment-description-options');
-  const editList = document.getElementById('edit-res-equipment-description-options');
-
+function getReservationEquipmentCatalog() {
   const syncedEquipment = syncEquipmentStatuses();
   const snapshot = loadData();
   const rawEquipment = Array.isArray(syncedEquipment) && syncedEquipment.length
@@ -197,6 +194,13 @@ export function populateEquipmentDescriptionLists() {
 
   const equipmentList = Array.isArray(rawEquipment) ? rawEquipment : [];
   setCachedEquipment(equipmentList);
+  return equipmentList;
+}
+
+export function populateEquipmentDescriptionLists() {
+  const createList = document.getElementById('equipment-description-options');
+  const editList = document.getElementById('edit-res-equipment-description-options');
+  const equipmentList = getReservationEquipmentCatalog();
 
   const entriesMap = new Map();
 
@@ -239,18 +243,243 @@ export function populateEquipmentDescriptionLists() {
     .map((entry) => {
       state.equipmentDescriptionOptionMap.set(entry.normalized, entry.bestItem);
       const label = buildEquipmentOptionLabel(entry);
+      return {
+        ...entry,
+        label,
+      };
+    });
+
+  state.equipmentDescriptionEntries = optionEntries.map((entry) => ({
+    value: entry.value,
+    label: entry.label,
+    normalized: entry.normalized,
+    item: entry.bestItem,
+    barcode: normalizeNumbers(String(entry.bestItem?.barcode || '')).trim(),
+  }));
+
+  const datalistEntries = optionEntries.map((entry) => {
       const valueHtml = escapeHtml(entry.value);
-      if (label === entry.value) {
+      if (entry.label === entry.value) {
         return `<option value="${valueHtml}"></option>`;
       }
-      const labelHtml = escapeHtml(label);
+      const labelHtml = escapeHtml(entry.label);
       return `<option value="${valueHtml}" label="${labelHtml}"></option>`;
     });
 
-  const optionsHtml = optionEntries.join('');
+  const optionsHtml = datalistEntries.join('');
 
   if (createList) createList.innerHTML = optionsHtml;
   if (editList) editList.innerHTML = optionsHtml;
+}
+
+function getCreateEquipmentAutocompleteElements() {
+  const descriptionInput = document.getElementById('equipment-description');
+  const descriptionMenu = document.getElementById('equipment-description-suggestions');
+
+  return {
+    descriptionInput,
+    descriptionMenu,
+  };
+}
+
+function closeEquipmentSuggestionMenu(menu) {
+  if (!menu) return;
+  menu.hidden = true;
+  menu.innerHTML = '';
+  menu.dataset.open = 'false';
+  menu.dataset.activeIndex = '-1';
+}
+
+function closeAllCreateEquipmentSuggestionMenus() {
+  const { descriptionMenu } = getCreateEquipmentAutocompleteElements();
+  closeEquipmentSuggestionMenu(descriptionMenu);
+}
+
+function renderEquipmentSuggestionMenu(menu, entries, activeIndex = -1) {
+  if (!menu) return;
+
+  if (!Array.isArray(entries) || !entries.length) {
+    closeEquipmentSuggestionMenu(menu);
+    return;
+  }
+
+  const markup = entries
+    .map((entry, index) => {
+      const label = escapeHtml(entry.label || entry.value || '');
+      const isActive = index === activeIndex ? 'true' : 'false';
+      return `
+        <button
+          type="button"
+          class="reservation-equipment-suggestion${index === activeIndex ? ' is-active' : ''}"
+          data-index="${index}"
+          data-value="${escapeHtml(entry.value || '')}"
+          aria-selected="${isActive}"
+          role="option"
+        >${label}</button>
+      `;
+    })
+    .join('');
+
+  menu.innerHTML = markup;
+  menu.hidden = false;
+  menu.dataset.open = 'true';
+  menu.dataset.activeIndex = String(activeIndex);
+}
+
+function getEquipmentDescriptionSuggestions(query) {
+  const normalizedQuery = normalizeEquipmentSearchValue(query);
+  if (!normalizedQuery) return [];
+
+  const exactMatches = [];
+  const prefixMatches = [];
+  const partialMatches = [];
+
+  state.equipmentDescriptionEntries.forEach((entry) => {
+    const normalizedValue = entry.normalized || normalizeEquipmentSearchValue(entry.value);
+    if (!normalizedValue) return;
+    if (normalizedValue === normalizedQuery) {
+      exactMatches.push(entry);
+      return;
+    }
+    if (normalizedValue.startsWith(normalizedQuery)) {
+      prefixMatches.push(entry);
+      return;
+    }
+    if (normalizedValue.includes(normalizedQuery)) {
+      partialMatches.push(entry);
+    }
+  });
+
+  return [...exactMatches, ...prefixMatches, ...partialMatches].slice(0, 12);
+}
+
+function highlightAdjacentSuggestion(menu, direction = 1) {
+  if (!menu || menu.hidden) return;
+  const options = Array.from(menu.querySelectorAll('.reservation-equipment-suggestion'));
+  if (!options.length) return;
+
+  const currentIndex = Number.parseInt(menu.dataset.activeIndex || '-1', 10);
+  const nextIndex = currentIndex < 0
+    ? 0
+    : (currentIndex + direction + options.length) % options.length;
+
+  options.forEach((option, index) => {
+    const isActive = index === nextIndex;
+    option.classList.toggle('is-active', isActive);
+    option.setAttribute('aria-selected', isActive ? 'true' : 'false');
+  });
+
+  menu.dataset.activeIndex = String(nextIndex);
+  options[nextIndex]?.scrollIntoView({ block: 'nearest' });
+}
+
+function selectEquipmentSuggestion(entry) {
+  const { descriptionInput } = getCreateEquipmentAutocompleteElements();
+  if (!entry?.item) return;
+
+  closeAllCreateEquipmentSuggestionMenus();
+
+  if (descriptionInput) {
+    descriptionInput.value = entry.value || buildEquipmentSearchValue(entry.item);
+  }
+  addDraftEquipmentByDescription(descriptionInput);
+}
+
+function handleCreateEquipmentSuggestionInput() {
+  const { descriptionInput, descriptionMenu } = getCreateEquipmentAutocompleteElements();
+  const input = descriptionInput;
+  const menu = descriptionMenu;
+  if (!input || !menu) return;
+
+  const rawValue = input.value.trim();
+  if (!rawValue) {
+    closeEquipmentSuggestionMenu(menu);
+    return;
+  }
+
+  const entries = getEquipmentDescriptionSuggestions(rawValue);
+  renderEquipmentSuggestionMenu(menu, entries, -1);
+}
+
+function handleCreateEquipmentSuggestionKeydown(event) {
+  const { descriptionMenu } = getCreateEquipmentAutocompleteElements();
+  const menu = descriptionMenu;
+  if (!menu) return false;
+
+  if (event.key === 'ArrowDown') {
+    event.preventDefault();
+    highlightAdjacentSuggestion(menu, 1);
+    return true;
+  }
+
+  if (event.key === 'ArrowUp') {
+    event.preventDefault();
+    highlightAdjacentSuggestion(menu, -1);
+    return true;
+  }
+
+  if (event.key === 'Escape') {
+    closeEquipmentSuggestionMenu(menu);
+    return true;
+  }
+
+  if (event.key === 'Enter' && !menu.hidden) {
+    const entries = getEquipmentDescriptionSuggestions(event.currentTarget.value);
+    const activeIndex = Number.parseInt(menu.dataset.activeIndex || '0', 10);
+    const activeEntry = entries[activeIndex >= 0 ? activeIndex : 0];
+    if (activeEntry) {
+      event.preventDefault();
+      selectEquipmentSuggestion(activeEntry);
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function bindCreateEquipmentSuggestionMenu(menu) {
+  if (!menu || menu.dataset.listenerAttached === 'true') return;
+
+  const handleOptionSelect = (event) => {
+    const option = event.target.closest('.reservation-equipment-suggestion');
+    if (!option) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (menu.dataset.selectionPending === 'true') return;
+    menu.dataset.selectionPending = 'true';
+    window.setTimeout(() => {
+      if (menu) menu.dataset.selectionPending = 'false';
+    }, 180);
+
+    const index = Number.parseInt(option.dataset.index || '-1', 10);
+    const value = option.dataset.value || '';
+    const entries = getEquipmentDescriptionSuggestions(document.getElementById('equipment-description')?.value || '');
+    const entry = entries[index] || entries.find((candidate) => String(candidate.value || '') === value);
+    if (entry) {
+      selectEquipmentSuggestion(entry);
+    }
+  };
+
+  menu.addEventListener('pointerdown', handleOptionSelect);
+  menu.addEventListener('mousedown', handleOptionSelect);
+
+  menu.addEventListener('mouseover', (event) => {
+    const option = event.target.closest('.reservation-equipment-suggestion');
+    if (!option) return;
+    const options = Array.from(menu.querySelectorAll('.reservation-equipment-suggestion'));
+    const index = options.indexOf(option);
+    if (index < 0) return;
+    options.forEach((item, itemIndex) => {
+      const isActive = itemIndex === index;
+      item.classList.toggle('is-active', isActive);
+      item.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
+    menu.dataset.activeIndex = String(index);
+  });
+
+  menu.dataset.listenerAttached = 'true';
 }
 
 export function findEquipmentByDescription(term) {
@@ -550,32 +779,57 @@ export function addDraftEquipmentByDescription(inputElement) {
 export function setupEquipmentDescriptionInputs() {
   populateEquipmentDescriptionLists();
 
+  const { descriptionInput, descriptionMenu } = getCreateEquipmentAutocompleteElements();
+  bindCreateEquipmentSuggestionMenu(descriptionMenu);
+
+  if (!state.equipmentAutocompleteBound && typeof document !== 'undefined') {
+    document.addEventListener('pointerdown', (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        closeAllCreateEquipmentSuggestionMenus();
+        return;
+      }
+
+      if (
+        target.closest('#equipment-description')
+        || target.closest('#equipment-description-suggestions')
+      ) {
+        return;
+      }
+
+      closeAllCreateEquipmentSuggestionMenus();
+    }, { capture: true });
+    state.equipmentAutocompleteBound = true;
+  }
+
   const createInput = document.getElementById('equipment-description');
-  if (createInput && !createInput.dataset.listenerAttached) {
+  if (createInput && !createInput.dataset.equipmentAutocompleteAttached) {
     createInput.addEventListener('keydown', (event) => {
+      if (handleCreateEquipmentSuggestionKeydown(event)) {
+        return;
+      }
       if (event.key === 'Enter') {
         event.preventDefault();
+        closeEquipmentSuggestionMenu(descriptionMenu);
         addDraftEquipmentByDescription(createInput);
       }
     });
-    const tryAutoAdd = () => {
+    createInput.addEventListener('focus', () => {
+      populateEquipmentDescriptionLists();
+      handleCreateEquipmentSuggestionInput();
+    });
+    createInput.addEventListener('input', () => {
+      handleCreateEquipmentSuggestionInput();
+    });
+    createInput.addEventListener('change', () => {
       if (hasExactEquipmentDescription(createInput.value, 'equipment-description-options')) {
         addDraftEquipmentByDescription(createInput);
       }
-    };
-    createInput.addEventListener('focus', () => {
-      populateEquipmentDescriptionLists();
-      if (typeof createInput.showPicker === 'function') {
-        try {
-          createInput.showPicker();
-        } catch (error) {
-          // ignore browsers that disallow programmatic picker opening
-        }
-      }
     });
-    createInput.addEventListener('input', tryAutoAdd);
-    createInput.addEventListener('change', tryAutoAdd);
-    createInput.dataset.listenerAttached = 'true';
+    createInput.addEventListener('blur', () => {
+      window.setTimeout(() => closeEquipmentSuggestionMenu(descriptionMenu), 120);
+    });
+    createInput.dataset.equipmentAutocompleteAttached = 'true';
   }
 }
 
@@ -585,6 +839,11 @@ export function applyEquipmentSelectionButtonState(button, active) {
   button.dataset.selectionActive = isActive ? 'true' : 'false';
   button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
   button.classList.toggle('reservation-select-equipment-btn--active', isActive);
+  button.classList.toggle('ui-button--primary', isActive);
+  button.classList.toggle('btn-primary', isActive);
+  button.classList.toggle('ui-button--outline', !isActive);
+  button.classList.toggle('ui-button--secondary', !isActive);
+  button.classList.toggle('btn-outline-secondary', !isActive);
 }
 
 export function getEquipmentModeElements() {
@@ -596,10 +855,18 @@ export function getEquipmentModeElements() {
       packageSelect: null,
       packageHint: null,
       packageAddButton: null,
+      methodRadios: [],
+      methodButtons: [],
+      methodSelect: null,
+      methodPanels: [],
     };
   }
 
   const modeRadios = Array.from(document.querySelectorAll('input[name="reservation-equipment-mode"]'));
+  const methodRadios = Array.from(document.querySelectorAll('input[name="reservation-single-equipment-method"]'));
+  const methodButtons = Array.from(document.querySelectorAll('[data-single-equipment-method-option]'));
+  const methodSelect = document.querySelector('[data-single-equipment-method-select]');
+  const methodPanels = Array.from(document.querySelectorAll('[data-single-equipment-method]'));
   const singleContainer = document.querySelector('[data-equipment-mode="single"]');
   const packageContainer = document.querySelector('[data-equipment-mode="package"]');
   const packageSelect = document.getElementById('reservation-package-select');
@@ -613,7 +880,49 @@ export function getEquipmentModeElements() {
     packageSelect,
     packageHint,
     packageAddButton,
+    methodRadios,
+    methodButtons,
+    methodSelect,
+    methodPanels,
   };
+}
+
+function applySingleEquipmentMethodUi(method = 'barcode') {
+  const normalized = ['barcode', 'autocomplete', 'list'].includes(method) ? method : 'barcode';
+  const { methodButtons, methodPanels, methodSelect } = getEquipmentModeElements();
+
+  if (methodSelect && methodSelect.value !== normalized) {
+    methodSelect.value = normalized;
+  }
+
+  methodButtons.forEach((button) => {
+    const isActive = button.dataset.singleEquipmentMethodOption === normalized;
+    button.classList.toggle('is-active', isActive);
+    button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+  });
+
+  methodPanels.forEach((panel) => {
+    const isActive = panel.dataset.singleEquipmentMethod === normalized;
+    panel.hidden = !isActive;
+    panel.setAttribute('aria-hidden', isActive ? 'false' : 'true');
+  });
+
+  const barcodeInput = document.getElementById('equipment-barcode');
+  const descriptionInput = document.getElementById('equipment-description');
+  const selectorButton = document.getElementById('open-equipment-selector');
+
+  if (barcodeInput) {
+    barcodeInput.disabled = normalized !== 'barcode';
+  }
+  if (descriptionInput) {
+    descriptionInput.disabled = normalized !== 'autocomplete';
+    if (normalized !== 'autocomplete') {
+      closeAllCreateEquipmentSuggestionMenus();
+    }
+  }
+  if (selectorButton) {
+    selectorButton.disabled = normalized !== 'list';
+  }
 }
 
 export function applyEquipmentModeUi(mode) {
@@ -766,10 +1075,7 @@ export function setupEquipmentSelectionIntegration() {
 }
 
 export function setupEquipmentModeControls() {
-  const { modeRadios } = getEquipmentModeElements();
-  if (!modeRadios.length) {
-    return;
-  }
+  const { modeRadios, methodRadios, methodButtons, methodSelect, singleContainer, packageContainer, packageSelect } = getEquipmentModeElements();
 
   modeRadios.forEach((radio) => {
     if (radio.dataset.listenerAttached) return;
@@ -780,13 +1086,59 @@ export function setupEquipmentModeControls() {
     radio.dataset.listenerAttached = 'true';
   });
 
+  methodRadios.forEach((radio) => {
+    if (radio.dataset.listenerAttached) return;
+    radio.addEventListener('change', (event) => {
+      if (!event.target.checked) return;
+      applySingleEquipmentMethodUi(event.target.value);
+    });
+    radio.dataset.listenerAttached = 'true';
+  });
+
+  methodButtons.forEach((button) => {
+    if (button.dataset.listenerAttached) return;
+    button.addEventListener('click', () => {
+      applySingleEquipmentMethodUi(button.dataset.singleEquipmentMethodOption);
+    });
+    button.dataset.listenerAttached = 'true';
+  });
+
+  if (methodSelect && !methodSelect.dataset.listenerAttached) {
+    methodSelect.addEventListener('change', (event) => {
+      applySingleEquipmentMethodUi(event.target.value);
+    });
+    methodSelect.dataset.listenerAttached = 'true';
+  }
+
   setupPackageAddHandler();
   setupPackageSelectAutoAdd();
 
-  const activeMode = getEquipmentBookingMode();
-  const activeRadio = modeRadios.find((radio) => radio.value === activeMode);
-  if (activeRadio) {
-    activeRadio.checked = true;
+  if (modeRadios.length) {
+    const activeMode = getEquipmentBookingMode();
+    const activeRadio = modeRadios.find((radio) => radio.value === activeMode);
+    if (activeRadio) {
+      activeRadio.checked = true;
+    }
+    applyEquipmentModeUi(activeMode);
+  } else {
+    if (singleContainer) {
+      singleContainer.hidden = false;
+      singleContainer.setAttribute('aria-hidden', 'false');
+    }
+    if (packageContainer) {
+      packageContainer.hidden = false;
+      packageContainer.setAttribute('aria-hidden', 'false');
+    }
+    if (packageSelect) {
+      const hasPackageOptions = Array.from(packageSelect.options).some((option) => option.value);
+      packageSelect.disabled = !hasPackageOptions;
+    }
+    setEquipmentBookingMode('single');
   }
-  applyEquipmentModeUi(activeMode);
+
+  const activeMethod = methodButtons.find((button) => button.getAttribute('aria-pressed') === 'true')?.dataset.singleEquipmentMethodOption
+    || methodRadios.find((radio) => radio.checked)?.value
+    || methodSelect?.value
+    || 'barcode';
+  applySingleEquipmentMethodUi(activeMethod);
 }

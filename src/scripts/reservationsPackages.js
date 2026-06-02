@@ -131,7 +131,7 @@ export function resolvePackageItems(packageEntry) {
       price: priceCandidate != null ? Number(priceCandidate) : 0,
       cost: costCandidate != null ? Number(costCandidate) : 0,
       desc: item.description ?? item.desc ?? item.name ?? '',
-      image: item.image ?? item.imageUrl ?? item.img ?? null,
+      image: item.image ?? item.image_url ?? item.imageUrl ?? item.img ?? null,
     });
   });
 
@@ -189,7 +189,7 @@ export function resolvePackageItems(packageEntry) {
           }
         }
         if (!entry.image) {
-          entry.image = record.image || record.imageUrl || record.img || null;
+          entry.image = record.image || record.image_url || record.imageUrl || record.img || null;
         }
       }
     } else if (entry.normalizedBarcode && equipmentIndexByBarcode.has(entry.normalizedBarcode)) {
@@ -216,7 +216,7 @@ export function resolvePackageItems(packageEntry) {
           }
         }
         if (!entry.image) {
-          entry.image = record.image || record.imageUrl || record.img || null;
+          entry.image = record.image || record.image_url || record.imageUrl || record.img || null;
         }
       }
     }

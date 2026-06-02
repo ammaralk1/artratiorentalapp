@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <!-- @include "./_partials/manager-page-head.html" {"titleKey":"equipment.pageTitle","titleText":"إدارة المعدات"} -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+<!-- @include "./_partials/tabs-manager-shell.html" {"bodyClass":"dashboard-page equipment-page no-js","greetingLabelKey":"equipment.pageTitle","greetingLabelText":"إدارة المعدات","pageScript":"/src/scripts/equipmentPage.js"} -->
+<template data-slot="sidebarTabs">
+  <a class="ui-tab tab-button" href="home.html" data-close-sidebar>
+    <span class="tab-button__content"><span data-i18n data-i18n-key="dashboard.quickLinks.home">الصفحة الرئيسية</span></span>
+  </a>
+  <a class="ui-tab tab-button" href="operations.html#reservations-tab" data-close-sidebar>
+    <span class="tab-button__content"><span data-i18n data-i18n-key="tabs.reservations">📅 الحجوزات</span></span>
+  </a>
+  <a class="ui-tab tab-button" href="clients.html" data-close-sidebar>
+    <span class="tab-button__content"><span data-i18n data-i18n-key="tabs.customers">👤 العملاء</span></span>
+  </a>
+  <a class="ui-tab tab-button active" href="equipment.html" data-close-sidebar aria-current="page">
+    <span class="tab-button__content"><span data-i18n data-i18n-key="tabs.equipment">🎥 المعدات</span></span>
+  </a>
+  <a class="ui-tab tab-button" href="maintenance.html" data-close-sidebar>
+    <span class="tab-button__content"><span data-i18n data-i18n-key="tabs.maintenance">🛠️ الصيانة</span></span>
+  </a>
+  <a class="ui-tab tab-button" href="crew.html" data-close-sidebar>
+    <span class="tab-button__content"><span data-i18n data-i18n-key="tabs.technicians">😎 طاقم العمل</span></span>
+  </a>
+  <a class="ui-tab tab-button" href="projects.html" data-close-sidebar>
+    <span class="tab-button__content"><span data-i18n data-i18n-key="home.projects.title">🏗️ إدارة المشاريع</span></span>
+  </a>
+</template>
+<template data-slot="greetingPanel">
+  <div class="flex flex-col gap-4 text-start">
+    <div class="space-y-1">
+      <p class="text-sm text-base-content/60" data-i18n data-i18n-key="equipment.pageTitle">إدارة المعدات</p>
+      <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="equipment.pageSummary">إدارة كتالوج المعدات والحزم كمساحة مستقلة مع إبقائها جاهزة للحجوزات والصيانة.</p>
+    </div>
+  </div>
+</template>
+<template data-slot="mainContent">
+  <div class="tab-content-wrapper">
+<div class="tab active" id="equipment-tab" role="tabpanel" aria-labelledby="equipment-page-section-title" tabindex="0">
+        <!-- زر العودة للأعلى (يظهر فقط عند السحب لأسفل داخل تبويب المعدات) -->
+        <button id="equipment-back-to-top" class="back-to-top-btn" type="button" aria-label="العودة إلى أعلى الصفحة" title="⬆️ للأعلى" data-i18n data-i18n-aria-label-key="equipment.backToTop.ariaLabel" data-i18n-title-key="equipment.backToTop.title" hidden>
+          <span class="back-to-top-btn__icon" aria-hidden="true">↑</span>
+        </button>
+        <button
+          id="equipment-floating-return"
+          class="ui-button ui-button--primary equipment-return-btn btn btn-primary btn-lg"
+          type="button"
+          data-i18n
+          data-i18n-key="reservations.create.equipment.selector.returnButton"
+          hidden>
+          ⬅️ العودة إلى الحجز
+        </button>
+        <div class="tab-section-header">
+          <h2 class="tab-section-title" id="equipment-page-section-title" data-i18n data-i18n-key="equipment.section.title">🎥 إدارة المعدات</h2>
+          <p class="section-support-text" data-i18n data-i18n-key="equipment.section.support">أدر كتالوج المعدات والحزم من نفس السطح قبل استخدامها في الحجوزات أو متابعة الصيانة.</p>
+        </div>
+        <div class="tab-section-toolbar d-flex flex-wrap align-items-center justify-content-center justify-content-lg-between gap-2 mb-4">
+          <div class="d-flex flex-wrap gap-2">
+            <button type="button" id="equipment-clear-btn" class="ui-button ui-button--danger btn btn-error btn-sm requires-admin" data-i18n data-i18n-key="equipment.actions.clearAll">🗑️ مسح الكل</button>
+            <button type="button" id="excel-upload-trigger" class="ui-button ui-button--primary btn btn-primary btn-sm requires-admin" data-i18n data-i18n-key="equipment.actions.uploadExcel">📤 رفع من Excel</button>
+            <button type="button" id="excel-download-trigger" class="ui-button ui-button--outline btn btn-outline btn-sm" data-i18n data-i18n-key="equipment.actions.downloadExcel">📥 تنزيل Excel</button>
+          </div>
+          <div class="d-none">
+            <input type="file" id="excel-upload" accept=".xlsx, .xls" hidden class="requires-admin">
+          </div>
+        </div>
+
+        <div class="ui-card ui-card--content glass-card equipment-form-box equipment-embedded-form-card management-form-box mb-4">
+          <div class="management-form-header">
+            <div class="management-form-icon">🎥</div>
+            <div class="management-form-header-text">
+              <h4 data-i18n data-i18n-key="equipment.form.title">إضافة معدة</h4>
+              <p class="management-form-hint" data-i18n data-i18n-key="equipment.form.hint">أدخل بيانات المعدة ليتم حفظها ضمن قائمة المعدات.</p>
+            </div>
+          </div>
+          <form id="add-equipment-form" class="management-form">
+            <div class="equipment-embedded-form-layout">
+              <div class="equipment-embedded-form-main">
+                <section class="equipment-form-section-card">
+                  <div class="equipment-form-section-card__header">
+                    <h5 class="equipment-form-section-card__title" data-i18n data-i18n-key="equipment.form.sections.identity.title">بيانات المعدّة</h5>
+                    <p class="equipment-form-section-card__hint" data-i18n data-i18n-key="equipment.form.sections.identity.hint">ابدأ بوصف المعدّة وتعريفها بالباركود حتى يسهل العثور عليها لاحقًا.</p>
+                  </div>
+                  <div class="management-form-grid equipment-embedded-form-grid equipment-embedded-form-grid--identity">
+                    <div class="form-field form-field--full">
+                      <label for="new-equipment-desc" class="form-label" data-i18n data-i18n-key="equipment.form.labels.description">📝 الوصف</label>
+                      <input type="text" class="ui-input form-control" id="new-equipment-desc" placeholder="وصف المعدة" required data-i18n data-i18n-placeholder-key="equipment.form.placeholders.description">
+                    </div>
+                    <div class="form-field form-field--full">
+                      <label for="new-equipment-barcode" class="form-label" data-i18n data-i18n-key="equipment.form.labels.barcode">🏷️ الباركود</label>
+                      <div class="equipment-barcode-field">
+                        <input type="text" class="ui-input form-control" id="new-equipment-barcode" placeholder="الباركود" required data-i18n data-i18n-placeholder-key="equipment.form.placeholders.barcode">
+                        <button type="button" id="generate-equipment-barcode" class="ui-button ui-button--outline btn btn-outline btn-sm" title="توليد باركود" data-i18n data-i18n-key="equipment.form.actions.generate" data-i18n-title-key="equipment.form.actions.generateBarcodeTitle">🎲 توليد</button>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="equipment-form-section-card equipment-form-section-card--pricing">
+                  <div class="equipment-form-section-card__header">
+                    <h5 class="equipment-form-section-card__title" data-i18n data-i18n-key="equipment.form.sections.pricing.title">التسعير</h5>
+                    <p class="equipment-form-section-card__hint" data-i18n data-i18n-key="equipment.form.sections.pricing.hint">أدخل سعر البيع والتكلفة حتى تبقى بيانات المعدّة التجارية واضحة من البداية.</p>
+                  </div>
+                  <div class="management-form-grid equipment-embedded-form-grid equipment-embedded-form-grid--pricing">
+                    <div class="form-field">
+                      <label for="new-equipment-price" class="form-label" data-i18n data-i18n-key="equipment.form.labels.price">💵 السعر</label>
+                      <input type="number" class="ui-input form-control" id="new-equipment-price" placeholder="0" min="0" step="0.01" data-i18n data-i18n-placeholder-key="equipment.form.placeholders.price">
+                    </div>
+                    <div class="form-field">
+                      <label for="new-equipment-cost" class="form-label" data-i18n data-i18n-key="equipment.form.labels.cost">💸 التكلفة</label>
+                      <input type="number" class="ui-input form-control" id="new-equipment-cost" placeholder="0" min="0" step="0.01" data-i18n data-i18n-placeholder-key="equipment.form.placeholders.cost">
+                    </div>
+                  </div>
+                </section>
+              </div>
+              <aside class="equipment-embedded-form-side">
+                <div class="equipment-embedded-form-side-card">
+                  <div class="equipment-form-section-card__header">
+                    <h5 class="equipment-form-section-card__title" data-i18n data-i18n-key="equipment.form.sections.catalog.title">التصنيف والمصدر</h5>
+                    <p class="equipment-form-section-card__hint" data-i18n data-i18n-key="equipment.form.sections.catalog.hint">أضف الصورة والقسم والمؤجر لتظهر المعدّة بشكل منظّم داخل الكتالوج والحجوزات.</p>
+                  </div>
+                  <div class="form-field">
+                    <label for="new-equipment-image" class="form-label" data-i18n data-i18n-key="equipment.form.labels.image">🖼️ رابط الصورة</label>
+                    <input type="text" class="ui-input form-control" id="new-equipment-image" placeholder="https://..." data-i18n data-i18n-placeholder-key="equipment.form.placeholders.image">
+                  </div>
+                  <div class="form-field">
+                    <label for="new-equipment-category" class="form-label" data-i18n data-i18n-key="equipment.form.labels.category">📂 القسم</label>
+                    <input type="text" class="ui-input form-control" id="new-equipment-category" placeholder="القسم" data-i18n data-i18n-placeholder-key="equipment.form.placeholders.category" list="new-equipment-category-list">
+                    <datalist id="new-equipment-category-list"></datalist>
+                  </div>
+                  <div class="form-field">
+                    <label for="new-equipment-sub" class="form-label" data-i18n data-i18n-key="equipment.form.labels.subcategory">📑 القسم الثانوي</label>
+                    <input type="text" class="ui-input form-control" id="new-equipment-sub" placeholder="القسم الثانوي" data-i18n data-i18n-placeholder-key="equipment.form.placeholders.subcategory" list="new-equipment-sub-list">
+                    <datalist id="new-equipment-sub-list"></datalist>
+                  </div>
+                  <div class="form-field">
+                    <label for="new-equipment-lessor" class="form-label" data-i18n data-i18n-key="equipment.form.labels.lessor">🏢 المؤجر</label>
+                    <input type="text" class="ui-input form-control" id="new-equipment-lessor" placeholder="اسم المؤجر" data-i18n data-i18n-placeholder-key="equipment.form.placeholders.lessor" list="new-equipment-lessor-list">
+                    <datalist id="new-equipment-lessor-list"></datalist>
+                  </div>
+                </div>
+              </aside>
+            </div>
+            <div class="management-form-actions equipment-form-actions">
+              <button type="submit" class="ui-button ui-button--primary btn btn-primary" data-i18n data-i18n-key="equipment.form.actions.submit">➕ إضافة معدة</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="ui-card ui-card--content glass-card equipment-packages-box equipment-package-management-card management-form-box mb-4">
+          <div class="management-form-header">
+            <div class="management-form-icon">📦</div>
+            <div class="management-form-header-text">
+              <h4 data-i18n data-i18n-key="equipment.packages.form.title">إدارة الحزم</h4>
+              <p class="management-form-hint" data-i18n data-i18n-key="equipment.packages.form.hint">قم بتجميع عدة معدات في حزمة واحدة لتسهيل إضافتها للحجوزات.</p>
+            </div>
+          </div>
+
+          <form id="equipment-package-form" class="management-form">
+            <input type="hidden" id="equipment-package-id" value="">
+            <div class="equipment-package-form-layout">
+              <section class="equipment-form-section-card equipment-package-form-section-card equipment-package-form-section-card--identity">
+                <div class="equipment-form-section-card__header">
+                  <h5 class="equipment-form-section-card__title" data-i18n data-i18n-key="equipment.packages.form.sections.identity.title">تعريف الحزمة</h5>
+                  <p class="equipment-form-section-card__hint" data-i18n data-i18n-key="equipment.packages.form.sections.identity.hint">ابدأ باسم واضح وكود ثابت حتى يسهل العثور على الحزمة واستخدامها داخل الحجوزات.</p>
+                </div>
+                <div class="management-form-grid equipment-package-form-grid equipment-package-form-grid--identity">
+                  <div class="form-field">
+                    <label for="equipment-package-name" class="form-label" data-i18n data-i18n-key="equipment.packages.form.labels.name">🧾 اسم الحزمة</label>
+                    <input type="text" class="ui-input form-control" id="equipment-package-name" placeholder="مثال: طقم تصوير أساسي" required data-i18n data-i18n-placeholder-key="equipment.packages.form.placeholders.name">
+                  </div>
+                  <div class="form-field">
+                    <label for="equipment-package-code" class="form-label" data-i18n data-i18n-key="equipment.packages.form.labels.code">🔖 كود الحزمة</label>
+                    <input type="text" class="ui-input form-control" id="equipment-package-code" placeholder="standard-kit" required data-i18n data-i18n-placeholder-key="equipment.packages.form.placeholders.code">
+                  </div>
+                  <div class="form-field form-field--wide">
+                    <label for="equipment-package-description" class="form-label" data-i18n data-i18n-key="equipment.packages.form.labels.description">📝 الوصف</label>
+                    <textarea class="ui-textarea form-control equipment-package-description" id="equipment-package-description" rows="3" placeholder="تفاصيل إضافية عن الحزمة" data-i18n data-i18n-placeholder-key="equipment.packages.form.placeholders.description"></textarea>
+                  </div>
+                </div>
+              </section>
+
+              <section class="equipment-form-section-card equipment-package-form-section-card equipment-package-form-section-card--pricing">
+                <div class="equipment-form-section-card__header">
+                  <h5 class="equipment-form-section-card__title" data-i18n data-i18n-key="equipment.packages.form.sections.pricing.title">الكمية والتسعير</h5>
+                  <p class="equipment-form-section-card__hint" data-i18n data-i18n-key="equipment.packages.form.sections.pricing.hint">حدّد السعر والكمية الأساسية للحزمة قبل إضافة عناصرها الفعلية.</p>
+                </div>
+                <div class="equipment-package-pricing-shell">
+                  <div class="management-form-grid equipment-package-form-grid equipment-package-form-grid--pricing">
+                    <div class="form-field">
+                      <label for="equipment-package-qty" class="form-label" data-i18n data-i18n-key="equipment.packages.form.labels.quantity">🔢 الكمية</label>
+                      <input type="number" class="ui-input form-control" id="equipment-package-qty" placeholder="1" min="1" step="1" value="1" data-i18n data-i18n-placeholder-key="equipment.packages.form.placeholders.quantity">
+                    </div>
+                    <div class="form-field">
+                      <label for="equipment-package-price" class="form-label" data-i18n data-i18n-key="equipment.packages.form.labels.price">💵 سعر الحزمة</label>
+                      <input type="text" class="ui-input form-control" id="equipment-package-price" inputmode="decimal" placeholder="0" data-i18n data-i18n-placeholder-key="equipment.packages.form.placeholders.price">
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            <div class="equipment-package-items-editor">
+              <div class="equipment-form-section-card__header">
+                <h5 class="equipment-package-items-title equipment-form-section-card__title" data-i18n data-i18n-key="equipment.packages.items.title">🧰 عناصر الحزمة</h5>
+                <p class="equipment-form-section-card__hint" data-i18n data-i18n-key="equipment.packages.items.hint">اختر العناصر التي تكوّن الحزمة من قائمة المعدات ثم راجعها هنا قبل الحفظ.</p>
+              </div>
+
+              <div class="equipment-package-selection-controls">
+                <button type="button" class="ui-button ui-button--outline btn btn-outline-primary" id="equipment-package-open-selector" data-i18n data-i18n-key="equipment.packages.selection.open">🎥 اختيار من قائمة المعدات</button>
+
+                <div class="equipment-package-selection-active" id="equipment-package-selection-active" hidden>
+                  <span id="equipment-package-selection-counter" data-i18n data-i18n-key="equipment.packages.selection.counter">لم يتم اختيار عناصر بعد.</span>
+                  <div class="equipment-package-selection-buttons">
+                    <button type="button" class="ui-button ui-button--primary btn btn-primary btn-sm" id="equipment-package-apply-selection" data-i18n data-i18n-key="equipment.packages.selection.apply">✅ إضافة العناصر للحزمة</button>
+                    <button type="button" class="ui-button ui-button--secondary btn btn-secondary btn-sm" id="equipment-package-cancel-selection" data-i18n data-i18n-key="equipment.packages.selection.cancel">✖️ إلغاء</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="users-table-wrapper overflow-x-auto embedded-management-table-shell equipment-package-items-table-wrapper">
+                <table class="ui-table table table-hover users-table surface-table embedded-management-table align-middle equipment-package-items-table" id="equipment-package-items-table">
+                  <thead class="table-light">
+                    <tr>
+                      <th data-i18n data-i18n-key="equipment.packages.items.table.equipment">المعدة</th>
+                      <th data-i18n data-i18n-key="equipment.packages.items.table.quantity">الكمية</th>
+                      <th data-i18n data-i18n-key="equipment.packages.items.table.actions">الإجراءات</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr id="equipment-package-items-empty">
+                      <td colspan="3" class="projects-table-empty-row text-center text-muted" data-i18n data-i18n-key="equipment.packages.items.empty">لم يتم إضافة عناصر إلى الحزمة بعد.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="management-form-actions equipment-package-form-actions">
+              <button type="submit" class="ui-button ui-button--primary btn btn-primary" id="equipment-package-submit" data-i18n data-i18n-key="equipment.packages.form.actions.save">💾 حفظ الحزمة</button>
+              <button type="button" class="ui-button ui-button--secondary btn btn-secondary" id="equipment-package-reset" data-i18n data-i18n-key="equipment.packages.form.actions.reset">↩️ إعادة التعيين</button>
+            </div>
+          </form>
+        </div>
+
+        <section class="ui-card ui-card--content glass-card equipment-packages-list-box equipment-records-card mb-4">
+          <div class="projects-table__header equipment-records-card__header">
+            <div class="project-list-section-header equipment-records-card__heading">
+              <div class="surface-heading-stack">
+                <h3 class="mb-0" data-i18n data-i18n-key="equipment.packages.list.title">📋 قائمة الحزم</h3>
+                <p class="section-support-text mb-0" data-i18n data-i18n-key="equipment.packages.list.hint">راجع الحزم الجاهزة ونظّمها قبل استخدامها داخل الحجوزات أو البناء السريع للعناصر.</p>
+              </div>
+              <span class="projects-table__count ui-badge ui-badge--soft badge-soft equipment-records-card__count" id="equipment-packages-count">0</span>
+            </div>
+          </div>
+          <div class="users-table-wrapper overflow-x-auto embedded-management-table-shell equipment-packages-table-wrapper">
+            <table class="ui-table table table-hover users-table surface-table embedded-management-table align-middle equipment-packages-table" id="equipment-packages-table">
+              <thead class="table-light">
+                <tr>
+                  <th data-i18n data-i18n-key="equipment.packages.list.table.name">الحزمة</th>
+                  <th data-i18n data-i18n-key="equipment.packages.list.table.code">الكود</th>
+                  <th data-i18n data-i18n-key="equipment.packages.list.table.price">السعر</th>
+                  <th data-i18n data-i18n-key="equipment.packages.list.table.quantity">الكمية</th>
+                  <th data-i18n data-i18n-key="equipment.packages.list.table.items">عدد العناصر</th>
+                  <th data-i18n data-i18n-key="equipment.packages.list.table.actions">الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="equipment-packages-table-body">
+                <tr id="equipment-packages-empty-row">
+                  <td colspan="6" class="projects-table-empty-row text-center text-muted" data-i18n data-i18n-key="equipment.packages.list.empty">لا توجد حزم مضافة حالياً.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <div id="equipment-selection-banner" class="equipment-selection-banner" hidden>
+          <div class="equipment-selection-banner__content">
+            <div class="equipment-selection-banner__copy">
+              <span id="equipment-selection-banner-title" class="equipment-selection-banner__title" data-i18n data-i18n-key="reservations.create.equipment.selector.bannerTitle">🔗 اختيار معدات لحجز جديد</span>
+              <p id="equipment-selection-banner-hint" class="equipment-selection-banner__hint" data-i18n data-i18n-key="reservations.create.equipment.selector.bannerHint">ابحث في القائمة أدناه، ثم أضف المعدات المتاحة مباشرة إلى نموذج الحجز.</p>
+            </div>
+            <div class="equipment-selection-banner__actions">
+              <button type="button" class="ui-button ui-button--primary btn btn-primary btn-sm" id="equipment-selection-return" data-i18n data-i18n-key="reservations.create.equipment.selector.returnButton">⬅️ العودة إلى الحجز</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ✅ البحث والفلترة -->
+        <!-- ✅ قائمة المعدات -->
+        <section class="ui-card ui-card--content glass-card equipment-list-box equipment-records-card">
+          <div class="projects-table__header equipment-records-card__header">
+            <div class="project-list-section-header equipment-records-card__heading">
+              <div class="surface-heading-stack">
+                <h3 class="mb-0" data-i18n data-i18n-key="equipment.list.title">📋 كل المعدات</h3>
+                <p class="section-support-text mb-0" data-i18n data-i18n-key="equipment.list.hint">ابحث وصنّف المعدات من نفس السطح قبل ربطها بالحجوزات أو إدارتها داخل الحزم والصيانة.</p>
+              </div>
+              <span class="projects-table__count ui-badge ui-badge--soft badge-soft equipment-records-card__count" id="equipment-list-count">0</span>
+            </div>
+          </div>
+
+          <div class="equipment-records-card__toolbar">
+            <div class="management-search-bar equipment-records-search">
+              <input type="text" id="search-equipment" class="ui-input form-control" placeholder="🔍 ابحث عن معدة..." data-i18n data-i18n-placeholder-key="equipment.filters.search">
+              <select id="filter-status" class="ui-select form-select">
+                <option value="" data-i18n data-i18n-key="equipment.filters.status.all">⚙️ الحالات</option>
+                <option value="متاح" data-i18n data-i18n-key="equipment.form.options.available">✅ متاح</option>
+                <option value="محجوز" data-i18n data-i18n-key="equipment.form.options.booked">📌 محجوز</option>
+                <option value="صيانة" data-i18n data-i18n-key="equipment.form.options.maintenance">🛠️ صيانة</option>
+              </select>
+              <select id="filter-category" class="ui-select form-select">
+                <option value="" data-i18n data-i18n-key="equipment.filters.category.all">📂 الأقسام</option>
+              </select>
+              <select id="filter-sub" class="ui-select form-select">
+                <option value="" data-i18n data-i18n-key="equipment.filters.subcategory.all">📑 الأقسام الثانوية</option>
+              </select>
+              <button type="button" class="ui-button ui-button--outline btn btn-outline btn-secondary equipment-records-search__reset" id="equipment-clear-search" data-i18n data-i18n-key="actions.clearFilters">🔄 إعادة التصفية</button>
+            </div>
+          </div>
+
+          <div id="equipment-list" class="equipment-grid" role="list"></div>
+          <div id="equipment-list-pagination" class="list-pagination equipment-records-card__pagination" hidden></div>
+        </section>
+      </div>
+  </div>
+</template>
+<template data-slot="afterShell">
+  <div id="toast-container"></div>
+<div class="modal fade customer-edit-modal" id="editEquipmentModal" tabindex="-1" aria-labelledby="editEquipmentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable customer-edit-modal__dialog equipment-details-modal__dialog">
+      <div class="ui-modal__content modal-content customer-edit-modal__content equipment-details-modal equipment-details-modal__content">
+        <div class="ui-modal__header modal-header customer-edit-modal__header equipment-details-header">
+          <div class="equipment-details-header__content">
+            <h5 class="modal-title equipment-details-header__title" data-i18n data-i18n-key="equipment.modal.title.details">📇 تفاصيل بطاقة المعدة</h5>
+            <div class="equipment-details-header__media" id="equipment-details-cover">
+              <span class="equipment-details-header__placeholder" aria-hidden="true">📦</span>
+            </div>
+            <div class="equipment-details-header__badges">
+              <span id="equipment-lessor-badge" class="ui-badge ui-badge--soft badge-soft" hidden>🏢</span>
+            </div>
+          </div>
+          <button type="button" class="btn-close equipment-details-header__close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
+        </div>
+        <div class="ui-modal__body modal-body customer-edit-modal__body equipment-details-modal__body">
+          <form id="edit-equipment-form" class="equipment-details-form">
+            <input type="hidden" id="edit-equipment-index">
+            <input type="hidden" id="edit-equipment-barcode">
+            <input type="hidden" id="edit-equipment-status">
+
+            <div class="equipment-details-grid">
+              <div class="equipment-details-field">
+                <label for="edit-equipment-category" class="form-label" data-i18n data-i18n-key="equipment.form.labels.category">📂 القسم</label>
+                <input type="text" class="form-control" id="edit-equipment-category" disabled>
+              </div>
+
+
+              <div class="equipment-details-field">
+                <label for="edit-equipment-subcategory" class="form-label" data-i18n data-i18n-key="equipment.form.labels.subcategory">📑 القسم الثانوي</label>
+                <textarea class="form-control" id="edit-equipment-subcategory" rows="2" disabled></textarea>
+              </div>
+
+              <div class="equipment-details-field equipment-details-field--wide">
+                <label for="edit-equipment-description" class="form-label" data-i18n data-i18n-key="equipment.form.labels.description">📝 الوصف</label>
+                <textarea class="form-control" id="edit-equipment-description" rows="3" required disabled></textarea>
+              </div>
+
+              <div class="equipment-details-field">
+                <label for="edit-equipment-quantity" class="form-label" data-i18n data-i18n-key="equipment.form.labels.quantity">🔢 الكمية</label>
+                <input type="number" class="form-control" id="edit-equipment-quantity" min="1" disabled>
+              </div>
+
+              <div class="equipment-details-field">
+                <label for="edit-equipment-price" class="form-label" data-i18n data-i18n-key="equipment.form.labels.price">💵 السعر</label>
+                <input type="number" class="form-control" id="edit-equipment-price" min="0" step="0.01" disabled>
+              </div>
+              <div class="equipment-details-field">
+                <label for="edit-equipment-cost" class="form-label" data-i18n data-i18n-key="equipment.form.labels.cost">💸 التكلفة</label>
+                <input type="number" class="form-control" id="edit-equipment-cost" min="0" step="0.01" disabled>
+              </div>
+
+              <div class="equipment-details-field equipment-details-field--wide">
+                <label for="edit-equipment-image" class="form-label" data-i18n data-i18n-key="equipment.form.labels.image">🖼️ رابط الصورة</label>
+                <textarea class="form-control" id="edit-equipment-image" rows="2" placeholder="ضع رابط مباشر للصورة" data-i18n data-i18n-placeholder-key="equipment.modal.placeholders.image" disabled></textarea>
+              </div>
+              <div class="equipment-details-field">
+                <label for="edit-equipment-lessor" class="form-label" data-i18n data-i18n-key="equipment.modal.labels.lessor">🏢 المؤجر</label>
+                <input type="text" class="form-control" id="edit-equipment-lessor" disabled>
+              </div>
+            </div>
+
+            <section class="equipment-variants-section" id="equipment-variants-section" hidden>
+              <div class="equipment-variants-section__header">
+                <h6 class="equipment-variants-section__title" data-i18n data-i18n-key="equipment.modal.variants.title">📦 القطع المرتبطة</h6>
+                <span class="ui-badge ui-badge--soft badge-soft equipment-variants-count" id="equipment-variants-count">0</span>
+              </div>
+              <div class="users-table-wrapper overflow-x-auto equipment-variants-table-wrapper">
+                <table class="ui-table table table-hover users-table surface-table align-middle equipment-variants-table">
+                  <thead class="table-light users-table-head">
+                    <tr>
+                      <th scope="col" data-i18n data-i18n-key="equipment.modal.variants.barcode">الباركود</th>
+                      <th scope="col" data-i18n data-i18n-key="equipment.modal.variants.status">الحالة</th>
+                      <th scope="col" data-i18n data-i18n-key="equipment.modal.variants.quantity">الكمية</th>
+                      <th scope="col" class="table-actions-head" data-i18n data-i18n-key="equipment.modal.variants.actions">الإجراءات</th>
+                    </tr>
+                  </thead>
+                  <tbody id="equipment-variants-table-body">
+                    <tr>
+                      <td colspan="4" class="text-center projects-table-empty-row" data-i18n data-i18n-key="equipment.modal.variants.empty">لا توجد قطع مرتبطة أخرى.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </form>
+        </div>
+        <div class="ui-modal__footer modal-footer customer-edit-modal__footer equipment-details-modal__footer">
+          <div class="equipment-details-actions">
+            <button type="button" class="btn btn-secondary" id="equipment-edit-cancel" hidden data-i18n data-i18n-key="equipment.modal.actions.cancelEdit">↩️ إلغاء التعديل</button>
+            <button type="button" class="btn btn-primary" id="save-equipment-changes" data-mode="view" data-i18n data-i18n-key="equipment.modal.actions.edit">✏️ تعديل</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+</html>

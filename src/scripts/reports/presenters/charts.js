@@ -73,14 +73,11 @@ export async function renderTrendChart(data) {
     const categories = sanitized.map((item) => item.label);
     const reservationsSeries = sanitized.map((item) => Math.round(item.count || 0));
     const revenueSeries = sanitized.map((item) => Number(item.revenue || 0));
-    const netSeries = sanitized.map((item) => Number(item.netProfit || 0));
-    const maSeries = sanitized.map((item) => (item.movingAvgRevenue != null ? Number(item.movingAvgRevenue) : null));
 
     const totalReservations = reservationsSeries.reduce((a, b) => a + (Number.isFinite(b) ? b : 0), 0);
     const totalRevenue = revenueSeries.reduce((a, b) => a + (Number.isFinite(b) ? b : 0), 0);
-    const totalNet = netSeries.reduce((a, b) => a + (Number.isFinite(b) ? b : 0), 0);
 
-    if (totalReservations === 0 && totalRevenue === 0 && totalNet === 0) {
+    if (totalReservations === 0 && totalRevenue === 0) {
       if (reportsState.charts.trend) {
         reportsState.charts.trend.destroy();
         reportsState.charts.trend = null;
@@ -99,18 +96,6 @@ export async function renderTrendChart(data) {
         name: translate('reservations.reports.chart.volume.series.revenue', 'الإيرادات (SR)', 'Revenue (SR)'),
         type: 'line',
         data: revenueSeries,
-        yAxisIndex: 1,
-      },
-      {
-        name: translate('reservations.reports.chart.volume.series.net', 'صافي الربح (SR)', 'Net profit (SR)'),
-        type: 'line',
-        data: netSeries,
-        yAxisIndex: 1,
-      },
-      {
-        name: translate('reservations.reports.chart.volume.series.movingAvg', 'متوسط متحرك (٣ أشهر)', '3-mo Moving Avg'),
-        type: 'line',
-        data: maSeries,
         yAxisIndex: 1,
       },
     ];
@@ -140,17 +125,13 @@ export async function renderTrendChart(data) {
         },
       },
       theme: { mode: getThemeMode() },
-      stroke: {
-        width: [0, 4, 4],
-        curve: 'smooth',
-      },
       markers: {
-        size: [0, 4, 4, 0],
+        size: [0, 4],
       },
-      colors: ['#6366f1', '#22c55e', '#f97316', '#0ea5e9'],
+      colors: ['#7c9a6d', '#d7e7d0'],
       dataLabels: { enabled: false },
-      fill: { type: 'solid', opacity: 1 },
-      stroke: { curve: 'smooth', width: [0, 2, 2, 2], dashArray: [0, 0, 0, 6] },
+      fill: { type: ['solid', 'gradient'], opacity: 1, gradient: { shadeIntensity: 0.2, opacityFrom: 0.35, opacityTo: 0.05, stops: [0, 100] } },
+      stroke: { curve: 'smooth', width: [0, 3], dashArray: [0, 0] },
       xaxis: {
         categories,
         labels: {
@@ -161,28 +142,28 @@ export async function renderTrendChart(data) {
         {
           seriesName: translate('reservations.reports.chart.volume.series.reservations', 'عدد الحجوزات', 'Reservations'),
           axisTicks: { show: true },
-          axisBorder: { show: true, color: '#6366f1' },
+          axisBorder: { show: true, color: '#7c9a6d' },
           labels: {
-            style: { colors: '#6366f1' },
+            style: { colors: '#7c9a6d' },
             formatter: (value) => formatNumber(value),
           },
           title: {
             text: translate('reservations.reports.chart.volume.series.reservations', 'عدد الحجوزات', 'Reservations'),
-            style: { color: '#6366f1' },
+            style: { color: '#7c9a6d' },
           },
         },
         {
           opposite: true,
           seriesName: translate('reservations.reports.chart.volume.series.revenue', 'الإيرادات (SR)', 'Revenue (SR)'),
           axisTicks: { show: true },
-          axisBorder: { show: true, color: '#22c55e' },
+          axisBorder: { show: true, color: '#d7e7d0' },
           labels: {
-            style: { colors: '#22c55e' },
+            style: { colors: '#d7e7d0' },
             formatter: (value) => formatCurrency(value),
           },
           title: {
             text: translate('reservations.reports.chart.volume.series.revenue', 'الإيرادات (SR)', 'Revenue (SR)'),
-            style: { color: '#22c55e' },
+            style: { color: '#d7e7d0' },
           },
         },
       ],
@@ -205,12 +186,6 @@ export async function renderTrendChart(data) {
             const deltas = [yoy, mom].filter(Boolean).join(' · ');
             lines.push(`<div><span>💰</span> ${formatCurrency(s1)}${deltas ? ` <small class="text-base-content/60">(${deltas})</small>` : ''}</div>`);
           }
-          // Net profit
-          const s2 = series?.[2]?.[dataPointIndex];
-          if (s2 != null) lines.push(`<div><span>🧮</span> ${formatCurrency(s2)}</div>`);
-          // Moving average
-          const s3 = series?.[3]?.[dataPointIndex];
-          if (s3 != null) lines.push(`<div><span>📈</span> ${formatCurrency(s3)}</div>`);
           return `
             <div class="apex-tooltip">
               <div class="mb-1 font-semibold">${cat}</div>
@@ -302,8 +277,8 @@ export async function renderStatusChart(data) {
       theme: { mode: getThemeMode() },
       labels,
       series,
-      // confirmed, pending, completed, cancelled
-      colors: ['#22c55e', '#f97316', '#6366f1', '#ef4444'],
+      // active, pending, closed
+      colors: ['#6fa15f', '#d7a541', '#6b7280'],
       legend: { position: 'bottom' },
       dataLabels: {
         formatter: (val) => `${Math.round(val)}%`,
@@ -479,18 +454,18 @@ export async function renderStatusStackedMonthly(data) {
   try {
     const ApexCharts = await ensureApexCharts();
     const categories = rows.map((r) => r.label);
-    const confirmed = rows.map((r) => r.confirmed || 0);
-    const cancelled = rows.map((r) => r.cancelled || 0);
+    const active = rows.map((r) => r.active || 0);
+    const closed = rows.map((r) => r.closed || 0);
     const series = [
-      { name: translate('reservations.reports.status.confirmedLabel', 'مؤكدة', 'Confirmed'), data: confirmed },
-      { name: translate('reservations.reports.status.cancelledLabel', 'ملغاة', 'Cancelled'), data: cancelled },
+      { name: translate('reservations.reports.status.confirmedLabel', 'نشطة', 'Active'), data: active },
+      { name: translate('reservations.reports.status.completedLabel', 'مغلقة', 'Closed'), data: closed },
     ];
     const options = {
       chart: { type: 'bar', height: 320, stacked: true, toolbar: { show: false } },
       series,
       xaxis: { categories },
       plotOptions: { bar: { columnWidth: '55%', borderRadius: 6 } },
-      colors: ['#22c55e', '#ef4444'],
+      colors: ['#6fa15f', '#6b7280'],
       dataLabels: { enabled: false },
       legend: { position: 'bottom' },
     };

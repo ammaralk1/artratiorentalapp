@@ -25,6 +25,10 @@ let summaryErrorMessage = '';
 let homeTabScrollInitialized = false;
 let authResolved = false;
 
+function revealPage() {
+  document.body.classList.remove('auth-pending');
+}
+
 function updateGreetingMessage() {
   const greetingElements = document.querySelectorAll('[data-home-greeting]');
   if (!greetingElements.length) return;
@@ -56,7 +60,80 @@ function updateAdminCardVisibility() {
       element.classList.add('hidden');
     }
   });
+  updateHomeTabbarVisibility();
+  updateHomeMenuVisibility();
   refreshHomeTabScrollState();
+}
+
+function updateHomeMenuVisibility() {
+  document.querySelectorAll('[data-home-menu]').forEach((menu) => {
+    if (!(menu instanceof HTMLElement)) return;
+    const visibleItems = Array.from(menu.querySelectorAll('.home-topbar-menu__item')).filter((item) =>
+      item instanceof HTMLElement && !item.classList.contains('hidden')
+    );
+    const hasDirectGate = menu.hasAttribute('data-manager-card') || menu.hasAttribute('data-admin-card');
+    if (!hasDirectGate) {
+      menu.classList.toggle('hidden', visibleItems.length === 0);
+    }
+  });
+}
+
+function updateHomeTabbarVisibility() {
+  document.querySelectorAll('.home-main-tabbar').forEach((bar) => {
+    const visibleButtons = Array.from(bar.querySelectorAll('.home-main-tab')).filter((button) =>
+      button instanceof HTMLElement && !button.classList.contains('hidden')
+    );
+    bar.hidden = visibleButtons.length === 0;
+  });
+}
+
+function closeHomeMenus(exceptMenu = null) {
+  document.querySelectorAll('[data-home-menu]').forEach((menu) => {
+    if (exceptMenu && menu === exceptMenu) return;
+    const toggle = menu.querySelector('[data-home-menu-toggle]');
+    const panel = menu.querySelector('[data-home-menu-panel]');
+    if (toggle) {
+      toggle.setAttribute('aria-expanded', 'false');
+    }
+    if (panel) {
+      panel.hidden = true;
+    }
+    menu.classList.remove('is-open');
+  });
+}
+
+function initHomeTopbarMenus() {
+  document.querySelectorAll('[data-home-menu]').forEach((menu) => {
+    if (menu.dataset.menuInitialized) return;
+    const toggle = menu.querySelector('[data-home-menu-toggle]');
+    const panel = menu.querySelector('[data-home-menu-panel]');
+    if (!toggle || !panel) return;
+
+    toggle.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const isOpen = toggle.getAttribute('aria-expanded') === 'true';
+      closeHomeMenus(isOpen ? null : menu);
+      toggle.setAttribute('aria-expanded', String(!isOpen));
+      panel.hidden = isOpen;
+      menu.classList.toggle('is-open', !isOpen);
+    });
+
+    menu.addEventListener('click', (event) => {
+      event.stopPropagation();
+    });
+
+    menu.dataset.menuInitialized = 'true';
+  });
+
+  if (!document.body.dataset.homeMenuDocumentListeners) {
+    document.addEventListener('click', () => closeHomeMenus());
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        closeHomeMenus();
+      }
+    });
+    document.body.dataset.homeMenuDocumentListeners = 'true';
+  }
 }
 
 function getLogicalScrollMetrics(track) {
@@ -98,7 +175,7 @@ function refreshHomeTabScrollState() {
     const nextBtn = root.querySelector('[data-tab-scroll-next]');
     if (!track) return;
 
-    const visibleButtons = Array.from(track.querySelectorAll('.tab-button')).filter((button) =>
+    const visibleButtons = Array.from(track.querySelectorAll('.home-main-tab')).filter((button) =>
       button instanceof HTMLElement && !button.classList.contains('hidden') && button.offsetParent !== null
     );
     const hasOverflow = visibleButtons.length > 0 && (track.scrollWidth - track.clientWidth) > 12;
@@ -482,8 +559,7 @@ function buildSummaryMetrics(summary) {
       value: summary.customers.total,
       icon: '👥',
       accent: 'primary',
-      href: 'dashboard.html#customers-tab',
-      dashboardTab: 'customers-tab',
+      href: 'clients.html',
     },
     {
       key: 'reservations.today',
@@ -491,7 +567,7 @@ function buildSummaryMetrics(summary) {
       value: summary.reservations.today,
       icon: '🛎️',
       accent: 'success',
-      href: 'dashboard.html#reservations-tab',
+      href: 'operations.html#reservations-tab',
       dashboardTab: 'reservations-tab',
       dashboardSubTab: 'my-reservations-tab',
     },
@@ -501,7 +577,7 @@ function buildSummaryMetrics(summary) {
       value: summary.reservations.upcoming,
       icon: '🔔',
       accent: 'info',
-      href: 'dashboard.html#reservations-tab',
+      href: 'operations.html#reservations-tab',
       dashboardTab: 'reservations-tab',
       dashboardSubTab: 'calendar-tab',
     },
@@ -521,8 +597,7 @@ function buildSummaryMetrics(summary) {
       value: summary.equipment.maintenance,
       icon: '🛠️',
       accent: 'error',
-      href: 'dashboard.html#maintenance-tab',
-      dashboardTab: 'maintenance-tab',
+      href: 'maintenance.html',
     },
     {
       key: 'maintenance.highPriority',
@@ -530,8 +605,7 @@ function buildSummaryMetrics(summary) {
       value: summary.maintenance.highPriority,
       icon: '⚡',
       accent: 'error',
-      href: 'dashboard.html#maintenance-tab',
-      dashboardTab: 'maintenance-tab',
+      href: 'maintenance.html',
     },
     {
       key: 'technicians.busy',
@@ -539,19 +613,18 @@ function buildSummaryMetrics(summary) {
       value: summary.technicians.busy,
       icon: '👷',
       accent: 'secondary',
-      href: 'dashboard.html#technicians-tab',
-      dashboardTab: 'technicians-tab',
+      href: 'crew.html',
     },
   ];
 }
 
 const summaryAccentClassMap = {
-  primary: 'bg-primary/10 text-primary',
-  success: 'bg-success/10 text-success',
-  info: 'bg-info/10 text-info',
-  warning: 'bg-warning/10 text-warning',
-  error: 'bg-error/10 text-error',
-  secondary: 'bg-secondary/10 text-secondary'
+  primary: 'summary-card__icon--primary',
+  success: 'summary-card__icon--success',
+  info: 'summary-card__icon--support',
+  warning: 'summary-card__icon--warning',
+  error: 'summary-card__icon--error',
+  secondary: 'summary-card__icon--secondary'
 };
 
 const sidebarMetricTargetMap = {
@@ -633,6 +706,34 @@ function attachSummaryCardListeners(container) {
     });
 
     card.dataset.listenerAttached = 'true';
+  });
+}
+
+function attachNavigationPreferenceListeners(root = document) {
+  root.querySelectorAll('[data-nav-preference]').forEach((link) => {
+    if (link.dataset.navPreferenceAttached) return;
+
+    link.addEventListener('click', () => {
+      const patch = {};
+      if (link.dataset.dashboardTab !== undefined) {
+        patch.dashboardTab = link.dataset.dashboardTab || null;
+      }
+      if (link.dataset.dashboardSubtab !== undefined) {
+        patch.dashboardSubTab = link.dataset.dashboardSubtab || null;
+      }
+      if (link.dataset.projectsTab !== undefined) {
+        patch.projectsTab = link.dataset.projectsTab || null;
+      }
+      if (link.dataset.projectsSubtab !== undefined) {
+        patch.projectsSubTab = link.dataset.projectsSubtab || null;
+      }
+
+      if (Object.keys(patch).length > 0) {
+        persistNavigationPreference(patch);
+      }
+    });
+
+    link.dataset.navPreferenceAttached = 'true';
   });
 }
 
@@ -815,6 +916,8 @@ function bootstrapHome() {
 
   updateGreetingMessage();
   updateAdminCardVisibility();
+  initHomeTopbarMenus();
+  attachNavigationPreferenceListeners();
   initHomeTabScroll();
   renderHomeSummary();
 
@@ -835,6 +938,7 @@ function bootstrapHome() {
       cachedRole = (user?.role || '').toLowerCase();
       updateGreetingMessage();
       updateAdminCardVisibility();
+      revealPage();
       loadHomeSummary();
 
       document.addEventListener('customers:changed', handleSummaryRefresh, { passive: true });

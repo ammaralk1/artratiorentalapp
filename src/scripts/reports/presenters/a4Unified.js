@@ -1,7 +1,7 @@
 import { translate, formatDateInput, formatCurrency, formatNumber } from '../formatters.js';
 import { paymentLabelText } from '../calculations.js';
 import reportsState from '../state.js';
-import { ensureHtml2Pdf, ensureXlsx, ensureJsZip, loadExternalScript } from '../external.js';
+import { ensureHtml2Pdf, ensureXlsx, loadExternalScript } from '../external.js';
 import reportsA4Css from '../../../styles/reportsA4.css?raw';
 import quoteLogoUrl from '../../../assets/AR-Logo-v3.5-curved-WH.png?url';
 
@@ -116,7 +116,7 @@ function buildKpis({ context = 'preview' } = {}) {
   k.appendChild(card(translate('reservations.reports.kpi.total.label', 'الحجوزات', 'Reservations'), totalLabel));
   k.appendChild(card(translate('reservations.reports.kpi.revenue.label', 'الإيرادات', 'Revenue'), maybe(revenueLabel)));
   k.appendChild(card(translate('reservations.reports.kpi.net.label', 'صافي الربح', 'Net profit'), maybe(netLabel)));
-  k.appendChild(card(translate('reservations.reports.kpi.share.label', 'نسبة الشركة', 'Company share'), maybe(shareLabel)));
+  k.appendChild(card(translate('reservations.reports.kpi.share.label', 'المصاريف التشغيلية', 'Company overhead'), maybe(shareLabel)));
   k.appendChild(card(translate('reservations.reports.kpi.tax.label', 'الضريبة', 'Tax'), maybe(taxLabel)));
   k.appendChild(card(translate('reservations.reports.kpi.maintenance.label', 'مصاريف الصيانة', 'Maintenance'), maybe(maintLabel)));
   return k;
@@ -142,7 +142,7 @@ function buildRevenueDetails({ context = 'preview' } = {}) {
 
   const fmt2 = (n) => formatCurrency(round2(n || 0));
   add(translate('reservations.reports.kpi.revenue.details.gross', 'الإيراد الكلي', 'Gross revenue'), fmt2(m.revenue));
-  add(translate('reservations.reports.kpi.revenue.details.share', 'نسبة الشركة', 'Company share'), fmt2(m.companyShareTotal));
+  add(translate('reservations.reports.kpi.revenue.details.share', 'المصاريف التشغيلية', 'Company overhead'), fmt2(m.companyShareTotal));
   add(translate('reservations.reports.kpi.revenue.details.tax', 'الضريبة', 'Tax'), fmt2(m.taxTotal));
   // عرض تفاصيل الطاقم (إجمالي للعميل وتكلفة على الشركة) إن توفرت
   add(translate('reservations.reports.kpi.revenue.details.crewGross', 'إجمالي الطاقم', 'Crew total'), fmt2(m.crewTotal));
@@ -667,12 +667,7 @@ export default { buildA4ReportPages, exportA4ReportPdf };
 // =========================
 // Excel export (same template semantics)
 // =========================
-export async function exportA4ReportExcel(rows = []) {
-  await ensureXlsx();
-  const XLSX = window.XLSX;
-  if (!XLSX) throw new Error('XLSX dependency not available');
-
-  // Resolve headers/filters like PDF
+function buildExportPayload(rows = []) {
   const first = rows && rows[0] ? Object.keys(rows[0]) : Object.keys(reportsState.lastSnapshot?.tableRows?.[0] || {});
   const visible = loadColumnPrefs(first);
   const headers = first.filter((h) => visible.has(h));
@@ -687,56 +682,175 @@ export async function exportA4ReportExcel(rows = []) {
   };
   const model = Array.isArray(rows) && rows.length ? rows : (reportsState.lastSnapshot?.tableRows || []);
   const filtered = filterRowsByPrefs(model, headers, rowFilters);
+  return {
+    first,
+    headers,
+    rowFilters,
+    filtered,
+    metrics: reportsState.lastSnapshot?.metrics || {},
+    snapshot: reportsState.lastSnapshot || {},
+    title: translate('reservations.reports.print.title', 'تقرير الحجوزات', 'Reservations report'),
+    dateLine: `${formatDateInput(new Date())} • ${translate('reservations.reports.print.generated', 'تاريخ التوليد', 'Generated on')}`,
+  };
+}
 
-  // Sheet data: title + date + KPIs, then header row, then rows
-  const title = translate('reservations.reports.print.title', 'تقرير الحجوزات', 'Reservations report');
-  const dateLine = `${formatDateInput(new Date())} • ${translate('reservations.reports.print.generated', 'تاريخ التوليد', 'Generated on')}`;
-  const metrics = reportsState.lastSnapshot?.metrics || {};
+function computeSheetWidths(aoa = [], min = 10, max = 40) {
+  const cols = [];
+  aoa.forEach((row) => {
+    (row || []).forEach((cell, index) => {
+      const len = String(cell ?? '').length;
+      cols[index] = Math.max(cols[index] || min, Math.min(max, len + 2));
+    });
+  });
+  return cols.map((wch) => ({ wch: Math.max(min, Math.min(max, wch || min)) }));
+}
 
+function appendAoaSheet(XLSX, workbook, name, aoa = [], { merges = [] } = {}) {
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  if (merges.length) ws['!merges'] = merges;
+  ws['!cols'] = computeSheetWidths(aoa);
+  XLSX.utils.book_append_sheet(workbook, ws, name);
+}
+
+function buildSummarySheetAoa(payload) {
+  const { title, dateLine, metrics, snapshot } = payload;
+  const forecastRows = Array.isArray(snapshot.paymentForecast) ? snapshot.paymentForecast : [];
+  const outstandingRows = Array.isArray(snapshot.outstanding) ? snapshot.outstanding : [];
   const aoa = [];
   aoa.push([title]);
   aoa.push([dateLine]);
   aoa.push([]);
+  aoa.push([translate('reservations.reports.export.sections.overview', 'الملخص العام', 'Overview')]);
   aoa.push([
-    translate('reservations.reports.kpi.total.label', 'إجمالي الحجوزات', 'Total'), String(metrics.total ?? 0),
-    translate('reservations.reports.kpi.revenue.label', 'الإيرادات', 'Revenue'), String(metrics.revenue ?? 0),
-    translate('reservations.reports.kpi.net.label', 'صافي الربح', 'Net'), String(metrics.netProfit ?? 0),
+    translate('reservations.reports.kpi.total.label', 'إجمالي الحجوزات', 'Total reservations'),
+    String(metrics.total ?? 0),
+    translate('reservations.reports.kpi.revenue.label', 'الإيرادات', 'Revenue'),
+    String(round2(metrics.revenue ?? 0)),
   ]);
   aoa.push([
-    translate('reservations.reports.kpi.share.label', 'نسبة الشركة', 'Company share'), String(metrics.companyShareTotal ?? 0),
-    translate('reservations.reports.kpi.tax.label', 'الضريبة', 'Tax'), String(metrics.taxTotal ?? 0),
-    translate('reservations.reports.kpi.maintenance.label', 'مصاريف الصيانة', 'Maintenance'), String(metrics.maintenanceExpense ?? 0),
+    translate('reservations.reports.kpi.net.label', 'صافي الربح', 'Net profit'),
+    String(round2(metrics.netProfit ?? 0)),
+    translate('reservations.reports.kpi.outstanding.label', 'المستحقات', 'Outstanding'),
+    String(round2(metrics.outstandingTotal ?? 0)),
   ]);
-  aoa.push([]);
-  aoa.push(headers);
+  aoa.push([
+    translate('reservations.reports.kpi.share.label', 'المصاريف التشغيلية', 'Company overhead'),
+    String(round2(metrics.companyShareTotal ?? 0)),
+    translate('reservations.reports.kpi.tax.label', 'الضريبة', 'Tax'),
+    String(round2(metrics.taxTotal ?? 0)),
+  ]);
+  aoa.push([
+    translate('reservations.reports.kpi.crewCost.label', 'تكلفة الطاقم', 'Crew cost'),
+    String(round2(metrics.crewCostTotal ?? 0)),
+    translate('reservations.reports.kpi.equipmentCost.label', 'تكلفة المعدات', 'Equipment cost'),
+    String(round2(metrics.equipmentCostTotal ?? 0)),
+  ]);
+  aoa.push([
+    translate('reservations.reports.kpi.maintenance.label', 'مصاريف الصيانة', 'Maintenance'),
+    String(round2(metrics.maintenanceExpense ?? 0)),
+    translate('reservations.reports.forecast.title', 'خريطة الدفعات القادمة', 'Upcoming payments'),
+    String(forecastRows.length),
+  ]);
+  aoa.push([
+    translate('reservations.reports.topOutstanding.title', 'أعلى المستحقات', 'Top outstanding'),
+    String(outstandingRows.length),
+    '',
+    '',
+  ]);
+  return aoa;
+}
 
-  filtered.forEach((r) => {
-    const row = headers.map((h) => (r[h] != null ? String(r[h]) : ''));
-    aoa.push(row);
+function buildRowObjects(list = [], columns = []) {
+  return list.map((row) => {
+    const next = {};
+    columns.forEach(({ key, label, format }) => {
+      next[label] = typeof format === 'function' ? format(row) : row?.[key];
+    });
+    return next;
   });
+}
 
-  const ws = XLSX.utils.aoa_to_sheet(aoa);
-
-  // Merge title row across headers
-  if (!ws['!merges']) ws['!merges'] = [];
-  const lastCol = Math.max(1, headers.length) - 1;
-  ws['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: Math.max(3, lastCol) } });
-  ws['!merges'].push({ s: { r: 1, c: 0 }, e: { r: 1, c: Math.max(3, lastCol) } });
-
-  // Auto width
-  const colWidths = headers.map((h, i) => {
-    const headerLen = (h || '').length + 2;
-    let maxLen = headerLen;
-    for (let r = 7; r < aoa.length; r += 1) {
-      const cell = aoa[r][i] || '';
-      maxLen = Math.max(maxLen, String(cell).length);
-    }
-    return { wch: Math.min(40, Math.max(10, maxLen)) };
-  });
-  ws['!cols'] = colWidths;
-
+export async function exportA4ReportExcel(rows = []) {
+  await ensureXlsx();
+  const XLSX = window.XLSX;
+  if (!XLSX) throw new Error('XLSX dependency not available');
+  const payload = buildExportPayload(rows);
+  const { headers, filtered, title } = payload;
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, translate('reservations.reports.export.sheetName', 'الحجوزات', 'Reservations'));
+
+  const summaryAoa = buildSummarySheetAoa(payload);
+  appendAoaSheet(XLSX, wb, translate('reservations.reports.export.summarySheetName', 'الملخص', 'Summary'), summaryAoa, {
+    merges: [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 3 } },
+    ],
+  });
+
+  const reservationsSheet = [
+    [title],
+    [payload.dateLine],
+    [],
+    headers,
+    ...filtered.map((r) => headers.map((h) => (r[h] != null ? String(r[h]) : ''))),
+  ];
+  appendAoaSheet(XLSX, wb, translate('reservations.reports.export.sheetName', 'الحجوزات', 'Reservations'), reservationsSheet, {
+    merges: [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: Math.max(3, headers.length - 1) } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: Math.max(3, headers.length - 1) } },
+    ],
+  });
+
+  const snapshot = payload.snapshot;
+  const crewRows = buildRowObjects(snapshot.crewWork || [], [
+    { key: 'name', label: translate('reservations.reports.crew.headers.technician', 'الفني', 'Technician') },
+    { key: 'days', label: translate('reservations.reports.crew.headers.days', 'أيام العمل', 'Work days') },
+    { key: 'billable', label: translate('reservations.reports.crew.headers.billable', 'فوتر الطاقم', 'Crew billable'), format: (row) => round2(row?.billable || 0) },
+    { key: 'cost', label: translate('reservations.reports.crew.headers.cost', 'تكلفة الطاقم', 'Crew cost'), format: (row) => round2(row?.cost || 0) },
+    { key: 'net', label: translate('reservations.reports.crew.headers.net', 'صافي المساهمة', 'Net contribution'), format: (row) => round2(row?.net || 0) },
+  ]);
+  if (crewRows.length) {
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(crewRows), translate('reservations.reports.export.crewSheetName', 'الطاقم', 'Crew'));
+  }
+
+  const equipmentRows = buildRowObjects(snapshot.equipmentCosts || [], [
+    { key: 'name', label: translate('reservations.reports.equipment.headers.equipment', 'المعدة', 'Equipment') },
+    { key: 'quantity', label: translate('reservations.reports.equipment.headers.quantity', 'الكمية', 'Quantity') },
+    { key: 'days', label: translate('reservations.reports.equipment.headers.days', 'الأيام', 'Days') },
+    { key: 'billable', label: translate('reservations.reports.equipment.headers.billable', 'فوتر المعدات', 'Equipment billable'), format: (row) => round2(row?.billable || 0) },
+    { key: 'cost', label: translate('reservations.reports.equipment.headers.cost', 'تكلفة المعدات', 'Equipment cost'), format: (row) => round2(row?.cost || 0) },
+    { key: 'net', label: translate('reservations.reports.equipment.headers.net', 'صافي المساهمة', 'Net contribution'), format: (row) => round2(row?.net || 0) },
+  ]);
+  if (equipmentRows.length) {
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(equipmentRows), translate('reservations.reports.export.equipmentSheetName', 'المعدات', 'Equipment'));
+  }
+
+  const forecastRows = buildRowObjects(snapshot.paymentForecast || [], [
+    { key: 'date', label: translate('reservations.reports.forecast.headers.date', 'التاريخ', 'Date') },
+    { key: 'count', label: translate('reservations.reports.forecast.headers.count', 'عدد الحجوزات', 'Count') },
+    { key: 'amount', label: translate('reservations.reports.forecast.headers.amount', 'المبلغ المتوقع', 'Expected amount'), format: (row) => round2(row?.amount || 0) },
+  ]);
+  if (forecastRows.length) {
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(forecastRows), translate('reservations.reports.export.forecastSheetName', 'الدفعات', 'Forecast'));
+  }
+
+  const outstandingRows = buildRowObjects(snapshot.outstanding || [], [
+    { key: 'code', label: translate('reservations.reports.topOutstanding.headers.reservation', 'الحجز / العميل', 'Reservation / Customer'), format: (row) => `${row?.code || ''} — ${row?.customer || ''}`.trim() },
+    { key: 'paidStatus', label: translate('reservations.reports.topOutstanding.headers.status', 'حالة الدفع', 'Payment status'), format: (row) => paymentLabelText(row?.paidStatus) },
+    { key: 'outstanding', label: translate('reservations.reports.topOutstanding.headers.amount', 'المستحق', 'Outstanding'), format: (row) => round2(row?.outstanding || 0) },
+  ]);
+  if (outstandingRows.length) {
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(outstandingRows), translate('reservations.reports.export.outstandingSheetName', 'المستحقات', 'Outstanding'));
+  }
+
+  const maintenanceRows = buildRowObjects(snapshot.maintenance?.items || [], [
+    { key: 'id', label: translate('reservations.reports.maintenance.headers.ticket', 'التذكرة', 'Ticket') },
+    { key: 'date', label: translate('reservations.reports.maintenance.headers.date', 'التاريخ', 'Date') },
+    { key: 'cost', label: translate('reservations.reports.maintenance.headers.cost', 'التكلفة', 'Cost'), format: (row) => round2(row?.cost || 0) },
+  ]);
+  if (maintenanceRows.length) {
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(maintenanceRows), translate('reservations.reports.export.maintenanceSheetName', 'الصيانة', 'Maintenance'));
+  }
+
   const fname = `${translate('reservations.reports.export.filePrefix', 'تقرير-الحجوزات', 'reservations-report')}.xlsx`;
   XLSX.writeFile(wb, fname);
 }
@@ -745,26 +859,7 @@ export async function exportA4ReportExcel(rows = []) {
 // CSV export (same template semantics)
 // =========================
 export async function exportA4ReportCsv(rows = []) {
-  // Resolve headers/filters like PDF/Excel
-  const first = rows && rows[0] ? Object.keys(rows[0]) : Object.keys(reportsState.lastSnapshot?.tableRows?.[0] || {});
-  const visible = loadColumnPrefs(first);
-  const headers = first.filter((h) => visible.has(h));
-  const rowFilters = {
-    showPaid: localStorage.getItem('reportsPdf.rows.paid') !== '0',
-    showPartial: localStorage.getItem('reportsPdf.rows.partial') !== '0',
-    showUnpaid: localStorage.getItem('reportsPdf.rows.unpaid') !== '0',
-    showConfirmed: localStorage.getItem('reportsPdf.rows.confirmed') !== '0',
-    showPending: localStorage.getItem('reportsPdf.rows.pending') !== '0',
-    showCompleted: localStorage.getItem('reportsPdf.rows.completed') !== '0',
-    showCancelled: localStorage.getItem('reportsPdf.rows.cancelled') !== '0',
-  };
-  const model = Array.isArray(rows) && rows.length ? rows : (reportsState.lastSnapshot?.tableRows || []);
-  const filtered = filterRowsByPrefs(model, headers, rowFilters);
-
-  const title = translate('reservations.reports.print.title', 'تقرير الحجوزات', 'Reservations report');
-  const dateLine = `${formatDateInput(new Date())} • ${translate('reservations.reports.print.generated', 'تاريخ التوليد', 'Generated on')}`;
-  const metrics = reportsState.lastSnapshot?.metrics || {};
-  const logoUrl = resolveLogoUrl();
+  const { headers, filtered } = buildExportPayload(rows);
 
   const escapeCsv = (val) => {
     const s = String(val ?? '');
@@ -772,66 +867,20 @@ export async function exportA4ReportCsv(rows = []) {
     return s;
   };
 
-  const lines = [];
-  lines.push(escapeCsv(title));
-  lines.push(escapeCsv(dateLine));
-  lines.push(`Logo,${escapeCsv(logoUrl)}`);
-  lines.push('');
-  lines.push([
-    translate('reservations.reports.kpi.total.label', 'إجمالي الحجوزات', 'Total'), metrics.total ?? 0,
-    translate('reservations.reports.kpi.revenue.label', 'الإيرادات', 'Revenue'), metrics.revenue ?? 0,
-    translate('reservations.reports.kpi.net.label', 'صافي الربح', 'Net'), metrics.netProfit ?? 0,
-  ].map(escapeCsv).join(','));
-  lines.push([
-    translate('reservations.reports.kpi.share.label', 'نسبة الشركة', 'Company share'), metrics.companyShareTotal ?? 0,
-    translate('reservations.reports.kpi.tax.label', 'الضريبة', 'Tax'), metrics.taxTotal ?? 0,
-    translate('reservations.reports.kpi.maintenance.label', 'مصاريف الصيانة', 'Maintenance'), metrics.maintenanceExpense ?? 0,
-  ].map(escapeCsv).join(','));
-  lines.push('');
-  lines.push(headers.map(escapeCsv).join(','));
-
+  const lines = [headers.map(escapeCsv).join(',')];
   filtered.forEach((row) => {
-    const vals = headers.map((h) => escapeCsv(row[h] != null ? row[h] : ''));
-    lines.push(vals.join(','));
+    lines.push(headers.map((h) => escapeCsv(row[h] != null ? row[h] : '')).join(','));
   });
 
-  // حاول إنشاء ZIP يحوي metadata.csv + data.csv + logo.png إن أمكن
-  let zipped = false;
-  try {
-    await ensureJsZip();
-    const JSZip = window.JSZip;
-    if (JSZip) {
-      const zip = new JSZip();
-      const prefix = translate('reservations.reports.export.filePrefix', 'تقرير-الحجوزات', 'reservations-report');
-      const metadata = ["\uFEFF" + lines.slice(0, lines.indexOf(headers.map(escapeCsv).join(','))).join('\n')];
-      const dataSection = ["\uFEFF" + [headers.map(escapeCsv).join(','), ...filtered.map((r) => headers.map((h) => escapeCsv(r[h] ?? '')).join(','))].join('\n')];
-      zip.file(`${prefix}-metadata.csv`, metadata.join(''));
-      zip.file(`${prefix}.csv`, dataSection.join(''));
-      // أضف الشعار إن أمكن
-      try {
-        const resp = await fetch(logoUrl, { mode: 'cors' });
-        const blob = await resp.blob();
-        zip.file('logo.png', blob);
-      } catch (_) { /* ignore logo fetch errors */ }
-      const blob = await zip.generateAsync({ type: 'blob' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = `${prefix}.zip`; a.style.display = 'none';
-      document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1500);
-      zipped = true;
-    }
-  } catch (_) { /* ignore zip errors */ }
-
-  if (!zipped) {
-    const csvBlob = new Blob(["\uFEFF" + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(csvBlob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${translate('reservations.reports.export.filePrefix', 'تقرير-الحجوزات', 'reservations-report')}.csv`;
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1500);
-  }
+  const csvBlob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(csvBlob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${translate('reservations.reports.export.filePrefix', 'تقرير-الحجوزات', 'reservations-report')}.csv`;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1500);
 }
 
 const DEFAULT_LOGO_URL = quoteLogoUrl;

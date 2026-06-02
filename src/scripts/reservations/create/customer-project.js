@@ -3,9 +3,12 @@ import { t } from '../../language.js';
 import { normalizeText } from '../../reservationsShared.js';
 import {
   getCachedCustomers,
+  setCachedCustomers,
   splitDateTime,
 } from '../state.js';
-import { loadData } from '../../storage.js';
+import { apiRequest } from '../../apiClient.js';
+import { isLocalDashboardFixtureEnabled } from '../../fixtureRuntime.js';
+import { loadData, saveData } from '../../storage.js';
 import {
   DEFAULT_COMPANY_SHARE_PERCENT,
 } from '../../reservationsSummary.js';
@@ -16,25 +19,27 @@ import { renderDraftReservationSummary } from './packages-items.js';
 export const DEFAULT_PROJECT_FORM_DRAFT_KEY = 'projects:create:draft';
 export const DEFAULT_PROJECT_FORM_RETURN_URL = 'projects.html#projects-section';
 
+let reservationCustomersRequest = null;
+
 export function getCustomerElements() {
   if (typeof document === 'undefined') {
-    return { input: null, hidden: null, list: null };
+    return { input: null, hidden: null, menu: null };
   }
   return {
     input: document.getElementById('res-customer-input'),
     hidden: document.getElementById('res-customer'),
-    list: document.getElementById('res-customer-options'),
+    menu: document.getElementById('res-customer-suggestions'),
   };
 }
 
 export function getProjectElements() {
   if (typeof document === 'undefined') {
-    return { input: null, hidden: null, list: null };
+    return { input: null, hidden: null, menu: null };
   }
   return {
     input: document.getElementById('res-project-input'),
     hidden: document.getElementById('res-project'),
-    list: document.getElementById('res-project-options'),
+    menu: document.getElementById('res-project-suggestions'),
   };
 }
 
@@ -125,6 +130,94 @@ export function getCustomerDisplayName(customer) {
     ?? '';
 
   return typeof name === 'string' ? name.trim() : String(name || '').trim();
+}
+
+function mapReservationCustomerRecord(rawCustomer = {}) {
+  if (!rawCustomer || typeof rawCustomer !== 'object') return null;
+  const idValue = rawCustomer.id ?? rawCustomer.customerId ?? rawCustomer.customer_id ?? rawCustomer.customerID;
+  const rawName = rawCustomer.full_name
+    ?? rawCustomer.fullName
+    ?? rawCustomer.customerName
+    ?? rawCustomer.customer_name
+    ?? rawCustomer.name
+    ?? '';
+  const name = typeof rawName === 'string' ? rawName.trim() : String(rawName || '').trim();
+  if (!name && (idValue === undefined || idValue === null || idValue === '')) return null;
+  const rawTaxId = rawCustomer.tax_id
+    ?? rawCustomer.taxId
+    ?? rawCustomer.vat_number
+    ?? rawCustomer.vatNumber
+    ?? rawCustomer.taxNumber
+    ?? '';
+  return {
+    ...rawCustomer,
+    id: idValue !== undefined && idValue !== null ? String(idValue) : '',
+    full_name: name,
+    fullName: name,
+    customerName: name,
+    name,
+    phone: rawCustomer.phone ?? rawCustomer.phoneNumber ?? '',
+    email: rawCustomer.email ?? '',
+    company: rawCustomer.company ?? rawCustomer.companyName ?? '',
+    companyName: rawCustomer.companyName ?? rawCustomer.company ?? '',
+    tax_id: typeof rawTaxId === 'string' ? rawTaxId.trim() : String(rawTaxId || '').trim(),
+    taxId: typeof rawTaxId === 'string' ? rawTaxId.trim() : String(rawTaxId || '').trim(),
+  };
+}
+
+function extractCustomersPayload(response) {
+  const payload = response?.data ?? response;
+  if (Array.isArray(payload)) return payload;
+  if (!payload || typeof payload !== 'object') return [];
+  if (Array.isArray(payload.items)) return payload.items;
+  if (Array.isArray(payload.results)) return payload.results;
+  if (Array.isArray(payload.data)) return payload.data;
+  if (Array.isArray(payload.records)) return payload.records;
+  return [];
+}
+
+export async function ensureReservationCustomersLoaded({ force = false } = {}) {
+  const cached = getCachedCustomers();
+  if (!force && Array.isArray(cached) && cached.length > 0) {
+    return cached;
+  }
+
+  const snapshot = loadData();
+  if (!force && Array.isArray(snapshot?.customers) && snapshot.customers.length > 0) {
+    const customers = snapshot.customers.map(mapReservationCustomerRecord).filter(Boolean);
+    setCachedCustomers(customers);
+    return customers;
+  }
+
+  if (isLocalDashboardFixtureEnabled()) {
+    const customers = Array.isArray(snapshot?.customers)
+      ? snapshot.customers.map(mapReservationCustomerRecord).filter(Boolean)
+      : [];
+    setCachedCustomers(customers);
+    return customers;
+  }
+
+  if (!reservationCustomersRequest) {
+    reservationCustomersRequest = apiRequest('/customers/')
+      .then((response) => {
+        const customers = extractCustomersPayload(response).map(mapReservationCustomerRecord).filter(Boolean);
+        setCachedCustomers(customers);
+        saveData({ customers });
+        if (typeof document !== 'undefined') {
+          document.dispatchEvent(new CustomEvent('customers:changed', { detail: { customers } }));
+        }
+        return customers;
+      })
+      .catch((error) => {
+        console.warn('⚠️ [reservations] Failed to load customers for reservation form', error);
+        return getCachedCustomers() || [];
+      })
+      .finally(() => {
+        reservationCustomersRequest = null;
+      });
+  }
+
+  return reservationCustomersRequest;
 }
 
 export function isProjectConfirmed(project) {
@@ -222,7 +315,7 @@ export function syncCreateTaxAndShare(source) {
 
       if (taxCheckbox.disabled) {
         shareCheckbox.checked = false;
-        showToast(t('reservations.toast.companyShareRequiresTax', '⚠️ لا يمكن تفعيل نسبة الشركة بدون تفعيل الضريبة'));
+        showToast(t('reservations.toast.companyShareRequiresTax', '⚠️ لا يمكن تفعيل المصاريف التشغيلية بدون تفعيل الضريبة'));
         finalize();
         return;
       }
@@ -301,9 +394,105 @@ function escapeHtml(value = '') {
     .replace(/'/g, '&#39;');
 }
 
+function closeReservationAutocompleteMenu(menu) {
+  if (!menu) return;
+  menu.hidden = true;
+  menu.innerHTML = '';
+  menu.dataset.open = 'false';
+  menu.dataset.activeIndex = '-1';
+}
+
+function renderReservationAutocompleteMenu(menu, entries, activeIndex = -1) {
+  if (!menu) return;
+  if (!Array.isArray(entries) || !entries.length) {
+    closeReservationAutocompleteMenu(menu);
+    return;
+  }
+
+  menu.innerHTML = entries
+    .map((entry, index) => `
+      <button
+        type="button"
+        class="reservation-autocomplete-suggestion${index === activeIndex ? ' is-active' : ''}"
+        data-index="${index}"
+        data-value="${escapeHtml(entry.label || '')}"
+        aria-selected="${index === activeIndex ? 'true' : 'false'}"
+        role="option"
+      >${escapeHtml(entry.label || '')}</button>
+    `)
+    .join('');
+
+  menu.hidden = false;
+  menu.dataset.open = 'true';
+  menu.dataset.activeIndex = String(activeIndex);
+}
+
+function highlightReservationAutocompleteSuggestion(menu, direction = 1) {
+  if (!menu || menu.hidden) return;
+  const options = Array.from(menu.querySelectorAll('.reservation-autocomplete-suggestion'));
+  if (!options.length) return;
+
+  const currentIndex = Number.parseInt(menu.dataset.activeIndex || '-1', 10);
+  const nextIndex = currentIndex < 0
+    ? 0
+    : (currentIndex + direction + options.length) % options.length;
+
+  options.forEach((option, index) => {
+    const isActive = index === nextIndex;
+    option.classList.toggle('is-active', isActive);
+    option.setAttribute('aria-selected', isActive ? 'true' : 'false');
+  });
+
+  menu.dataset.activeIndex = String(nextIndex);
+  options[nextIndex]?.scrollIntoView({ block: 'nearest' });
+}
+
+function getAutocompleteSuggestions(entries, query) {
+  const normalizedQuery = normalizeText(query);
+  if (!normalizedQuery) return [];
+
+  const exactMatches = [];
+  const prefixMatches = [];
+  const partialMatches = [];
+
+  entries.forEach((entry) => {
+    const normalizedLabel = normalizeText(entry.label);
+    if (!normalizedLabel) return;
+    if (normalizedLabel === normalizedQuery) {
+      exactMatches.push(entry);
+      return;
+    }
+    if (normalizedLabel.startsWith(normalizedQuery)) {
+      prefixMatches.push(entry);
+      return;
+    }
+    if (normalizedLabel.includes(normalizedQuery)) {
+      partialMatches.push(entry);
+    }
+  });
+
+  return [...exactMatches, ...prefixMatches, ...partialMatches].slice(0, 12);
+}
+
+function bindReservationAutocompleteMenu(menu, getEntries, onSelect) {
+  if (!menu || menu.dataset.listenerAttached === 'true') return;
+
+  menu.addEventListener('mousedown', (event) => {
+    const option = event.target.closest('.reservation-autocomplete-suggestion');
+    if (!option) return;
+    event.preventDefault();
+    const entries = getEntries();
+    const index = Number.parseInt(option.dataset.index || '-1', 10);
+    const entry = entries[index];
+    if (entry) onSelect(entry);
+  });
+
+  menu.dataset.listenerAttached = 'true';
+}
+
 export function ensureCustomerChoices({ selectedValue = '', resetInput = false } = {}) {
-  const { input, hidden, list } = getCustomerElements();
-  if (!input || !hidden || !list) return;
+  const { input, hidden } = getCustomerElements();
+  if (!input || !hidden) return;
 
   const customers = getCachedCustomers() || [];
   const placeholderLabel = t('reservations.create.placeholders.client', 'اختر عميلًا (اختياري)');
@@ -331,9 +520,10 @@ export function ensureCustomerChoices({ selectedValue = '', resetInput = false }
     })
     .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }));
 
-  list.innerHTML = customerOptions
-    .map((option) => `<option value="${escapeHtml(option.label)}"></option>`)
-    .join('');
+  state.customerEntries = customerOptions.map((option) => ({
+    id: option.id,
+    label: option.label,
+  }));
 
   const previousInputValue = resetInput ? '' : input.value;
   const normalizedSelected = selectedValue ? String(selectedValue) : hidden.value ? String(hidden.value) : '';
@@ -354,8 +544,8 @@ export function ensureCustomerChoices({ selectedValue = '', resetInput = false }
 }
 
 export function ensureProjectChoices({ selectedValue = '', projectsList = null, resetInput = false } = {}) {
-  const { input, hidden, list } = getProjectElements();
-  if (!input || !hidden || !list) return;
+  const { input, hidden } = getProjectElements();
+  if (!input || !hidden) return;
 
   const projectsSource = Array.isArray(projectsList) ? projectsList : (getCachedProjects() || []);
   const placeholderLabel = t('reservations.create.placeholders.project', 'اختر مشروعاً (اختياري)');
@@ -390,9 +580,10 @@ export function ensureProjectChoices({ selectedValue = '', projectsList = null, 
       return true;
     });
 
-  list.innerHTML = projectOptions
-    .map((option) => `<option value="${escapeHtml(option.label)}"></option>`)
-    .join('');
+  state.projectEntries = projectOptions.map((option) => ({
+    id: option.id,
+    label: option.label,
+  }));
 
   const normalizedSelected = selectedValue ? String(selectedValue) : hidden.value ? String(hidden.value) : '';
   const selectedProject = normalizedSelected
@@ -593,8 +784,35 @@ export function updateCreateProjectTaxState() {
 }
 
 export function setupProjectSelection() {
-  const { input, hidden } = getProjectElements();
+  const { input, hidden, menu } = getProjectElements();
   if (!input || !hidden || input.dataset.listenerAttached) return;
+
+  const closeMenu = () => closeReservationAutocompleteMenu(menu);
+  const getEntries = () => getAutocompleteSuggestions(state.projectEntries, input.value);
+  const renderMenu = () => {
+    const rawValue = input.value.trim();
+    if (!rawValue) {
+      closeMenu();
+      return;
+    }
+    const entries = getEntries();
+    renderReservationAutocompleteMenu(menu, entries, entries.length ? 0 : -1);
+  };
+  const selectEntry = (entry) => {
+    hidden.value = String(entry.id);
+    input.value = entry.label;
+    input.dataset.selectedId = String(entry.id);
+    closeMenu();
+    const project = findProjectById(entry.id);
+    if (project) {
+      applyProjectContextToForm(project, { skipProjectSelectUpdate: true });
+    } else {
+      updateCreateProjectTaxState();
+      renderDraftReservationSummary();
+    }
+  };
+
+  bindReservationAutocompleteMenu(menu, getEntries, selectEntry);
 
   const commitSelection = (allowPartial = false) => {
     const rawValue = input.value.trim();
@@ -617,6 +835,7 @@ export function setupProjectSelection() {
       updateCreateProjectTaxState();
       renderDraftReservationSummary();
     }
+    closeMenu();
   };
 
   input.addEventListener('input', () => {
@@ -631,23 +850,74 @@ export function setupProjectSelection() {
     }
     // Persist draft continuously while typing
     try { persistCreateReservationDraft(); } catch (_) { /* ignore */ }
+    renderMenu();
   });
 
   input.addEventListener('change', () => commitSelection(true));
-  input.addEventListener('blur', () => commitSelection(true));
+  input.addEventListener('blur', () => {
+    window.setTimeout(() => commitSelection(true), 120);
+  });
   input.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      highlightReservationAutocompleteSuggestion(menu, 1);
+      return;
+    }
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      highlightReservationAutocompleteSuggestion(menu, -1);
+      return;
+    }
+    if (event.key === 'Escape') {
+      closeMenu();
+      return;
+    }
     if (event.key === 'Enter') {
+      const entries = getEntries();
+      const activeIndex = Number.parseInt(menu?.dataset.activeIndex || '0', 10);
+      const activeEntry = entries[activeIndex >= 0 ? activeIndex : 0];
+      if (activeEntry) {
+        event.preventDefault();
+        selectEntry(activeEntry);
+        return;
+      }
       event.preventDefault();
       commitSelection(true);
     }
+  });
+
+  document.addEventListener('click', (event) => {
+    if (event.target === input || event.target.closest('#res-project-suggestions')) return;
+    closeMenu();
   });
 
   input.dataset.listenerAttached = 'true';
 }
 
 export function setupCustomerAutocomplete() {
-  const { input, hidden } = getCustomerElements();
+  const { input, hidden, menu } = getCustomerElements();
   if (!input || !hidden || input.dataset.listenerAttached) return;
+
+  const closeMenu = () => closeReservationAutocompleteMenu(menu);
+  const getEntries = () => getAutocompleteSuggestions(state.customerEntries, input.value);
+  const renderMenu = () => {
+    const rawValue = input.value.trim();
+    if (!rawValue) {
+      closeMenu();
+      return;
+    }
+    const entries = getEntries();
+    renderReservationAutocompleteMenu(menu, entries, entries.length ? 0 : -1);
+  };
+  const selectEntry = (entry) => {
+    hidden.value = String(entry.id);
+    input.value = entry.label;
+    input.dataset.selectedId = String(entry.id);
+    closeMenu();
+    renderDraftReservationSummary();
+  };
+
+  bindReservationAutocompleteMenu(menu, getEntries, selectEntry);
 
   const commitSelection = (allowPartial = false) => {
     const rawValue = input.value.trim();
@@ -660,10 +930,17 @@ export function setupCustomerAutocomplete() {
       hidden.value = '';
       input.dataset.selectedId = '';
     }
+    closeMenu();
     renderDraftReservationSummary();
   };
 
   input.addEventListener('input', () => {
+    if (!state.customerEntries?.length) {
+      void ensureReservationCustomersLoaded().then(() => {
+        ensureCustomerChoices();
+        renderMenu();
+      });
+    }
     const rawValue = input.value.trim();
     const entry = rawValue ? resolveCustomerByLabel(rawValue) : null;
     if (entry) {
@@ -675,15 +952,56 @@ export function setupCustomerAutocomplete() {
     }
     // Persist draft continuously while typing
     try { persistCreateReservationDraft(); } catch (_) { /* ignore */ }
+    renderMenu();
+  });
+
+  input.addEventListener('focus', () => {
+    if (state.customerEntries?.length) {
+      renderMenu();
+      return;
+    }
+    void ensureReservationCustomersLoaded().then(() => {
+      ensureCustomerChoices();
+      renderMenu();
+    });
   });
 
   input.addEventListener('change', () => commitSelection(true));
-  input.addEventListener('blur', () => commitSelection(true));
+  input.addEventListener('blur', () => {
+    window.setTimeout(() => commitSelection(true), 120);
+  });
   input.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      highlightReservationAutocompleteSuggestion(menu, 1);
+      return;
+    }
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      highlightReservationAutocompleteSuggestion(menu, -1);
+      return;
+    }
+    if (event.key === 'Escape') {
+      closeMenu();
+      return;
+    }
     if (event.key === 'Enter') {
+      const entries = getEntries();
+      const activeIndex = Number.parseInt(menu?.dataset.activeIndex || '0', 10);
+      const activeEntry = entries[activeIndex >= 0 ? activeIndex : 0];
+      if (activeEntry) {
+        event.preventDefault();
+        selectEntry(activeEntry);
+        return;
+      }
       event.preventDefault();
       commitSelection(true);
     }
+  });
+
+  document.addEventListener('click', (event) => {
+    if (event.target === input || event.target.closest('#res-customer-suggestions')) return;
+    closeMenu();
   });
 
   input.dataset.listenerAttached = 'true';
@@ -782,6 +1100,33 @@ export function applyPendingProjectContext() {
   }
 
   renderDraftReservationSummary();
+  window.setTimeout(() => {
+    const createSection = document.getElementById('create-tab');
+    if (!createSection) return;
+    const panel = createSection.closest('details');
+    if (panel && !panel.open) {
+      panel.open = true;
+    }
+    try {
+      (panel || createSection).scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+    } catch (_) {
+      (panel || createSection).scrollIntoView();
+    }
+    const focusFirstField = () => {
+      const firstField = createSection.querySelector('[required], #res-start, input, select, textarea, button');
+      if (firstField && typeof firstField.focus === 'function') {
+        try {
+          firstField.focus({ preventScroll: true });
+        } catch (_) {
+          firstField.focus();
+        }
+        firstField.classList.add('reservation-field-focus-pulse');
+        window.setTimeout(() => firstField.classList.remove('reservation-field-focus-pulse'), 1800);
+      }
+    };
+    focusFirstField();
+    window.setTimeout(focusFirstField, 700);
+  }, 250);
 }
 
 export function enableProjectSelection({ clearValue = false } = {}) {
@@ -821,4 +1166,3 @@ export function disableProjectSelection(message, displayValue = '') {
   if (hidden) hidden.value = '';
   updateCreateProjectTaxState();
 }
-

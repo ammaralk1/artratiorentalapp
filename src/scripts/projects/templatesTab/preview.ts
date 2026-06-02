@@ -1,4 +1,3 @@
-import { el } from '../../templates/core.js';
 import { pageHasMeaningfulContent } from '../../templates/pageUtils.js';
 import { showTemplatesDebugOverlay } from '../../templates/debug.js';
 import { templatesTabState, type TemplatesZoomMode } from './state';
@@ -13,9 +12,23 @@ interface ZoomValueLike {
   textContent: string | null;
 }
 
+interface TemplateAutofillApplyOptions<ProjectLike, ReservationLike> {
+  root: HTMLElement;
+  project: ProjectLike;
+  reservations: ReservationLike[];
+  type: TemplateType;
+}
+
+interface EnsureCellToolbarOptions {
+  onAfterChange: () => void;
+  onRenumber?: () => void;
+  onTotalsChange?: () => void;
+}
+
 interface RenderTemplatesPreviewOptions<ProjectLike, ReservationLike, HeaderFooterOptions> {
   companyInfo: CompanyInfoLike;
   emptyMessage: string;
+  emptyBodyMessage?: string;
   getSelectedProject: () => ProjectLike | null;
   getSelectedReservations: (projectId: unknown) => ReservationLike[];
   getTemplateType: () => TemplateType;
@@ -23,8 +36,9 @@ interface RenderTemplatesPreviewOptions<ProjectLike, ReservationLike, HeaderFoot
   ensureLogoControls: (type: TemplateType) => void;
   buildCallSheetPage: (project: ProjectLike, reservations: ReservationLike[], headerFooter: HeaderFooterOptions) => HTMLElement;
   buildExpensesPage: (project: ProjectLike, reservations: ReservationLike[], headerFooter: HeaderFooterOptions) => HTMLElement;
+  applyTemplateAutofill?: (options: TemplateAutofillApplyOptions<ProjectLike, ReservationLike>) => void;
   setupTemplatesHistory: (root: HTMLElement, type: TemplateType) => void;
-  ensureCellToolbar: (options: { onAfterChange: () => void }) => void;
+  ensureCellToolbar: (options: EnsureCellToolbarOptions) => void;
   onToolbarAfterChange: () => void;
   shrinkScheduleHeaderLabels: () => void;
   purgeCrewCallTables: () => void;
@@ -66,9 +80,32 @@ export interface LoadSnapshotByIdOptions {
   shrinkScheduleHeaderLabels: () => void;
   pruneEmptyA4Pages: () => void;
   attachCallsheetLogoBehaviors?: (root: HTMLElement) => void;
-  ensureCellToolbar: (options: { onAfterChange: () => void }) => void;
+  ensureCellToolbar: (options: EnsureCellToolbarOptions) => void;
   onToolbarAfterChange: () => void;
   host?: HTMLElement | null;
+}
+
+function renderTemplatesPreviewEmptyState(host: HTMLElement, title: string, body: string): void {
+  host.innerHTML = '';
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'ui-empty-state surface-empty-state templates-preview-empty-state p-6';
+
+  const icon = document.createElement('span');
+  icon.className = 'ui-empty-state__icon';
+  icon.setAttribute('aria-hidden', 'true');
+  icon.textContent = '📄';
+
+  const titleEl = document.createElement('p');
+  titleEl.className = 'ui-empty-state__title';
+  titleEl.textContent = title;
+
+  const bodyEl = document.createElement('p');
+  bodyEl.className = 'ui-empty-state__body surface-support-text surface-support-text--compact';
+  bodyEl.textContent = body;
+
+  wrapper.append(icon, titleEl, bodyEl);
+  host.appendChild(wrapper);
 }
 
 function isTemplatesDebugEnabled(): boolean {
@@ -81,6 +118,15 @@ function isTemplatesDebugEnabled(): boolean {
     // ignore debug flag failures
   }
   return false;
+}
+
+function pruneMeaninglessA4Pages(root: ParentNode | null | undefined): void {
+  if (!root) return;
+  Array.from(root.querySelectorAll('.a4-page')).forEach((page) => {
+    if (!pageHasMeaningfulContent(page)) {
+      page.parentElement?.removeChild(page);
+    }
+  });
 }
 
 export function fixCallsheetStructure(root?: ParentNode | null): void {
@@ -227,8 +273,11 @@ export function renderTemplatesPreview<ProjectLike extends { id?: unknown }, Res
   const project = options.getSelectedProject();
   const oldRoot = host.querySelector('#templates-a4-root');
   if (!project) {
-    host.innerHTML = '';
-    host.appendChild(el('div', { class: 'text-muted', text: options.emptyMessage }));
+    renderTemplatesPreviewEmptyState(
+      host,
+      options.emptyMessage,
+      options.emptyBodyMessage || 'اختر المشروع والحجز ونوع القالب أولاً، ثم ابدأ الحفظ أو الطباعة من نفس السطح.',
+    );
     try {
       host.style.visibility = '';
     } catch {
@@ -266,6 +315,17 @@ export function renderTemplatesPreview<ProjectLike extends { id?: unknown }, Res
   }
 
   try {
+    options.applyTemplateAutofill?.({
+      root: pageRoot,
+      project,
+      reservations,
+      type,
+    });
+  } catch {
+    // ignore autofill failures
+  }
+
+  try {
     enforceCallsheetSizing(pageRoot);
   } catch {
     // ignore sizing failures
@@ -276,7 +336,11 @@ export function renderTemplatesPreview<ProjectLike extends { id?: unknown }, Res
     // ignore history setup failures
   }
   try {
-    options.ensureCellToolbar({ onAfterChange: options.onToolbarAfterChange });
+    options.ensureCellToolbar({
+      onAfterChange: options.onToolbarAfterChange,
+      onRenumber: options.renumberExpenseCodes,
+      onTotalsChange: options.recomputeExpensesSubtotals,
+    });
   } catch {
     // ignore toolbar failures
   }
@@ -295,11 +359,6 @@ export function renderTemplatesPreview<ProjectLike extends { id?: unknown }, Res
     }
   } catch {
     // ignore crew table normalization failures
-  }
-  try {
-    ensureEditableWrappers(pageRoot);
-  } catch {
-    // ignore editable wrapper failures
   }
   try {
     ensureEditableWrappers(pageRoot);
@@ -336,11 +395,7 @@ export function renderTemplatesPreview<ProjectLike extends { id?: unknown }, Res
   }
 
   try {
-    Array.from(pageRoot.querySelectorAll('.a4-page')).forEach((page) => {
-      if (!pageHasMeaningfulContent(page)) {
-        page.parentElement?.removeChild(page);
-      }
-    });
+    pruneMeaninglessA4Pages(pageRoot);
   } catch {
     // ignore empty page pruning failures
   }
@@ -363,11 +418,7 @@ export function renderTemplatesPreview<ProjectLike extends { id?: unknown }, Res
     // ignore expenses pagination failures
   }
   try {
-    Array.from(pageRoot.querySelectorAll('.a4-page')).forEach((page) => {
-      if (!pageHasMeaningfulContent(page)) {
-        page.parentElement?.removeChild(page);
-      }
-    });
+    pruneMeaninglessA4Pages(pageRoot);
   } catch {
     // ignore empty page pruning failures
   }
@@ -451,11 +502,11 @@ export function renderTemplatesPreview<ProjectLike extends { id?: unknown }, Res
   }
 }
 
-export async function loadSnapshotById(options: LoadSnapshotByIdOptions): Promise<void> {
-  if (!options.id) return;
+export async function loadSnapshotById(options: LoadSnapshotByIdOptions): Promise<boolean> {
+  if (!options.id) return false;
 
   const host = options.host ?? document.getElementById('templates-preview-host');
-  if (!host) return;
+  if (!host) return false;
 
   try {
     host.style.visibility = 'hidden';
@@ -463,24 +514,27 @@ export async function loadSnapshotById(options: LoadSnapshotByIdOptions): Promis
     // ignore style failures
   }
 
+  let loaded = false;
+
   try {
     const response = await options.apiRequestFn(`/project-templates/?id=${encodeURIComponent(options.id)}`);
     const payload = response && typeof response === 'object' && 'data' in response ? response.data : response;
     const item = Array.isArray(payload) ? payload[0] : payload;
-    if (!item) return;
+    if (!item) return false;
 
     host.innerHTML = '';
 
     try {
       const rawData = typeof item.data === 'string' ? JSON.parse(item.data) : item.data;
-      if (!rawData?.html) return;
+      if (!rawData?.html) return false;
 
       const wrap = document.createElement('div');
       wrap.innerHTML = options.normalizeTemplateHtmlLegacyUrls(rawData.html, options.companyInfo);
       const root = wrap.firstElementChild;
-      if (!root) return;
+      if (!root) return false;
 
       host.appendChild(root);
+      loaded = true;
       try {
         options.fixCallsheetStructure(root);
       } catch {
@@ -514,7 +568,11 @@ export async function loadSnapshotById(options: LoadSnapshotByIdOptions): Promis
         // ignore logo rebinding failures
       }
       try {
-        options.ensureCellToolbar({ onAfterChange: options.onToolbarAfterChange });
+        options.ensureCellToolbar({
+          onAfterChange: options.onToolbarAfterChange,
+          onRenumber: options.renumberExpenseCodes,
+          onTotalsChange: options.recomputeExpensesSubtotals,
+        });
       } catch {
         // ignore toolbar failures
       }
@@ -530,4 +588,6 @@ export async function loadSnapshotById(options: LoadSnapshotByIdOptions): Promis
       // ignore style failures
     }
   }
+
+  return loaded;
 }

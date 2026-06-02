@@ -1,5 +1,7 @@
 import {
+  isProjectCancelled,
   isProjectClosed,
+  isProjectConfirmed,
   isProjectEligibleForReports,
   resolveProjectPaymentState,
   type ProjectLike,
@@ -27,9 +29,9 @@ export function isPaymentAllowed(project: ProjectLike, payment: string = 'all'):
 
 export function isConfirmedAllowed(project: ProjectLike, confirmed: string = 'all'): boolean {
   if (!confirmed || confirmed === 'all' || confirmed === 'no') return true;
-  const isConfirmed = project?.confirmed === true;
+  const isConfirmed = isProjectConfirmed(project);
   if (confirmed === 'yes') return isConfirmed;
-  if (confirmed === 'closed') return isProjectClosed(project);
+  if (confirmed === 'closed') return isConfirmed && isProjectClosed(project);
   return true;
 }
 
@@ -99,8 +101,7 @@ export function filterProjectsForReports<T extends ProjectLike & {
     const rangeStart = startDate ? new Date(startDate) : null;
     const rangeEnd = endDate ? new Date(endDate) : null;
     return projects.filter((project) => {
-      const statusValue = String(project?.status || '').toLowerCase();
-      if (project?.cancelled === true || statusValue === 'cancelled' || statusValue === 'canceled') return false;
+      if (isProjectCancelled(project)) return false;
       if (!isProjectEligibleForReports(project)) return false;
       if (!isStatusAllowed(project, statuses)) return false;
       if (!isPaymentAllowed(project, payment)) return false;
@@ -117,8 +118,7 @@ export function filterProjectsForReports<T extends ProjectLike & {
   }
 
   return projects.filter((project) => {
-    const statusValue = String(project?.status || '').toLowerCase();
-    if (project?.cancelled === true || statusValue === 'cancelled' || statusValue === 'canceled') return false;
+    if (isProjectCancelled(project)) return false;
     if (!isProjectEligibleForReports(project)) return false;
     if (!isStatusAllowed(project, statuses)) return false;
     if (!isPaymentAllowed(project, payment)) return false;

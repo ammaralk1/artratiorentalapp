@@ -55,7 +55,7 @@ describe('projectsReports/export', () => {
         __paymentState: 'partial',
         __paidAmount: 1200,
         __commercial: {
-          agg: { equipment: 900, crew: 300, crewCost: 100 },
+          agg: { equipment: 900, equipmentCost: 250, crew: 300, crewCost: 100 },
           servicesRevenue: 400,
           projectExpenses: 150,
           discountAmount: 100,
@@ -71,17 +71,51 @@ describe('projectsReports/export', () => {
       'completed',
       '2026-04-01 -> 2026-04-02',
       2000,
+      100,
+      0,
       800,
       400,
       150,
       1100,
-      1250,
-      83.3,
+      1000,
+      66.7,
       'partial',
       1200,
+      800,
+      60,
       60,
       1,
     ]]);
+  });
+
+  it('keeps linked reservation revenue from being doubled by direct equipment estimate', () => {
+    const rows = buildProjectsExportRows([
+      {
+        id: 82,
+        projectCode: 'PRJ-82',
+        title: 'Managed Project',
+        clientName: 'Client',
+        status: 'upcoming',
+        raw: {
+          equipmentEstimate: 1000,
+          paymentHistory: [],
+        },
+        __commercial: {
+          agg: { equipment: 1000, equipmentCost: 250, crew: 900, crewCost: 400 },
+          servicesRevenue: 0,
+          projectExpenses: 0,
+          discountAmount: 0,
+          taxAmount: 0,
+          baseAfterDiscount: 1900,
+          finalTotal: 1900,
+        },
+      },
+    ], [{ id: 228, projectId: 82 }], 0.15);
+
+    expect(rows[0][5]).toBe(1900);
+    expect(rows[0][8]).toBe(1000);
+    expect(rows[0][11]).toBe(1900);
+    expect(rows[0][12]).toBe(1250);
   });
 
   it('builds the detailed breakdown sheet structure', () => {
@@ -96,7 +130,7 @@ describe('projectsReports/export', () => {
       projectCode: 'PRJ-3',
       title: 'Studio Shoot',
       __commercial: {
-        agg: { equipment: 500, crew: 200, crewCost: 80 },
+        agg: { equipment: 500, equipmentCost: 120, crew: 200, crewCost: 80 },
         servicesRevenue: 100,
         projectExpenses: 50,
         discountAmount: 40,
@@ -107,7 +141,7 @@ describe('projectsReports/export', () => {
     expect(sheet['A1'].v).toContain('Studio Shoot');
     expect(sheet['A2'].v).toBe('البند');
     expect(sheet['B3'].v).toBe(500);
-    expect(sheet['F5'].v).toBeCloseTo(82.9, 1);
+    expect(sheet['F5'].v).toBeCloseTo(67.1, 1);
     expect(sheet['!ref']).toBe('A1:F5');
   });
 });

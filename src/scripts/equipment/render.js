@@ -3,6 +3,7 @@ import { t } from '../language.js';
 import { userCanManageDestructiveActions } from '../auth.js';
 import { getEquipmentPaginationState, buildEquipmentPageNumbers } from '../equipmentPagination.js';
 import { refreshEnhancedSelect } from '../ui/enhancedSelect.js';
+import { jumpPaginationSectionToStart, settlePaginationSectionToStart } from '../ui/paginationViewport.js';
 import { state, getAllEquipment, resetEquipmentPagination } from './state.js';
 import {
   normalizeStatusValue,
@@ -100,6 +101,85 @@ function buildEquipmentFilterSignature({ search = '', category = '', sub = '', s
   return JSON.stringify([search, category, sub, statusFilter]);
 }
 
+function buildRenderableEquipmentEntries(data = []) {
+  const groupedMap = new Map();
+  data.forEach((item) => {
+    if (!item) return;
+    const key = resolveEquipmentGroupKey(item);
+    if (!key) return;
+    if (!groupedMap.has(key)) groupedMap.set(key, []);
+    groupedMap.get(key).push(item);
+  });
+
+  const entries = Array.from(groupedMap.values()).map((variants) => {
+    const primary = variants[0];
+    const totalQty = variants.reduce((sum, v) => sum + (Number.isFinite(Number(v.qty)) ? Number(v.qty) : 0), 0);
+    const statusPriority = ['maintenance', 'reserved', 'available', 'retired'];
+    const aggregatedStatus = variants
+      .map((v) => normalizeStatusValue(v.status))
+      .sort((a, b) => statusPriority.indexOf(a) - statusPriority.indexOf(b))[0] || 'available';
+    const statusTotals = variants.reduce(
+      (totals, v) => {
+        const qty = parseInteger(v?.qty ?? 0) || 0;
+        const vs  = normalizeStatusValue(v?.status);
+        if (vs === 'reserved')    totals.reserved    += qty;
+        if (vs === 'maintenance') totals.maintenance += qty;
+        return totals;
+      },
+      { reserved: 0, maintenance: 0 }
+    );
+    return {
+      item: {
+        ...primary,
+        qty: totalQty,
+        status: aggregatedStatus,
+        variants,
+        groupKey: resolveEquipmentGroupKey(primary),
+        reservedQty:    statusTotals.reserved,
+        maintenanceQty: statusTotals.maintenance,
+        availableQty:   Math.max(totalQty - statusTotals.reserved - statusTotals.maintenance, 0),
+      },
+      index: data.indexOf(primary),
+    };
+  });
+
+  entries.sort((a, b) => compareEquipmentItemsByBarcode(a.item, b.item));
+  return entries;
+}
+
+function readEquipmentFilterState() {
+  const rawSearch = document.getElementById('search-equipment')?.value || '';
+  const statusFilterRaw = document.getElementById('filter-status')?.value || '';
+  return {
+    rawSearch,
+    search: normalizeNumbers(rawSearch).toLowerCase().trim(),
+    category: document.getElementById('filter-category')?.value || '',
+    sub: document.getElementById('filter-sub')?.value || '',
+    statusFilter: statusFilterRaw ? normalizeStatusValue(statusFilterRaw) : '',
+  };
+}
+
+function getFilteredEquipmentEntries(entries, { search = '', category = '', sub = '', statusFilter = '' } = {}) {
+  return entries.filter(({ item }) => {
+    const barcode = normalizeNumbers(String(item.barcode ?? '')).toLowerCase().trim();
+    const variantBarcodes = Array.isArray(item.variants)
+      ? item.variants.map((v) => normalizeNumbers(String(v.barcode ?? '')).toLowerCase().trim()).filter(Boolean)
+      : [];
+    const matchesSearch =
+      !search ||
+      (item.name     && item.name.toLowerCase().includes(search)) ||
+      (item.desc     && item.desc.toLowerCase().includes(search)) ||
+      (barcode       && barcode.includes(search)) ||
+      variantBarcodes.some((code) => code.includes(search)) ||
+      (item.category && item.category.toLowerCase().includes(search)) ||
+      (item.sub      && item.sub.toLowerCase().includes(search));
+    const matchesCategory = !category     || item.category === category;
+    const matchesSub      = !sub          || item.sub      === sub;
+    const matchesStatus   = !statusFilter || normalizeStatusValue(item.status) === statusFilter;
+    return matchesSearch && matchesCategory && matchesSub && matchesStatus;
+  });
+}
+
 export function renderEquipmentPagination(totalItems) {
   const host = document.getElementById('equipment-list-pagination');
   if (!host) return;
@@ -132,17 +212,17 @@ export function renderEquipmentPagination(totalItems) {
     .map((page) => {
       const isActive  = page === paginationState.currentPage;
       const pageLabel = pageLabelTpl.replace('{page}', normalizeNumbers(String(page)));
-      return `<button type="button" class="btn btn-sm ${isActive ? 'btn-primary' : 'btn-outline-primary'}" data-equipment-page="${page}" aria-label="${escapeHtml(pageLabel)}" ${isActive ? 'aria-current="page"' : ''}>${normalizeNumbers(String(page))}</button>`;
+      return `<button type="button" class="ui-button ${isActive ? 'ui-button--primary' : 'ui-button--outline'} btn btn-sm ${isActive ? 'btn-primary' : 'btn-outline-primary'}" data-equipment-page="${page}" aria-label="${escapeHtml(pageLabel)}" ${isActive ? 'aria-current="page"' : ''}>${normalizeNumbers(String(page))}</button>`;
     })
     .join('');
 
   host.hidden = false;
   host.innerHTML = `
     <div class="list-pagination__summary text-muted small">${escapeHtml(rangeText)}</div>
-    <div class="list-pagination__controls btn-group" role="group" aria-label="${escapeHtml(navLabel)}">
-      <button type="button" class="btn btn-sm btn-outline-primary" data-equipment-page="${paginationState.currentPage - 1}" ${paginationState.currentPage <= 1 ? 'disabled' : ''} aria-label="${escapeHtml(prevLabel)}">‹</button>
+    <div class="list-pagination__controls" role="group" aria-label="${escapeHtml(navLabel)}">
+      <button type="button" class="ui-button ui-button--outline btn btn-sm btn-outline-primary" data-equipment-page="${paginationState.currentPage - 1}" ${paginationState.currentPage <= 1 ? 'disabled' : ''} aria-label="${escapeHtml(prevLabel)}">‹</button>
       ${buttonsHtml}
-      <button type="button" class="btn btn-sm btn-outline-primary" data-equipment-page="${paginationState.currentPage + 1}" ${paginationState.currentPage >= paginationState.totalPages ? 'disabled' : ''} aria-label="${escapeHtml(nextLabel)}">›</button>
+      <button type="button" class="ui-button ui-button--outline btn btn-sm btn-outline-primary" data-equipment-page="${paginationState.currentPage + 1}" ${paginationState.currentPage >= paginationState.totalPages ? 'disabled' : ''} aria-label="${escapeHtml(nextLabel)}">›</button>
     </div>
   `;
 
@@ -150,8 +230,10 @@ export function renderEquipmentPagination(totalItems) {
     button.addEventListener('click', () => {
       const nextPage = Number.parseInt(button.getAttribute('data-equipment-page') || '', 10);
       if (!Number.isFinite(nextPage)) return;
+      jumpPaginationSectionToStart(host);
       state.pagination.page = nextPage;
       renderEquipment();
+      settlePaginationSectionToStart(host);
     });
   });
 }
@@ -210,7 +292,18 @@ export function renderEquipmentItem({ item, index }) {
     availabilityClassModifier = stateConfig.modifier;
   }
 
-  const availabilityHtml = `<span class="equipment-card__availability equipment-card__availability--${availabilityClassModifier}">${availabilityText}</span>`;
+  const availabilityBadgeModifier = {
+    available: 'available',
+    reserved: 'reserved',
+    maintenance: 'maintenance',
+    retired: 'retired',
+    unavailable: 'default',
+  }[availabilityClassModifier] || 'default';
+
+  const availabilityHtml = `
+    <span class="equipment-card__availability equipment-status-badge equipment-status-badge--${availabilityBadgeModifier}">
+      ${availabilityText}
+    </span>`;
   const title     = item.desc || item.name || t('common.placeholder.empty', '—');
   const aliasValue = item.name && item.name !== item.desc ? item.name : '';
 
@@ -381,56 +474,8 @@ export function renderEquipment() {
     ? _syncEquipmentStatuses()
     : null;
   const data = Array.isArray(synced) ? synced : getAllEquipment();
-
-  const groupedMap = new Map();
-  data.forEach((item) => {
-    if (!item) return;
-    const key = resolveEquipmentGroupKey(item);
-    if (!key) return;
-    if (!groupedMap.has(key)) groupedMap.set(key, []);
-    groupedMap.get(key).push(item);
-  });
-
-  const entries = Array.from(groupedMap.values()).map((variants) => {
-    const primary = variants[0];
-    const totalQty = variants.reduce((sum, v) => sum + (Number.isFinite(Number(v.qty)) ? Number(v.qty) : 0), 0);
-    const statusPriority = ['maintenance', 'reserved', 'available', 'retired'];
-    const aggregatedStatus = variants
-      .map((v) => normalizeStatusValue(v.status))
-      .sort((a, b) => statusPriority.indexOf(a) - statusPriority.indexOf(b))[0] || 'available';
-    const statusTotals = variants.reduce(
-      (totals, v) => {
-        const qty = parseInteger(v?.qty ?? 0) || 0;
-        const vs  = normalizeStatusValue(v?.status);
-        if (vs === 'reserved')    totals.reserved    += qty;
-        if (vs === 'maintenance') totals.maintenance += qty;
-        return totals;
-      },
-      { reserved: 0, maintenance: 0 }
-    );
-    return {
-      item: {
-        ...primary,
-        qty: totalQty,
-        status: aggregatedStatus,
-        variants,
-        groupKey: resolveEquipmentGroupKey(primary),
-        reservedQty:    statusTotals.reserved,
-        maintenanceQty: statusTotals.maintenance,
-        availableQty:   Math.max(totalQty - statusTotals.reserved - statusTotals.maintenance, 0),
-      },
-      index: data.indexOf(primary),
-    };
-  });
-
-  entries.sort((a, b) => compareEquipmentItemsByBarcode(a.item, b.item));
-
-  const rawSearch    = document.getElementById('search-equipment')?.value || '';
-  const search       = normalizeNumbers(rawSearch).toLowerCase().trim();
-  const category     = document.getElementById('filter-category')?.value || '';
-  const sub          = document.getElementById('filter-sub')?.value || '';
-  const statusFilterRaw = document.getElementById('filter-status')?.value || '';
-  const statusFilter = statusFilterRaw ? normalizeStatusValue(statusFilterRaw) : '';
+  const entries = buildRenderableEquipmentEntries(data);
+  const { rawSearch, search, category, sub, statusFilter } = readEquipmentFilterState();
 
   if (state.isLoading && !data.length) {
     container.innerHTML = renderEmptyState(t('equipment.list.loading', '⏳ جاري تحميل المعدات...'), { icon: '⏳' });
@@ -444,24 +489,7 @@ export function renderEquipment() {
     return;
   }
 
-  const filteredEntries = entries.filter(({ item }) => {
-    const barcode = normalizeNumbers(String(item.barcode ?? '')).toLowerCase().trim();
-    const variantBarcodes = Array.isArray(item.variants)
-      ? item.variants.map((v) => normalizeNumbers(String(v.barcode ?? '')).toLowerCase().trim()).filter(Boolean)
-      : [];
-    const matchesSearch =
-      !search ||
-      (item.name     && item.name.toLowerCase().includes(search)) ||
-      (item.desc     && item.desc.toLowerCase().includes(search)) ||
-      (barcode       && barcode.includes(search)) ||
-      variantBarcodes.some((code) => code.includes(search)) ||
-      (item.category && item.category.toLowerCase().includes(search)) ||
-      (item.sub      && item.sub.toLowerCase().includes(search));
-    const matchesCategory = !category     || item.category === category;
-    const matchesSub      = !sub          || item.sub      === sub;
-    const matchesStatus   = !statusFilter || normalizeStatusValue(item.status) === statusFilter;
-    return matchesSearch && matchesCategory && matchesSub && matchesStatus;
-  });
+  const filteredEntries = getFilteredEquipmentEntries(entries, { search, category, sub, statusFilter });
 
   const emptyMessage = search
     ? t('equipment.list.emptyFiltered', '⚠️ لا توجد معدات مطابقة.')
@@ -502,4 +530,3 @@ let _syncEquipmentStatuses = null;
 export function setSyncEquipmentStatusesFn(fn) {
   _syncEquipmentStatuses = fn;
 }
-

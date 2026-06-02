@@ -15,6 +15,10 @@ const LANGUAGE_LOADING_CLASS = 'language-loading';
 const LANGUAGE_READY_CLASS = 'language-ready';
 
 const ATTRIBUTE_SUFFIXES = ['Placeholder', 'Title', 'AriaLabel', 'AriaDescription', 'Value'];
+const ATTRIBUTE_NAMES = {
+  AriaLabel: 'aria-label',
+  AriaDescription: 'aria-description',
+};
 
 const translations = {
   ar: Object.create(null),
@@ -75,7 +79,7 @@ function cacheOriginalContent(element) {
   }
 
   ATTRIBUTE_SUFFIXES.forEach((suffix) => {
-    const attrName = suffix.charAt(0).toLowerCase() + suffix.slice(1);
+    const attrName = ATTRIBUTE_NAMES[suffix] || (suffix.charAt(0).toLowerCase() + suffix.slice(1));
     const attrValue = element.getAttribute(attrName);
     if (attrValue != null && element.dataset[`ar${suffix}`] === undefined) {
       element.dataset[`ar${suffix}`] = attrValue;
@@ -130,7 +134,7 @@ function applyElementTranslation(element, language) {
   }
 
   ATTRIBUTE_SUFFIXES.forEach((suffix) => {
-    const attrName = suffix.charAt(0).toLowerCase() + suffix.slice(1);
+    const attrName = ATTRIBUTE_NAMES[suffix] || (suffix.charAt(0).toLowerCase() + suffix.slice(1));
     const attrKey = element.dataset[`i18n${suffix}Key`];
     const dictValue = getDictionaryValue(language, attrKey);
     if (dictValue !== undefined) {

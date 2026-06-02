@@ -26,6 +26,7 @@ import { updateEditReservationSummary } from './editForm.js';
 import { loadData } from '../storage.js';
 import { ensureReservationsLoaded } from '../reservationsActions.js';
 import { ensureProjectsLoaded } from '../projectsService.js';
+import { ensureEquipmentCatalogLoaded } from '../reservationsEquipment.js';
 import { t } from '../language.js';
 
 let reservationEventsInitialized = false;
@@ -191,9 +192,10 @@ export async function initializeReservationUI() {
     showReservationsInlineLoader();
   }
 
-  const [reservationsResult, projectsResult] = await Promise.allSettled([
+  const [reservationsResult, projectsResult, equipmentResult] = await Promise.allSettled([
     ensureReservationsLoaded(),
     ensureProjectsLoaded({ force: true }),
+    ensureEquipmentCatalogLoaded(),
   ]);
 
   if (reservationsResult.status === 'rejected') {
@@ -201,6 +203,9 @@ export async function initializeReservationUI() {
   }
   if (projectsResult.status === 'rejected') {
     console.warn('⚠️ [reservations/events] Failed to pre-load projects for reservation form', projectsResult.reason);
+  }
+  if (equipmentResult.status === 'rejected') {
+    console.warn('⚠️ [reservations/events] Failed to pre-load equipment for reservation form', equipmentResult.reason);
   }
 
   hideReservationsInlineLoader();

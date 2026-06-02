@@ -1,21 +1,27 @@
 import { translate } from '../reports/formatters.js';
 import reportsState from '../reports/state.js';
-import { buildA4ReportPages, exportA4ReportPdf } from './presenters/a4Unified.js';
+import {
+  buildA4ReportPages,
+  exportA4ReportPdf,
+  exportA4ReportExcel,
+  exportA4ReportCsv,
+} from './presenters/a4Unified.js';
 
 function createModal() {
   const modal = document.createElement('div');
-  modal.className = 'modal fade quote-preview-modal';
+  modal.className = 'modal fade customer-edit-modal reservation-shell-modal quote-preview-modal';
   modal.setAttribute('tabindex', '-1');
   modal.setAttribute('aria-hidden', 'true');
+  modal.style.display = 'none';
 
   modal.innerHTML = `
-    <div class="modal-dialog modal-xl">
-      <div class="modal-content">
-        <div class="modal-header">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable customer-edit-modal__dialog reservation-shell-modal__dialog reservation-shell-modal__dialog--wide">
+      <div class="ui-modal__content modal-content customer-edit-modal__content reservation-shell-modal__content">
+        <div class="ui-modal__header modal-header customer-edit-modal__header reservation-shell-modal__header">
           <h5 class="modal-title">${translate('reservations.reports.preview.title', 'معاينة تقرير الحجوزات', 'Reservations Report Preview')}</h5>
-          <button type="button" class="btn btn-ghost btn-sm" data-bs-dismiss="modal" aria-label="${translate('actions.close', 'إغلاق', 'Close')}" title="${translate('actions.close', 'إغلاق', 'Close')}"><span aria-hidden="true">✕</span></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="${translate('actions.close', 'إغلاق', 'Close')}" title="${translate('actions.close', 'إغلاق', 'Close')}"></button>
         </div>
-        <div class="modal-body">
+        <div class="ui-modal__body modal-body customer-edit-modal__body reservation-shell-modal__body">
           <div class="quote-preview-layout" style="display:block;grid-template-columns:1fr;">
             <section class="quote-preview-panel" style="flex:1;min-height:70vh;padding:18px;">
                 <div class="quote-preview" data-preview-host>
@@ -84,8 +90,11 @@ function createModal() {
             </section>
           </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-ghost btn-sm" data-bs-dismiss="modal">${translate('actions.close', 'إغلاق', 'Close')}</button>
+        <div class="ui-modal__footer modal-footer customer-edit-modal__footer reservation-shell-modal__footer">
+          <button type="button" class="btn btn-light" data-export-csv>${translate('reservations.reports.actions.exportCsv', 'تصدير CSV', 'Export CSV')}</button>
+          <button type="button" class="btn btn-light" data-export-excel>${translate('reservations.reports.actions.exportExcel', 'تصدير Excel', 'Export Excel')}</button>
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">${translate('actions.close', 'إغلاق', 'Close')}</button>
+          <button type="button" class="btn btn-primary" data-print-pdf-footer>${translate('reservations.reports.actions.exportPdf', '📄 تصدير PDF', 'Export PDF')}</button>
         </div>
       </div>
     </div>
@@ -366,27 +375,42 @@ export function openReportsPdfPreview(rows) {
   }());
 
   // Export directly (download PDF) without opening print preview
-  const printBtn = modal.querySelector('[data-print-pdf]');
-  if (printBtn) {
-    printBtn.addEventListener('click', async () => {
+  const runPdfExport = async () => {
+    const ua = navigator.userAgent || '';
+    const isIOS = /(iphone|ipad|ipod)/i.test(ua)
+      || (/macintosh/i.test(ua) && 'ontouchend' in document);
+    if (isIOS) {
+      const w = window.open('', '_blank');
+      try {
+        if (w && w.document) {
+          w.document.write('<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1" /><title>تحضير الطباعة…</title></head><body style="font-family:-apple-system,system-ui,Segoe UI,Roboto,sans-serif;padding:16px;">جاري التحضير للطباعة…</body></html>');
+          w.document.close();
+        }
+      } catch (_) { /* ignore */ }
+      await exportA4ReportPdf(dataRows, { action: 'print', strict: true, popupWindow: w });
+    } else {
+      await exportA4ReportPdf(dataRows, { action: 'save', strict: false });
+    }
+  };
+
+  modal.querySelectorAll('[data-print-pdf], [data-print-pdf-footer]').forEach((button) => {
+    button.addEventListener('click', async () => {
       // على iOS (Safari/Chrome)، استخدم نافذة منبثقة تُفتح مباشرة من حدث النقر
-      const ua = navigator.userAgent || '';
-      const isIOS = /(iphone|ipad|ipod)/i.test(ua)
-        || (/macintosh/i.test(ua) && 'ontouchend' in document); // iPadOS 13+ يعرّف نفسه كـ Macintosh
-      if (isIOS) {
-        // افتح نافذة مسبقًا لتحاشي الحظر، ثم مررها للمصدّر ليطبع بداخلها
-        const w = window.open('', '_blank');
-        try {
-          if (w && w.document) {
-            w.document.write('<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1" /><title>تحضير الطباعة…</title></head><body style="font-family:-apple-system,system-ui,Segoe UI,Roboto,sans-serif;padding:16px;">جاري التحضير للطباعة…</body></html>');
-            w.document.close();
-          }
-        } catch (_) { /* ignore */ }
-        await exportA4ReportPdf(dataRows, { action: 'print', strict: true, popupWindow: w });
-      } else {
-        // تنزيل مباشر بدون فتح معاينة الطباعة (strict=false)
-        await exportA4ReportPdf(dataRows, { action: 'save', strict: false });
-      }
+      await runPdfExport();
+    });
+  });
+
+  const exportExcelButton = modal.querySelector('[data-export-excel]');
+  if (exportExcelButton) {
+    exportExcelButton.addEventListener('click', async () => {
+      await exportA4ReportExcel(dataRows);
+    });
+  }
+
+  const exportCsvButton = modal.querySelector('[data-export-csv]');
+  if (exportCsvButton) {
+    exportCsvButton.addEventListener('click', async () => {
+      await exportA4ReportCsv(dataRows);
     });
   }
 
@@ -394,11 +418,24 @@ export function openReportsPdfPreview(rows) {
   // Bootstrap modal API (if available) or fallback
   try {
     const modalInstance = new window.bootstrap.Modal(modal, { backdrop: true, keyboard: true });
-    modal.addEventListener('hidden.bs.modal', () => modal.remove(), { once: true });
+    modal.addEventListener('show.bs.modal', () => {
+      document.body.classList.add('quote-preview-modal-open');
+    });
+    modal.addEventListener('hidden.bs.modal', () => {
+      document.body.classList.remove('quote-preview-modal-open');
+      modal.remove();
+    }, { once: true });
     modalInstance.show();
   } catch (_) {
     modal.style.display = 'block';
     modal.setAttribute('open', 'true');
+    document.body.classList.add('quote-preview-modal-open');
+    modal.querySelectorAll('[data-bs-dismiss="modal"]').forEach((button) => {
+      button.addEventListener('click', () => {
+        document.body.classList.remove('quote-preview-modal-open');
+        modal.remove();
+      }, { once: true });
+    });
   }
 }
 

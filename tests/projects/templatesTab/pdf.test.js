@@ -81,7 +81,7 @@ describe('templatesTab/pdf', () => {
     toggle?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     expect(onRenderPreview).toHaveBeenCalledTimes(1);
-    expect(document.getElementById('templates-pdf-tuner')?.style.display).toBe('block');
+    expect(document.getElementById('templates-pdf-tuner')?.hidden).toBe(false);
 
     const scale = document.getElementById('pdftun-scale');
     if (!(scale instanceof HTMLInputElement)) throw new Error('missing scale input');

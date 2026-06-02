@@ -1,6 +1,7 @@
 import { loadData, saveData } from './storage.js';
 import { apiRequest, ApiError } from './apiClient.js';
 import { normalizeNumbers } from './utils.js';
+import { isLocalDashboardFixtureEnabled } from './fixtureRuntime.js';
 
 const initialMaintenanceData = loadData() || {};
 let maintenanceState = (initialMaintenanceData.maintenance || []).map(mapLegacyMaintenanceTicket);
@@ -17,6 +18,12 @@ export function setMaintenanceState(list) {
 }
 
 export async function refreshMaintenanceFromApi(params = {}) {
+  if (isLocalDashboardFixtureEnabled()) {
+    const snapshot = loadData();
+    const localMaintenance = Array.isArray(snapshot?.maintenance) ? snapshot.maintenance : [];
+    return setMaintenanceState(localMaintenance);
+  }
+
   const searchParams = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {

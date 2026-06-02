@@ -3,6 +3,7 @@ import { t, getCurrentLanguage } from './language.js';
 import { syncTechniciansStatuses } from './technicians.js';
 import { refreshTechniciansFromApi } from './techniciansService.js';
 import { loadData } from './storage.js';
+import { refreshEnhancedSelect } from './ui/enhancedSelect.js';
 import { combineDateTime, hasTechnicianConflict, getTechnicianConflictingReservationCodes } from './reservations/state.js';
 import {
   ensureTechnicianPositionsLoaded,
@@ -18,28 +19,14 @@ const positionOverrides = new Map(); // reservation-scoped overrides for positio
 let selectedAssignments = [];
 let editingAssignments = [];
 let crewPickerContext = 'create';
+let crewPickerDidApply = false;
+const crewPickerSnapshots = {
+  create: [],
+  edit: [],
+};
 
 let onDraftSelectionChange = () => {};
 let onEditSelectionChange = () => {};
-
-// Prevent duplicate commits when input fires both 'change' and 'blur'
-const selectionCommitGuards = new Map(); // assignmentId -> lastCommitTs
-const SELECTION_COMMIT_THROTTLE_MS = 450;
-
-function isSelectionCommitGuarded(assignmentId) {
-  const ts = selectionCommitGuards.get(assignmentId);
-  return ts != null && (Date.now() - ts) < SELECTION_COMMIT_THROTTLE_MS;
-}
-
-function markSelectionCommit(assignmentId) {
-  selectionCommitGuards.set(assignmentId, Date.now());
-  setTimeout(() => {
-    const ts = selectionCommitGuards.get(assignmentId);
-    if (ts != null && (Date.now() - ts) >= SELECTION_COMMIT_THROTTLE_MS) {
-      selectionCommitGuards.delete(assignmentId);
-    }
-  }, SELECTION_COMMIT_THROTTLE_MS + 50);
-}
 
 function generateAssignmentId() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -340,6 +327,23 @@ function getAssignmentsForContext(context = 'create') {
     : selectedAssignments.map(cloneAssignment);
 }
 
+function getUnassignedAssignments(assignments = []) {
+  return Array.isArray(assignments)
+    ? assignments.filter((assignment) => !assignment?.technicianId)
+    : [];
+}
+
+function getAssignmentDisplayLabel(assignment = {}) {
+  return normalizeNumbers(
+    assignment?.positionLabel
+      || assignment?.position_label
+      || assignment?.position_name
+      || assignment?.role
+      || assignment?.position
+      || t('reservations.crew.positionFallback', 'منصب بدون اسم')
+  );
+}
+
 function setAssignmentsForContext(context = 'create', assignments = []) {
   // Ensure the positions cache is populated before we normalize assignments
   // so that enrichAssignment/resolvePositionSnapshot can resolve readable labels.
@@ -352,6 +356,7 @@ function setAssignmentsForContext(context = 'create', assignments = []) {
   } else {
     selectedAssignments = normalized;
     renderCrewSummary('selected-technicians-list', selectedAssignments, 'create');
+    renderCrewSummary('project-selected-technicians-list', selectedAssignments, 'project-create');
     onDraftSelectionChange();
   }
 
@@ -382,6 +387,18 @@ function getReservationContextMeta(context = 'create') {
     }
 
     return { start, end, ignoreReservationId };
+  }
+
+  if (context === 'project-create') {
+    const startDate = document.getElementById('project-start-date')?.value?.trim();
+    const endDate = document.getElementById('project-end-date')?.value?.trim() || startDate;
+    const startTime = document.getElementById('project-start-time')?.value?.trim() || '00:00';
+    const endTime = document.getElementById('project-end-time')?.value?.trim() || '00:00';
+
+    const start = startDate ? combineDateTime(startDate, startTime) : null;
+    const end = endDate ? combineDateTime(endDate, endTime) : null;
+
+    return { start, end, ignoreReservationId: null };
   }
 
   const startDate = document.getElementById('res-start')?.value?.trim();
@@ -481,29 +498,24 @@ function renderAssignmentsTable() {
     const currentTechnicianId = assignment.technicianId != null
       ? String(assignment.technicianId)
       : '';
-    const currentName = assignment.technicianName
-      ? normalizeNumbers(assignment.technicianName)
-      : '';
-    const datalistId = `crew-assignment-options-${assignment.assignmentId}`;
-
     const takenNote = t('technicians.picker.optionAssigned', '(مستخدم)');
     const conflictNote = t('technicians.picker.optionConflicting', '(متعارض)');
-    const datalistOptions = options.map((option) => {
+    const selectOptions = options.map((option) => {
       const isSelected = currentTechnicianId === option.id;
       const isDisabled = option.disabled && !isSelected;
-      const displayLabel = isDisabled
-        ? `${option.label} ${option.conflict ? conflictNote : takenNote}`
-        : option.label;
-      // Do NOT use the native `disabled` attribute on <option> inside <datalist>,
-      // as many browsers hide disabled options entirely. We keep a data flag
-      // and block selection in JS instead so users still see all technicians.
+      const displayLabel = normalizeNumbers(
+        isDisabled
+          ? `${option.label} ${option.conflict ? conflictNote : takenNote}`
+          : option.label
+      );
       return `
-        <option value="${option.label}"
-                data-id="${option.id}"
-                data-disabled="${option.disabled ? 'true' : 'false'}"
-                data-conflict="${option.conflict ? 'true' : 'false'}"
-                data-taken="${option.taken ? 'true' : 'false'}"
-                label="${displayLabel}"></option>
+        <option
+          value="${option.id}"
+          ${isSelected ? 'selected' : ''}
+          ${isDisabled ? 'disabled' : ''}
+          data-conflict="${option.conflict ? 'true' : 'false'}"
+          data-taken="${option.taken ? 'true' : 'false'}"
+        >${displayLabel}</option>
       `;
     }).join('');
 
@@ -550,20 +562,15 @@ function renderAssignmentsTable() {
           <div class="crew-assignment-price-chip" aria-label="${priceLabel}">${clientPrice}</div>
         </td>
         <td class="crew-assignment-cell-member">
-          <div class="crew-assignment-autocomplete-wrapper">
-            <input
-              type="text"
-              class="form-control crew-assignment-autocomplete"
-              list="${datalistId}"
+          <div class="crew-assignment-select-wrapper">
+            <select
+              class="ui-select form-select crew-assignment-select"
               data-assignment-id="${assignment.assignmentId}"
-              placeholder="${placeholderLabel}"
-              value="${currentTechnicianId ? currentName : ''}"
               aria-label="${t('technicians.picker.assignments.member', 'عضو الطاقم')}"
-              autocomplete="off"
-            />
-            <datalist id="${datalistId}">
-              ${datalistOptions}
-            </datalist>
+            >
+              <option value="" ${currentTechnicianId ? '' : 'selected'}>${placeholderLabel}</option>
+              ${selectOptions}
+            </select>
           </div>
         </td>
         <td class="crew-assignment-cell-actions">
@@ -584,81 +591,21 @@ function renderAssignmentsTable() {
     }
   });
 
-  setupCrewAssignmentAutocomplete(tbody);
+  setupCrewAssignmentSelects(tbody);
 }
 
-function setupCrewAssignmentAutocomplete(root) {
-  const inputs = root.querySelectorAll('.crew-assignment-autocomplete');
-  inputs.forEach((input) => {
-    if (input.dataset.listenerAttached) return;
-    const assignmentId = input.dataset.assignmentId;
-
-    const commitSelection = () => {
-      handleAutocompleteSelection(input, assignmentId);
-    };
-
-    input.addEventListener('change', commitSelection);
-    input.addEventListener('blur', commitSelection);
-    input.dataset.listenerAttached = 'true';
+function setupCrewAssignmentSelects(root) {
+  const selects = root.querySelectorAll('.crew-assignment-select');
+  selects.forEach((select) => {
+    if (!(select instanceof HTMLSelectElement)) return;
+    refreshEnhancedSelect(select);
+    if (select.dataset.listenerAttached) return;
+    const assignmentId = select.dataset.assignmentId;
+    select.addEventListener('change', () => {
+      handleTechnicianSelectionChange(assignmentId, select.value || '');
+    });
+    select.dataset.listenerAttached = 'true';
   });
-}
-
-function handleAutocompleteSelection(input, assignmentId) {
-  if (!assignmentId) return;
-  if (isSelectionCommitGuarded(assignmentId)) {
-    return; // skip duplicates from rapid change/blur sequence
-  }
-  markSelectionCommit(assignmentId);
-  const rawValue = input.value?.trim() ?? '';
-  if (!rawValue) {
-    handleTechnicianSelectionChange(assignmentId, '');
-    return;
-  }
-
-  const datalistId = input.getAttribute('list');
-  const datalistEl = datalistId ? document.getElementById(datalistId) : null;
-  const options = datalistEl ? Array.from(datalistEl.options) : [];
-  const normalizedValue = normalizeNumbers(rawValue).toLowerCase();
-  const match = options.find((option) => normalizeNumbers(option.value).toLowerCase() === normalizedValue);
-
-  if (!match) {
-    showToast(t('technicians.picker.toast.autocompleteNoMatch', '⚠️ لم يتم العثور على فني مطابق، الرجاء اختيار من القائمة'));
-    input.value = '';
-    handleTechnicianSelectionChange(assignmentId, '');
-    return;
-  }
-
-  if (match.dataset.disabled === 'true') {
-    if (match.dataset.conflict === 'true') {
-      // Annotate conflict with reservation codes if possible
-      try {
-        const { start, end, ignoreReservationId } = getReservationContextMeta(crewPickerContext);
-        const techId = match.dataset.id || '';
-        const codes = (start && end && techId)
-          ? getTechnicianConflictingReservationCodes(String(techId), start, end, ignoreReservationId)
-          : [];
-        const base = t('technicians.picker.optionConflict', '⚠️ هذا العضو لديه تعارض في التاريخ/الوقت المحدد');
-        const suffix = codes && codes.length ? `: ${codes.join('، ')}` : '';
-        showToast(`${base}${suffix}`, 'warning', 6000);
-      } catch (_) {
-        showToast(t('technicians.picker.optionConflict', '⚠️ هذا العضو لديه تعارض في التاريخ/الوقت المحدد'), 'warning', -1);
-      }
-    } else {
-      showToast(t('technicians.picker.optionTaken', '⚠️ لا يمكن اختيار هذا العضو لأنه مرتبط بمنصب آخر'));
-    }
-    input.value = '';
-    return;
-  }
-
-  const technicianId = match.dataset.id;
-  if (!technicianId) {
-    showToast(t('technicians.picker.toast.autocompleteNoMatch', '⚠️ لم يتم العثور على فني مطابق، الرجاء اختيار من القائمة'));
-    input.value = '';
-    handleTechnicianSelectionChange(assignmentId, '');
-    return;
-  }
-
-  handleTechnicianSelectionChange(assignmentId, technicianId);
 }
 
 function renderPositionList() {
@@ -906,6 +853,20 @@ function addAssignmentByPosition(positionId) {
   );
 }
 
+export function addDraftAssignmentFromPosition(position) {
+  ensurePositionsCached({ forceRefresh: true });
+  const assignment = buildAssignmentFromPosition(position || { id: null, name: '' });
+  const assignments = getAssignmentsForContext('create');
+  assignments.push(assignment);
+  setAssignmentsForContext('create', assignments);
+  renderAssignmentsTable();
+  showToast(
+    t('technicians.picker.toast.positionAdded', '✅ تم إضافة المنصب إلى القائمة'),
+    'success'
+  );
+  return cloneAssignment(assignment);
+}
+
 function removeAssignmentById(assignmentId, context = 'create') {
   if (!assignmentId) return;
   const assignments = getAssignmentsForContext(context).filter((assignment) => assignment.assignmentId !== assignmentId);
@@ -981,6 +942,9 @@ function handleTechnicianSelectionChange(assignmentId, technicianIdValue) {
 
 async function openCrewPicker(context = 'create') {
   crewPickerContext = context;
+  crewPickerDidApply = false;
+  crewPickerSnapshots[context] = getAssignmentsForContext(context).map(cloneAssignment);
+  document.body.classList.add('crew-picker-modal-open');
 
   // Render immediately from current selections to improve perceived responsiveness
   renderAssignmentsTable();
@@ -1022,6 +986,24 @@ function collectAssignmentsSelection() {
 
 function applyCrewSelection() {
   const assignments = collectAssignmentsSelection();
+  const unassignedAssignments = getUnassignedAssignments(assignments);
+
+  if (unassignedAssignments.length > 0) {
+    const labels = unassignedAssignments
+      .slice(0, 3)
+      .map((assignment) => getAssignmentDisplayLabel(assignment))
+      .join(t('reservations.list.crew.separator', '، '));
+    const suffix = unassignedAssignments.length > 3 ? '…' : '';
+    showToast(
+      t(
+        'technicians.picker.toast.assignAllRequired',
+        '⚠️ يجب تعيين عضو طاقم لكل منصب قبل متابعة الحجز'
+      ) + (labels ? `: ${labels}${suffix}` : ''),
+      'warning',
+      5000
+    );
+    return;
+  }
   const { start, end, ignoreReservationId } = getReservationContextMeta(crewPickerContext);
 
   if (start && end) {
@@ -1052,6 +1034,7 @@ function applyCrewSelection() {
   }
 
   setAssignmentsForContext(crewPickerContext, assignments);
+  crewPickerDidApply = true;
   const modalEl = document.getElementById('selectTechniciansModal');
   if (modalEl && window.bootstrap?.Modal) {
     const instance = window.bootstrap.Modal.getOrCreateInstance(modalEl);
@@ -1137,6 +1120,7 @@ function renderCrewSummary(containerId, assignments = [], context = 'create') {
 function refreshCrewAssignmentsUi() {
   renderAssignmentsTable();
   renderCrewSummary('selected-technicians-list', selectedAssignments, 'create');
+  renderCrewSummary('project-selected-technicians-list', selectedAssignments, 'project-create');
   renderCrewSummary('edit-selected-technicians-list', editingAssignments, 'edit');
   updateCrewPickerInfo();
   onDraftSelectionChange();
@@ -1144,6 +1128,58 @@ function refreshCrewAssignmentsUi() {
 }
 
 function setupCrewPickerInternal() {
+  const openProjectCreateBtn = document.getElementById('open-project-technician-picker');
+  if (openProjectCreateBtn && !openProjectCreateBtn.dataset.listenerAttached) {
+    openProjectCreateBtn.addEventListener('click', (event) => {
+      const customerId = document.getElementById('project-client')?.dataset?.customerId?.trim()
+        || document.getElementById('project-client')?.value?.trim();
+      const startDate = document.getElementById('project-start-date')?.value?.trim();
+      const endDate = document.getElementById('project-end-date')?.value?.trim();
+      const startTime = document.getElementById('project-start-time')?.value?.trim();
+      const endTime = document.getElementById('project-end-time')?.value?.trim();
+
+      const hasDates = Boolean(startDate && endDate);
+      const hasTimes = Boolean(startTime && endTime);
+      const hasCustomer = Boolean(customerId);
+
+      if (!hasDates || !hasTimes) {
+        event.preventDefault();
+        showToast(t('technicians.picker.requireDates', '⚠️ يرجى تحديد تاريخ ووقت البداية والنهاية أولاً'), 'warning');
+        return;
+      }
+
+      if (!hasCustomer) {
+        event.preventDefault();
+        showToast(t('technicians.picker.requireCustomer', '⚠️ يرجى اختيار العميل أولاً'), 'warning');
+        return;
+      }
+
+      openCrewPicker('project-create');
+    });
+    openProjectCreateBtn.dataset.listenerAttached = 'true';
+
+    const updateProjectAvailability = () => {
+      const customerId = document.getElementById('project-client')?.dataset?.customerId?.trim()
+        || document.getElementById('project-client')?.value?.trim();
+      const startDate = document.getElementById('project-start-date')?.value?.trim();
+      const endDate = document.getElementById('project-end-date')?.value?.trim();
+      const startTime = document.getElementById('project-start-time')?.value?.trim();
+      const endTime = document.getElementById('project-end-time')?.value?.trim();
+      const ready = Boolean(customerId && startDate && endDate && startTime && endTime);
+      openProjectCreateBtn.setAttribute('aria-disabled', String(!ready));
+      openProjectCreateBtn.dataset.ready = ready ? 'true' : 'false';
+      openProjectCreateBtn.classList.toggle('is-disabled', !ready);
+    };
+
+    ['project-client', 'project-start-date', 'project-end-date', 'project-start-time', 'project-end-time']
+      .map((id) => document.getElementById(id))
+      .filter(Boolean)
+      .forEach((el) => {
+        ['input', 'change'].forEach((evt) => el.addEventListener(evt, updateProjectAvailability));
+      });
+    updateProjectAvailability();
+  }
+
   const openCreateBtn = document.getElementById('open-technician-picker');
   if (openCreateBtn && !openCreateBtn.dataset.listenerAttached) {
     openCreateBtn.addEventListener('click', (event) => {
@@ -1221,7 +1257,16 @@ function setupCrewPickerInternal() {
 
   const modalEl = document.getElementById('selectTechniciansModal');
   if (modalEl && !modalEl.dataset.listenerAttached && window.bootstrap?.Modal) {
+    modalEl.addEventListener('show.bs.modal', () => {
+      document.body.classList.add('crew-picker-modal-open');
+    });
     modalEl.addEventListener('shown.bs.modal', async () => {
+      const bodyEl = modalEl.querySelector('.crew-picker-modal__body');
+      const positionListEl = modalEl.querySelector('#crew-position-list');
+      const assignmentsWrapperEl = modalEl.querySelector('.crew-assignment-table-shell');
+      if (bodyEl) bodyEl.scrollTop = 0;
+      if (positionListEl) positionListEl.scrollTop = 0;
+      if (assignmentsWrapperEl) assignmentsWrapperEl.scrollTop = 0;
       if (!cachedTechnicians.length && (!loadData().technicians || loadData().technicians.length === 0)) {
         try { await refreshTechniciansFromApi(); } catch (e) { console.warn('[crew-picker] fetch on show failed', e); }
       }
@@ -1230,19 +1275,32 @@ function setupCrewPickerInternal() {
       updateCrewPickerInfo();
     });
     modalEl.addEventListener('hidden.bs.modal', () => {
+      document.body.classList.remove('crew-picker-modal-open');
       const searchInputEl = document.getElementById('crew-position-search');
       if (searchInputEl) searchInputEl.value = '';
+      if (!crewPickerDidApply) {
+        const snapshot = crewPickerSnapshots[crewPickerContext] || [];
+        setAssignmentsForContext(crewPickerContext, snapshot);
+        renderAssignmentsTable();
+        updateCrewPickerInfo();
+      }
+      crewPickerDidApply = false;
     });
     modalEl.dataset.listenerAttached = 'true';
   }
 
   renderCrewSummary('selected-technicians-list', selectedAssignments, 'create');
+  renderCrewSummary('project-selected-technicians-list', selectedAssignments, 'project-create');
   renderCrewSummary('edit-selected-technicians-list', editingAssignments, 'edit');
 }
 
 export function initTechnicianSelection({ onDraftChange, onEditChange } = {}) {
-  onDraftSelectionChange = typeof onDraftChange === 'function' ? onDraftChange : () => {};
-  onEditSelectionChange = typeof onEditChange === 'function' ? onEditChange : () => {};
+  if (typeof onDraftChange === 'function') {
+    onDraftSelectionChange = onDraftChange;
+  }
+  if (typeof onEditChange === 'function') {
+    onEditSelectionChange = onEditChange;
+  }
   setupCrewPickerInternal();
 }
 
@@ -1317,6 +1375,7 @@ export function reconcileTechnicianSelections(latest = []) {
   editingAssignments = reconcileAssignments(editingAssignments);
 
   renderCrewSummary('selected-technicians-list', selectedAssignments, 'create');
+  renderCrewSummary('project-selected-technicians-list', selectedAssignments, 'project-create');
   renderCrewSummary('edit-selected-technicians-list', editingAssignments, 'edit');
   renderAssignmentsTable();
 }

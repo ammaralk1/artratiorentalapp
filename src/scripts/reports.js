@@ -1,4 +1,4 @@
-import { translate, resetFormatters } from './reports/formatters.js';
+import { translate, resetFormatters, formatNumber } from './reports/formatters.js';
 import { getCurrentLanguage } from './language.js';
 import reportsState, {
   setRenderCallback,
@@ -24,10 +24,12 @@ import {
   calculateCrewWorkReport,
   calculateEquipmentCostReport,
   calculatePaymentForecast,
+  computeReportStatus,
 } from './reports/calculations.js';
 import { renderTrendChart, renderStatusChart, renderPaymentChart, renderStatusStackedMonthly } from './reports/presenters/charts.js';
 import { updateKpiCards } from './reports/presenters/kpis.js';
 import { renderReservationsTable } from './reports/presenters/table.js';
+import { bindReportsFilterToggle } from './reports/filterToggle.js';
 import {
   exportReport,
   renderTopCustomers,
@@ -80,6 +82,15 @@ function updateReportsStickyOffset() {
     const h = Math.max(0, Math.round(header?.getBoundingClientRect()?.height || 64));
     document.documentElement.style.setProperty('--reports-sticky-offset', `${h}px`);
   } catch (_) { /* ignore */ }
+}
+
+function setupReservationsFilterToggle() {
+  const card = document.getElementById('reservations-reports-filters-card');
+  const body = document.getElementById('reservations-reports-filters');
+  const header = card?.querySelector('.reports-filters-card__header');
+  const toggleBtn = document.getElementById('reservations-reports-filters-toggle');
+  const resetBtn = document.getElementById('reports-filter-reset');
+  bindReportsFilterToggle({ card, body, header, toggleBtn, resetBtn });
 }
 
 // Presets (save/load/share)
@@ -360,6 +371,16 @@ function syncFilterControls() {
   toggleCustomRange(customRangeWrapper, true);
 }
 
+function resetReportsFilters() {
+  filters.range = 'all';
+  filters.status = 'all';
+  filters.payment = 'all';
+  filters.share = 'all';
+  filters.search = '';
+  filters.start = null;
+  filters.end = null;
+}
+
 function readFiltersFromUrl() {
   try {
     const params = new URLSearchParams(window.location.search);
@@ -385,7 +406,16 @@ function scheduleUrlUpdate() {
   if (urlUpdateTimer) clearTimeout(urlUpdateTimer);
   urlUpdateTimer = setTimeout(() => {
     try {
-      const params = new URLSearchParams();
+      const params = new URLSearchParams(window.location.search);
+      [
+        'range',
+        'status',
+        'payment',
+        'share',
+        'search',
+        'start',
+        'end',
+      ].forEach((key) => params.delete(key));
       const setIf = (key, value, def) => {
         if (value != null && value !== '' && value !== def) params.set(key, value);
       };
@@ -445,6 +475,32 @@ function toggleEmptyState(isEmpty) {
   setReportsEmptyState({ active: Boolean(isEmpty) });
 }
 
+function updateReportsSectionMeta(filteredReservations = []) {
+  const resultsCount = document.getElementById('reports-results-count');
+  const resultsScope = document.getElementById('reports-results-scope');
+  const list = Array.isArray(filteredReservations) ? filteredReservations : [];
+  const confirmedCount = list.filter((reservation) => {
+    const status = computeReportStatus(reservation);
+    return Boolean(status?.confirmed);
+  }).length;
+
+  if (resultsCount) {
+    resultsCount.textContent = translate(
+      'reservations.reports.results.meta.filteredCount',
+      '{count} حجز مطابق',
+      '{count} matching reservations',
+    ).replace('{count}', formatNumber(confirmedCount));
+  }
+
+  if (resultsScope) {
+    resultsScope.textContent = translate(
+      'reservations.reports.results.meta.confirmedOnly',
+      'يعرض الحجوزات المؤكدة فقط',
+      'Showing confirmed reservations only',
+    );
+  }
+}
+
 function toggleSkeleton(loading) {
   const kpiSkeleton = document.getElementById('reports-kpi-skeleton');
   const kpiGrid = document.getElementById('reservations-reports-kpis');
@@ -452,9 +508,9 @@ function toggleSkeleton(loading) {
   const table = document.getElementById('reports-reservations-table');
   const revSkeleton = document.getElementById('reservations-revenue-skeleton');
   const revList = document.getElementById('reservations-revenue-breakdown');
-  if (kpiSkeleton && kpiGrid) { kpiSkeleton.style.display = loading ? '' : 'none'; kpiGrid.style.opacity = loading ? '0.4' : '1'; }
-  if (tableSkeleton && table) { tableSkeleton.style.display = loading ? '' : 'none'; table.style.opacity = loading ? '0.4' : '1'; }
-  if (revSkeleton && revList) { revSkeleton.style.display = loading ? '' : 'none'; revList.style.opacity = loading ? '0.4' : '1'; }
+  if (kpiSkeleton && kpiGrid) { kpiSkeleton.hidden = !loading; kpiGrid.style.opacity = loading ? '0.4' : '1'; }
+  if (tableSkeleton && table) { tableSkeleton.hidden = !loading; table.style.opacity = loading ? '0.4' : '1'; }
+  if (revSkeleton && revList) { revSkeleton.hidden = !loading; revList.style.opacity = loading ? '0.4' : '1'; }
 }
 
 function setupDrilldownInteractions() {
@@ -503,6 +559,93 @@ function handleReportsDataMutation() {
   });
 }
 
+function buildReportsSnapshot(filtered, customers, equipment, technicians, maintenance) {
+  const metrics = calculateMetrics(filtered);
+  const maintenanceSummary = calculateMaintenanceExpenses(maintenance, filters);
+  const metricsWithMaintenance = applyMaintenanceExpenses(metrics, maintenanceSummary.total);
+  const trend = calculateMonthlyTrend(filtered);
+  const statusBreakdown = calculateStatusBreakdown(filtered);
+  const statusStack = calculateMonthlyStatusStack(filtered);
+  const paymentBreakdown = calculatePaymentBreakdown(filtered);
+  const topCustomers = calculateTopCustomers(filtered, customers);
+  const topEquipment = calculateTopEquipment(filtered, equipment);
+  const crewWork = calculateCrewWorkReport(filtered, technicians);
+  const equipmentCosts = calculateEquipmentCostReport(filtered);
+  const forecast = calculatePaymentForecast(filtered);
+  const topOutstanding = calculateTopOutstanding(filtered, customers, 5);
+
+  return {
+    filtered,
+    metrics: metricsWithMaintenance,
+    maintenanceSummary,
+    trend,
+    statusBreakdown,
+    statusStack,
+    paymentBreakdown,
+    topCustomers,
+    topEquipment,
+    crewWork,
+    equipmentCosts,
+    forecast,
+    topOutstanding,
+  };
+}
+
+function storeReportsSnapshot({
+  filtered,
+  metrics,
+  trend,
+  statusBreakdown,
+  paymentBreakdown,
+  tableRows,
+  maintenanceSummary,
+  topOutstanding,
+  crewWork,
+  equipmentCosts,
+  forecast,
+}) {
+  reportsState.lastSnapshot.filtered = filtered;
+  reportsState.lastSnapshot.metrics = metrics;
+  reportsState.lastSnapshot.trend = trend;
+  reportsState.lastSnapshot.statusBreakdown = statusBreakdown;
+  reportsState.lastSnapshot.paymentBreakdown = paymentBreakdown;
+  reportsState.lastSnapshot.tableRows = tableRows;
+  reportsState.lastSnapshot.maintenance = maintenanceSummary;
+  reportsState.lastSnapshot.outstanding = topOutstanding;
+  reportsState.lastSnapshot.crewWork = crewWork;
+  reportsState.lastSnapshot.equipmentCosts = equipmentCosts;
+  reportsState.lastSnapshot.paymentForecast = forecast;
+}
+
+function bindReportsRenderCallbacks() {
+  setRenderCallback(renderReports);
+  setBeforeRenderCallback(() => {
+    renderReports();
+  });
+  setAfterRenderCallback(() => {
+    renderReports();
+  });
+
+  setTrendDrilldownCallback((item) => {
+    handleTrendDrilldown(item, () => {
+      syncFilterControls();
+      renderReports();
+    });
+  });
+  setStatusDrilldownCallback((item) => {
+    handleStatusDrilldown(item?.filterKey, () => {
+      syncFilterControls();
+      renderReports();
+    });
+  });
+  setPaymentDrilldownCallback((item) => {
+    handlePaymentDrilldown(item?.filterKey, () => {
+      syncFilterControls();
+      renderReports();
+    });
+  });
+}
+
 export function renderReports() {
   enforceStatusFilter();
   syncFilterControls();
@@ -530,48 +673,39 @@ export function renderReports() {
   toggleSkeleton(false);
   const { reservations, customers, equipment, technicians, maintenance } = reportsState.data;
   const filtered = filterReservations(reservations, filters, customers, equipment, technicians);
-  const metrics = calculateMetrics(filtered);
-  const maintenanceSummary = calculateMaintenanceExpenses(maintenance, filters);
-  const metricsWithMaintenance = applyMaintenanceExpenses(metrics, maintenanceSummary.total);
-  const trend = calculateMonthlyTrend(filtered);
-  const statusBreakdown = calculateStatusBreakdown(filtered);
-  const statusStack = calculateMonthlyStatusStack(filtered);
-  const paymentBreakdown = calculatePaymentBreakdown(filtered);
-  const topCustomers = calculateTopCustomers(filtered, customers);
-  const topEquipment = calculateTopEquipment(filtered, equipment);
-  const crewWork = calculateCrewWorkReport(filtered, technicians);
-  const equipmentCosts = calculateEquipmentCostReport(filtered);
-  const forecast = calculatePaymentForecast(filtered);
-  const topOutstanding = calculateTopOutstanding(filtered, customers, 5);
+  const snapshot = buildReportsSnapshot(filtered, customers, equipment, technicians, maintenance);
 
-  updateKpiCards(metricsWithMaintenance);
-  renderTrendChart(trend);
-  renderStatusChart(statusBreakdown);
-  renderStatusStackedMonthly(statusStack);
-  renderPaymentChart(paymentBreakdown);
-  renderQuickChips(statusBreakdown, paymentBreakdown);
-  renderTopCustomers(topCustomers);
-  renderTopEquipment(topEquipment);
-  renderEquipmentCosts(equipmentCosts);
-  renderTopOutstanding(topOutstanding);
-  renderCrewWork(crewWork);
-  renderMaintenanceExpenses(maintenanceSummary, maintenance);
-  try { renderPaymentForecast(forecast); } catch (_) {}
+  updateKpiCards(snapshot.metrics);
+  renderTrendChart(snapshot.trend);
+  renderStatusChart(snapshot.statusBreakdown);
+  renderStatusStackedMonthly(snapshot.statusStack);
+  renderPaymentChart(snapshot.paymentBreakdown);
+  renderQuickChips(snapshot.statusBreakdown, snapshot.paymentBreakdown);
+  renderTopCustomers(snapshot.topCustomers);
+  renderTopEquipment(snapshot.topEquipment);
+  renderEquipmentCosts(snapshot.equipmentCosts);
+  renderTopOutstanding(snapshot.topOutstanding);
+  renderCrewWork(snapshot.crewWork);
+  renderMaintenanceExpenses(snapshot.maintenanceSummary, maintenance);
+  try { renderPaymentForecast(snapshot.forecast); } catch (_) {}
   const tableRows = renderReservationsTable(filtered, customers, technicians);
+  updateReportsSectionMeta(filtered);
   applyColumnVisibility();
   toggleEmptyState(filtered.length === 0);
 
-  reportsState.lastSnapshot.filtered = filtered;
-  reportsState.lastSnapshot.metrics = metricsWithMaintenance;
-  reportsState.lastSnapshot.trend = trend;
-  reportsState.lastSnapshot.statusBreakdown = statusBreakdown;
-  reportsState.lastSnapshot.paymentBreakdown = paymentBreakdown;
-  reportsState.lastSnapshot.tableRows = tableRows;
-  reportsState.lastSnapshot.maintenance = maintenanceSummary;
-  reportsState.lastSnapshot.outstanding = topOutstanding;
-  reportsState.lastSnapshot.crewWork = crewWork;
-  reportsState.lastSnapshot.equipmentCosts = equipmentCosts;
-  reportsState.lastSnapshot.paymentForecast = forecast;
+  storeReportsSnapshot({
+    filtered,
+    metrics: snapshot.metrics,
+    trend: snapshot.trend,
+    statusBreakdown: snapshot.statusBreakdown,
+    paymentBreakdown: snapshot.paymentBreakdown,
+    tableRows,
+    maintenanceSummary: snapshot.maintenanceSummary,
+    topOutstanding: snapshot.topOutstanding,
+    crewWork: snapshot.crewWork,
+    equipmentCosts: snapshot.equipmentCosts,
+    forecast: snapshot.forecast,
+  });
 }
 
 export function initReports() {
@@ -584,6 +718,7 @@ export function initReports() {
   const shareSelect = document.getElementById('reports-share-filter');
   const startInput = document.getElementById('reports-start');
   const endInput = document.getElementById('reports-end');
+  const resetButton = document.getElementById('reports-filter-reset');
   // تمت إزالة زر التحديث من التبويب
   const customRangeWrapper = document.getElementById('reports-custom-range');
   const searchInput = document.getElementById('reports-search');
@@ -595,6 +730,7 @@ export function initReports() {
   readFiltersFromUrl();
   syncFilterControls();
   updateReportsStickyOffset();
+  setupReservationsFilterToggle();
 
   const hydrated = hydrateReportsFromCache();
   if (hydrated) {
@@ -660,6 +796,13 @@ export function initReports() {
   });
 
   // لا يوجد زر تحديث الآن؛ يتم التحديث تلقائياً عند تغيير الفلاتر
+
+  resetButton?.addEventListener('click', () => {
+    resetReportsFilters();
+    syncFilterControls();
+    scheduleUrlUpdate();
+    scheduleRender({ refresh: true });
+  });
 
   // تمت إزالة زر الطباعة من التبويب لتفادي التكرار مع تصدير PDF
 
@@ -751,32 +894,7 @@ export function initReports() {
     reportsState.stickyOffsetListenerAttached = true;
   }
 
-  setRenderCallback(renderReports);
-  setBeforeRenderCallback(() => {
-    renderReports();
-  });
-  setAfterRenderCallback(() => {
-    renderReports();
-  });
-
-  setTrendDrilldownCallback((item) => {
-    handleTrendDrilldown(item, () => {
-      syncFilterControls();
-      renderReports();
-    });
-  });
-  setStatusDrilldownCallback((item) => {
-    handleStatusDrilldown(item?.filterKey, () => {
-      syncFilterControls();
-      renderReports();
-    });
-  });
-  setPaymentDrilldownCallback((item) => {
-    handlePaymentDrilldown(item?.filterKey, () => {
-      syncFilterControls();
-      renderReports();
-    });
-  });
+  bindReportsRenderCallbacks();
 
   const signature = buildFiltersSignature();
   loadReportsData({ signature }).catch((error) => {

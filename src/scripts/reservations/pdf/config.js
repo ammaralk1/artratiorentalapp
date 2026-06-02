@@ -45,7 +45,7 @@ export const QUOTE_ITEMS_COLUMN_DEFS = [
   {
     id: 'unitPrice',
     labelKey: 'reservations.quote.columns.unitPrice',
-    fallback: 'لكل يوم',
+    fallback: 'سعر الوحدة',
     render: (item) => escapeHtml(normalizeNumbers((Number(item?.unitPriceValue || 0)).toFixed(2)))
   },
   {
@@ -86,7 +86,7 @@ export const QUOTE_CREW_COLUMN_DEFS = [
   {
     id: 'unitPrice',
     labelKey: 'reservations.quote.columns.unitPrice',
-    fallback: 'لكل يوم',
+    fallback: 'سعر الوحدة',
     render: (assignment) => {
       const value = Number.isFinite(Number(assignment?.positionClientPrice))
         ? Number(assignment.positionClientPrice)
@@ -115,20 +115,19 @@ export const QUOTE_FIELD_DEFS = {
     { id: 'customerEmail', labelKey: 'reservations.details.labels.email', fallback: 'البريد' }
   ],
   reservationInfo: [
-    { id: 'reservationId', labelKey: 'reservations.details.labels.reservationId', fallback: 'رقم الحجز' },
     { id: 'reservationStart', labelKey: 'reservations.details.labels.start', fallback: 'بداية الحجز' },
     { id: 'reservationEnd', labelKey: 'reservations.details.labels.end', fallback: 'نهاية الحجز' },
     { id: 'reservationDuration', labelKey: 'reservations.details.labels.duration', fallback: 'عدد الأيام' }
   ],
   projectInfo: [
-    { id: 'projectTitle', labelKey: 'reservations.details.labels.project', fallback: 'المشروع' },
-    { id: 'projectCode', labelKey: 'reservations.details.labels.code', fallback: 'الرمز' }
+    { id: 'projectTitle', labelKey: 'projects.details.labels.projectTitle', fallback: 'اسم المشروع' }
   ],
   financialSummary: [
     // خيارات الملخص المالي المعروضة في قسم الحجز
     { id: 'discountAmount', labelKey: 'reservations.details.labels.discount', fallback: 'الخصم' },
-    { id: 'subtotalBeforeTax', labelKey: 'reservations.details.labels.subtotalBeforeTax', fallback: 'الإجمالي قبل الضريبة' },
+    { id: 'subtotalBeforeTax', labelKey: 'reservations.quote.labels.total', fallback: 'المجموع' },
     { id: 'taxAmount', labelKey: 'reservations.details.labels.tax', fallback: 'الضريبة' },
+    { id: 'companyShareAmount', labelKey: 'projects.details.summary.companyOverhead', fallback: 'المصاريف التشغيلية' },
     { id: 'finalTotal', labelKey: 'reservations.details.labels.total', fallback: 'الإجمالي النهائي' }
   ],
   payment: [
@@ -141,13 +140,13 @@ export const QUOTE_FIELD_DEFS = {
   items: [
     ...QUOTE_ITEMS_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
     { id: 'days', labelKey: 'reservations.details.table.headers.days', fallback: 'الأيام' },
-    { id: 'equipmentSubtotal', labelKey: 'reservations.details.labels.equipmentTotal', fallback: 'إجمالي المعدات' }
+    { id: 'equipmentSubtotal', labelKey: 'reservations.quote.totals.equipment', fallback: 'إجمالي المعدات' }
   ],
   crew: [
     ...QUOTE_CREW_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
     { id: 'quantity', labelKey: 'reservations.details.table.headers.quantity', fallback: 'الكمية' },
     { id: 'days', labelKey: 'reservations.details.table.headers.days', fallback: 'الأيام' },
-    { id: 'crewSubtotal', labelKey: 'reservations.details.labels.crewTotal', fallback: 'إجمالي الفريق' }
+    { id: 'crewSubtotal', labelKey: 'reservations.quote.totals.crew', fallback: 'إجمالي طاقم العمل' }
   ]
 };
 
@@ -204,6 +203,16 @@ export const PROJECT_EXPENSES_COLUMN_DEFS = [
     }
   },
   {
+    id: 'days',
+    labelKey: 'reservations.details.table.headers.days',
+    fallback: 'الأيام',
+    render: (expense) => {
+      const days = Number(expense?.days ?? expense?.service_days ?? expense?.serviceDays ?? 1);
+      const safeDays = Number.isFinite(days) && days > 0 ? days : 1;
+      return escapeHtml(normalizeNumbers(String(safeDays)));
+    }
+  },
+  {
     id: 'note',
     labelKey: null,
     fallback: 'ملاحظات',
@@ -247,8 +256,7 @@ export const PROJECT_EQUIPMENT_COLUMN_DEFS = [
 export const PROJECT_QUOTE_FIELD_DEFS = {
   customerInfo: QUOTE_FIELD_DEFS.customerInfo,
   projectInfo: [
-    { id: 'projectTitle', labelKey: 'projects.details.overview.heading', fallback: 'معلومات المشروع' },
-    { id: 'projectCode', labelKey: 'projects.details.labels.code', fallback: 'رقم المشروع' },
+    { id: 'projectTitle', labelKey: 'projects.details.labels.projectTitle', fallback: 'اسم المشروع' },
     { id: 'projectType', labelKey: 'projects.details.type', fallback: 'نوع المشروع' },
     { id: 'projectStart', labelKey: 'projects.details.start', fallback: 'بداية المشروع' },
     { id: 'projectEnd', labelKey: 'projects.details.end', fallback: 'نهاية المشروع' },
@@ -256,8 +264,9 @@ export const PROJECT_QUOTE_FIELD_DEFS = {
     { id: 'projectStatus', labelKey: 'projects.details.status', fallback: 'حالة المشروع' }
   ],
   financialSummary: [
-    { id: 'reservationsTotal', labelKey: 'projects.details.reservationsTotal', fallback: 'إجمالي الحجوزات' },
+    { id: 'reservationsTotal', labelKey: 'reservations.quote.labels.total', fallback: 'المجموع' },
     { id: 'discountAmount', labelKey: 'projects.details.summary.discount', fallback: 'الخصم' },
+    { id: 'companyShareAmount', labelKey: 'projects.details.summary.companyOverhead', fallback: 'المصاريف التشغيلية' },
     { id: 'taxAmount', labelKey: 'projects.details.summary.combinedTax', fallback: 'الضريبة' },
     { id: 'overallTotal', labelKey: 'projects.details.summary.overallTotal', fallback: 'الإجمالي الكلي' },
     // removed: projectSubtotal, expensesTotal, paidAmount, remainingAmount from toggles per request
@@ -265,20 +274,21 @@ export const PROJECT_QUOTE_FIELD_DEFS = {
   payment: QUOTE_FIELD_DEFS.payment,
   projectExpenses: [
     ...PROJECT_EXPENSES_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
-    { id: 'expensesSubtotal', labelKey: 'projects.details.expensesTotal', fallback: 'إجمالي الخدمات الإنتاجية' }
+    { id: 'total', labelKey: 'reservations.quote.columns.total', fallback: 'المجموع' },
+    { id: 'productionServicesSubtotal', labelKey: 'reservations.quote.totals.productionServices', fallback: 'إجمالي الخدمات الإنتاجية' }
   ],
   projectCrew: [
     // Use reservation-style crew columns (position/unit/price), plus quantity + days, and subtotal toggle
     ...QUOTE_CREW_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
     { id: 'quantity', labelKey: 'reservations.details.table.headers.quantity', fallback: 'الكمية' },
     { id: 'days', labelKey: 'reservations.details.table.headers.days', fallback: 'الأيام' },
-    { id: 'crewSubtotal', labelKey: 'reservations.details.labels.crewTotal', fallback: 'إجمالي الفريق' }
+    { id: 'crewSubtotal', labelKey: 'reservations.quote.totals.crew', fallback: 'إجمالي طاقم العمل' }
   ],
   projectEquipment: [
     // Use reservation-style items columns (code/desc/unit/qty/price), plus days, and subtotal toggle
     ...QUOTE_ITEMS_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
     { id: 'days', labelKey: 'reservations.details.table.headers.days', fallback: 'الأيام' },
-    { id: 'equipmentSubtotal', labelKey: 'reservations.details.labels.equipmentTotal', fallback: 'إجمالي المعدات' }
+    { id: 'equipmentSubtotal', labelKey: 'reservations.quote.totals.equipment', fallback: 'إجمالي المعدات' }
   ],
   projectNotes: []
 };

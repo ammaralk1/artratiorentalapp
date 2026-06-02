@@ -2,16 +2,17 @@ import '../styles/app.css';
 import { applyStoredTheme, initThemeToggle } from './theme.js';
 import { migrateOldData } from './storage.js';
 import { checkAuth } from './auth.js';
+import { applyLocalDashboardFixture } from './devFixtures.js';
 import { registerReservationGlobals, getReservationsEditContext, setupEditReservationModalEvents } from './reservations/controller.js';
 import { initTechnicianSelection } from './reservationsTechnicians.js';
 import mountReservationModalsIfNeeded from './reservations/modals.js';
 import { initDashboardShell } from './dashboardShell.js';
 import { initProjectsPage, initProjectsPageBindings } from './projects/app.js';
-import { initProjectsReportsModule } from './projectsReports.js';
 
 mountReservationModalsIfNeeded();
 applyStoredTheme();
 migrateOldData();
+applyLocalDashboardFixture();
 checkAuth();
 registerReservationGlobals();
 const initProjectsReservationModal = () => {
@@ -33,13 +34,15 @@ if (document.readyState === 'loading') {
 
 initProjectsPageBindings();
 
+const revealPage = () => {
+  document.body.classList.remove('auth-pending');
+};
+
 const bootstrapProjectsPage = () => {
   initDashboardShell();
   initThemeToggle();
   initProjectsPage();
-  void initProjectsReportsModule().catch((error) => {
-    console.error('❌ [projects] Failed to initialise reports bootstrap', error);
-  });
+  revealPage();
 };
 
 if (document.readyState === 'loading') {
