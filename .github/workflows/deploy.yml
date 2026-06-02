@@ -48,25 +48,29 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Upload backend config via FTPS
+      - name: Upload backend config to FTP server
         env:
           FTP_SERVER: ${{ secrets.FTP_SERVER }}
           FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
           FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
           FTP_PORT: ${{ secrets.FTP_PORT }}
+          FTP_USE_TLS: ${{ secrets.FTP_USE_TLS }}
           FTP_SKIP_TLS_VERIFY: ${{ secrets.FTP_SKIP_TLS_VERIFY }}
         run: |
           set -euo pipefail
           FTP_PORT="${FTP_PORT:-21}"
           CURL_ARGS=(
             --fail --show-error --silent
+            --connect-timeout 20 --max-time 120
             --ftp-create-dirs --ftp-method nocwd --ftp-pasv
-            --ftp-ssl --ssl-reqd
             --user "${FTP_USERNAME}:${FTP_PASSWORD}"
             -T backend/config.php
             "ftp://${FTP_SERVER}:${FTP_PORT}/backend/config.php"
           )
-          if [ "${FTP_SKIP_TLS_VERIFY:-false}" = "true" ]; then
+          if [ "${FTP_USE_TLS:-false}" = "true" ]; then
+            CURL_ARGS+=( --ftp-ssl --ssl-reqd )
+          fi
+          if [ "${FTP_USE_TLS:-false}" = "true" ] && [ "${FTP_SKIP_TLS_VERIFY:-false}" = "true" ]; then
             CURL_ARGS+=( --insecure )
           fi
           curl "${CURL_ARGS[@]}"
