@@ -169,7 +169,7 @@ try {
     // Create a secure temp defaults file to avoid exposing password via argv.
     $defaultsFile = buildDefaultsFile($db);
     $dumpCmd = sprintf(
-        '%s --defaults-extra-file=%s --single-transaction --quick --routines --triggers --events --set-gtid-purged=OFF %s | gzip -c > %s',
+        'set -o pipefail; %s --defaults-extra-file=%s --single-transaction --quick --routines --triggers --events --set-gtid-purged=OFF %s | gzip -c > %s',
         escapeshellcmd($mysqldump),
         escapeshellarg($defaultsFile),
         $what,
@@ -179,7 +179,7 @@ try {
     echo ($opts['all'] ?? false)
         ? "Starting backup for ALL databases...\n"
         : "Starting backup for database '{$dbName}'...\n";
-    [$code, $stdout, $stderr] = run($dumpCmd);
+    [$code, $stdout, $stderr] = run('/bin/bash -lc ' . escapeshellarg($dumpCmd));
 
     // Always remove the temp defaults file
     @unlink($defaultsFile);
