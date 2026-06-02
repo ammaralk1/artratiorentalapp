@@ -4,7 +4,6 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../bootstrap.php';
 require_once __DIR__ . '/../../services/telegram.php';
 
-use Throwable;
 
 function tg_reply_text(string $chatId, string $text): void {
     try { sendTelegramText($chatId, $text); } catch (Throwable $_) {}

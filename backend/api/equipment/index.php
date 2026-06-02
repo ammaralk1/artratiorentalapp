@@ -2,10 +2,6 @@
 require_once __DIR__ . '/../../bootstrap.php';
 
 use ArtRatio\Repositories\EquipmentRepository;
-use InvalidArgumentException;
-use PDO;
-use RuntimeException;
-use Throwable;
 
 try {
     $pdo  = getDatabaseConnection();

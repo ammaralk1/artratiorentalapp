@@ -11,6 +11,13 @@
     "db:migrate": "php backend/tools/migrate.php",
     "db:migrate:status": "php backend/tools/migrate.php --status",
     "db:migrate:baseline": "php backend/tools/migrate.php --baseline",
+    "db:schema:report": "php backend/tools/schema_report.php",
+    "release:rehearsal": "node scripts/run-migration-rehearsal.mjs",
+    "release:legacy-password-audit": "node scripts/run-legacy-password-audit.mjs",
+    "release:backup": "php backend/tools/backup_mysql.php",
+    "release:production-window": "node scripts/run-production-release-window.mjs",
+    "release:production-baseline": "node scripts/run-production-migration-baseline.mjs",
+    "release:preflight": "node scripts/release-preflight.mjs",
     "backoffice:local:smoke": "node scripts/local-backoffice-smoke.mjs",
     "site:local": "node scripts/serve-website-local.mjs",
     "sitemap:generate": "node scripts/generate-sitemap.mjs",
@@ -44,9 +51,11 @@
     "tailwindcss": "^4.1.12",
     "typescript": "^6.0.2",
     "vite": "^7.1.7",
-    "vitest": "^3.2.4"
+    "vitest": "^4.1.8"
   },
   "dependencies": {
-    "@tabler/icons": "^3.35.0"
+    "@tabler/icons": "^3.35.0",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1"
   }
 }

@@ -1,9 +1,6 @@
 <?php
 require_once __DIR__ . '/../../bootstrap.php';
 
-use InvalidArgumentException;
-use PDO;
-use Throwable;
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 

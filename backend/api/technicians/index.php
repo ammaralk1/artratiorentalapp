@@ -4,10 +4,6 @@ require_once __DIR__ . '/../../bootstrap.php';
 require_once __DIR__ . '/../../services/telegram.php';
 
 use ArtRatio\Repositories\TechnicianRepository;
-use InvalidArgumentException;
-use PDO;
-use RuntimeException;
-use Throwable;
 
 try {
     $pdo = getDatabaseConnection();

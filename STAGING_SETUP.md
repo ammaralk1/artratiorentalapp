@@ -26,6 +26,9 @@ What is still missing:
 
 - `.env.staging.example`
 - `backend/config.staging.example.php`
+- `backend/tools/schema_report.php`
+- `scripts/run-migration-rehearsal.mjs`
+- CLI `--config` support for migration and release-audit tools
 
 These are templates only. They are not active runtime config.
 
@@ -61,6 +64,8 @@ Do not use:
 
 ## Verification Checklist
 
+- schema report works against staging-only config
+- migration status/dry-run works against staging-only config
 - login works with staging-only users
 - home summary loads from staging backend
 - reservation list/create/update/delete works
@@ -77,3 +82,5 @@ Phase 3 is prepared at the repo level but not fully complete, because there is n
 ## Next Dependency
 
 Before Phase 3 can be marked complete, the staging target must be provisioned and connected to the repo using staging-only config and data.
+
+Use `docs/STAGING_MIGRATION_REHEARSAL_RUNBOOK_2026_05_28.md` once a staging or backup-clone database config is available.

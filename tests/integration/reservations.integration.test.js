@@ -16,6 +16,9 @@ if (missingEnv.length) {
 
 suite('REST integration', () => {
   let client;
+  let fixtureCustomerId;
+  let fixtureEquipmentId;
+  let fixtureTechnicianId;
 
   beforeAll(async () => {
     client = new ApiTestClient({
@@ -24,6 +27,28 @@ suite('REST integration', () => {
       password: process.env.INTEGRATION_PASSWORD,
     });
     await client.login();
+
+    const [customersResponse, equipmentResponse, techniciansResponse] = await Promise.all([
+      client.request('/customers/?limit=1'),
+      client.request('/equipment/?all=1'),
+      client.request('/technicians/?limit=1'),
+    ]);
+
+    expect(customersResponse.status).toBe(200);
+    expect(equipmentResponse.status).toBe(200);
+    expect(techniciansResponse.status).toBe(200);
+
+    const customersPayload = await customersResponse.json();
+    const equipmentPayload = await equipmentResponse.json();
+    const techniciansPayload = await techniciansResponse.json();
+
+    fixtureCustomerId = customersPayload?.data?.[0]?.id;
+    fixtureEquipmentId = equipmentPayload?.data?.[0]?.id;
+    fixtureTechnicianId = techniciansPayload?.data?.[0]?.id;
+
+    expect(fixtureCustomerId).toBeTruthy();
+    expect(fixtureEquipmentId).toBeTruthy();
+    expect(fixtureTechnicianId).toBeTruthy();
   }, 20_000);
 
   afterAll(async () => {
@@ -53,7 +78,7 @@ suite('REST integration', () => {
 
   it('creates a reservation with minimal payload', async () => {
     const createPayload = {
-      customer_id: 1,
+      customer_id: fixtureCustomerId,
       title: 'Integration Test Reservation',
       start_datetime: '2025-12-01 10:00:00',
       end_datetime: '2025-12-01 12:00:00',
@@ -73,12 +98,12 @@ suite('REST integration', () => {
       confirmed: false,
       items: [
         {
-          equipment_id: 1,
+          equipment_id: fixtureEquipmentId,
           quantity: 1,
           unit_price: 1500,
         },
       ],
-      technicians: [1],
+      technicians: [fixtureTechnicianId],
     };
 
     const response = await client.request('/reservations/', {

@@ -3,12 +3,14 @@ declare(strict_types=1);
 
 // Usage examples:
 //   php backend/tools/backup_mysql.php
+//   php backend/tools/backup_mysql.php --config /safe/production-config.php
+//   php backend/tools/backup_mysql.php --config /safe/production-config.php --dry-run
 //   php backend/tools/backup_mysql.php --output-dir /path/to/backups --retention-days 14
 //
-// This script reads DB config from backend/config.php via bootstrap.php,
-// runs a safe mysqldump, gzips it, and (optionally) prunes old backups.
+// This script reads DB config from a selected PHP config file, runs a safe
+// mysqldump, gzips it, and (optionally) prunes old backups.
 
-require_once __DIR__ . '/../bootstrap.php';
+require_once __DIR__ . '/tool_config.php';
 
 function eprintf(string $fmt, mixed ...$args): void {
     fwrite(STDERR, vsprintf($fmt, $args));
@@ -19,6 +21,7 @@ function parseArgs(array $argv): array {
         'outputDir' => null,
         'retentionDays' => null,
         'all' => false,
+        'dryRun' => false,
     ];
 
     foreach ($argv as $arg) {
@@ -33,6 +36,8 @@ function parseArgs(array $argv): array {
             $opts['retentionDays'] = null; // will be filled by next token in main
         } elseif ($arg === '--all' || $arg === '-A') {
             $opts['all'] = true;
+        } elseif ($arg === '--dry-run') {
+            $opts['dryRun'] = true;
         }
     }
 
@@ -52,11 +57,20 @@ function ensureDir(string $dir): void {
 }
 
 function buildDefaultsFile(array $db): string {
+    $host = (string) ($db['host'] ?? 'localhost');
+    $port = (string) ($db['port'] ?? 3306);
+
+    if (str_contains($host, ';port=')) {
+        [$hostOnly, $portPart] = explode(';port=', $host, 2);
+        $host = $hostOnly;
+        $port = $portPart !== '' ? $portPart : $port;
+    }
+
     $content = "[client]\n" .
         'user=' . $db['user'] . "\n" .
         'password=' . $db['pass'] . "\n" .
-        'host=' . ($db['host'] ?? 'localhost') . "\n" .
-        'port=' . ($db['port'] ?? 3306) . "\n";
+        'host=' . $host . "\n" .
+        'port=' . $port . "\n";
 
     $tmpDir = sys_get_temp_dir();
     $path = tempnam($tmpDir, 'mycnf_');
@@ -120,9 +134,9 @@ try {
         }
     }
 
-    $db = getAppConfig('db');
+    $db = loadCliDbSettings($argv, __DIR__ . '/../config.php');
     if (!is_array($db) || empty($db['name']) || empty($db['user'])) {
-        throw new RuntimeException('Missing DB configuration in backend/config.php');
+        throw new RuntimeException('Missing DB configuration in selected config file.');
     }
 
     $dbName = (string) $db['name'];
@@ -138,13 +152,22 @@ try {
     $filename = sprintf('mysql-backup-%s-%s.sql.gz', $label, $timestamp);
     $backupPath = rtrim($outputDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $filename;
 
-    // Create a secure temp defaults file to avoid exposing password via argv
-    $defaultsFile = buildDefaultsFile($db);
-
     // Prefer absolute path for mysqldump if available
     $mysqldump = trim((string) shell_exec('command -v mysqldump 2>/dev/null')) ?: 'mysqldump';
 
     $what = ($opts['all'] ?? false) ? '--all-databases' : escapeshellarg($dbName);
+
+    if ($opts['dryRun'] === true) {
+        echo ($opts['all'] ?? false)
+            ? "Dry run: would back up ALL databases.\n"
+            : "Dry run: would back up database '{$dbName}'.\n";
+        echo "Output path: {$backupPath}\n";
+        echo "mysqldump binary: {$mysqldump}\n";
+        exit(0);
+    }
+
+    // Create a secure temp defaults file to avoid exposing password via argv.
+    $defaultsFile = buildDefaultsFile($db);
     $dumpCmd = sprintf(
         '%s --defaults-extra-file=%s --single-transaction --quick --routines --triggers --events --set-gtid-purged=OFF %s | gzip -c > %s',
         escapeshellcmd($mysqldump),

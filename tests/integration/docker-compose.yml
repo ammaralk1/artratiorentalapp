@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   db:
     image: mysql:8.0
@@ -36,6 +34,7 @@ services:
     working_dir: /app
     volumes:
       - ../../backend:/app/backend
+      - ../../vendor:/app/vendor:ro
       - ./config.testing.php:/app/backend/config.php:ro
     ports:
       - '8080:8080'

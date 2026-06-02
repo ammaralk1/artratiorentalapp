@@ -1,7 +1,8 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/../bootstrap.php';
+require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/tool_config.php';
 
 if (PHP_SAPI !== 'cli') {
     fwrite(STDERR, "This tool must be run from the command line.\n");
@@ -80,7 +81,8 @@ function execPatch(PDO $pdo, string $description, string $sql): void
 }
 
 try {
-    $pdo = getDatabaseConnection();
+    $dbSettings = loadCliDbSettings($argv, __DIR__ . '/../config.php');
+    $pdo = create_pdo($dbSettings);
 
     if (!columnExists($pdo, 'projects', 'status')) {
         execPatch($pdo, 'projects.status', 'ALTER TABLE projects ADD COLUMN status VARCHAR(50) NULL DEFAULT NULL AFTER end_datetime');
@@ -99,6 +101,12 @@ try {
             ? 'AFTER sale_price'
             : 'AFTER amount';
         execPatch($pdo, 'project_expenses.note', "ALTER TABLE project_expenses ADD COLUMN note TEXT NULL DEFAULT NULL {$notePosition}");
+    }
+    if (!columnExists($pdo, 'project_expenses', 'service_days')) {
+        $daysPosition = columnExists($pdo, 'project_expenses', 'sale_price')
+            ? 'AFTER sale_price'
+            : 'AFTER amount';
+        execPatch($pdo, 'project_expenses.service_days', "ALTER TABLE project_expenses ADD COLUMN service_days INT UNSIGNED NOT NULL DEFAULT 1 {$daysPosition}");
     }
 
     if (!columnExists($pdo, 'reservations', 'project_id')) {

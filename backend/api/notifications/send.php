@@ -7,8 +7,6 @@ require_once __DIR__ . '/../../services/templates.php';
 // Ensure included API controllers don't auto-dispatch when required here
 if (!defined('API_INCLUDE_MODE')) { define('API_INCLUDE_MODE', true); }
 
-use InvalidArgumentException;
-use Throwable;
 
 function readJsonBody(): array {
     $raw = file_get_contents('php://input');

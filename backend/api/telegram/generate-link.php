@@ -4,8 +4,6 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../bootstrap.php';
 require_once __DIR__ . '/../../services/telegram.php';
 
-use InvalidArgumentException;
-use Throwable;
 
 function randomToken(int $len = 24): string {
     return rtrim(strtr(base64_encode(random_bytes($len)), '+/', '-_'), '=');

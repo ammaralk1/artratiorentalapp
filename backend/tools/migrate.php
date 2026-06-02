@@ -18,19 +18,14 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/tool_config.php';
 
 // ── Bootstrap ────────────────────────────────────────────────────────────────
 
-$configPath = realpath(__DIR__ . '/../config.php');
-if ($configPath === false || !file_exists($configPath)) {
-    fwrite(STDERR, "config.php not found.\n");
-    exit(1);
-}
-
-$config    = require $configPath;
-$dbSettings = $config['db'] ?? null;
-if (!is_array($dbSettings)) {
-    fwrite(STDERR, "Database settings missing from config.php.\n");
+try {
+    $dbSettings = loadCliDbSettings($argv, __DIR__ . '/../config.php');
+} catch (Throwable $configError) {
+    fwrite(STDERR, $configError->getMessage() . "\n");
     exit(1);
 }
 
@@ -50,20 +45,34 @@ $isDryRun  = isset($flags['--dry-run']);
 
 // ── Ensure tracking table ─────────────────────────────────────────────────────
 
-$pdo->exec(
-    'CREATE TABLE IF NOT EXISTS schema_migrations (
+$migrationTableStmt = $pdo->prepare(
+    'SELECT 1
+     FROM information_schema.tables
+     WHERE table_schema = DATABASE() AND table_name = :table
+     LIMIT 1'
+);
+$migrationTableStmt->execute(['table' => 'schema_migrations']);
+$hasMigrationTable = (bool) $migrationTableStmt->fetchColumn();
+
+if (!$isStatus && !$hasMigrationTable) {
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS schema_migrations (
         id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         filename    VARCHAR(255) NOT NULL UNIQUE,
         applied_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_sm_filename (filename)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
-);
+    );
+    $hasMigrationTable = true;
+}
 
 // ── Load applied migrations ───────────────────────────────────────────────────
 
 $applied = [];
-foreach ($pdo->query('SELECT filename FROM schema_migrations ORDER BY filename')->fetchAll(PDO::FETCH_COLUMN) as $f) {
-    $applied[$f] = true;
+if ($hasMigrationTable) {
+    foreach ($pdo->query('SELECT filename FROM schema_migrations ORDER BY filename')->fetchAll(PDO::FETCH_COLUMN) as $f) {
+        $applied[$f] = true;
+    }
 }
 
 // ── Discover SQL files ────────────────────────────────────────────────────────
@@ -92,6 +101,9 @@ if ($isStatus) {
         echo str_pad($status, 10) . "  $name\n";
     }
     echo str_repeat('-', 70) . "\n";
+    if (!$hasMigrationTable) {
+        echo "schema_migrations table is missing; treating all migration files as pending.\n";
+    }
     echo count($applied) . ' applied, ' . $pending . " pending.\n";
     exit(0);
 }
@@ -129,7 +141,7 @@ if (empty($pending)) {
 // Safety guard: if schema_migrations is empty and there are many pending files,
 // this is almost certainly a first-time setup on an existing database.
 // Running all migrations against an existing DB would cause "table already exists" errors.
-if (count($applied) === 0 && count($pending) > 5) {
+if (!$isDryRun && count($applied) === 0 && count($pending) > 5) {
     fwrite(STDERR, "\n⚠️  WARNING: schema_migrations is empty but " . count($pending) . " SQL files are pending.\n");
     fwrite(STDERR, "   If this database already has these tables applied, run --baseline first:\n");
     fwrite(STDERR, "   php backend/tools/migrate.php --baseline\n\n");

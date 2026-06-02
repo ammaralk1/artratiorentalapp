@@ -3,8 +3,6 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../bootstrap.php';
 
-use InvalidArgumentException;
-use Throwable;
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 

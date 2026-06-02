@@ -3,8 +3,6 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../bootstrap.php';
 
-use PDO;
-use Throwable;
 
 // Simple SSE stream for new messages in a chat. Optional; falls back to polling on clients if blocked.
 try {
