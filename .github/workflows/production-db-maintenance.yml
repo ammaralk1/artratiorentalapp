@@ -1,0 +1,157 @@
+name: Production DB Maintenance
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "What should run against the production database?"
+        required: true
+        default: "check-only"
+        type: choice
+        options:
+          - check-only
+          - status
+          - dry-run
+          - baseline
+          - migrate
+      confirmation:
+        description: "Type RUN_PRODUCTION_DB_MAINTENANCE to confirm this workflow may connect to production DB."
+        required: true
+        type: string
+      upload_backup_artifact:
+        description: "Upload DB backup as a GitHub artifact. Sensitive; leave false unless explicitly needed."
+        required: true
+        default: false
+        type: boolean
+
+jobs:
+  production-db-maintenance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Confirm production DB maintenance
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -euo pipefail
+          if [ "${CONFIRMATION}" != "RUN_PRODUCTION_DB_MAINTENANCE" ]; then
+            echo "Confirmation text did not match. Refusing to continue." >&2
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          tools: composer:v2
+          coverage: none
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Install backend dependencies
+        run: composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress
+
+      - name: Decode production config from GitHub secret
+        env:
+          BACKEND_CONFIG_PHP: ${{ secrets.BACKEND_CONFIG_PHP }}
+        run: |
+          set -euo pipefail
+          if [ -z "${BACKEND_CONFIG_PHP:-}" ]; then
+            echo "BACKEND_CONFIG_PHP secret is empty." >&2
+            exit 1
+          fi
+          CONFIG_PATH="${RUNNER_TEMP}/art-ratio-production-config.php"
+          printf '%s' "${BACKEND_CONFIG_PHP}" | base64 -d > "${CONFIG_PATH}"
+          chmod 600 "${CONFIG_PATH}"
+          {
+            echo "ART_RATIO_PRODUCTION_CONFIG=${CONFIG_PATH}"
+            echo "ART_RATIO_BACKUP_DIR=${RUNNER_TEMP}/art-ratio-production-backups"
+          } >> "${GITHUB_ENV}"
+
+      - name: Prepare backup directory
+        run: |
+          set -euo pipefail
+          mkdir -p "${ART_RATIO_BACKUP_DIR}"
+          chmod 700 "${ART_RATIO_BACKUP_DIR}"
+
+      - name: Run check-only backup and read-only audit
+        if: ${{ inputs.action == 'check-only' }}
+        run: |
+          set -euo pipefail
+          npm run release:production-window -- \
+            --config "${ART_RATIO_PRODUCTION_CONFIG}" \
+            --backup-dir "${ART_RATIO_BACKUP_DIR}" \
+            --confirm-production-window
+
+      - name: Show migration status
+        if: ${{ inputs.action == 'status' }}
+        run: |
+          set -euo pipefail
+          php backend/tools/migrate.php --config "${ART_RATIO_PRODUCTION_CONFIG}" --status
+
+      - name: Show migration dry-run
+        if: ${{ inputs.action == 'dry-run' }}
+        run: |
+          set -euo pipefail
+          php backend/tools/migrate.php --config "${ART_RATIO_PRODUCTION_CONFIG}" --status
+          php backend/tools/migrate.php --config "${ART_RATIO_PRODUCTION_CONFIG}" --dry-run
+
+      - name: Backup before production baseline
+        if: ${{ inputs.action == 'baseline' }}
+        run: |
+          set -euo pipefail
+          npm run release:backup -- \
+            --config "${ART_RATIO_PRODUCTION_CONFIG}" \
+            --output-dir "${ART_RATIO_BACKUP_DIR}" \
+            --retention-days 14
+
+      - name: Baseline migration tracking
+        if: ${{ inputs.action == 'baseline' }}
+        run: |
+          set -euo pipefail
+          BACKUP_FILE="$(find "${ART_RATIO_BACKUP_DIR}" -maxdepth 1 -type f -name 'mysql-backup-*.sql.gz' | sort | tail -n 1)"
+          if [ -z "${BACKUP_FILE}" ]; then
+            echo "No backup file found after backup step. Refusing baseline." >&2
+            exit 1
+          fi
+          npm run release:production-baseline -- \
+            --config "${ART_RATIO_PRODUCTION_CONFIG}" \
+            --backup-file "${BACKUP_FILE}" \
+            --confirm-production-baseline
+
+      - name: Backup before production migration
+        if: ${{ inputs.action == 'migrate' }}
+        run: |
+          set -euo pipefail
+          npm run release:backup -- \
+            --config "${ART_RATIO_PRODUCTION_CONFIG}" \
+            --output-dir "${ART_RATIO_BACKUP_DIR}" \
+            --retention-days 14
+
+      - name: Apply pending production migrations
+        if: ${{ inputs.action == 'migrate' }}
+        run: |
+          set -euo pipefail
+          php backend/tools/migrate.php --config "${ART_RATIO_PRODUCTION_CONFIG}" --status
+          php backend/tools/migrate.php --config "${ART_RATIO_PRODUCTION_CONFIG}" --dry-run
+          php backend/tools/migrate.php --config "${ART_RATIO_PRODUCTION_CONFIG}"
+          php backend/tools/migrate.php --config "${ART_RATIO_PRODUCTION_CONFIG}" --status
+
+      - name: Upload backup artifact
+        if: ${{ inputs.upload_backup_artifact == true && (inputs.action == 'check-only' || inputs.action == 'baseline' || inputs.action == 'migrate') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-db-backup-${{ github.run_number }}
+          path: ${{ env.ART_RATIO_BACKUP_DIR }}/*.sql.gz
+          if-no-files-found: error
+          retention-days: 3
