@@ -28,6 +28,15 @@
     return;
   }
 
+  function isAuthPage() {
+    try {
+      const body = document.body || null;
+      return !!body?.classList?.contains('auth-page') || /\/login\.html$/i.test(window.location?.pathname || '');
+    } catch (_) {
+      return false;
+    }
+  }
+
   // Ensure sidebar CSS is present even on legacy pages.
   // Run after the document has parsed so we don't inject a duplicate
   // fallback stylesheet before the page's own <link> tags are discovered.
@@ -38,7 +47,14 @@
       const hasSidebarCss = Array.from(head.querySelectorAll('link[rel="stylesheet"], link'))
         .some((l) => {
           const href = (l.getAttribute('href') || l.href || '').toLowerCase();
-          return href.includes('/css/sidebar.css') || href.includes('/dist/css/sidebar.css');
+          // Skip injection if the new design-system CSS is already loaded. In
+          // dev this is /src/styles/app.css; in production Vite emits it as a
+          // hashed /assets/*.css file. The old sidebar.css would override the
+          // current green chrome with the legacy blue palette.
+          return href.includes('/css/sidebar.css')
+            || href.includes('/dist/css/sidebar.css')
+            || href.includes('app.css')
+            || /\/assets\/[^?#]+\.css(?:[?#].*)?$/.test(href);
         });
       // Inject unconditionally when missing (the script runs very early,
       // before body is parsed on some pages — gating on DOM presence would miss it).
@@ -55,14 +71,14 @@
         const style = document.createElement('style');
         style.id = 'sidebar-inline-fallback';
         style.textContent = `
-          .mobile-sidebar-toggle{display:inline-flex;align-items:center;justify-content:center;width:2.85rem;height:2.85rem;min-height:2.85rem;padding:0;border-radius:.95rem;border:1px solid rgba(148,163,184,.35);background:linear-gradient(180deg,rgba(22,32,54,.95),rgba(16,24,42,.9));color:#f8fafc;box-shadow:0 14px 32px rgba(15,23,42,.28);transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease,background .2s ease;cursor:pointer;position:relative;z-index:60}
+          .mobile-sidebar-toggle{display:inline-flex;align-items:center;justify-content:center;width:2.85rem;height:2.85rem;min-height:2.85rem;padding:0;border-radius:.95rem;border:1px solid rgba(147,168,137,.35);background:linear-gradient(180deg,rgba(70,104,70,.95),rgba(63,96,63,.9));color:#f8fafc;box-shadow:0 14px 32px rgba(31,48,34,.22);transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease,background .2s ease;cursor:pointer;position:relative;z-index:60}
           .mobile-sidebar-toggle__icon{position:relative;display:block;width:1.2rem;height:.85rem}
           .mobile-sidebar-toggle__line{position:absolute;inset-inline:0;height:1.5px;border-radius:999px;background:rgba(248,250,255,.92);transition:background-color .2s ease}
           .mobile-sidebar-toggle__line--top{top:0}
           .mobile-sidebar-toggle__line--middle{top:50%;transform:translateY(-50%)}
           .mobile-sidebar-toggle__line--bottom{bottom:0}
           .sidebar-panel--stats .sidebar-stats{display:flex;flex-direction:column;gap:.75rem}
-          .sidebar-panel--stats .sidebar-stats-row{display:flex;align-items:center;justify-content:space-between;gap:.75rem;border:1px solid rgba(148,163,184,.35);border-radius:1rem;padding:.75rem 1rem;font-size:.875rem;font-weight:700;color:hsl(var(--bc,220 13% 18%));background:linear-gradient(135deg,rgba(248,250,255,.96),rgba(238,242,255,.9))}
+          .sidebar-panel--stats .sidebar-stats-row{display:flex;align-items:center;justify-content:space-between;gap:.75rem;border:1px solid rgba(147,168,137,.28);border-radius:1rem;padding:.75rem 1rem;font-size:.875rem;font-weight:700;color:hsl(var(--bc,120 13% 18%));background:linear-gradient(135deg,rgba(248,250,246,.96),rgba(238,242,236,.9))}
         `;
         head.appendChild(style);
       }
@@ -100,6 +116,8 @@
     console.warn('[page-boot] could not apply preferred color scheme', error);
   }
 
+  initialTheme = initialTheme || 'light';
+
   if (initialTheme === 'dark') {
     root.classList.add('dark-mode', 'dark');
     root.setAttribute('data-theme', 'dark');
@@ -129,6 +147,7 @@
   const onReady = () => {
     // Give modules a moment; then force visibility
     setTimeout(removeLoadingSafely, 1500);
+    if (isAuthPage()) return;
     try { ensureSidebarStructure(); } catch (_) {}
     try { initializeSidebarFallback(); } catch (_) {}
     try { refreshSidebarCountersFallback(); } catch (_) {}
@@ -143,6 +162,7 @@
   // Re-apply sidebar/burger/metrics after تغيير اللغة بدون إعادة تحميل
   try {
     document.addEventListener('language:changed', () => {
+      if (isAuthPage()) return;
       try { ensureSidebarStructure(); } catch (_) {}
       try { initializeSidebarFallback(); } catch (_) {}
       try { refreshSidebarCountersFallback(); } catch (_) {}
@@ -172,6 +192,10 @@
 
 // Minimal sidebar functionality for legacy pages (Arabic/English)
 function initializeSidebarFallback() {
+  if (isAuthPageFallback()) {
+    removeSidebarFallbackArtifacts();
+    return;
+  }
   const sidebar = ensureSidebarStructure();
   const backdrop = document.getElementById('sidebar-backdrop');
   const openBtn  = document.getElementById('sidebar-open');
@@ -206,6 +230,10 @@ function initializeSidebarFallback() {
 
 // Fallback: hydrate sidebar counters from /backend/api/summary/
 function refreshSidebarCountersFallback() {
+  if (isAuthPageFallback()) {
+    removeSidebarFallbackArtifacts();
+    return;
+  }
   // Do not override detail pages; صفحات الفني/العميل تعتمد على التصفية الخاصة بها
   const body = document.body || document.documentElement;
   const isDetailPage = body?.classList?.contains('technician-page') || body?.classList?.contains('customer-page');
@@ -288,6 +316,10 @@ function refreshSidebarCountersFallback() {
 
 // Ensure sidebar shell, menu, stats panel, and quick tabs exist for legacy pages
 function ensureSidebarStructure() {
+  if (isAuthPageFallback()) {
+    removeSidebarFallbackArtifacts();
+    return null;
+  }
   // Backdrop
   if (!document.getElementById('sidebar-backdrop')) {
     const backdrop = document.createElement('div');
@@ -448,8 +480,10 @@ function ensureSidebarStructure() {
     return sidebar;
   }
 
-  // الصفحات الأخرى: أعد بناء الهيكل بالكامل لضمان التوافق
-  buildFullSidebar(true);
+  // الصفحات التي تملك shell حديثاً تحتوي على تبويبات وظيفية داخل الـ sidebar.
+  // لا نعيد بناءها من الصفر حتى لا تتحول أزرار data-tab إلى روابط fallback.
+  const hasPageOwnedSidebar = Boolean(sidebar.querySelector('.sidebar-panel--tabs'));
+  buildFullSidebar(!hasPageOwnedSidebar);
   ensureBurgerToggle();
 
   return sidebar;
@@ -457,6 +491,10 @@ function ensureSidebarStructure() {
 
 // Ensure burger button exists and has the three-line icon
 function ensureBurgerToggle() {
+  if (isAuthPageFallback()) {
+    removeSidebarFallbackArtifacts();
+    return null;
+  }
   let openBtn = document.getElementById('sidebar-open');
   if (!openBtn) {
     openBtn = document.createElement('button');
@@ -476,4 +514,19 @@ function ensureBurgerToggle() {
       <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--middle"></span>
       <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--bottom"></span>
     </span>`;
+}
+
+function isAuthPageFallback() {
+  try {
+    const body = document.body || null;
+    return !!body?.classList?.contains('auth-page') || /\/login\.html$/i.test(window.location?.pathname || '');
+  } catch (_) {
+    return false;
+  }
+}
+
+function removeSidebarFallbackArtifacts() {
+  try { document.getElementById('sidebar-open')?.remove(); } catch (_) {}
+  try { document.getElementById('dashboard-sidebar')?.remove(); } catch (_) {}
+  try { document.getElementById('sidebar-backdrop')?.remove(); } catch (_) {}
 }

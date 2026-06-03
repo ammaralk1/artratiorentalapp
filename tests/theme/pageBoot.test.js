@@ -94,4 +94,21 @@ describe('page boot theme bootstrap', () => {
 
     expect(sidebarCss).toBeFalsy();
   });
+
+  it('waits for production page css before deciding whether to inject legacy sidebar css', () => {
+    setReadyState('loading');
+
+    evalPageBoot();
+
+    const link = document.createElement('link');
+    link.setAttribute('rel', 'stylesheet');
+    link.setAttribute('href', '../../assets/auth.D3OsJ-qy.css');
+    document.head.appendChild(link);
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+
+    const sidebarCss = Array.from(document.head.querySelectorAll('link[rel="stylesheet"], link'))
+      .find((node) => (node.getAttribute('href') || '').includes('/dist/css/sidebar.css'));
+
+    expect(sidebarCss).toBeFalsy();
+  });
 });
