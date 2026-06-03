@@ -90,14 +90,27 @@ jobs:
           FTP_SERVER: ${{ secrets.FTP_SERVER }}
           FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
           FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_PORT: ${{ secrets.FTP_PORT }}
+          FTP_USE_TLS: ${{ secrets.FTP_USE_TLS }}
+          FTP_SKIP_TLS_VERIFY: ${{ secrets.FTP_SKIP_TLS_VERIFY }}
         run: |
           set -euo pipefail
-          rclone config create site ftp \
-            host "${FTP_SERVER}" \
-            user "${FTP_USERNAME}" \
-            pass "${FTP_PASSWORD}" \
-            port 21 \
+          FTP_PORT="${FTP_PORT:-21}"
+          RCLONE_CONFIG_ARGS=(
+            host "${FTP_SERVER}"
+            user "${FTP_USERNAME}"
+            pass "${FTP_PASSWORD}"
+            port "${FTP_PORT}"
             tls false
+          )
+          if [ "${FTP_USE_TLS:-false}" = "true" ]; then
+            RCLONE_CONFIG_ARGS+=( explicit_tls true )
+          fi
+          if [ "${FTP_USE_TLS:-false}" = "true" ] && [ "${FTP_SKIP_TLS_VERIFY:-false}" = "true" ]; then
+            RCLONE_CONFIG_ARGS+=( no_check_certificate true )
+          fi
+          rclone config create site ftp \
+            "${RCLONE_CONFIG_ARGS[@]}"
           rclone sync ./ site:/ \
             --transfers 8 \
             --checkers 10 \
