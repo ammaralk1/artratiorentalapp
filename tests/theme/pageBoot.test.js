@@ -111,4 +111,13 @@ describe('page boot theme bootstrap', () => {
 
     expect(sidebarCss).toBeFalsy();
   });
+
+  it('uses cache-busted boot assets so production cannot keep stale sidebar chrome', () => {
+    const managerHead = readFileSync(resolve(process.cwd(), 'src/pages/_partials/manager-page-head.html'), 'utf8');
+    const loginPage = readFileSync(resolve(process.cwd(), 'src/pages/login.html'), 'utf8');
+
+    expect(managerHead).toContain('/js/page-boot.js?v=20260603-green-sidebar');
+    expect(loginPage).toContain('/js/page-boot.js?v=20260603-green-sidebar');
+    expect(PAGE_BOOT_SOURCE).toContain('/dist/css/sidebar.css?v=20260603-green-sidebar');
+  });
 });
