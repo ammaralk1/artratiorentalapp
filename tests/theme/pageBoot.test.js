@@ -80,4 +80,18 @@ describe('page boot theme bootstrap', () => {
 
     expect(sidebarCss).toBeTruthy();
   });
+
+  it('does not inject legacy sidebar css when Vite built css is already loaded', () => {
+    const link = document.createElement('link');
+    link.setAttribute('rel', 'stylesheet');
+    link.setAttribute('href', '/assets/auth.D3OsJ-qy.css');
+    document.head.appendChild(link);
+
+    evalPageBoot();
+
+    const sidebarCss = Array.from(document.head.querySelectorAll('link[rel="stylesheet"], link'))
+      .find((node) => (node.getAttribute('href') || '').includes('/dist/css/sidebar.css'));
+
+    expect(sidebarCss).toBeFalsy();
+  });
 });

@@ -47,10 +47,14 @@
       const hasSidebarCss = Array.from(head.querySelectorAll('link[rel="stylesheet"], link'))
         .some((l) => {
           const href = (l.getAttribute('href') || l.href || '').toLowerCase();
-          // Skip injection if the new design-system CSS (app.css) is already loaded — it
-          // contains full sidebar styles and the old sidebar.css would override them with
-          // the legacy blue palette.
-          return href.includes('/css/sidebar.css') || href.includes('/dist/css/sidebar.css') || href.includes('app.css');
+          // Skip injection if the new design-system CSS is already loaded. In
+          // dev this is /src/styles/app.css; in production Vite emits it as a
+          // hashed /assets/*.css file. The old sidebar.css would override the
+          // current green chrome with the legacy blue palette.
+          return href.includes('/css/sidebar.css')
+            || href.includes('/dist/css/sidebar.css')
+            || href.includes('app.css')
+            || /\/assets\/[^?#]+\.css(?:[?#].*)?$/.test(href);
         });
       // Inject unconditionally when missing (the script runs very early,
       // before body is parsed on some pages — gating on DOM presence would miss it).
