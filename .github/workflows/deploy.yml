@@ -48,6 +48,40 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Upload localized public pages to FTP server
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_PORT: ${{ secrets.FTP_PORT }}
+          FTP_USE_TLS: ${{ secrets.FTP_USE_TLS }}
+          FTP_SKIP_TLS_VERIFY: ${{ secrets.FTP_SKIP_TLS_VERIFY }}
+        run: |
+          set -euo pipefail
+          FTP_PORT="${FTP_PORT:-21}"
+          upload_file() {
+            local file="$1"
+            local url="ftp://${FTP_SERVER}:${FTP_PORT}/${file}"
+            local args=(
+              --fail --show-error --silent
+              --connect-timeout 20 --max-time 120
+              --ftp-create-dirs --ftp-method nocwd --ftp-pasv
+              --user "${FTP_USERNAME}:${FTP_PASSWORD}"
+              -T "${file}"
+              "${url}"
+            )
+            if [ "${FTP_USE_TLS:-false}" = "true" ]; then
+              args+=( --ftp-ssl --ssl-reqd )
+            fi
+            if [ "${FTP_USE_TLS:-false}" = "true" ] && [ "${FTP_SKIP_TLS_VERIFY:-false}" = "true" ]; then
+              args+=( --insecure )
+            fi
+            curl "${args[@]}"
+          }
+          while IFS= read -r file; do
+            upload_file "${file}"
+          done < <(find dist/public-localized -type f | sort)
+
       - name: Upload backend config to FTP server
         env:
           FTP_SERVER: ${{ secrets.FTP_SERVER }}
@@ -86,6 +120,7 @@ jobs:
         run: curl -fsSL https://rclone.org/install.sh | sudo bash
 
       - name: Sync project to FTP server
+        continue-on-error: true
         env:
           FTP_SERVER: ${{ secrets.FTP_SERVER }}
           FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
