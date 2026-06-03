@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /backend/
+Disallow: /assets/data/
+Disallow: /equipment-requests-portal.html
+Disallow: /*.json$
+
+Sitemap: https://art-ratio.com/sitemap.xml
