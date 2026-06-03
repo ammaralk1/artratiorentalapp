@@ -190,6 +190,30 @@ final class RouterTest extends TestCase
         $this->assertSame(['id' => '42'], $capturedParams);
     }
 
+    public function testBackendApiPrefixIsNormalizedForProductionEntrypoints(): void
+    {
+        $called = false;
+        $router = $this->makeRouter('GET', '/backend/api/technicians/');
+        $router->get('/api/technicians', function () use (&$called) {
+            $called = true;
+        });
+        $router->dispatch();
+
+        $this->assertTrue($called);
+    }
+
+    public function testBackendApiPrefixIsNormalizedWithQueryString(): void
+    {
+        $called = false;
+        $router = $this->makeRouter('GET', '/backend/api/projects/?limit=10');
+        $router->get('/api/projects', function () use (&$called) {
+            $called = true;
+        });
+        $router->dispatch();
+
+        $this->assertTrue($called);
+    }
+
     // -------------------------------------------------------------------------
     // Method is case-insensitive
     // -------------------------------------------------------------------------

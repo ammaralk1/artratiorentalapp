@@ -138,6 +138,16 @@ class Router
      */
     private function cleanUri(): string
     {
-        return '/' . ltrim(parse_url($this->uri, PHP_URL_PATH) ?? '/', '/');
+        $path = '/' . ltrim(parse_url($this->uri, PHP_URL_PATH) ?? '/', '/');
+
+        if (str_starts_with($path, '/backend/api/')) {
+            return '/api/' . substr($path, strlen('/backend/api/'));
+        }
+
+        if ($path === '/backend/api') {
+            return '/api';
+        }
+
+        return $path;
     }
 }
