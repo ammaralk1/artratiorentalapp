@@ -7,7 +7,9 @@ export const PROFESSIONAL_SERVICE_ID = `${PUBLIC_SITE_ROOT_URL}#professional-ser
 export const ORGANIZATION_LOGO_URL = `${PUBLIC_SITE_ROOT_URL}assets/img/email-art-ratio-logo.png`;
 export const ORGANIZATION_LOGO_WIDTH = 1626;
 export const ORGANIZATION_LOGO_HEIGHT = 1010;
-export const SOCIAL_SHARE_IMAGE_URL = ORGANIZATION_LOGO_URL;
+export const SOCIAL_SHARE_IMAGE_URL = 'https://assets.art-ratio.com/AR%20Logo%20v3.5%20curved%20WH.png';
+export const SOCIAL_SHARE_IMAGE_WIDTH = 4500;
+export const SOCIAL_SHARE_IMAGE_HEIGHT = 4500;
 
 export const HOME_BREADCRUMB_LABELS = Object.freeze({
   en: 'Home',

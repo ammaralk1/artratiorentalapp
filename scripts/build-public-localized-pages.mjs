@@ -22,7 +22,9 @@ import {
   ORGANIZATION_ID,
   PAGE_SPECIFIC_SCHEMA_TYPES,
   PROFESSIONAL_SERVICE_ID,
+  SOCIAL_SHARE_IMAGE_HEIGHT,
   SOCIAL_SHARE_IMAGE_URL,
+  SOCIAL_SHARE_IMAGE_WIDTH,
   WEBSITE_ID,
 } from './public-page-schema.mjs';
 import {
@@ -150,6 +152,18 @@ const setSeoHead = (document, localeConfig, locale) => {
   );
   upsertMeta(document, 'meta[property="og:url"]', { property: 'og:url' }, currentUrl);
   upsertMeta(document, 'meta[property="og:image"]', { property: 'og:image' }, SOCIAL_SHARE_IMAGE_URL);
+  upsertMeta(
+    document,
+    'meta[property="og:image:width"]',
+    { property: 'og:image:width' },
+    String(SOCIAL_SHARE_IMAGE_WIDTH),
+  );
+  upsertMeta(
+    document,
+    'meta[property="og:image:height"]',
+    { property: 'og:image:height' },
+    String(SOCIAL_SHARE_IMAGE_HEIGHT),
+  );
   upsertMeta(document, 'meta[name="twitter:card"]', { name: 'twitter:card' }, 'summary_large_image');
   upsertMeta(document, 'meta[name="twitter:title"]', { name: 'twitter:title' }, seo.title);
   upsertMeta(
