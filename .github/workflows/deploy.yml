@@ -73,7 +73,14 @@ jobs:
           if [ "${FTP_USE_TLS:-false}" = "true" ] && [ "${FTP_SKIP_TLS_VERIFY:-false}" = "true" ]; then
             CURL_ARGS+=( --insecure )
           fi
-          curl "${CURL_ARGS[@]}"
+          for attempt in 1 2 3; do
+            if curl "${CURL_ARGS[@]}"; then
+              exit 0
+            fi
+            echo "backend/config.php upload failed on attempt ${attempt}." >&2
+            sleep 5
+          done
+          echo "::warning::backend/config.php upload failed after retries; continuing because the deployment sync excludes runtime secrets and production already has this file."
 
       - name: Install rclone
         run: curl -fsSL https://rclone.org/install.sh | sudo bash
