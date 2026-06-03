@@ -30,7 +30,7 @@ RewriteRule ^site\.webmanifest$ dist/favicon_io/site.webmanifest [L,NC]
 
 <IfModule mod_headers.c>
   # Internal/back-office routes
-  SetEnvIf Request_URI "^/(dashboard|operations|home|login|customer|technician|projects|projects-reports|projects-expenses|users|notifications|site-analytics|contact-inquiries|feedback-submissions|dashboard-local)(?:\\.html)?/?$" ar_private_page=1
+  SetEnvIf Request_URI "^/(dashboard|operations|home|login|customer|technician|projects|project-reports|projects-reports|users|notifications|site-analytics|contact-inquiries|feedback-submissions|dashboard-local)(?:\\.html)?/?$" ar_private_page=1
   SetEnvIf Request_URI "^/(?:feedback(?:\\.html)?|en/feedback|آراء-العملاء|ar/آراء-العملاء)/?$" ar_feedback_page=1
   SetEnvIf Request_URI "^/(?:team-details-[a-z-]+(?:\\.html)?|en/team-details-[a-z-]+|(?:ar/)?[^/]*تفاصيل-الفريق)/?$" ar_team_details_page=1
   SetEnvIf Request_URI "^/(?:portfolio-details-[A-Za-z0-9-]+(?:\\.html)?|en/portfolio-details-[A-Za-z0-9-]+|(?:ar/)?(?:مشروع-صالة-كبار-الشخصيات-في-المطار|مشروع-بطولة-الجولف|مشروع-سعودي-دنت|ساندوتش-تيكا-من-الطازج|برج-ترامب-جدة|ريل-لأم-الزلف|الفيلم-النهائي-للستي-ووك-٢٠٢٤|ايفنت-هوبلو|ريل-لميت-ذا-فيش|معرض-الكتاب))/?$" ar_portfolio_details_page=1
@@ -72,7 +72,8 @@ RewriteRule ^(?:portfolio-details-[A-Za-z0-9-]+(?:\.html)?|en/portfolio-details-
 RewriteRule ^(?:(?:blog|en/blog)/(?:event-coverage/professional-event-coverage-guide|filmmaking-techniques/cinematic-lighting-basics|product-photography/professional-product-photography-ecommerce|video-production/how-to-choose-professional-video-production-company)|(?:ar/)?(?:كشكولنا|المدونة)/(?:تغطية-الفعاليات/دليل-تغطية-الفعاليات-الاحترافية|تقنيات-صناعة-الافلام/اساسيات-الاضاءة-السينمائية|تصوير-المنتجات/دليل-تصوير-المنتجات-الاحترافي-للمتاجر-الالكترونية|انتاج-الفيديو/كيف-تختار-شركة-انتاج-فيديو-احترافية))/?$ - [E=ar_excluded_header_page:1,NC]
 RewriteRule ^(?:portfolio[2-6](?:\.html)?|en/portfolio[2-6]|portfolio[2-6]-details-video-[1-7](?:\.html)?|en/portfolio[2-6]-details-video-[1-7]|(?:ar/)?(?:أعمالنا-[2-6]|ريل-إعلاني-لعبدالصمد-القرشي|ريل-للكوتش-البيتي-الفيصل|نهائي-دوري-أبطال-آسيا-للنخبة|توبا-ذا-ون|ايفنت-معوض|ريل-اليوم-الوطني|موفي-بوكس-الطازج|ريل-رنة-خلخال|اوفردوز-ايس-كريم|سفاري-اكستريم|تغطية-محلات-في-السيتي-ووك|فيديو-مجوهرات|فول-جرين-فارمز|صنع-في-باكستان|افتتاح-فرع-روومرز|تغطية-كشك-في-ويشن|كيكو-ميلانو|العروض-الجوالة-سيتي-ووك|قرية-التأسيس-عرعر|معرض-الكتاب-2|مقابلات-مختارة|في-60|مجوهرات|مجوهرات-2|اوفردوز-عام|قيمرية|ريل-للطريقة-المعينة|عدنان-خان-مجھ-سے-دور|كيكة-كوز|هنجرستيشن|ايوا|بوكس-الباربكيو-زد|اعلان-قهوة|تجمع-نادي-فيراري-السعودي|اعلان-ازار))/?$ - [E=ar_excluded_header_page:1,NC]
 
-RewriteRule ^(dashboard|operations|dashboard-local|home|login|customer|technician|projects|projects-reports|projects-expenses|users|notifications|site-analytics|contact-inquiries|feedback-submissions)(?:\.html)?/?$ dist/src/pages/$1.html [L,NC]
+RewriteRule ^projects-reports(?:\.html)?/?$ dist/src/pages/project-reports.html [L,NC]
+RewriteRule ^(dashboard|operations|dashboard-local|home|login|customer|technician|projects|project-reports|users|notifications|site-analytics|contact-inquiries|feedback-submissions)(?:\.html)?/?$ dist/src/pages/$1.html [L,NC]
 RewriteRule ^equipment-requests-portal(?:\.html)?/?$ Arino\ -\ Template/equipment-requests-portal.html [L,NC]
 # Redirect any legacy /src/pages/* paths to the built pages
 RewriteRule ^src/pages/(.*)$ dist/src/pages/$1 [L,NC]
