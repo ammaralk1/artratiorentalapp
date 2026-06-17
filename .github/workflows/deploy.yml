@@ -48,7 +48,7 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Upload localized public pages to FTP server
+      - name: Upload built dist files to FTP server
         env:
           FTP_SERVER: ${{ secrets.FTP_SERVER }}
           FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
@@ -80,7 +80,7 @@ jobs:
           }
           while IFS= read -r file; do
             upload_file "${file}"
-          done < <(find dist/public-localized -type f | sort)
+          done < <(find dist -type f | sort)
 
       - name: Upload backend config to FTP server
         env:
