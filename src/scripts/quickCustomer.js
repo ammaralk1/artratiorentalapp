@@ -25,32 +25,31 @@ export function normalizeQuickCustomerRecord(customer = {}) {
   };
 }
 
-export function buildQuickCustomerPayload({
-  fullName = '',
-  phone = '',
-  email = '',
-  company = '',
-  taxId = '',
-  address = '',
-  notes = '',
-} = {}) {
-  const normalizedFullName = String(fullName || '').trim();
-  const normalizedPhone = normalizeNumbers(String(phone || '').trim());
+export function buildQuickCustomerPayload(values = {}) {
+  const normalizedFullName = String(
+    values.fullName
+      ?? values.full_name
+      ?? values.customerName
+      ?? values.name
+      ?? ''
+  ).trim();
+  const normalizedPhone = normalizeNumbers(String(values.phone ?? values.customerPhone ?? '').trim());
 
   if (!normalizedFullName || !normalizedPhone) {
     throw new Error(t('customers.toast.missingFields', 'يرجى تعبئة الاسم ورقم الهاتف'));
   }
 
-  const normalizedTaxId = String(taxId || '').trim();
+  const normalizedTaxId = String(values.taxId ?? values.tax_id ?? '').trim();
+  const normalizedCompany = String(values.company ?? values.companyName ?? values.company_name ?? '').trim();
   return {
     full_name: normalizedFullName,
     phone: normalizedPhone,
-    email: String(email || '').trim(),
-    company: String(company || '').trim(),
+    email: String(values.email || '').trim(),
+    company: normalizedCompany,
     tax_id: normalizedTaxId,
     taxId: normalizedTaxId,
-    address: String(address || '').trim(),
-    notes: String(notes || '').trim(),
+    address: String(values.address || '').trim(),
+    notes: String(values.notes || '').trim(),
   };
 }
 

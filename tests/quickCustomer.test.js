@@ -78,4 +78,26 @@ describe('quick customer helpers', () => {
       customerName: 'Ahmed',
     }));
   });
+
+  it('creates customers from already collected quick modal payloads', async () => {
+    createCustomerRecordMock.mockResolvedValue({ id: 11, full_name: 'Mona', phone: '0551112222' });
+    const { collectQuickCustomerPayload, createQuickCustomer } = await import('../src/scripts/quickCustomer.js');
+
+    const payload = collectQuickCustomerPayload({
+      nameInput: { value: ' Mona ' },
+      phoneInput: { value: '٠٥٥١١١٢٢٢٢' },
+      companyInput: { value: ' Art Co ' },
+    });
+    const created = await createQuickCustomer(payload);
+
+    expect(createCustomerRecordMock).toHaveBeenCalledWith(expect.objectContaining({
+      full_name: 'Mona',
+      phone: '0551112222',
+      company: 'Art Co',
+    }));
+    expect(created).toEqual(expect.objectContaining({
+      id: '11',
+      customerName: 'Mona',
+    }));
+  });
 });
