@@ -80,10 +80,10 @@ RewriteRule ^equipment-requests-portal(?:\.html)?/?$ Arino\ -\ Template/equipmen
 RewriteRule ^src/pages/(.*)$ dist/src/pages/$1 [L,NC]
 
 # Temporarily remove shop-product-details from public exposure while preserving the source.
-RewriteRule ^en/shop-product-details/?$ /en/shop/ [R=302,L,NC]
-RewriteRule ^تفاصيل-معدة/?$ /معداتنا/ [R=302,L,NC]
-RewriteRule ^ar/تفاصيل-معدة/?$ /معداتنا/ [R=302,L,NC]
-RewriteRule ^shop-product-details(?:\.html)?/?$ /en/shop/ [R=302,L,NC]
+RewriteRule ^en/shop-product-details/?$ /en/shop/ [R=301,L,NC]
+RewriteRule ^تفاصيل-معدة/?$ /معداتنا/ [R=301,L,NC]
+RewriteRule ^ar/تفاصيل-معدة/?$ /معداتنا/ [R=301,L,NC]
+RewriteRule ^shop-product-details(?:\.html)?/?$ /en/shop/ [R=301,L,NC]
 
 # Contain duplicate executable routes for the approved localized/public pages only.
 # Do not broaden this to legacy detail pages, parked pages, or utility pages.
@@ -228,13 +228,13 @@ RewriteRule ^en/blog/?$ Arino\ -\ Template/blog.html [L,NC]
 RewriteRule ^ar/كشكولنا/?$ Arino\ -\ Template/blog.html [L,NC]
 
 # Blog category/tag listing routes: redirect to the approved blog surface with query filters.
-RewriteRule ^blog/category/([A-Za-z0-9-]+)/?$ /en/blog/?category=$1 [R=302,L,NC]
-RewriteRule ^en/blog/category/([A-Za-z0-9-]+)/?$ /en/blog/?category=$1 [R=302,L,NC]
-RewriteRule ^(?:كشكولنا|المدونة)/التصنيف/([^/]+)/?$ /كشكولنا/?category=$1 [R=302,L,NC]
+RewriteRule ^blog/category/([A-Za-z0-9-]+)/?$ /en/blog/?category=$1 [R=301,L,NC]
+RewriteRule ^en/blog/category/([A-Za-z0-9-]+)/?$ /en/blog/?category=$1 [R=301,L,NC]
+RewriteRule ^(?:كشكولنا|المدونة)/التصنيف/([^/]+)/?$ /كشكولنا/?category=$1 [R=301,L,NC]
 
-RewriteRule ^blog/tag/([A-Za-z0-9-]+)/?$ /en/blog/?tag=$1 [R=302,L,NC]
-RewriteRule ^en/blog/tag/([A-Za-z0-9-]+)/?$ /en/blog/?tag=$1 [R=302,L,NC]
-RewriteRule ^(?:كشكولنا|المدونة)/وسم/([^/]+)/?$ /كشكولنا/?tag=$1 [R=302,L,NC]
+RewriteRule ^blog/tag/([A-Za-z0-9-]+)/?$ /en/blog/?tag=$1 [R=301,L,NC]
+RewriteRule ^en/blog/tag/([A-Za-z0-9-]+)/?$ /en/blog/?tag=$1 [R=301,L,NC]
+RewriteRule ^(?:كشكولنا|المدونة)/وسم/([^/]+)/?$ /كشكولنا/?tag=$1 [R=301,L,NC]
 
 RewriteRule ^(?:كشكولنا|المدونة)/انتاج-الفيديو/كيف-تختار-شركة-انتاج-فيديو-احترافية/?$ Arino\ -\ Template/blog/video-production/how-to-choose-professional-video-production-company/index.html [L,NC,QSA]
 RewriteRule ^(?:كشكولنا|المدونة)/تصوير-المنتجات/دليل-تصوير-المنتجات-الاحترافي-للمتاجر-الالكترونية/?$ Arino\ -\ Template/blog/product-photography/professional-product-photography-ecommerce/index.html [L,NC,QSA]
