@@ -38,6 +38,12 @@ RewriteRule ^favicon_io/(.*)$ dist/favicon_io/$1 [L,NC]
 RewriteRule ^site\.webmanifest$ dist/favicon_io/site.webmanifest [L,NC]
 
 <IfModule mod_headers.c>
+  # Clear any X-Robots-Tag that may have been set during the rewrite pass
+  # before applying our controlled rules. This prevents the rewritten internal
+  # path (e.g. /Arino - Template/...) from being matched by a stale env var
+  # carried over from an earlier processing pass.
+  Header always unset X-Robots-Tag
+
   # Internal/back-office routes
   SetEnvIf Request_URI "^/(clients|contact-inquiries|crew|customer|dashboard|dashboard-local|equipment|equipment-requests|feedback-submissions|home|login|maintenance|notifications|operations|project-reports|projects-reports|projects|site-analytics|technician|users)(?:\\.html)?/?$" ar_private_page=1
   SetEnvIf Request_URI "^/(?:feedback(?:\\.html)?|en/feedback|آراء-العملاء|ar/آراء-العملاء)/?$" ar_feedback_page=1
