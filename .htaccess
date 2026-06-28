@@ -2,12 +2,11 @@ RewriteEngine On
 
 # DIAGNOSTIC: remove after confirming deploy — unique marker for htaccess version check
 Header always set X-HTA-Version "seo-2026-06-28-v3"
-Header always set X-Dbg-Private "1" env=ar_private_page
-Header always set X-Dbg-Feedback "1" env=ar_feedback_page
-Header always set X-Dbg-Team "1" env=ar_team_details_page
-Header always set X-Dbg-Blog "1" env=ar_blog_articles_page
-Header always set X-Dbg-Legacy "1" env=ar_portfolio_legacy_cluster_page
-Header always set X-Dbg-Excluded "1" env=ar_excluded_header_page
+Header always set X-Dbg-URI "expr=%{REQUEST_URI}"
+Header always set X-Dbg-Expr-Feedback "1" "expr=%{REQUEST_URI} =~ m#^/(?:feedback(?:\.html)?|en/feedback/?|آراء-العملاء/?|ar/آراء-العملاء/?)$#"
+Header always set X-Dbg-Expr-Team "1" "expr=%{REQUEST_URI} =~ m#^/(?:team-details-[a-z-]+(?:\.html)?|en/team-details-[a-z-]+/?|(?:ar/)?[^/]*تفاصيل-الفريق/?)$#"
+Header always set X-Dbg-Expr-Blog "1" "expr=%{REQUEST_URI} =~ m#^/blog/(?:event-coverage/professional-event-coverage-guide|filmmaking-techniques/cinematic-lighting-basics|product-photography/professional-product-photography-ecommerce|video-production/how-to-choose-professional-video-production-company)/?$#"
+Header always set X-Dbg-Expr-Legacy "1" "expr=%{REQUEST_URI} =~ m#^/(?:portfolio[2-6](?:\.html)?|en/portfolio[2-6]/?|portfolio[2-6]-details-video-[1-7](?:\.html)?|en/portfolio[2-6]-details-video-[1-7]/?|(?:ar/)?(?:أعمالنا-[2-6]|ريل-إعلاني-لعبدالصمد-القرشي|ريل-للكوتش-البيتي-الفيصل|نهائي-دوري-أبطال-آسيا-للنخبة|توبا-ذا-ون|ايفنت-معوض|ريل-اليوم-الوطني|موفي-بوكس-الطازج|ريل-رنة-خلخال|اوفردوز-ايس-كريم|سفاري-اكستريم|تغطية-محلات-في-السيتي-ووك|فيديو-مجوهرات|فول-جرين-فارمز|صنع-في-باكستان|افتتاح-فرع-روومرز|تغطية-كشك-في-ويشن|كيكو-ميلانو|العروض-الجوالة-سيتي-ووك|قرية-التأسيس-عرعر|معرض-الكتاب-2|مقابلات-مختارة|في-60|مجوهرات|مجوهرات-2|اوفردوز-عام|قيمرية|ريل-للطريقة-المعينة|عدنان-خان-مجھ-سے-دور|كيكة-كوز|هنجرستيشن|ايوا|بوكس-الباربكيو-زد|اعلان-قهوة|تجمع-نادي-فيراري-السعودي|اعلان-ازار)/?)$#"
 
 # SEO: noindex removed from portfolio-details and /en/blog/ articles (2026-06-28)
 # Remove www and always redirect to HTTPS
