@@ -1,5 +1,8 @@
 RewriteEngine On
 
+# DIAGNOSTIC: remove after confirming deploy — unique marker for htaccess version check
+Header always set X-HTA-Version "seo-2026-06-28-v3"
+
 # SEO: noindex removed from portfolio-details and /en/blog/ articles (2026-06-28)
 # Remove www and always redirect to HTTPS
 RewriteCond %{HTTP_HOST} ^www\.art-ratio\.com$ [NC]
