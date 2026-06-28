@@ -1,16 +1,6 @@
 RewriteEngine On
 
-# DIAGNOSTIC: remove after confirming deploy — unique marker for htaccess version check
-Header always set X-HTA-Version "seo-2026-06-28-v5-unset-fix"
-# Force-override X-Robots-Tag to a unique test value to determine if .htaccess controls it
-Header always set X-Robots-Tag "htaccess-controls-this"
-Header always set X-Dbg-URI "expr=%{REQUEST_URI}"
-Header always set X-Dbg-Expr-Feedback "1" "expr=%{REQUEST_URI} =~ m#^/(?:feedback(?:\.html)?|en/feedback/?|آراء-العملاء/?|ar/آراء-العملاء/?)$#"
-Header always set X-Dbg-Expr-Team "1" "expr=%{REQUEST_URI} =~ m#^/(?:team-details-[a-z-]+(?:\.html)?|en/team-details-[a-z-]+/?|(?:ar/)?[^/]*تفاصيل-الفريق/?)$#"
-Header always set X-Dbg-Expr-Blog "1" "expr=%{REQUEST_URI} =~ m#^/blog/(?:event-coverage/professional-event-coverage-guide|filmmaking-techniques/cinematic-lighting-basics|product-photography/professional-product-photography-ecommerce|video-production/how-to-choose-professional-video-production-company)/?$#"
-Header always set X-Dbg-Expr-Legacy "1" "expr=%{REQUEST_URI} =~ m#^/(?:portfolio[2-6](?:\.html)?|en/portfolio[2-6]/?|portfolio[2-6]-details-video-[1-7](?:\.html)?|en/portfolio[2-6]-details-video-[1-7]/?|(?:ar/)?(?:أعمالنا-[2-6]|ريل-إعلاني-لعبدالصمد-القرشي|ريل-للكوتش-البيتي-الفيصل|نهائي-دوري-أبطال-آسيا-للنخبة|توبا-ذا-ون|ايفنت-معوض|ريل-اليوم-الوطني|موفي-بوكس-الطازج|ريل-رنة-خلخال|اوفردوز-ايس-كريم|سفاري-اكستريم|تغطية-محلات-في-السيتي-ووك|فيديو-مجوهرات|فول-جرين-فارمز|صنع-في-باكستان|افتتاح-فرع-روومرز|تغطية-كشك-في-ويشن|كيكو-ميلانو|العروض-الجوالة-سيتي-ووك|قرية-التأسيس-عرعر|معرض-الكتاب-2|مقابلات-مختارة|في-60|مجوهرات|مجوهرات-2|اوفردوز-عام|قيمرية|ريل-للطريقة-المعينة|عدنان-خان-مجھ-سے-دور|كيكة-كوز|هنجرستيشن|ايوا|بوكس-الباربكيو-زد|اعلان-قهوة|تجمع-نادي-فيراري-السعودي|اعلان-ازار)/?)$#"
 
-# SEO: noindex removed from portfolio-details and /en/blog/ articles (2026-06-28)
 # Remove www and always redirect to HTTPS
 RewriteCond %{HTTP_HOST} ^www\.art-ratio\.com$ [NC]
 RewriteRule ^ https://art-ratio.com%{REQUEST_URI} [L,R=301]
@@ -40,12 +30,6 @@ RewriteRule ^favicon_io/(.*)$ dist/favicon_io/$1 [L,NC]
 RewriteRule ^site\.webmanifest$ dist/favicon_io/site.webmanifest [L,NC]
 
 <IfModule mod_headers.c>
-  # Clear any X-Robots-Tag that may have been set during the rewrite pass
-  # before applying our controlled rules. This prevents the rewritten internal
-  # path (e.g. /Arino - Template/...) from being matched by a stale env var
-  # carried over from an earlier processing pass.
-  Header always unset X-Robots-Tag
-
   # Internal/back-office routes
   SetEnvIf Request_URI "^/(clients|contact-inquiries|crew|customer|dashboard|dashboard-local|equipment|equipment-requests|feedback-submissions|home|login|maintenance|notifications|operations|project-reports|projects-reports|projects|site-analytics|technician|users)(?:\\.html)?/?$" ar_private_page=1
   SetEnvIf Request_URI "^/(?:feedback(?:\\.html)?|en/feedback|آراء-العملاء|ar/آراء-العملاء)/?$" ar_feedback_page=1
