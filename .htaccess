@@ -2,6 +2,12 @@ RewriteEngine On
 
 # DIAGNOSTIC: remove after confirming deploy — unique marker for htaccess version check
 Header always set X-HTA-Version "seo-2026-06-28-v3"
+Header always set X-Dbg-Private "1" env=ar_private_page
+Header always set X-Dbg-Feedback "1" env=ar_feedback_page
+Header always set X-Dbg-Team "1" env=ar_team_details_page
+Header always set X-Dbg-Blog "1" env=ar_blog_articles_page
+Header always set X-Dbg-Legacy "1" env=ar_portfolio_legacy_cluster_page
+Header always set X-Dbg-Excluded "1" env=ar_excluded_header_page
 
 # SEO: noindex removed from portfolio-details and /en/blog/ articles (2026-06-28)
 # Remove www and always redirect to HTTPS
