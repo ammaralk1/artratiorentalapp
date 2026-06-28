@@ -63,7 +63,7 @@
       const link = document.createElement('link');
       link.setAttribute('rel', 'stylesheet');
       // Use absolute dist path since some hosts don’t expose /css
-      link.setAttribute('href', '/dist/css/sidebar.css');
+      link.setAttribute('href', '/dist/css/sidebar.css?v=20260603-green-sidebar');
       head.appendChild(link);
 
       // Inline fallback for critical sidebar/burger styles if the CSS fails to load (MIME/CDN issues)

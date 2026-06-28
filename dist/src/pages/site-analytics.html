@@ -1,35 +1,64 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
+    <meta charset="UTF-8">
   <link rel="icon" type="image/x-icon" href="../../favicon.ico">
   <title data-i18n data-i18n-key="siteAnalytics.title">إحصائيات الموقع</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="color-scheme" content="light dark">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' https://cdn.jsdelivr.net https://img1.wsimg.com https://static.cloudflareinsights.com; connect-src 'self' http://127.0.0.1:8000 http://localhost:8000 http://127.0.0.1:8080 http://localhost:8080 https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://csp.secureserver.net https://cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://assets.art-ratio.com; font-src 'self' https://fonts.gstatic.com data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'self' https://assets.art-ratio.com; worker-src 'self' blob:; upgrade-insecure-requests;">
-  <script src="../../js/godaddy-monitor.js" defer></script>
-  <script src="../../js/page-boot.js"></script>
+  <script src="../../js/godaddy-monitor.js?v=20260603" defer></script>
+  <script src="../../js/page-boot.js?v=20260603-green-sidebar"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
   <style>
+    .ui-button,
+    .btn {
+      --bs-btn-focus-box-shadow: none !important;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .ui-button--primary,
+    .btn-primary {
+      --bs-btn-color: #f8fafc !important;
+      --bs-btn-bg: #466846 !important;
+      --bs-btn-border-color: rgba(70, 104, 70, 0.4) !important;
+      --bs-btn-hover-color: #f8fafc !important;
+      --bs-btn-hover-bg: #507450 !important;
+      --bs-btn-hover-border-color: rgba(70, 104, 70, 0.4) !important;
+      --bs-btn-focus-shadow-rgb: 147, 168, 137 !important;
+      --bs-btn-active-color: #f8fafc !important;
+      --bs-btn-active-bg: #3f603f !important;
+      --bs-btn-active-border-color: rgba(70, 104, 70, 0.4) !important;
+      --bs-btn-active-shadow: none !important;
+      --bs-btn-disabled-color: #f8fafc !important;
+      --bs-btn-disabled-bg: #466846 !important;
+      --bs-btn-disabled-border-color: rgba(70, 104, 70, 0.4) !important;
+    }
+
+    body.theme-loading .page-grid,
+    body.theme-loading #dashboard-sidebar,
+    body.theme-loading #sidebar-backdrop,
     body.auth-pending .page-grid,
     body.auth-pending #dashboard-sidebar,
     body.auth-pending #sidebar-backdrop {
       visibility: hidden;
     }
   </style>
-  <script type="module" crossorigin src="../../assets/siteAnalytics.D4dSeVAo.js"></script>
-  <link rel="modulepreload" crossorigin href="../../assets/auth.uGsR4JMO.js">
-  <link rel="modulepreload" crossorigin href="../../assets/dashboard.CG2O9VfR.js">
-  <link rel="modulepreload" crossorigin href="../../assets/dashboardShell.DF2kUed9.js">
-  <link rel="stylesheet" crossorigin href="../../assets/auth.NLSXd6lx.css">
+
+  <script type="module" crossorigin src="../../assets/siteAnalytics.Bg46OVQP.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/auth.Bld4jd42.js">
+  <link rel="modulepreload" crossorigin href="../../assets/dashboard.B_NDQ3iM.js">
+  <link rel="modulepreload" crossorigin href="../../assets/dashboardShell.BtvygrSE.js">
+  <link rel="stylesheet" crossorigin href="../../assets/auth.D3OsJ-qy.css">
+  <link rel="stylesheet" crossorigin href="../../assets/siteAnalytics.DeHWmRzV.css">
 </head>
-<body class="page-shell theme-loading site-analytics-page auth-pending" data-theme="light">
+<body class="page-shell theme-loading site-analytics-page auth-pending">
   <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
 
-  <aside id="dashboard-sidebar" class="sidebar-shell sidebar-drawer" aria-label="التنقل الجانبي" data-i18n data-i18n-aria-label-key="dashboard.nav.sidebar">
+  <aside id="dashboard-sidebar" class="sidebar-shell sidebar-drawer" aria-label="التنقل الجانبي">
     <div class="flex items-center justify-between gap-3 border-b border-base-200/70 pb-4 sidebar-brand">
       <div class="flex items-center gap-3">
         <div class="sidebar-brand-logo">
@@ -55,28 +84,31 @@
         <a class="tab-button" href="home.html" data-close-sidebar data-i18n data-i18n-key="dashboard.quickLinks.home">
           <span class="tab-button__content">🏠 <span data-i18n data-i18n-key="dashboard.quickLinks.home">الصفحة الرئيسية</span></span>
         </a>
-        <a class="tab-button" href="dashboard.html" data-close-sidebar data-i18n data-i18n-key="dashboard.quickLinks.dashboard">
+        <a class="tab-button" href="operations.html" data-close-sidebar data-i18n data-i18n-key="dashboard.quickLinks.dashboard">
           <span class="tab-button__content">📊 <span data-i18n data-i18n-key="dashboard.quickLinks.dashboard">لوحة التحكم</span></span>
         </a>
         <a class="tab-button" href="projects.html" data-close-sidebar data-i18n data-i18n-key="dashboard.quickLinks.projects">
           <span class="tab-button__content">🏗️ <span data-i18n data-i18n-key="dashboard.quickLinks.projects">المشاريع</span></span>
         </a>
-        <a class="tab-button hidden" href="/Arino%20-%20Template/equipment-requests-portal.html" data-manager-card>
+        <a class="{{navClass:project-reports}}" href="project-reports.html" data-admin-card {{ariaCurrent:project-reports}}>
+          <span class="tab-button__content">📈 <span data-i18n data-i18n-key="home.projectReports.title">تقارير المشاريع</span></span>
+        </a>
+        <a class="{{navClass:equipment-requests}} hidden" href="equipment-requests.html" data-manager-card {{ariaCurrent:equipment-requests}}>
           <span class="tab-button__content">🧰 <span data-i18n data-i18n-key="home.equipmentRequests.title">طلبات المعدات</span></span>
         </a>
-        <a class="tab-button active hidden" href="site-analytics.html" data-manager-card aria-current="page">
+        <a class="{{navClass:site-analytics}}" href="site-analytics.html" data-manager-card {{ariaCurrent:site-analytics}}>
           <span class="tab-button__content">📈 <span data-i18n data-i18n-key="home.analytics.title">إحصائيات الموقع</span></span>
         </a>
-        <a class="tab-button hidden" href="contact-inquiries.html" data-manager-card>
+        <a class="{{navClass:contact-inquiries}}" href="contact-inquiries.html" data-manager-card {{ariaCurrent:contact-inquiries}}>
           <span class="tab-button__content">📨 <span data-i18n data-i18n-key="home.contactInquiries.title">رسائل التواصل</span></span>
         </a>
-        <a class="tab-button hidden" href="feedback-submissions.html" data-manager-card>
+        <a class="{{navClass:feedback-submissions}}" href="feedback-submissions.html" data-manager-card {{ariaCurrent:feedback-submissions}}>
           <span class="tab-button__content">⭐ <span data-i18n data-i18n-key="home.feedback.title">آراء العملاء</span></span>
         </a>
         <a class="tab-button hidden" href="notifications.html" data-admin-card>
           <span class="tab-button__content">🔔 <span data-i18n data-i18n-key="home.notifications.title">إدارة التنبيهات</span></span>
         </a>
-        <a class="tab-button hidden" href="users.html" data-admin-card>
+        <a class="{{navClass:users}}" href="users.html" data-admin-card {{ariaCurrent:users}}>
           <span class="tab-button__content">🛡️ <span data-i18n data-i18n-key="home.users.title">إدارة المستخدمين</span></span>
         </a>
       </div>
@@ -113,13 +145,17 @@
               </svg>
             </button>
             <div class="glass-card dashboard-greeting-panel" id="dashboard-greeting-panel" data-greeting-panel hidden>
-              <div class="flex flex-col gap-5">
+              <div class="flex flex-col gap-6">
                 <div class="space-y-2 text-start">
-                  <p class="text-sm text-base-content/60" data-i18n data-i18n-key="siteAnalytics.subtitle">تابع عدد الزوار، الصفحات الأكثر زيارة، ومصادر الزيارات في لوحة مختصرة وواضحة.</p>
+                  
+  <p class="text-sm text-base-content/60" data-i18n data-i18n-key="siteAnalytics.subtitle">تابع عدد الزوار، الصفحات الأكثر زيارة، ومصادر الزيارات في لوحة مختصرة وواضحة.</p>
+
                 </div>
-                <div class="flex flex-wrap items-center gap-2">
-                  <a href="#site-analytics-top-pages" class="btn btn-primary btn-sm" data-i18n data-i18n-key="siteAnalytics.actions.openPages">📄 أعلى الصفحات</a>
-                  <a href="#site-analytics-daily-card" class="btn btn-outline btn-sm" data-i18n data-i18n-key="siteAnalytics.actions.openDaily">📅 الزيارات اليومية</a>
+                <div class="dashboard-greeting-actions flex flex-wrap items-center gap-2">
+                  
+  <a href="#site-analytics-top-pages" class="ui-button ui-button--primary btn btn-primary btn-sm" data-i18n data-i18n-key="siteAnalytics.actions.openPages">📄 أعلى الصفحات</a>
+  <a href="#site-analytics-daily-card" class="ui-button ui-button--outline btn btn-outline btn-sm" data-i18n data-i18n-key="siteAnalytics.actions.openDaily">📅 الزيارات اليومية</a>
+
                 </div>
               </div>
             </div>
@@ -129,7 +165,7 @@
           <button class="language-toggle-btn" id="language-toggle" data-label-ar="🇸🇦 العربية" data-label-en="🇬🇧 English" aria-pressed="false"></button>
           <label class="theme-toggle-btn swap swap-rotate" data-theme-toggle role="button">
             <input id="theme-toggle" type="checkbox" class="sr-only" aria-hidden="true">
-            <svg class="swap-off fill-current text-warning w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <svg class="swap-off fill-current w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
               <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
               <path d="M12 4v-1"></path>
               <path d="M12 21v-1"></path>
@@ -141,13 +177,13 @@
               <path d="M18.4 5.6l-.7 .7"></path>
               <path d="M16 12a4 4 0 1 0 -4 4"></path>
             </svg>
-            <svg class="swap-on fill-current text-primary w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <svg class="swap-on fill-current w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
               <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
               <path d="M12 3c.132 0 .263 0 .393 .007a7.5 7.5 0 0 0 7.098 12.675a9 9 0 1 1 -7.491 -12.682z"></path>
             </svg>
             <span class="sr-only" data-theme-label data-i18n data-i18n-key="actions.toggleTheme">🌙 الوضع الليلي</span>
           </label>
-          <button class="btn btn-error btn-sm rounded-full text-error-content" id="logout-btn" data-i18n data-i18n-key="actions.logout">🚪 تسجيل الخروج</button>
+          <button class="btn btn-error btn-sm rounded-full text-error-content dashboard-header-logout-btn" id="logout-btn" data-i18n data-i18n-key="actions.logout">🚪 تسجيل الخروج</button>
         </div>
       </div>
     </header>
@@ -155,144 +191,158 @@
     <div class="flex flex-1 flex-col">
       <main class="dashboard-main w-full">
         <div class="dashboard-main-inner space-y-8">
-          <section class="glass-card space-y-4">
-            <div class="flex items-center justify-between gap-3 flex-wrap">
-              <div>
-                <h2 class="text-2xl font-bold text-base-content" data-i18n data-i18n-key="siteAnalytics.title">إحصائيات الموقع</h2>
-                <p class="text-sm text-base-content/70" data-i18n data-i18n-key="siteAnalytics.subtitle">تابع عدد الزوار، الصفحات الأكثر زيارة، ومصادر الزيارات في لوحة مختصرة وواضحة.</p>
-              </div>
-              <div class="flex items-end gap-3 flex-wrap">
-                <label class="flex flex-col gap-2">
-                  <span class="text-sm font-medium text-base-content" data-i18n data-i18n-key="siteAnalytics.filters.range">الفترة</span>
-                  <select id="site-analytics-range" class="select select-bordered select-sm min-w-[150px]">
-                    <option value="7" data-i18n data-i18n-key="siteAnalytics.filters.range7">آخر 7 أيام</option>
-                    <option value="30" selected data-i18n data-i18n-key="siteAnalytics.filters.range30">آخر 30 يوم</option>
-                    <option value="90" data-i18n data-i18n-key="siteAnalytics.filters.range90">آخر 90 يوم</option>
-                  </select>
-                </label>
-                <label class="flex flex-col gap-2">
-                  <span class="text-sm font-medium text-base-content" data-i18n data-i18n-key="siteAnalytics.filters.pageType">نوع الصفحة</span>
-                  <select id="site-analytics-page-type" class="select select-bordered select-sm min-w-[170px]">
-                    <option value="" data-i18n data-i18n-key="siteAnalytics.filters.allPageTypes">كل الصفحات</option>
-                  </select>
-                </label>
-                <label class="flex flex-col gap-2">
-                  <span class="text-sm font-medium text-base-content" data-i18n data-i18n-key="siteAnalytics.filters.device">الجهاز</span>
-                  <select id="site-analytics-device-type" class="select select-bordered select-sm min-w-[150px]">
-                    <option value="" data-i18n data-i18n-key="siteAnalytics.filters.allDevices">كل الأجهزة</option>
-                    <option value="desktop" data-i18n data-i18n-key="siteAnalytics.devices.desktop">سطح المكتب</option>
-                    <option value="mobile" data-i18n data-i18n-key="siteAnalytics.devices.mobile">جوال</option>
-                    <option value="tablet" data-i18n data-i18n-key="siteAnalytics.devices.tablet">تابلت</option>
-                  </select>
-                </label>
-                <label class="flex flex-col gap-2">
-                  <span class="text-sm font-medium text-base-content" data-i18n data-i18n-key="siteAnalytics.filters.source">المصدر</span>
-                  <select id="site-analytics-source-type" class="select select-bordered select-sm min-w-[150px]">
-                    <option value="" data-i18n data-i18n-key="siteAnalytics.filters.allSources">كل المصادر</option>
-                    <option value="direct" data-i18n data-i18n-key="siteAnalytics.sources.direct">دخول مباشر</option>
-                    <option value="external" data-i18n data-i18n-key="siteAnalytics.filters.sourceExternal">خارجي</option>
-                    <option value="internal" data-i18n data-i18n-key="siteAnalytics.sources.internal">تنقل داخلي</option>
-                  </select>
-                </label>
-                <label class="flex items-center gap-2 rounded-full border border-base-300 px-3 py-2 text-sm text-base-content">
-                  <input id="site-analytics-include-internal" type="checkbox" class="checkbox checkbox-sm">
-                  <span data-i18n data-i18n-key="siteAnalytics.filters.includeInternal">إظهار زيارات الفريق الداخلي</span>
-                </label>
-                <button type="button" class="btn btn-outline btn-sm" id="site-analytics-refresh" data-i18n data-i18n-key="actions.refresh">🔄 تحديث البيانات</button>
-              </div>
-            </div>
-            <div class="flex flex-wrap items-center gap-2 text-sm text-base-content/60" id="site-analytics-range-label"></div>
-          </section>
+          
+  <section class="ui-card ui-card--content glass-card compact-hero-card site-analytics-hero-shell space-y-5">
+    <div class="compact-hero-layout">
+      <div class="compact-hero-copy">
+        <span class="compact-surface-kicker" data-i18n data-i18n-key="home.analytics.title">📈 إحصائيات الموقع</span>
+        <h2 class="text-2xl font-bold text-base-content" data-i18n data-i18n-key="siteAnalytics.title">إحصائيات الموقع</h2>
+        <p class="text-sm text-base-content/70" data-i18n data-i18n-key="siteAnalytics.subtitle">تابع عدد الزوار، الصفحات الأكثر زيارة، ومصادر الزيارات في لوحة مختصرة وواضحة.</p>
+        <div class="compact-inline-meta" id="site-analytics-range-label"></div>
+      </div>
+      <div class="compact-filter-toolbar">
+        <div class="compact-filter-grid">
+        <label class="compact-filter-field">
+          <span class="text-sm font-medium text-base-content" data-i18n data-i18n-key="siteAnalytics.filters.range">الفترة</span>
+          <select id="site-analytics-range" class="ui-select select select-bordered select-sm min-w-[150px]">
+            <option value="7" data-i18n data-i18n-key="siteAnalytics.filters.range7">آخر 7 أيام</option>
+            <option value="30" selected data-i18n data-i18n-key="siteAnalytics.filters.range30">آخر 30 يوم</option>
+            <option value="90" data-i18n data-i18n-key="siteAnalytics.filters.range90">آخر 90 يوم</option>
+          </select>
+        </label>
+        <label class="compact-filter-field">
+          <span class="text-sm font-medium text-base-content" data-i18n data-i18n-key="siteAnalytics.filters.pageType">نوع الصفحة</span>
+          <select id="site-analytics-page-type" class="ui-select select select-bordered select-sm min-w-[170px]">
+            <option value="" data-i18n data-i18n-key="siteAnalytics.filters.allPageTypes">كل الصفحات</option>
+          </select>
+        </label>
+        <label class="compact-filter-field">
+          <span class="text-sm font-medium text-base-content" data-i18n data-i18n-key="siteAnalytics.filters.device">الجهاز</span>
+          <select id="site-analytics-device-type" class="ui-select select select-bordered select-sm min-w-[150px]">
+            <option value="" data-i18n data-i18n-key="siteAnalytics.filters.allDevices">كل الأجهزة</option>
+            <option value="desktop" data-i18n data-i18n-key="siteAnalytics.devices.desktop">سطح المكتب</option>
+            <option value="mobile" data-i18n data-i18n-key="siteAnalytics.devices.mobile">جوال</option>
+            <option value="tablet" data-i18n data-i18n-key="siteAnalytics.devices.tablet">تابلت</option>
+          </select>
+        </label>
+        <label class="compact-filter-field">
+          <span class="text-sm font-medium text-base-content" data-i18n data-i18n-key="siteAnalytics.filters.source">المصدر</span>
+          <select id="site-analytics-source-type" class="ui-select select select-bordered select-sm min-w-[150px]">
+            <option value="" data-i18n data-i18n-key="siteAnalytics.filters.allSources">كل المصادر</option>
+            <option value="direct" data-i18n data-i18n-key="siteAnalytics.sources.direct">دخول مباشر</option>
+            <option value="external" data-i18n data-i18n-key="siteAnalytics.filters.sourceExternal">خارجي</option>
+            <option value="internal" data-i18n data-i18n-key="siteAnalytics.sources.internal">تنقل داخلي</option>
+          </select>
+        </label>
+        </div>
+        <div class="compact-filter-actions">
+        <label class="compact-inline-toggle">
+          <input id="site-analytics-include-internal" type="checkbox" class="checkbox checkbox-sm">
+          <span data-i18n data-i18n-key="siteAnalytics.filters.includeInternal">إظهار زيارات الفريق الداخلي</span>
+        </label>
+        <button type="button" class="ui-button ui-button--outline btn btn-outline btn-sm" id="site-analytics-refresh" data-i18n data-i18n-key="actions.refresh">🔄 تحديث البيانات</button>
+      </div>
+    </div>
+    </div>
+  </section>
 
-          <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-3" id="site-analytics-stats">
-            <article class="glass-card p-5 text-center">
-              <div class="text-sm text-base-content/70" data-i18n data-i18n-key="siteAnalytics.stats.visitors">الزوار</div>
-              <div class="mt-2 text-3xl font-bold text-base-content" id="analytics-stat-visitors">0</div>
-            </article>
-            <article class="glass-card p-5 text-center">
-              <div class="text-sm text-base-content/70" data-i18n data-i18n-key="siteAnalytics.stats.sessions">الجلسات</div>
-              <div class="mt-2 text-3xl font-bold text-base-content" id="analytics-stat-sessions">0</div>
-            </article>
-            <article class="glass-card p-5 text-center">
-              <div class="text-sm text-base-content/70" data-i18n data-i18n-key="siteAnalytics.stats.pageViews">مشاهدات الصفحات</div>
-              <div class="mt-2 text-3xl font-bold text-base-content" id="analytics-stat-page-views">0</div>
-            </article>
-            <article class="glass-card p-5 text-center">
-              <div class="text-sm text-base-content/70" data-i18n data-i18n-key="siteAnalytics.stats.avgPages">متوسط الصفحات لكل جلسة</div>
-              <div class="mt-2 text-3xl font-bold text-base-content" id="analytics-stat-avg-pages">0</div>
-            </article>
-            <article class="glass-card p-5 text-center">
-              <div class="text-sm text-base-content/70" data-i18n data-i18n-key="siteAnalytics.stats.contactLeads">رسائل التواصل</div>
-              <div class="mt-2 text-3xl font-bold text-base-content" id="analytics-stat-contact-leads">0</div>
-            </article>
-            <article class="glass-card p-5 text-center">
-              <div class="text-sm text-base-content/70" data-i18n data-i18n-key="siteAnalytics.stats.feedback">آراء العملاء</div>
-              <div class="mt-2 text-3xl font-bold text-base-content" id="analytics-stat-feedback">0</div>
-            </article>
-          </section>
+  <section class="compact-kpi-grid site-analytics-stats-grid" id="site-analytics-stats">
+    <article class="ui-card ui-card--content glass-card ui-stat-card compact-kpi-card site-analytics-stat-card">
+      <div class="compact-kpi-card__label" data-i18n data-i18n-key="siteAnalytics.stats.visitors">الزوار</div>
+      <div class="compact-kpi-card__value" id="analytics-stat-visitors">0</div>
+    </article>
+    <article class="ui-card ui-card--content glass-card ui-stat-card compact-kpi-card site-analytics-stat-card">
+      <div class="compact-kpi-card__label" data-i18n data-i18n-key="siteAnalytics.stats.sessions">الجلسات</div>
+      <div class="compact-kpi-card__value" id="analytics-stat-sessions">0</div>
+    </article>
+    <article class="ui-card ui-card--content glass-card ui-stat-card compact-kpi-card site-analytics-stat-card">
+      <div class="compact-kpi-card__label" data-i18n data-i18n-key="siteAnalytics.stats.pageViews">مشاهدات الصفحات</div>
+      <div class="compact-kpi-card__value" id="analytics-stat-page-views">0</div>
+    </article>
+    <article class="ui-card ui-card--content glass-card ui-stat-card compact-kpi-card site-analytics-stat-card">
+      <div class="compact-kpi-card__label" data-i18n data-i18n-key="siteAnalytics.stats.avgPages">متوسط الصفحات لكل جلسة</div>
+      <div class="compact-kpi-card__value" id="analytics-stat-avg-pages">0</div>
+    </article>
+    <article class="ui-card ui-card--content glass-card ui-stat-card compact-kpi-card site-analytics-stat-card">
+      <div class="compact-kpi-card__label" data-i18n data-i18n-key="siteAnalytics.stats.contactLeads">رسائل التواصل</div>
+      <div class="compact-kpi-card__value" id="analytics-stat-contact-leads">0</div>
+    </article>
+    <article class="ui-card ui-card--content glass-card ui-stat-card compact-kpi-card site-analytics-stat-card">
+      <div class="compact-kpi-card__label" data-i18n data-i18n-key="siteAnalytics.stats.feedback">آراء العملاء</div>
+      <div class="compact-kpi-card__value" id="analytics-stat-feedback">0</div>
+    </article>
+  </section>
 
-          <section class="grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(320px,.7fr)]">
-            <article class="glass-card space-y-4" id="site-analytics-top-pages">
-              <div class="surface-heading-stack">
-                <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="siteAnalytics.topPages.title">الصفحات الأكثر زيارة</h3>
-                <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="siteAnalytics.topPages.subtitle">الصفحات التي جذبت أكبر عدد من الزيارات خلال الفترة المحددة.</p>
-              </div>
-              <div class="users-table-wrapper overflow-x-auto">
-                <table class="table table-hover align-middle text-nowrap users-table">
-                  <thead class="table-light users-table-head">
-                    <tr>
-                      <th data-i18n data-i18n-key="siteAnalytics.topPages.table.page">الصفحة</th>
-                      <th data-i18n data-i18n-key="siteAnalytics.topPages.table.views">المشاهدات</th>
-                      <th data-i18n data-i18n-key="siteAnalytics.topPages.table.visitors">الزوار</th>
-                      <th data-i18n data-i18n-key="siteAnalytics.topPages.table.sessions">الجلسات</th>
-                      <th data-i18n data-i18n-key="siteAnalytics.topPages.table.lastVisit">آخر زيارة</th>
-                    </tr>
-                  </thead>
-                  <tbody id="site-analytics-top-pages-body">
-                    <tr>
-                      <td colspan="5" class="text-center text-base-content/60" data-i18n data-i18n-key="siteAnalytics.loading">⏳ جارٍ تحميل الإحصائيات...</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </article>
+  <section class="grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(320px,.7fr)] site-analytics-content-grid">
+    <article class="ui-card ui-card--content glass-card compact-surface-panel site-analytics-section-shell space-y-4" id="site-analytics-top-pages">
+      <div class="surface-heading-stack">
+        <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="siteAnalytics.topPages.title">الصفحات الأكثر زيارة</h3>
+        <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="siteAnalytics.topPages.subtitle">الصفحات التي جذبت أكبر عدد من الزيارات خلال الفترة المحددة.</p>
+      </div>
+      <div class="ui-table-shell users-table-wrapper compact-table-shell overflow-x-auto">
+        <table class="ui-table compact-table table table-hover align-middle text-nowrap users-table">
+          <thead class="table-light users-table-head">
+            <tr>
+              <th data-i18n data-i18n-key="siteAnalytics.topPages.table.page">الصفحة</th>
+              <th data-i18n data-i18n-key="siteAnalytics.topPages.table.views">المشاهدات</th>
+              <th data-i18n data-i18n-key="siteAnalytics.topPages.table.visitors">الزوار</th>
+              <th data-i18n data-i18n-key="siteAnalytics.topPages.table.sessions">الجلسات</th>
+              <th data-i18n data-i18n-key="siteAnalytics.topPages.table.lastVisit">آخر زيارة</th>
+            </tr>
+          </thead>
+          <tbody id="site-analytics-top-pages-body">
+            <tr>
+              <td colspan="5" class="text-center text-base-content/60" data-i18n data-i18n-key="siteAnalytics.loading">⏳ جارٍ تحميل الإحصائيات...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
 
-            <div class="space-y-6">
-              <aside class="glass-card space-y-4">
-                <div class="surface-heading-stack">
-                  <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="siteAnalytics.sources.title">مصادر الزيارات</h3>
-                  <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="siteAnalytics.sources.subtitle">من أين يصل الزوار إلى الموقع.</p>
-                </div>
-                <div class="space-y-3" id="site-analytics-sources-list">
-                  <div class="surface-empty-state p-5" data-i18n data-i18n-key="siteAnalytics.loading">⏳ جارٍ تحميل الإحصائيات...</div>
-                </div>
-              </aside>
+    <div class="compact-card-stack">
+      <aside class="ui-card ui-card--content glass-card compact-surface-panel site-analytics-section-shell space-y-4">
+        <div class="surface-heading-stack">
+          <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="siteAnalytics.sources.title">مصادر الزيارات</h3>
+          <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="siteAnalytics.sources.subtitle">من أين يصل الزوار إلى الموقع.</p>
+        </div>
+        <div class="compact-card-stack" id="site-analytics-sources-list">
+          <div class="ui-empty-state surface-empty-state p-5" data-i18n data-i18n-key="siteAnalytics.loading">⏳ جارٍ تحميل الإحصائيات...</div>
+        </div>
+      </aside>
 
-              <aside class="glass-card space-y-4">
-                <div class="surface-heading-stack">
-                  <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="siteAnalytics.devices.title">الأجهزة</h3>
-                  <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="siteAnalytics.devices.subtitle">توزيع الزيارات بين الجوال، التابلت، وسطح المكتب.</p>
-                </div>
-                <div class="grid gap-3 sm:grid-cols-3" id="site-analytics-devices-grid">
-                  <div class="surface-empty-state p-5 sm:col-span-3" data-i18n data-i18n-key="siteAnalytics.loading">⏳ جارٍ تحميل الإحصائيات...</div>
-                </div>
-              </aside>
-            </div>
-          </section>
+      <aside class="ui-card ui-card--content glass-card compact-surface-panel site-analytics-section-shell space-y-4">
+        <div class="surface-heading-stack">
+          <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="siteAnalytics.devices.title">الأجهزة</h3>
+          <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="siteAnalytics.devices.subtitle">توزيع الزيارات بين الجوال، التابلت، وسطح المكتب.</p>
+        </div>
+        <div class="compact-kpi-grid compact-kpi-grid--mini" id="site-analytics-devices-grid">
+          <div class="ui-empty-state surface-empty-state p-5 sm:col-span-3" data-i18n data-i18n-key="siteAnalytics.loading">⏳ جارٍ تحميل الإحصائيات...</div>
+        </div>
+      </aside>
+    </div>
+  </section>
 
-          <section class="glass-card space-y-4" id="site-analytics-daily-card">
-            <div class="surface-heading-stack">
-              <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="siteAnalytics.daily.title">الزيارات اليومية</h3>
-              <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="siteAnalytics.daily.subtitle">مخطط مبسط يوضح نشاط الموقع يومًا بيوم.</p>
-            </div>
-            <div class="space-y-3" id="site-analytics-daily-list">
-              <div class="surface-empty-state p-5" data-i18n data-i18n-key="siteAnalytics.loading">⏳ جارٍ تحميل الإحصائيات...</div>
-            </div>
-          </section>
+  <section class="ui-card ui-card--content glass-card compact-surface-panel site-analytics-section-shell space-y-4" id="site-analytics-daily-card">
+    <div class="surface-heading-stack">
+      <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="siteAnalytics.daily.title">الزيارات اليومية</h3>
+      <p class="surface-support-text surface-support-text--compact" data-i18n data-i18n-key="siteAnalytics.daily.subtitle">مخطط مبسط يوضح نشاط الموقع يومًا بيوم.</p>
+    </div>
+    <div class="compact-card-stack" id="site-analytics-daily-list">
+      <div class="ui-empty-state surface-empty-state p-5" data-i18n data-i18n-key="siteAnalytics.loading">⏳ جارٍ تحميل الإحصائيات...</div>
+    </div>
+  </section>
+
         </div>
       </main>
     </div>
   </div>
 
+  
+
+  
 </body>
+
+
+
+
 </html>
