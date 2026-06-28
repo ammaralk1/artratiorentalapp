@@ -1,7 +1,9 @@
 RewriteEngine On
 
 # DIAGNOSTIC: remove after confirming deploy — unique marker for htaccess version check
-Header always set X-HTA-Version "seo-2026-06-28-v3"
+Header always set X-HTA-Version "seo-2026-06-28-v5-unset-fix"
+# Force-override X-Robots-Tag to a unique test value to determine if .htaccess controls it
+Header always set X-Robots-Tag "htaccess-controls-this"
 Header always set X-Dbg-URI "expr=%{REQUEST_URI}"
 Header always set X-Dbg-Expr-Feedback "1" "expr=%{REQUEST_URI} =~ m#^/(?:feedback(?:\.html)?|en/feedback/?|آراء-العملاء/?|ar/آراء-العملاء/?)$#"
 Header always set X-Dbg-Expr-Team "1" "expr=%{REQUEST_URI} =~ m#^/(?:team-details-[a-z-]+(?:\.html)?|en/team-details-[a-z-]+/?|(?:ar/)?[^/]*تفاصيل-الفريق/?)$#"
