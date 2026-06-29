@@ -28,7 +28,7 @@ function cacheElements() {
   elements.nameInput = document.getElementById('equipment-package-name');
   elements.codeInput = document.getElementById('equipment-package-code');
   elements.priceInput = document.getElementById('equipment-package-price');
-  elements.qtyInput = document.getElementById('equipment-package-qty');
+  elements.costInput = document.getElementById('equipment-package-cost');
   elements.descriptionInput = document.getElementById('equipment-package-description');
   elements.openSelector = document.getElementById('equipment-package-open-selector');
   elements.selectionWrapper = document.getElementById('equipment-package-selection-active');
@@ -95,6 +95,7 @@ function mapPackageRecord(raw = {}) {
     name: raw.name ?? raw.title ?? raw.label ?? '',
     description: raw.description ?? '',
     price: normalizePrice(raw.price ?? raw.total_price ?? raw.package_price ?? 0),
+    cost: normalizePrice(raw.cost ?? raw.package_cost ?? raw.packageCost ?? raw.unit_cost ?? raw.unitCost ?? 0),
     package_qty: Number.isFinite(Number(raw.package_qty ?? raw.packageQty)) && Number(raw.package_qty ?? raw.packageQty) > 0
       ? Number(raw.package_qty ?? raw.packageQty)
       : 1,
@@ -120,6 +121,7 @@ function normalizePackageItems(items) {
           equipment_id: equipmentId,
           quantity: 1,
           unit_price: null,
+          unit_cost: null,
         };
       }
 
@@ -128,10 +130,12 @@ function normalizePackageItems(items) {
         if (equipmentId == null) return null;
         const quantity = Number.isFinite(Number(item.quantity ?? item.qty)) ? Number(item.quantity ?? item.qty) : 1;
         const unitPrice = Number.isFinite(Number(item.unit_price ?? item.price)) ? Number(item.unit_price ?? item.price) : null;
+        const unitCost = Number.isFinite(Number(item.unit_cost ?? item.unitCost ?? item.cost)) ? Number(item.unit_cost ?? item.unitCost ?? item.cost) : null;
         return {
           equipment_id: String(equipmentId),
           quantity: quantity > 0 ? quantity : 1,
           unit_price: unitPrice,
+          unit_cost: unitCost,
         };
       }
 
@@ -305,15 +309,15 @@ function buildPackageTableRow(pkg, equipmentIndex) {
   });
 
   const itemCount = resolvedItems.reduce((sum, item) => sum + (Number(item.qty ?? item.quantity ?? 1) || 0), 0);
-  const packageQty = Number(pkg.package_qty ?? 1);
   const priceDisplay = `${normalizeNumbers(pkg.price.toFixed(2))} ${t('reservations.create.summary.currency', 'SR')}`;
+  const costDisplay = `${normalizeNumbers((pkg.cost || 0).toFixed(2))} ${t('reservations.create.summary.currency', 'SR')}`;
 
   return `
     <tr data-package-id="${pkg.id}">
       <td>${pkg.name || t('common.placeholder.empty', '—')}</td>
       <td>${pkg.package_code || t('common.placeholder.empty', '—')}</td>
       <td>${priceDisplay}</td>
-      <td>${normalizeNumbers(String(packageQty))}</td>
+      <td>${costDisplay}</td>
       <td class="equipment-packages-table__items-cell">
         <details class="equipment-package-items-disclosure">
           <summary class="equipment-package-items-disclosure__summary">
@@ -345,8 +349,8 @@ function resetPackageForm() {
     elements.priceInput.value = '';
     elements.priceInput.dataset.autoCalculated = 'true';
   }
-  if (elements.qtyInput) {
-    elements.qtyInput.value = '1';
+  if (elements.costInput) {
+    elements.costInput.value = '';
   }
   if (elements.descriptionInput) elements.descriptionInput.value = '';
   if (elements.submitButton) {
@@ -366,8 +370,8 @@ function loadPackageIntoForm(pkg) {
     elements.priceInput.value = pkg.price != null ? String(pkg.price) : '';
     elements.priceInput.dataset.autoCalculated = pkg.price != null ? 'false' : 'true';
   }
-  if (elements.qtyInput) {
-    elements.qtyInput.value = pkg.package_qty != null ? String(pkg.package_qty) : '1';
+  if (elements.costInput) {
+    elements.costInput.value = pkg.cost != null ? String(pkg.cost) : '';
   }
   if (elements.descriptionInput) elements.descriptionInput.value = pkg.description || '';
   if (elements.submitButton) {
@@ -478,7 +482,8 @@ function handleSelectionAdd(event) {
       packageItemsDraft.push({
         equipment_id: String(equipmentId),
         quantity: 1,
-        unit_price: Number.isFinite(Number(equipment?.price)) ? Number(equipment.price) : null,
+        unit_price: Number.isFinite(Number(equipment?.price ?? equipment?.unit_price ?? equipment?.unitPrice)) ? Number(equipment?.price ?? equipment?.unit_price ?? equipment?.unitPrice) : null,
+        unit_cost: Number.isFinite(Number(equipment?.cost ?? equipment?.unit_cost ?? equipment?.unitCost ?? equipment?.rental_cost ?? equipment?.purchase_price)) ? Number(equipment?.cost ?? equipment?.unit_cost ?? equipment?.unitCost ?? equipment?.rental_cost ?? equipment?.purchase_price) : null,
       });
     }
     added += 1;
@@ -516,7 +521,8 @@ function focusPackageForm() {
 }
 
 function sanitizePriceInputValue(event) {
-  const input = elements.priceInput;
+  const eventTarget = typeof HTMLInputElement !== 'undefined' && event?.target instanceof HTMLInputElement ? event.target : null;
+  const input = eventTarget || elements.priceInput;
   if (!input) return;
   const rawValue = input.value;
   if (rawValue == null) return;
@@ -544,7 +550,7 @@ function sanitizePriceInputValue(event) {
     }
   }
 
-  if (event?.type === 'input') {
+  if (input === elements.priceInput && event?.type === 'input') {
     input.dataset.autoCalculated = sanitized.trim() ? 'false' : 'true';
   }
 }
@@ -555,8 +561,8 @@ function buildPackagePayload() {
   const description = elements.descriptionInput?.value.trim() ?? '';
   const priceValue = elements.priceInput?.value ?? '';
   const price = Number.parseFloat(normalizeNumbers(priceValue));
-  const qtyValue = elements.qtyInput?.value ?? '';
-  const qty = Number.parseInt(normalizeNumbers(qtyValue), 10);
+  const costValue = elements.costInput?.value ?? '';
+  const cost = Number.parseFloat(normalizeNumbers(costValue));
 
   if (!name) {
     showToast(t('equipment.packages.validation.nameRequired', '⚠️ يرجى إدخال اسم الحزمة'));
@@ -577,6 +583,7 @@ function buildPackagePayload() {
     equipment_id: item.equipment_id,
     quantity: Number.isFinite(Number(item.quantity)) ? Number(item.quantity) : 1,
     unit_price: item.unit_price != null && Number.isFinite(Number(item.unit_price)) ? Number(item.unit_price) : null,
+    unit_cost: item.unit_cost != null && Number.isFinite(Number(item.unit_cost)) ? Number(item.unit_cost) : null,
   }));
 
   return {
@@ -584,7 +591,8 @@ function buildPackagePayload() {
     name,
     description,
     price: Number.isFinite(price) ? price : 0,
-    package_qty: Number.isFinite(qty) && qty > 0 ? qty : 1,
+    cost: Number.isFinite(cost) ? cost : 0,
+    package_qty: 1,
     is_active: true,
     items: normalizedItems,
   };
@@ -745,6 +753,13 @@ function wireEvents() {
     elements.priceInput.addEventListener('blur', sanitizePriceInputValue);
     elements.priceInput.dataset.normalizedAttached = 'true';
     sanitizePriceInputValue();
+  }
+
+  if (elements.costInput && !elements.costInput.dataset.normalizedAttached) {
+    elements.costInput.addEventListener('input', sanitizePriceInputValue);
+    elements.costInput.addEventListener('blur', sanitizePriceInputValue);
+    elements.costInput.dataset.normalizedAttached = 'true';
+    sanitizePriceInputValue({ target: elements.costInput });
   }
 
   if (!eventsRegistered) {

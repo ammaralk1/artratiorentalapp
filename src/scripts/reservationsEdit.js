@@ -24,6 +24,7 @@ import {
 } from './reservationsSummary.js';
 import { ensureCompanyShareEnabled, getEquipmentUnavailableMessage } from './reservations/createForm.js';
 import { setupEditEquipmentDescriptionInput } from './reservations/formUtils.js';
+import { openEquipmentPicker } from './equipmentPicker/modal.js';
 import { renderEquipment, syncEquipmentStatuses } from './equipment.js';
 import { getTechnicianConflictingReservationCodes, getEquipmentConflictingReservationCodes } from './reservations/state.js';
 import { apiRequest } from './apiClient.js';
@@ -1800,7 +1801,13 @@ function applyEditReservationStatusAction(updateEditReservationSummary) {
 export function setupEditReservationModalEvents(context = {}) {
   modalEventsContext = { ...context };
 
-  const { updateEditReservationSummary, addEquipmentToEditingReservation, addEquipmentByDescription, renderEditItems } = modalEventsContext;
+  const {
+    updateEditReservationSummary,
+    addEquipmentToEditingReservation,
+    addEquipmentByDescription,
+    addPackageToEditingReservationList,
+    renderEditItems,
+  } = modalEventsContext;
 
   const discountInput = document.getElementById('edit-res-discount');
   if (discountInput && !discountInput.dataset.listenerAttached) {
@@ -1961,6 +1968,33 @@ export function setupEditReservationModalEvents(context = {}) {
     barcodeInput.addEventListener('input', scheduleAutoAdd);
     barcodeInput.addEventListener('change', triggerBarcodeAdd);
     barcodeInput.dataset.listenerAttached = 'true';
+  }
+
+  const pickerButton = document.getElementById('open-edit-equipment-picker');
+  if (pickerButton && !pickerButton.dataset.listenerAttached) {
+    pickerButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      openEquipmentPicker({
+        source: 'reservation-edit',
+        label: t('equipmentPicker.context.reservationEdit', 'اختيار معدات لتعديل الحجز'),
+        onAddEquipment: ({ barcodes = [], quantity = 1 } = {}) => {
+          const uniqueBarcodes = [];
+          const seen = new Set();
+          barcodes.forEach((barcode) => {
+            const normalized = normalizeNumbers(String(barcode || '')).trim();
+            if (!normalized || seen.has(normalized)) return;
+            seen.add(normalized);
+            uniqueBarcodes.push(normalized);
+          });
+          const limit = Math.min(Number.isInteger(quantity) && quantity > 0 ? quantity : 1, uniqueBarcodes.length);
+          for (let index = 0; index < limit; index += 1) {
+            addEquipmentToEditingReservation?.({ value: uniqueBarcodes[index] });
+          }
+        },
+        onAddPackage: (packageId) => addPackageToEditingReservationList?.(packageId),
+      });
+    });
+    pickerButton.dataset.listenerAttached = 'true';
   }
 
   setupEditEquipmentDescriptionInput?.();

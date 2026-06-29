@@ -184,18 +184,18 @@
 
               <section class="equipment-form-section-card equipment-package-form-section-card equipment-package-form-section-card--pricing">
                 <div class="equipment-form-section-card__header">
-                  <h5 class="equipment-form-section-card__title" data-i18n data-i18n-key="equipment.packages.form.sections.pricing.title">الكمية والتسعير</h5>
-                  <p class="equipment-form-section-card__hint" data-i18n data-i18n-key="equipment.packages.form.sections.pricing.hint">حدّد السعر والكمية الأساسية للحزمة قبل إضافة عناصرها الفعلية.</p>
+                  <h5 class="equipment-form-section-card__title" data-i18n data-i18n-key="equipment.packages.form.sections.pricing.title">التسعير والتكلفة</h5>
+                  <p class="equipment-form-section-card__hint" data-i18n data-i18n-key="equipment.packages.form.sections.pricing.hint">حدّد سعر الحزمة وتكلفتها قبل إضافة عناصرها الفعلية.</p>
                 </div>
                 <div class="equipment-package-pricing-shell">
                   <div class="management-form-grid equipment-package-form-grid equipment-package-form-grid--pricing">
                     <div class="form-field">
-                      <label for="equipment-package-qty" class="form-label" data-i18n data-i18n-key="equipment.packages.form.labels.quantity">🔢 الكمية</label>
-                      <input type="number" class="ui-input form-control" id="equipment-package-qty" placeholder="1" min="1" step="1" value="1" data-i18n data-i18n-placeholder-key="equipment.packages.form.placeholders.quantity">
-                    </div>
-                    <div class="form-field">
                       <label for="equipment-package-price" class="form-label" data-i18n data-i18n-key="equipment.packages.form.labels.price">💵 سعر الحزمة</label>
                       <input type="text" class="ui-input form-control" id="equipment-package-price" inputmode="decimal" placeholder="0" data-i18n data-i18n-placeholder-key="equipment.packages.form.placeholders.price">
+                    </div>
+                    <div class="form-field">
+                      <label for="equipment-package-cost" class="form-label" data-i18n data-i18n-key="equipment.packages.form.labels.cost">💰 تكلفة الحزمة</label>
+                      <input type="text" class="ui-input form-control" id="equipment-package-cost" inputmode="decimal" placeholder="0" data-i18n data-i18n-placeholder-key="equipment.packages.form.placeholders.cost">
                     </div>
                   </div>
                 </div>
@@ -262,7 +262,7 @@
                   <th data-i18n data-i18n-key="equipment.packages.list.table.name">الحزمة</th>
                   <th data-i18n data-i18n-key="equipment.packages.list.table.code">الكود</th>
                   <th data-i18n data-i18n-key="equipment.packages.list.table.price">السعر</th>
-                  <th data-i18n data-i18n-key="equipment.packages.list.table.quantity">الكمية</th>
+                  <th data-i18n data-i18n-key="equipment.packages.list.table.cost">التكلفة</th>
                   <th data-i18n data-i18n-key="equipment.packages.list.table.items">عدد العناصر</th>
                   <th data-i18n data-i18n-key="equipment.packages.list.table.actions">الإجراءات</th>
                 </tr>

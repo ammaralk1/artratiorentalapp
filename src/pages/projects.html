@@ -277,35 +277,8 @@
                             <span id="project-operational-equipment-count" data-i18n data-i18n-key="projects.form.operationalBooking.equipmentEmpty">لم تتم إضافة معدات بعد.</span>
                           </div>
                           <div class="project-equipment-entry">
-                            <label class="project-equipment-entry__label" for="project-equipment-package-select" data-i18n data-i18n-key="projects.form.operationalBooking.packageTitle">إضافة حزمة معدات</label>
-                            <select class="ui-select form-select" id="project-equipment-package-select">
-                              <option value="" selected data-i18n data-i18n-key="reservations.create.packages.placeholder">اختر الحزمة</option>
-                            </select>
-                            <p class="project-equipment-entry__hint" id="project-equipment-package-hint" data-i18n data-i18n-key="projects.form.operationalBooking.packageHint">اختيار الحزمة يضيفها مباشرة بنفس قواعد التوفر والتعارضات.</p>
-
-                            <label class="project-equipment-entry__label" for="project-equipment-method-select" data-i18n data-i18n-key="projects.form.operationalBooking.equipmentMethodTitle">طريقة اختيار المعدة</label>
-                            <select class="ui-select form-select project-equipment-method-select" id="project-equipment-method-select" data-project-equipment-method-select>
-                              <option value="barcode" selected data-i18n data-i18n-key="reservations.create.equipment.method.barcode">🔍 بالباركود</option>
-                              <option value="autocomplete" data-i18n data-i18n-key="reservations.create.equipment.method.autocomplete">🎥 بالاسم</option>
-                              <option value="list" data-i18n data-i18n-key="reservations.create.equipment.method.list">📦 من القائمة</option>
-                            </select>
-
-                            <div class="project-equipment-method-panel" data-project-equipment-method="barcode">
-                              <input type="text" class="ui-input form-control" id="project-equipment-barcode" placeholder="امسح أو أدخل الباركود ثم اضغط Enter" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="text" data-i18n data-i18n-placeholder-key="projects.form.operationalBooking.equipmentBarcodePlaceholder">
-                            </div>
-
-                            <div class="project-equipment-method-panel" data-project-equipment-method="autocomplete" hidden aria-hidden="true">
-                              <div class="project-equipment-autocomplete">
-                                <input type="text" class="ui-input form-control" id="project-equipment-description" placeholder="اكتب اسم المعدة ثم اضغط Enter" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="search" data-i18n data-i18n-placeholder-key="projects.form.operationalBooking.equipmentSearchPlaceholder">
-                                <div id="project-equipment-description-suggestions" class="reservation-equipment-suggestions project-equipment-suggestions" hidden></div>
-                              </div>
-                            </div>
-
-                            <div class="project-equipment-method-panel" data-project-equipment-method="list" hidden aria-hidden="true">
-                              <select class="ui-select form-select" id="project-equipment-list-select" data-i18n data-i18n-placeholder-key="projects.form.operationalBooking.equipmentListPlaceholder">
-                                <option value="" selected data-i18n data-i18n-key="projects.form.operationalBooking.equipmentListPlaceholder">اختر من قائمة المعدات</option>
-                              </select>
-                            </div>
+                            <button type="button" class="ui-button ui-button--primary btn btn-primary" id="open-project-equipment-picker" data-i18n data-i18n-key="equipmentPicker.actions.open">اختيار المعدات والحزم</button>
+                            <p class="project-equipment-entry__hint" data-i18n data-i18n-key="equipmentPicker.hints.projectCreate">اختر المعدات أو الحزم وأدر الحزم من نافذة واحدة.</p>
 
                             <div class="users-table-wrapper overflow-x-auto project-equipment-selection-table-shell">
                               <table class="ui-table users-table surface-table table table-sm table-hover align-middle project-equipment-selection-table">

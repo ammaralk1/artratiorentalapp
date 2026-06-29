@@ -12180,6 +12180,276 @@ body[dir="rtl"] .reservation-status-card__header--stacked {
   overflow-wrap: anywhere;
 }
 
+/* Keep selected equipment/package rows from spilling across neighboring cells. */
+.reservation-equipment-table table,
+.reservation-edit-items-wrapper table {
+  table-layout: fixed;
+  width: max(100%, 1560px);
+  min-width: 1560px;
+}
+
+.reservation-modal-items-table {
+  table-layout: fixed;
+  width: max(100%, 1200px);
+  min-width: 1200px;
+}
+
+.project-equipment-selection-table,
+.project-edit-equipment-table {
+  table-layout: fixed;
+  width: max(100%, 1320px);
+  min-width: 1320px;
+}
+
+.reservation-equipment-table,
+.reservation-edit-items-wrapper,
+.reservation-modal-items-wrapper,
+.project-equipment-selection-table-shell,
+.project-edit-equipment-table-wrapper {
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable both-edges;
+}
+
+.reservation-equipment-table table :is(th, td),
+.reservation-edit-items-wrapper table :is(th, td),
+.reservation-modal-items-table :is(th, td),
+.project-equipment-selection-table :is(th, td),
+.project-edit-equipment-table :is(th, td) {
+  vertical-align: middle;
+}
+
+.reservation-items-table__col--item {
+  width: 500px;
+}
+
+.reservation-items-table__col--qty,
+.reservation-items-table__col--quantity {
+  width: 230px;
+}
+
+.reservation-edit-items-wrapper .reservation-items-table__col--quantity {
+  width: 290px;
+}
+
+.reservation-items-table__col--days {
+  width: 110px;
+}
+
+.reservation-items-table__col--unit-price,
+.reservation-items-table__col--unit-cost {
+  width: 190px;
+}
+
+.reservation-items-table__col--total {
+  width: 160px;
+}
+
+.reservation-items-table__col--actions {
+  width: 120px;
+}
+
+.reservation-modal-items-table__col--item {
+  width: 500px;
+}
+
+.reservation-modal-items-table__col--quantity {
+  width: 180px;
+}
+
+.reservation-modal-items-table__col--days {
+  width: 110px;
+}
+
+.reservation-modal-items-table__col--unit-price,
+.reservation-modal-items-table__col--unit-cost {
+  width: 180px;
+}
+
+.reservation-modal-items-table__col--total {
+  width: 150px;
+}
+
+.reservation-equipment-table table :is(th, td),
+.reservation-edit-items-wrapper table :is(th, td),
+.reservation-modal-items-table :is(th, td) {
+  text-align: center;
+}
+
+.reservation-equipment-table table :is(th, td):first-child,
+.reservation-edit-items-wrapper table :is(th, td):first-child,
+.reservation-modal-items-table :is(th, td):first-child {
+  text-align: start;
+}
+
+.project-equipment-selection-table :is(th, td):nth-child(1),
+.project-edit-equipment-table :is(th, td):nth-child(1) {
+  width: 92px;
+}
+
+.project-equipment-selection-table :is(th, td):nth-child(2),
+.project-edit-equipment-table :is(th, td):nth-child(2) {
+  width: 430px;
+}
+
+.project-equipment-selection-table :is(th, td):nth-child(3),
+.project-edit-equipment-table :is(th, td):nth-child(3) {
+  width: 180px;
+}
+
+.project-equipment-selection-table :is(th, td):nth-child(4),
+.project-equipment-selection-table :is(th, td):nth-child(5),
+.project-edit-equipment-table :is(th, td):nth-child(4),
+.project-edit-equipment-table :is(th, td):nth-child(5) {
+  width: 180px;
+}
+
+.project-equipment-selection-table :is(th, td):nth-child(6),
+.project-edit-equipment-table :is(th, td):nth-child(6) {
+  width: 150px;
+}
+
+.project-equipment-selection-table :is(th, td):nth-child(7),
+.project-edit-equipment-table :is(th, td):nth-child(7) {
+  width: 108px;
+}
+
+.reservation-item-info,
+.reservation-item-copy,
+.project-equipment-selected-item {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.reservation-item-info {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.reservation-item-info--static {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.reservation-item-title,
+.project-equipment-selected-item strong,
+.project-equipment-selected-item span,
+.reservation-package-items,
+.reservation-package-items summary,
+.reservation-package-items__list,
+.reservation-package-items__list li,
+.reservation-barcode-list,
+.reservation-barcode-list li {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.reservation-package-items,
+.reservation-item-barcodes,
+.project-package-items {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.reservation-package-items__list,
+.reservation-barcode-list {
+  padding-inline-start: 1.1rem;
+}
+
+.project-equipment-selected-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+  line-height: 1.35;
+}
+
+.project-equipment-selected-item strong {
+  display: block;
+}
+
+.project-equipment-selected-photo {
+  width: 4rem;
+  height: 4rem;
+}
+
+.reservation-quantity-control,
+.project-equipment-quantity-control {
+  display: inline-grid;
+  grid-template-columns: 2.5rem minmax(2.75rem, 1fr) 2.5rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  width: 11rem;
+  min-width: 11rem;
+  max-width: 100%;
+  white-space: nowrap;
+  margin-inline: auto;
+  box-sizing: border-box;
+}
+
+.reservation-edit-items-wrapper .reservation-quantity-control {
+  width: 12rem;
+  min-width: 12rem;
+}
+
+.reservation-quantity-static {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.5rem;
+  min-height: 2.25rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.reservation-qty-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 2.5rem;
+  min-width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  box-sizing: border-box;
+  line-height: 1;
+}
+
+.reservation-qty-value {
+  display: inline-grid;
+  place-items: center;
+  min-width: 2.75rem;
+  text-align: center;
+  line-height: 1;
+}
+
+.project-equipment-money-input,
+.project-edit-equipment-money,
+.reservation-unit-price-input,
+.reservation-unit-cost-input {
+  width: 100%;
+  min-width: 8rem;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.project-equipment-entry > #open-project-equipment-picker,
+.project-edit-equipment-method-block > #open-project-edit-equipment-picker,
+.reservation-equipment-inputs > #open-equipment-selector,
+.reservation-equipment-field > #open-edit-equipment-picker {
+  width: auto;
+  max-width: max-content;
+  min-width: 0;
+  padding-inline: 1.15rem;
+  align-self: flex-start;
+}
+
 /* Reservation equipment layout adjustments */
 .reservation-equipment-inputs {
   display: grid;
@@ -12261,6 +12531,10 @@ body[dir="rtl"] .reservation-status-card__header--stacked {
   font-weight: 600;
   box-shadow: none;
   transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.reservation-equipment-inputs > .reservation-select-equipment-btn {
+  justify-self: start;
 }
 
 .reservation-select-equipment-btn--active {
@@ -12886,4 +13160,255 @@ body.auth-page .auth-form-heading {
   justify-content: center !important;
   margin-left: auto !important;
   margin-right: auto !important;
+}
+
+/* Shared equipment picker modal */
+.equipment-picker-modal .modal-dialog {
+  max-width: min(1180px, calc(100vw - 2rem));
+}
+
+.equipment-picker-modal .modal-content {
+  background:
+    linear-gradient(180deg, rgba(252, 253, 250, 0.98), rgba(239, 243, 236, 0.98)),
+    linear-gradient(145deg, rgba(248, 250, 247, 0.92) 0%, rgba(241, 244, 238, 0.9) 55%, rgba(235, 239, 232, 0.9) 100%);
+  color: var(--bo-color-text-primary);
+  border: 1px solid rgba(42, 64, 48, 0.14);
+  box-shadow: 0 18px 42px rgba(23, 31, 27, 0.12);
+}
+
+.equipment-picker-modal .modal-header,
+.equipment-picker-modal .modal-footer {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(240, 244, 238, 0.68));
+  border-color: rgba(42, 64, 48, 0.1);
+  color: var(--bo-color-text-primary);
+}
+
+.equipment-picker-modal .modal-body {
+  background: transparent;
+  color: var(--bo-color-text-primary);
+}
+
+.equipment-picker-modal .modal-title,
+.equipment-picker-modal .form-label,
+.equipment-picker-modal h6,
+.equipment-picker-modal strong,
+.equipment-picker-modal span {
+  color: var(--bo-color-text-primary);
+}
+
+.equipment-picker-modal .form-control,
+.equipment-picker-modal .form-select,
+.equipment-picker-modal .ui-input,
+.equipment-picker-modal .ui-select,
+.equipment-picker-modal .ui-textarea {
+  background: var(--bo-color-surface-muted);
+  border-color: var(--bo-color-border-soft);
+  color: var(--bo-color-text-primary);
+}
+
+.equipment-picker-modal .form-control::placeholder,
+.equipment-picker-modal .ui-input::placeholder,
+.equipment-picker-modal .ui-textarea::placeholder {
+  color: var(--bo-color-text-muted);
+}
+
+.equipment-picker-modal .btn-close {
+  background-image: none !important;
+  color: var(--bo-color-text-primary);
+  filter: none;
+  opacity: 0.82;
+}
+
+.equipment-picker-modal .btn-close::before {
+  content: none;
+  display: none;
+}
+
+.equipment-picker-modal .btn-close::after {
+  background-color: currentColor;
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .equipment-picker-modal .modal-content {
+  background:
+    linear-gradient(180deg, rgba(24, 36, 29, 0.98), rgba(20, 30, 24, 0.98)),
+    linear-gradient(145deg, rgba(22, 33, 27, 0.88) 0%, rgba(19, 29, 24, 0.84) 55%, rgba(18, 27, 22, 0.82) 100%);
+  border-color: rgba(147, 168, 137, 0.18);
+  box-shadow: 0 28px 68px rgba(5, 16, 11, 0.42);
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .equipment-picker-modal .modal-header,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .equipment-picker-modal .modal-footer {
+  background: linear-gradient(180deg, rgba(24, 36, 29, 0.72), rgba(20, 30, 24, 0.35));
+  border-color: rgba(147, 168, 137, 0.16);
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .equipment-picker-modal .btn-close {
+  background-image: none !important;
+  color: rgba(255, 255, 255, 0.94);
+  filter: none;
+}
+
+.equipment-picker__subtitle {
+  margin: .25rem 0 0;
+  color: var(--bo-color-text-muted);
+  font-size: .9rem;
+}
+
+.equipment-picker__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-bottom: 1rem;
+}
+
+.equipment-picker__tab {
+  border: 1px solid var(--bo-color-border-soft);
+  border-radius: 6px;
+  background: var(--bo-color-surface);
+  color: var(--bo-color-text-primary);
+  padding: .45rem .75rem;
+}
+
+.equipment-picker__tab.active {
+  background: var(--bo-color-accent);
+  border-color: var(--bo-color-accent);
+  color: var(--bo-color-text-primary);
+}
+
+.equipment-picker__toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 240px);
+  gap: .75rem;
+  margin-bottom: 1rem;
+}
+
+.equipment-picker__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: .75rem;
+}
+
+.equipment-picker__card,
+.equipment-picker__package-card,
+.equipment-picker__manage-package,
+.equipment-picker__draft-item {
+  border: 1px solid var(--bo-color-border-soft);
+  border-radius: 8px;
+  background: var(--bo-color-surface);
+}
+
+.equipment-picker__card {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  gap: .75rem;
+  padding: .75rem;
+}
+
+.equipment-picker__media {
+  width: 82px;
+  aspect-ratio: 1;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--bo-color-surface-muted);
+}
+
+.equipment-picker__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.equipment-picker__placeholder {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  color: var(--bo-color-text-muted);
+}
+
+.equipment-picker__card-body h6,
+.equipment-picker__package-card h6 {
+  margin: 0 0 .25rem;
+  font-size: .98rem;
+}
+
+.equipment-picker__card-body p,
+.equipment-picker__package-card p {
+  margin: 0 0 .5rem;
+  color: var(--bo-color-text-muted);
+  font-size: .86rem;
+}
+
+.equipment-picker__badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: var(--bo-color-surface-muted);
+  color: var(--bo-color-text-muted);
+  padding: .2rem .5rem;
+  font-size: .78rem;
+}
+
+.equipment-picker__card-actions {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: .5rem;
+}
+
+.equipment-picker__package-list,
+.equipment-picker__manage-list,
+.equipment-picker__draft-items {
+  display: grid;
+  gap: .65rem;
+}
+
+.equipment-picker__package-card,
+.equipment-picker__manage-package,
+.equipment-picker__draft-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  padding: .75rem;
+}
+
+.equipment-picker__package-form {
+  display: grid;
+  gap: .85rem;
+  margin-bottom: 1rem;
+}
+
+.equipment-picker__form-grid,
+.equipment-picker__package-item-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .75rem;
+}
+
+.equipment-picker__package-item-row {
+  grid-template-columns: minmax(0, 1fr) 110px auto;
+  align-items: end;
+}
+
+.equipment-picker__form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+.equipment-picker__empty {
+  border: 1px dashed var(--bo-color-border-soft);
+  border-radius: 8px;
+  color: var(--bo-color-text-muted);
+  padding: 1rem;
+  text-align: center;
+}
+
+@media (max-width: 700px) {
+  .equipment-picker__toolbar,
+  .equipment-picker__form-grid,
+  .equipment-picker__package-item-row {
+    grid-template-columns: 1fr;
+  }
 }

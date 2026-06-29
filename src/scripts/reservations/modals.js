@@ -186,24 +186,8 @@ const MODAL_SNIPPETS = {
               <label class="form-label" data-i18n data-i18n-key="reservations.edit.labels.addEquipment">🎥 إضافة معدة</label>
               <div class="reservation-equipment-inputs reservation-equipment-inputs--single mb-2" data-equipment-section="single">
                 <div class="reservation-equipment-field">
-                  <input type="text" class="form-control" id="edit-res-equipment-barcode" placeholder="🔍 امسح أو أدخل الباركود ثم اضغط Enter" data-i18n data-i18n-placeholder-key="reservations.edit.placeholders.barcode">
+                  <button type="button" class="ui-button ui-button--primary btn btn-primary" id="open-edit-equipment-picker" data-i18n data-i18n-key="equipmentPicker.actions.open">اختيار المعدات والحزم</button>
                 </div>
-                <div class="reservation-equipment-field">
-                  <input type="text" class="form-control" id="edit-res-equipment-description" list="edit-res-equipment-description-options" placeholder="🎥 اكتب اسم المعدة ثم اضغط Enter" data-i18n data-i18n-placeholder-key="reservations.edit.placeholders.description">
-                  <datalist id="edit-res-equipment-description-options"></datalist>
-                </div>
-              </div>
-              <div class="reservation-equipment-inputs reservation-equipment-inputs--package mb-2" data-equipment-section="package">
-                <h6 class="reservation-equipment-subtitle" data-i18n data-i18n-key="reservations.create.equipment.subtitle.package">📦 إضافة حزمة معدات</h6>
-                <div class="reservation-equipment-field reservation-equipment-field--package-select">
-                  <select class="form-select" id="edit-res-package-select" data-i18n data-i18n-placeholder-key="reservations.edit.packages.placeholder">
-                    <option value="" selected disabled data-i18n data-i18n-key="reservations.packages.selectOption">📦 اختر الحزمة</option>
-                  </select>
-                </div>
-                <div class="reservation-equipment-field reservation-equipment-field--package-action">
-                  <button type="button" class="btn btn-primary" id="edit-add-reservation-package" data-i18n data-i18n-key="reservations.create.packages.addButton">➕ إضافة الحزمة</button>
-                </div>
-                <div class="reservation-equipment-hint" id="edit-res-package-hint" data-i18n data-i18n-key="reservations.edit.packages.hint">حدد الحزمة ثم اضغط على الزر لإضافتها للحجز.</div>
               </div>
               <div class="table-responsive reservation-modal-table-shell reservation-edit-items-wrapper users-table-wrapper overflow-x-auto">
                 <table class="table table-sm table-hover align-middle reservation-modal-table reservation-items-table">

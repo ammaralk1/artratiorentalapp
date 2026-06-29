@@ -168,7 +168,7 @@ function populateEditPackageSelect() {
   }
 }
 
-function addPackageToEditingReservationList(packageId, { silent = false } = {}) {
+export function addPackageToEditingReservationList(packageId, { silent = false } = {}) {
   const normalizedId = String(packageId ?? '').trim();
   if (!normalizedId) {
     if (!silent) {
@@ -459,11 +459,6 @@ export function renderEditReservationItems(items = []) {
         }
       }
 
-      const quantityControlClass = isPackageGroup
-        ? 'reservation-quantity-control reservation-quantity-control--static'
-        : 'reservation-quantity-control';
-      const disableQuantityAttr = isPackageGroup ? ' disabled aria-disabled="true" tabindex="-1"' : '';
-
       return `
         <tr data-group-key="${group.key}" data-drag-row="true" draggable="true">
           <td>
@@ -479,11 +474,13 @@ export function renderEditReservationItems(items = []) {
             </div>
           </td>
           <td>
-            <div class="${quantityControlClass}" data-group-key="${group.key}">
-              <button type="button" class="reservation-qty-btn" data-action="decrease-edit-group" data-group-key="${group.key}" aria-label="${decreaseLabel}"${disableQuantityAttr}>−</button>
-              <span class="reservation-qty-value">${quantityDisplay}</span>
-              <button type="button" class="reservation-qty-btn" data-action="increase-edit-group" data-group-key="${group.key}" aria-label="${increaseLabel}"${disableQuantityAttr}>+</button>
-            </div>
+            ${isPackageGroup
+              ? `<span class="reservation-quantity-static">${quantityDisplay}</span>`
+              : `<div class="reservation-quantity-control" data-group-key="${group.key}">
+                  <button type="button" class="reservation-qty-btn" data-action="decrease-edit-group" data-group-key="${group.key}" aria-label="${decreaseLabel}">−</button>
+                  <span class="reservation-qty-value">${quantityDisplay}</span>
+                  <button type="button" class="reservation-qty-btn" data-action="increase-edit-group" data-group-key="${group.key}" aria-label="${increaseLabel}">+</button>
+                </div>`}
           </td>
           <td><span class="reservation-days-value">${normalizeNumbers(String(groupDays))}</span></td>
           <td>${unitPriceInput}</td>
@@ -1484,6 +1481,7 @@ export function getEditContext() {
     updateEditReservationSummary,
     addEquipmentByDescription: addEquipmentToEditingByDescription,
     addEquipmentToEditingReservation,
+    addPackageToEditingReservationList,
     combineDateTime,
     hasEquipmentConflict,
     hasPackageConflict,

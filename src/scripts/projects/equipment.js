@@ -22,6 +22,7 @@ import {
   hasPackageConflict,
   normalizeBarcodeValue,
 } from '../reservations/state.js';
+import { openEquipmentPicker } from '../equipmentPicker/modal.js';
 import { state, dom } from './state.js';
 import { formatCurrency, escapeHtml } from './formatting.js';
 
@@ -125,6 +126,7 @@ function buildProjectEquipmentEntry(item) {
     qty: 1,
     price: Number.isFinite(Number(item?.price)) ? Number(item.price) : 0,
     cost: resolveEquipmentCost(item),
+    status: item?.status ?? '',
     image: resolveItemImage(item),
   };
 }
@@ -246,6 +248,22 @@ function getProjectEquipmentAvailableQuantity(item = {}) {
   return Math.max(0, stockQuantity - reservedQuantity);
 }
 
+function getProjectEquipmentBlockingStatus(item = {}) {
+  const catalogItem = getProjectEquipmentCatalogItemBySelection(item) || item;
+  const status = getEquipmentAvailabilityStatus(catalogItem);
+  return status === 'maintenance' || status === 'retired' ? status : '';
+}
+
+function getProjectEquipmentStatusMessage(item = {}) {
+  const status = getProjectEquipmentBlockingStatus(item);
+  if (!status) return '';
+  const label = getEquipmentLabel(getProjectEquipmentCatalogItemBySelection(item) || item);
+  const message = status === 'maintenance'
+    ? t('reservations.toast.equipmentMaintenanceNamed', '⚠️ {item} قيد الصيانة ولا يمكن إضافتها حالياً')
+    : t('reservations.toast.equipmentRetiredNamed', '⚠️ {item} خارج الخدمة حالياً');
+  return message.replace('{item}', label);
+}
+
 function parseProjectMoneyValue(value) {
   const normalized = normalizeNumbers(String(value ?? '')).replace(/,/g, '').trim();
   const parsed = Number.parseFloat(normalized);
@@ -317,6 +335,64 @@ function getEquipmentConflictMessage(barcode) {
   return fallback;
 }
 
+export function validateSelectedProjectEquipmentAvailability() {
+  const { start, end } = getProjectDateRange();
+  if (!start || !end) {
+    return { ok: true };
+  }
+
+  const selectedItems = Array.isArray(state.selectedEquipment) ? state.selectedEquipment : [];
+  for (const item of selectedItems) {
+    if (item?.type === 'package') {
+      const packageItems = Array.isArray(item.packageItems) ? item.packageItems : [];
+      const unavailable = packageItems.find((pkgItem) => getProjectEquipmentBlockingStatus(pkgItem));
+      if (unavailable) {
+        const packageName = item.desc || item.package_code || item.barcode || t('reservations.create.packages.packageLabel', 'الحزمة');
+        return {
+          ok: false,
+          message: t('reservations.toast.packageItemsConflict', '⚠️ لا يمكن إضافة {name} لأن بعض عناصرها غير متاحة:')
+            .replace('{name}', packageName)
+            + `\n• ${getProjectEquipmentStatusMessage(unavailable).replace(/^⚠️\s*/, '')}`,
+        };
+      }
+
+      const conflicted = packageItems.find((pkgItem) => {
+        const barcode = normalizeBarcodeValue(pkgItem?.normalizedBarcode ?? pkgItem?.barcode);
+        return barcode && getProjectEquipmentAvailableQuantity({ ...pkgItem, barcode }) < 1;
+      });
+      if (conflicted) {
+        const packageName = item.desc || item.package_code || item.barcode || t('reservations.create.packages.packageLabel', 'الحزمة');
+        const itemName = conflicted.desc || conflicted.barcode || t('reservations.create.packages.unnamedItem', 'عنصر بدون اسم');
+        return {
+          ok: false,
+          message: t('reservations.toast.packageItemsConflict', '⚠️ لا يمكن إضافة {name} لأن بعض عناصرها غير متاحة:')
+            .replace('{name}', packageName)
+            + `\n• ${itemName}`,
+        };
+      }
+      continue;
+    }
+
+    const statusMessage = getProjectEquipmentStatusMessage(item);
+    if (statusMessage) {
+      return {
+        ok: false,
+        message: statusMessage,
+      };
+    }
+
+    const barcode = normalizeBarcodeValue(item?.barcode);
+    if (barcode && getProjectEquipmentAvailableQuantity(item) < 1) {
+      return {
+        ok: false,
+        message: getEquipmentConflictMessage(barcode),
+      };
+    }
+  }
+
+  return { ok: true };
+}
+
 function addProjectEquipmentRecord(item, inputElement = null) {
   const payload = buildProjectEquipmentEntry(item);
   if (!payload) {
@@ -332,9 +408,9 @@ function addProjectEquipmentRecord(item, inputElement = null) {
 
   const availability = getEquipmentAvailabilityStatus(item);
   if (availability === 'maintenance' || availability === 'retired') {
-    showToast(availability === 'maintenance'
+    showToast(getProjectEquipmentStatusMessage(item) || (availability === 'maintenance'
       ? t('reservations.toast.equipmentMaintenance', '⚠️ هذه المعدة قيد الصيانة ولا يمكن إضافتها حالياً')
-      : t('reservations.toast.equipmentRetired', '⚠️ هذه المعدة خارج الخدمة حالياً'));
+      : t('reservations.toast.equipmentRetired', '⚠️ هذه المعدة خارج الخدمة حالياً')));
     return false;
   }
 
@@ -355,7 +431,7 @@ function addProjectEquipmentRecord(item, inputElement = null) {
   return true;
 }
 
-function addProjectPackageRecord(packageId) {
+export function addProjectPackageRecord(packageId) {
   const payload = buildProjectPackageEntry(packageId);
   if (!payload) {
     showToast(t('reservations.toast.packageNotFound', '⚠️ تعذر العثور على بيانات الحزمة المحددة'));
@@ -387,6 +463,14 @@ function addProjectPackageRecord(packageId) {
     return false;
   }
 
+  const unavailable = payload.packageItems.find((item) => getProjectEquipmentBlockingStatus(item));
+  if (unavailable) {
+    showToast(t('reservations.toast.packageItemsConflict', '⚠️ لا يمكن إضافة {name} لأن بعض عناصرها غير متاحة:')
+      .replace('{name}', payload.desc)
+      + `\n• ${getProjectEquipmentStatusMessage(unavailable).replace(/^⚠️\s*/, '')}`, 'warning', 6000);
+    return false;
+  }
+
   const conflicted = payload.packageItems.find((item) => {
     const barcode = normalizeBarcodeValue(item?.normalizedBarcode ?? item?.barcode);
     return barcode && getProjectEquipmentAvailableQuantity({ ...item, barcode }) < 1;
@@ -403,7 +487,7 @@ function addProjectPackageRecord(packageId) {
   return true;
 }
 
-function addProjectEquipmentByBarcode(rawCode, inputElement = null) {
+export function addProjectEquipmentByBarcode(rawCode, inputElement = null) {
   const item = findProjectEquipmentByBarcode(rawCode);
   if (!item) {
     showToast(t('reservations.toast.barcodeNotFound', '❌ الباركود غير موجود'));
@@ -412,7 +496,7 @@ function addProjectEquipmentByBarcode(rawCode, inputElement = null) {
   return addProjectEquipmentRecord(item, inputElement);
 }
 
-function addProjectEquipmentByDescription(inputElement) {
+export function addProjectEquipmentByDescription(inputElement) {
   if (!inputElement?.value?.trim()) return false;
   const item = findProjectEquipmentByDescription(inputElement.value);
   if (!item) {
@@ -659,6 +743,24 @@ export function setupProjectEquipmentControls() {
       applyEquipmentMethod(event.target.value);
     });
     dom.projectEquipmentMethodSelect.dataset.listenerAttached = 'true';
+  }
+
+  if (dom.projectEquipmentPickerButton && dom.projectEquipmentPickerButton.dataset.listenerAttached !== 'true') {
+    dom.projectEquipmentPickerButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      openEquipmentPicker({
+        source: 'project-create',
+        label: t('equipmentPicker.context.projectCreate', 'اختيار معدات وحزم لمشروع جديد'),
+        onAddEquipment: ({ barcodes = [], quantity = 1 } = {}) => {
+          const limit = Math.min(Number.isInteger(quantity) && quantity > 0 ? quantity : 1, barcodes.length);
+          for (let index = 0; index < limit; index += 1) {
+            addProjectEquipmentByBarcode(barcodes[index]);
+          }
+        },
+        onAddPackage: (packageId) => addProjectPackageRecord(packageId),
+      });
+    });
+    dom.projectEquipmentPickerButton.dataset.listenerAttached = 'true';
   }
 
   if (dom.projectEquipmentBarcode && dom.projectEquipmentBarcode.dataset.listenerAttached !== 'true') {

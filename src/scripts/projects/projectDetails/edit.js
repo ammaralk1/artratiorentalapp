@@ -65,6 +65,7 @@ import {
   DEFAULT_COMPANY_SHARE_PERCENT,
 } from '../../reservationsSummary.js';
 import { initEnhancedSelects } from '../../ui/enhancedSelect.js';
+import { openEquipmentPicker } from '../../equipmentPicker/modal.js';
 import { buildProjectEditPaymentHistoryMarkup } from './payment.js';
 import { buildProjectTypeOptionsMarkup, buildProjectEditExpensesMarkup } from './display.js';
 
@@ -1557,6 +1558,47 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
     return addProjectEditEquipmentRecord(item);
   }
 
+  function addProjectEditPackageRecord(packageId) {
+    const nextPackage = buildProjectEditPackageEntry(packageId);
+    if (!nextPackage) {
+      showToast(t('reservations.toast.packageNotFound', '⚠️ تعذر العثور على بيانات الحزمة المحددة'));
+      return false;
+    }
+    const normalizedId = normalizePackageId(nextPackage.packageId);
+    if ((editState.operationalEquipment || []).some((item) => item?.type === 'package' && normalizePackageId(item.packageId) === normalizedId)) {
+      showToast(t('reservations.toast.packageDuplicate', '⚠️ هذه الحزمة مضافة بالفعل إلى الحجز'));
+      return false;
+    }
+    const { start, end } = getProjectEditDateRangeFromForm(form, project);
+    const ignoreReservationId = getManagedReservationIdForProject(project.id);
+    if (!start || !end) {
+      showToast(t('reservations.toast.requireDatesBeforeAdd', '⚠️ يرجى تحديد تاريخ ووقت البداية والنهاية قبل إضافة المعدات'));
+      return false;
+    }
+    if (hasPackageConflict(normalizedId, start, end, ignoreReservationId)) {
+      showToast(
+        t('reservations.toast.packageTimeConflict', '⚠️ الحزمة {name} محجوزة بالفعل في الفترة المختارة')
+          .replace('{name}', nextPackage.desc || t('reservations.create.packages.genericName', 'الحزمة')),
+        'warning',
+        6000
+      );
+      return false;
+    }
+    const conflicted = (nextPackage.packageItems || []).find((item) => {
+      const barcode = normalizeBarcodeValue(item?.normalizedBarcode ?? item?.barcode);
+      return barcode && getProjectEditEquipmentAvailableQuantity({ ...item, barcode }, form, project, ignoreReservationId) < 1;
+    });
+    if (conflicted) {
+      showToast(t('reservations.toast.packageItemsConflict', '⚠️ لا يمكن إضافة {name} لأن بعض عناصرها غير متاحة:')
+        .replace('{name}', nextPackage.desc || t('reservations.create.packages.genericName', 'الحزمة'))
+        + `\n• ${conflicted.desc || conflicted.barcode || ''}`, 'warning', 6000);
+      return false;
+    }
+    editState.operationalEquipment = [...(editState.operationalEquipment || []), nextPackage];
+    refreshOperationalEquipmentUi();
+    return true;
+  }
+
   function renderOperationalEquipment() {
     if (!equipmentContainer) return;
     const items = Array.isArray(editState.operationalEquipment) ? editState.operationalEquipment : [];
@@ -1849,51 +1891,29 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
     equipmentPackageSelect.addEventListener('change', () => {
       const selectedValue = equipmentPackageSelect.value || '';
       if (!selectedValue) return;
-      const nextPackage = buildProjectEditPackageEntry(selectedValue);
-      if (!nextPackage) {
-        showToast(t('reservations.toast.packageNotFound', '⚠️ تعذر العثور على بيانات الحزمة المحددة'));
-        equipmentPackageSelect.value = '';
-        return;
-      }
-      const normalizedId = normalizePackageId(nextPackage.packageId);
-      if ((editState.operationalEquipment || []).some((item) => item?.type === 'package' && normalizePackageId(item.packageId) === normalizedId)) {
-        showToast(t('reservations.toast.packageDuplicate', '⚠️ هذه الحزمة مضافة بالفعل إلى الحجز'));
-        equipmentPackageSelect.value = '';
-        return;
-      }
-      const { start, end } = getProjectEditDateRangeFromForm(form, project);
-      const ignoreReservationId = getManagedReservationIdForProject(project.id);
-      if (!start || !end) {
-        showToast(t('reservations.toast.requireDatesBeforeAdd', '⚠️ يرجى تحديد تاريخ ووقت البداية والنهاية قبل إضافة المعدات'));
-        equipmentPackageSelect.value = '';
-        return;
-      }
-      if (hasPackageConflict(normalizedId, start, end, ignoreReservationId)) {
-        showToast(
-          t('reservations.toast.packageTimeConflict', '⚠️ الحزمة {name} محجوزة بالفعل في الفترة المختارة')
-            .replace('{name}', nextPackage.desc || t('reservations.create.packages.genericName', 'الحزمة')),
-          'warning',
-          6000
-        );
-        equipmentPackageSelect.value = '';
-        return;
-      }
-      const conflicted = (nextPackage.packageItems || []).find((item) => {
-        const barcode = normalizeBarcodeValue(item?.normalizedBarcode ?? item?.barcode);
-        return barcode && getProjectEditEquipmentAvailableQuantity({ ...item, barcode }, form, project, ignoreReservationId) < 1;
-      });
-      if (conflicted) {
-        showToast(t('reservations.toast.packageItemsConflict', '⚠️ لا يمكن إضافة {name} لأن بعض عناصرها غير متاحة:')
-          .replace('{name}', nextPackage.desc || t('reservations.create.packages.genericName', 'الحزمة'))
-          + `\n• ${conflicted.desc || conflicted.barcode || ''}`, 'warning', 6000);
-        equipmentPackageSelect.value = '';
-        return;
-      }
-      editState.operationalEquipment = [...(editState.operationalEquipment || []), nextPackage];
+      addProjectEditPackageRecord(selectedValue);
       equipmentPackageSelect.value = '';
-      refreshOperationalEquipmentUi();
     });
     equipmentPackageSelect.dataset.listenerAttached = 'true';
+  }
+
+  const equipmentPickerButton = form.querySelector('#open-project-edit-equipment-picker');
+  if (equipmentPickerButton && !equipmentPickerButton.dataset.listenerAttached) {
+    equipmentPickerButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      openEquipmentPicker({
+        source: 'project-edit',
+        label: t('equipmentPicker.context.projectEdit', 'اختيار معدات وحزم لتعديل المشروع'),
+        onAddEquipment: ({ barcodes = [], quantity = 1 } = {}) => {
+          const limit = Math.min(Number.isInteger(quantity) && quantity > 0 ? quantity : 1, barcodes.length);
+          for (let index = 0; index < limit; index += 1) {
+            addProjectEditEquipmentByBarcode(barcodes[index]);
+          }
+        },
+        onAddPackage: (packageId) => addProjectEditPackageRecord(packageId),
+      });
+    });
+    equipmentPickerButton.dataset.listenerAttached = 'true';
   }
 
   if (equipmentMethodSelect && !equipmentMethodSelect.dataset.listenerAttached) {
@@ -2669,33 +2689,9 @@ function buildProjectEditForm(project, editState = { clientName: '', clientCompa
           <h6>${escapeHtml(t('projects.form.operationalBooking.equipmentTitle', 'المعدات'))}</h6>
           <p>${escapeHtml(t('projects.form.operationalBooking.equipmentHint', 'سيتم اختيار المعدات هنا بنفس قواعد التوفر والتعارضات المعتمدة في الحجوزات.'))}</p>
         </header>
-        <div class="project-edit-equipment-package-row">
-          <label class="form-label" for="project-edit-equipment-package-select">${escapeHtml(t('projects.form.operationalBooking.packageTitle', 'إضافة حزمة معدات'))}</label>
-          <select class="ui-select form-select" id="project-edit-equipment-package-select">
-            <option value="">${escapeHtml(t('reservations.create.packages.placeholder', 'اختر الحزمة'))}</option>
-          </select>
-        </div>
         <div class="project-equipment-entry project-edit-equipment-method-block">
-          <label class="project-equipment-entry__label" for="project-edit-equipment-method-select">${escapeHtml(t('projects.form.operationalBooking.equipmentMethodTitle', 'طريقة اختيار المعدة'))}</label>
-          <select class="ui-select form-select project-equipment-method-select" id="project-edit-equipment-method-select">
-            <option value="barcode" selected>${escapeHtml(t('reservations.create.equipment.method.barcode', '🔍 بالباركود'))}</option>
-            <option value="autocomplete">${escapeHtml(t('reservations.create.equipment.method.autocomplete', '🎥 بالاسم'))}</option>
-            <option value="list">${escapeHtml(t('reservations.create.equipment.method.list', '📦 من القائمة'))}</option>
-          </select>
-          <div class="project-equipment-method-panel" data-project-edit-equipment-method="barcode">
-            <input type="text" class="ui-input form-control" id="project-edit-equipment-barcode" placeholder="${escapeHtml(t('projects.form.operationalBooking.equipmentBarcodePlaceholder', 'امسح أو أدخل الباركود ثم اضغط Enter'))}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="text">
-          </div>
-          <div class="project-equipment-method-panel" data-project-edit-equipment-method="autocomplete" hidden aria-hidden="true">
-            <div class="project-equipment-autocomplete">
-              <input type="text" class="ui-input form-control" id="project-edit-equipment-description" placeholder="${escapeHtml(t('projects.form.operationalBooking.equipmentSearchPlaceholder', 'اكتب اسم المعدة ثم اضغط Enter'))}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="search">
-              <div id="project-edit-equipment-suggestions" class="reservation-equipment-suggestions project-equipment-suggestions" role="listbox" hidden></div>
-            </div>
-          </div>
-          <div class="project-equipment-method-panel" data-project-edit-equipment-method="list" hidden aria-hidden="true">
-            <select class="ui-select form-select" id="project-edit-equipment-list-select">
-              <option value="">${escapeHtml(t('projects.form.operationalBooking.equipmentListPlaceholder', 'اختر من قائمة المعدات'))}</option>
-            </select>
-          </div>
+          <button type="button" class="ui-button ui-button--primary btn btn-primary" id="open-project-edit-equipment-picker">${escapeHtml(t('equipmentPicker.actions.open', 'اختيار المعدات والحزم'))}</button>
+          <p class="project-equipment-entry__hint">${escapeHtml(t('equipmentPicker.hints.projectEdit', 'اختر المعدات أو الحزم وأدر الحزم من نافذة واحدة.'))}</p>
         </div>
         <div class="users-table-wrapper overflow-x-auto project-modal-table-wrapper project-edit-equipment-table-wrapper">
           <table class="ui-table users-table surface-table table table-sm table-hover align-middle project-services-table project-edit-equipment-table">

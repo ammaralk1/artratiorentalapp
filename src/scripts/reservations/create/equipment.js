@@ -24,14 +24,16 @@ import {
 import { loadData } from '../../storage.js';
 import { syncEquipmentStatuses } from '../../equipment.js';
 import { apiRequest } from '../../apiClient.js';
-import {
-  activateEquipmentSelection,
-  EQUIPMENT_SELECTION_EVENTS,
-  isEquipmentSelectionActive,
-  updateEquipmentSelectionContext,
-} from '../equipmentSelection.js';
+import { openEquipmentPicker } from '../../equipmentPicker/modal.js';
 import { state } from './state.js';
-import { renderReservationItems, renderDraftReservationSummary, populatePackageSelect, setupPackageAddHandler, setupPackageSelectAutoAdd } from './packages-items.js';
+import {
+  addPackageToReservation,
+  renderReservationItems,
+  renderDraftReservationSummary,
+  populatePackageSelect,
+  setupPackageAddHandler,
+  setupPackageSelectAutoAdd,
+} from './packages-items.js';
 
 export function escapeHtml(value = '') {
   return String(value)
@@ -559,10 +561,9 @@ export function getCreateReservationDateRange() {
 }
 
 export function refreshActiveEquipmentSelectionRange() {
-  if (!isEquipmentSelectionActive()) return;
-  const { start, end } = getCreateReservationDateRange();
-  if (!start || !end) return;
-  updateEquipmentSelectionContext({ start, end });
+  // Kept for compatibility with existing date-change hooks. The modal picker
+  // reads the current date range when it opens and existing add functions
+  // validate the latest form dates before adding.
 }
 
 export function collectSelectedItemBarcodes(items = getSelectedItems()) {
@@ -890,6 +891,7 @@ export function getEquipmentModeElements() {
 function applySingleEquipmentMethodUi(method = 'barcode') {
   const normalized = ['barcode', 'autocomplete', 'list'].includes(method) ? method : 'barcode';
   const { methodButtons, methodPanels, methodSelect } = getEquipmentModeElements();
+  const hasLegacyMethodControls = methodButtons.length > 0 || methodPanels.length > 0 || Boolean(methodSelect);
 
   if (methodSelect && methodSelect.value !== normalized) {
     methodSelect.value = normalized;
@@ -910,6 +912,13 @@ function applySingleEquipmentMethodUi(method = 'barcode') {
   const barcodeInput = document.getElementById('equipment-barcode');
   const descriptionInput = document.getElementById('equipment-description');
   const selectorButton = document.getElementById('open-equipment-selector');
+
+  if (!hasLegacyMethodControls) {
+    if (selectorButton) {
+      selectorButton.disabled = false;
+    }
+    return;
+  }
 
   if (barcodeInput) {
     barcodeInput.disabled = normalized !== 'barcode';
@@ -965,24 +974,8 @@ export function applyEquipmentModeUi(mode) {
   }
 }
 
-function handleEquipmentSelectionAdd(event) {
-  if (!event || !event.detail) return;
-  if (!document.getElementById('reservation-form')) return;
-
-  const detail = event.detail;
-  const selectionMode = detail.selection?.mode || detail.selection?.source || '';
-  if (selectionMode === 'package-manager' || selectionMode === 'equipment-packages') {
-    return;
-  }
-
-  const barcodes = Array.isArray(detail.barcodes) ? detail.barcodes : [];
-  const quantityRequested = Number.isInteger(detail.quantity) && detail.quantity > 0 ? detail.quantity : 1;
-
-  const resolvedBarcodes = barcodes.length ? barcodes : (detail.barcode ? [detail.barcode] : []);
-  if (!resolvedBarcodes.length) {
-    return;
-  }
-
+function addPickerEquipmentToReservationCreate({ barcodes = [], quantity = 1 } = {}) {
+  const resolvedBarcodes = Array.isArray(barcodes) ? barcodes : [];
   let addedCount = 0;
   let lastMessage = null;
 
@@ -996,7 +989,7 @@ function handleEquipmentSelectionAdd(event) {
     }
   });
 
-  const limit = Math.min(quantityRequested, uniqueBarcodes.length);
+  const limit = Math.min(Number.isInteger(quantity) && quantity > 0 ? quantity : 1, uniqueBarcodes.length);
   for (let index = 0; index < limit; index += 1) {
     const barcode = uniqueBarcodes[index];
     const result = addDraftEquipmentByBarcode(barcode, null, { silent: true });
@@ -1023,55 +1016,19 @@ function setupEquipmentSelectionButton() {
 
   if (!button.dataset.listenerAttached) {
     button.addEventListener('click', () => {
-      const { start, end } = getCreateReservationDateRange();
-      if (!start || !end) {
-        showToast(t('reservations.toast.requireDatesBeforeAdd', '⚠️ يرجى تحديد تاريخ ووقت البداية والنهاية قبل إضافة المعدات'));
-        return;
-      }
-
-      activateEquipmentSelection({
-        mode: 'create',
-        source: 'reservation-form',
-        returnTab: 'reservations-tab',
-        returnSubTab: 'create-tab',
-        start,
-        end,
+      openEquipmentPicker({
+        source: 'reservation-create',
+        label: t('equipmentPicker.context.reservationCreate', 'اختيار معدات لحجز جديد'),
+        onAddEquipment: addPickerEquipmentToReservationCreate,
+        onAddPackage: (packageId) => addPackageToReservation(packageId),
       });
-
-      const equipmentTabButton = document.querySelector('[data-tab="equipment-tab"]');
-      if (equipmentTabButton) {
-        equipmentTabButton.click();
-        window.requestAnimationFrame(() => {
-          setTimeout(() => {
-            document.getElementById('search-equipment')?.focus();
-          }, 300);
-        });
-      } else {
-        showToast(t('reservations.toast.equipmentTabUnavailable', '⚠️ تعذر فتح تبويب المعدات حالياً'));
-      }
     });
     button.dataset.listenerAttached = 'true';
   }
-
-  if (!button.dataset.selectionObserverAttached) {
-    document.addEventListener(EQUIPMENT_SELECTION_EVENTS.change, (event) => {
-      applyEquipmentSelectionButtonState(button, event?.detail?.active);
-    });
-    button.dataset.selectionObserverAttached = 'true';
-  }
-
-  applyEquipmentSelectionButtonState(button, isEquipmentSelectionActive());
 }
 
 export function setupEquipmentSelectionIntegration() {
   setupEquipmentSelectionButton();
-
-  if (state.equipmentSelectionEventsRegistered || typeof document === 'undefined') {
-    return;
-  }
-
-  document.addEventListener(EQUIPMENT_SELECTION_EVENTS.requestAdd, handleEquipmentSelectionAdd);
-  state.equipmentSelectionEventsRegistered = true;
 }
 
 export function setupEquipmentModeControls() {
@@ -1139,6 +1096,6 @@ export function setupEquipmentModeControls() {
   const activeMethod = methodButtons.find((button) => button.getAttribute('aria-pressed') === 'true')?.dataset.singleEquipmentMethodOption
     || methodRadios.find((radio) => radio.checked)?.value
     || methodSelect?.value
-    || 'barcode';
+    || (methodButtons.length || methodRadios.length || methodSelect ? 'barcode' : 'list');
   applySingleEquipmentMethodUi(activeMethod);
 }

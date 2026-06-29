@@ -8,7 +8,7 @@ try {
     $pdo = getDatabaseConnection();
     requireAuthenticated();
 
-    ensurePackageQuantityColumn($pdo);
+    ensurePackageColumns($pdo);
 
     switch ($method) {
         case 'GET':
@@ -120,8 +120,8 @@ function handlePackagesCreate(PDO $pdo): void
         return;
     }
 
-    $sql = 'INSERT INTO equipment_packages (package_code, slug, name, description, price, package_qty, equipment_ids, is_active)
-        VALUES (:package_code, :slug, :name, :description, :price, :package_qty, :equipment_ids, :is_active)';
+    $sql = 'INSERT INTO equipment_packages (package_code, slug, name, description, price, cost, package_qty, equipment_ids, is_active)
+        VALUES (:package_code, :slug, :name, :description, :price, :cost, :package_qty, :equipment_ids, :is_active)';
 
     $statement = $pdo->prepare($sql);
     $statement->execute($data);
@@ -214,13 +214,35 @@ function handlePackagesDelete(PDO $pdo): void
 }
 
 /**
- * Adds package_qty column to equipment_packages if missing.
+ * Adds runtime-compatible package columns if missing.
  */
-function ensurePackageQuantityColumn(PDO $pdo): void
+function ensurePackageColumns(PDO $pdo): void
 {
     try {
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS equipment_packages (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                package_code VARCHAR(191) NOT NULL,
+                slug VARCHAR(191) NOT NULL,
+                name VARCHAR(255) NOT NULL,
+                description TEXT NULL,
+                price DECIMAL(10,2) NOT NULL DEFAULT 0,
+                cost DECIMAL(10,2) NOT NULL DEFAULT 0,
+                package_qty INT NOT NULL DEFAULT 1,
+                equipment_ids JSON NULL,
+                is_active TINYINT(1) NOT NULL DEFAULT 1,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                UNIQUE KEY equipment_packages_package_code_unique (package_code),
+                KEY equipment_packages_slug_index (slug),
+                KEY equipment_packages_active_index (is_active)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ");
+        if (!tableColumnExists($pdo, 'equipment_packages', 'cost')) {
+            $pdo->exec("ALTER TABLE equipment_packages ADD COLUMN cost DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER price");
+        }
         if (!tableColumnExists($pdo, 'equipment_packages', 'package_qty')) {
-            $pdo->exec("ALTER TABLE equipment_packages ADD COLUMN package_qty INT NOT NULL DEFAULT 1 AFTER price");
+            $pdo->exec("ALTER TABLE equipment_packages ADD COLUMN package_qty INT NOT NULL DEFAULT 1 AFTER cost");
         }
     } catch (Throwable $_) {
         // best-effort; ignore if cannot alter
@@ -240,6 +262,8 @@ function validatePackagePayload(PDO $pdo, $payload, bool $isUpdate, ?int $packag
     $name = trim((string)($payload['name'] ?? ''));
     $description = trim((string)($payload['description'] ?? ''));
     $price = $payload['price'] ?? 0;
+    $costProvided = array_key_exists('cost', $payload) || array_key_exists('package_cost', $payload) || array_key_exists('packageCost', $payload);
+    $cost = $costProvided ? ($payload['cost'] ?? $payload['package_cost'] ?? $payload['packageCost'] ?? 0) : null;
     $packageQtyRaw = $payload['package_qty'] ?? $payload['packageQty'] ?? null;
     $itemsRaw = $payload['items'] ?? $payload['equipment_ids'] ?? [];
     $isActive = $payload['is_active'] ?? true;
@@ -274,6 +298,11 @@ function validatePackagePayload(PDO $pdo, $payload, bool $isUpdate, ?int $packag
     if ($price !== null || !$isUpdate) {
         $numericPrice = filter_var($price, FILTER_VALIDATE_FLOAT);
         $data['price'] = $numericPrice !== false ? round($numericPrice, 2) : 0;
+    }
+
+    if ($costProvided || !$isUpdate) {
+        $numericCost = filter_var($cost, FILTER_VALIDATE_FLOAT);
+        $data['cost'] = $numericCost !== false ? round($numericCost, 2) : 0;
     }
 
     if ($packageQtyRaw !== null || !$isUpdate) {
@@ -367,6 +396,7 @@ function mapPackageRow(array $row): array
     $row['items'] = $items;
     $row['items_count'] = $itemsCount;
     $row['items_total_quantity'] = $itemsQuantity;
+    $row['cost'] = isset($row['cost']) ? (float)$row['cost'] : 0;
     $row['package_qty'] = isset($row['package_qty']) ? (int)$row['package_qty'] : 1;
     return $row;
 }
@@ -386,6 +416,8 @@ function normalizePackageItemsArray($items): array
             $normalized[] = [
                 'equipment_id' => (int)$item,
                 'quantity' => 1,
+                'unit_price' => null,
+                'unit_cost' => null,
             ];
             continue;
         }
@@ -398,11 +430,13 @@ function normalizePackageItemsArray($items): array
         }
         $quantity = $item['quantity'] ?? $item['qty'] ?? 1;
         $unitPrice = $item['unit_price'] ?? $item['price'] ?? null;
+        $unitCost = $item['unit_cost'] ?? $item['unitCost'] ?? $item['cost'] ?? null;
 
         $normalized[] = [
             'equipment_id' => (int)$equipmentId,
             'quantity' => max(1, (int)$quantity),
             'unit_price' => $unitPrice !== null ? round((float)$unitPrice, 2) : null,
+            'unit_cost' => $unitCost !== null ? round((float)$unitCost, 2) : null,
         ];
     }
 

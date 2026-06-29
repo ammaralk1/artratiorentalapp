@@ -44,7 +44,11 @@ final class ProjectManagedReservationService
             $equipmentRecord = $this->fetchEquipmentRecord($equipmentId);
             $status = $equipmentRecord['status'];
             if (in_array($status, ['maintenance', 'retired'], true)) {
-                $errors[sprintf('managed_reservation.equipment.%d', $index)] = 'Equipment is unavailable';
+                $errors[sprintf('managed_reservation.equipment.%d', $index)] = sprintf(
+                    '%s is unavailable (%s)',
+                    $this->describeEquipmentRecord($equipmentRecord),
+                    $status === 'maintenance' ? 'maintenance' : 'retired'
+                );
                 continue;
             }
 
@@ -281,6 +285,16 @@ final class ProjectManagedReservationService
             'unit_price' => (float) ($row['unit_price'] ?? 0),
             'unit_cost' => (float) ($row['unit_cost'] ?? 0),
         ];
+    }
+
+    private function describeEquipmentRecord(array $equipment): string
+    {
+        $name = trim((string) ($equipment['description'] ?? $equipment['name'] ?? ''));
+        if ($name !== '') {
+            return $name;
+        }
+
+        return sprintf('Equipment #%d', (int) ($equipment['id'] ?? 0));
     }
 
     /**

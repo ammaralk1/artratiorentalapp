@@ -1161,11 +1161,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
               </div>
             </td>
             <td class="reservation-modal-items-table__cell" data-label="${escapeHtml(tableHeaders.quantity)}">
-              <div class="reservation-quantity-control reservation-quantity-control--static">
-                <button type="button" class="reservation-qty-btn" disabled aria-disabled="true" tabindex="-1">−</button>
-                <span class="reservation-qty-value">${quantityDisplay}</span>
-                <button type="button" class="reservation-qty-btn" disabled aria-disabled="true" tabindex="-1">+</button>
-              </div>
+              <span class="reservation-quantity-static">${quantityDisplay}</span>
             </td>
             <td class="reservation-modal-items-table__cell" data-label="${escapeHtml(t('reservations.details.table.headers.days', 'الأيام'))}">${daysDisplay}</td>
             <td class="reservation-modal-items-table__cell" data-label="${escapeHtml(tableHeaders.unitPrice)}">${unitPriceDisplay}</td>

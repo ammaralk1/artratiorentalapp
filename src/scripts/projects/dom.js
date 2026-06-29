@@ -55,6 +55,7 @@ export function cacheDom() {
   dom.projectEquipmentDescription = document.getElementById('project-equipment-description');
   dom.projectEquipmentSuggestions = document.getElementById('project-equipment-description-suggestions');
   dom.projectEquipmentListSelect = document.getElementById('project-equipment-list-select');
+  dom.projectEquipmentPickerButton = document.getElementById('open-project-equipment-picker');
   dom.projectEquipmentSelectedBody = document.getElementById('project-equipment-selected-body');
   dom.submitBtn = dom.form?.querySelector('[type="submit"]');
   dom.projectsTableBody = document.getElementById('project-table-body');

@@ -51,7 +51,10 @@ import {
   removeProject
 } from './actions.js';
 import { updatePreferences } from '../preferencesService.js';
-import { renderProjectEquipmentSelection } from './equipment.js';
+import {
+  renderProjectEquipmentSelection,
+  validateSelectedProjectEquipmentAvailability,
+} from './equipment.js';
 import { calculateProjectLineFinancials } from './financials.js';
 
 let isProjectSubmitInProgress = false;
@@ -69,6 +72,30 @@ const resetProjectFilters = () => {
   state.filters.startDate = '';
   state.filters.endDate = '';
 };
+
+function normalizeProjectApiErrorValue(value) {
+  if (value == null) {
+    return '';
+  }
+  if (Array.isArray(value)) {
+    return value.map(normalizeProjectApiErrorValue).filter(Boolean).join('\n');
+  }
+  if (typeof value === 'object') {
+    return Object.values(value).map(normalizeProjectApiErrorValue).filter(Boolean).join('\n');
+  }
+  return String(value).trim();
+}
+
+function formatProjectApiError(error) {
+  const errors = error?.payload?.errors;
+  if (errors && typeof errors === 'object') {
+    const first = Object.values(errors).map(normalizeProjectApiErrorValue).find(Boolean);
+    if (first) {
+      return first;
+    }
+  }
+  return error?.message || '';
+}
 
 function resolveShareElement(target) {
   if (!target) return null;
@@ -1276,6 +1303,12 @@ async function handleSubmitProject(event) {
     return;
   }
 
+  const equipmentAvailability = validateSelectedProjectEquipmentAvailability();
+  if (!equipmentAvailability.ok) {
+    showToast(equipmentAvailability.message || t('reservations.toast.equipmentTimeConflict', '⚠️ لا يمكن إضافة المعدة لأنها محجوزة في نفس الفترة الزمنية'), 'warning', 7000);
+    return;
+  }
+
   const unassignedCrew = getUnassignedProjectCrewAssignments();
   if (unassignedCrew.length) {
     const labels = unassignedCrew
@@ -1407,10 +1440,11 @@ async function handleSubmitProject(event) {
   } catch (error) {
     console.error('❌ [projects] handleSubmitProject failed', error);
     const isAbort = error?.name === 'AbortError';
+    const apiMessage = isProjectApiError(error) ? formatProjectApiError(error) : '';
     const message = isAbort
       ? t('projects.toast.saveTimeout', 'انتهت مهلة حفظ المشروع. تحقق من الاتصال وحاول مرة أخرى.')
-      : (isProjectApiError(error)
-        ? error.message
+      : (apiMessage
+        ? apiMessage
         : t('projects.toast.saveFailed', 'تعذر حفظ المشروع، حاول مرة أخرى'));
     showToast(message, 'error');
   } finally {

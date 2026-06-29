@@ -258,7 +258,7 @@ function collectSelectedItemBarcodes(items = getSelectedItems()) {
   return set;
 }
 
-function addPackageToReservation(packageId, { silent = false } = {}) {
+export function addPackageToReservation(packageId, { silent = false } = {}) {
   const normalizedId = normalizePackageId(packageId);
   if (!normalizedId) {
     if (!silent) {
@@ -572,11 +572,13 @@ export function renderReservationItems(containerId = 'reservation-items') {
             </div>
           </td>
           <td>
-            <div class="reservation-quantity-control" data-group-key="${group.key}">
-              <button type="button" class="reservation-qty-btn" data-action="decrease-group" data-group-key="${group.key}" aria-label="${decreaseLabel}" ${isPackageGroup ? 'disabled' : ''}>−</button>
-              <span class="reservation-qty-value">${quantityDisplay}</span>
-              <button type="button" class="reservation-qty-btn" data-action="increase-group" data-group-key="${group.key}" aria-label="${increaseLabel}" ${isPackageGroup ? 'disabled' : ''}>+</button>
-            </div>
+            ${isPackageGroup
+              ? `<span class="reservation-quantity-static">${quantityDisplay}</span>`
+              : `<div class="reservation-quantity-control" data-group-key="${group.key}">
+                  <button type="button" class="reservation-qty-btn" data-action="decrease-group" data-group-key="${group.key}" aria-label="${decreaseLabel}">−</button>
+                  <span class="reservation-qty-value">${quantityDisplay}</span>
+                  <button type="button" class="reservation-qty-btn" data-action="increase-group" data-group-key="${group.key}" aria-label="${increaseLabel}">+</button>
+                </div>`}
           </td>
           <td><span class="reservation-days-value">${daysDisplay}</span></td>
           <td>${unitPriceDisplay}</td>
